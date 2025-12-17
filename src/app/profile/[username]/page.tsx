@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { User, Calendar, Gamepad2, Star, Pencil } from 'lucide-react'
+import { User, Calendar, Gamepad2, Star, Pencil, MessageSquare, Heart } from 'lucide-react'
 import LogGameModal from '@/components/LogGameModal'
 import EditFavoritesModal from '@/components/EditFavoritesModal'
 import { ProfileHeaderSkeleton, GameCardSkeleton } from '@/components/Skeleton'
@@ -456,7 +456,7 @@ export default function ProfilePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+              <Heart className="h-5 w-5 text-[var(--accent)] fill-[var(--accent)]" />
               Favorite Games
             </h2>
             {isOwnProfile && (
@@ -477,7 +477,7 @@ export default function ProfilePage() {
                   {game ? (
                     <Link
                       href={`/game/${game.id}`}
-                      className="group relative block h-full w-full overflow-hidden rounded-lg ring-2 ring-yellow-500/50 hover:ring-yellow-400 transition-all bg-[var(--background-lighter)]"
+                      className="group relative block h-full w-full overflow-hidden rounded-lg ring-2 ring-[var(--accent)]/50 hover:ring-[var(--accent)] transition-all bg-[var(--background-lighter)]"
                     >
                       {game.cover_url ? (
                         <Image
@@ -500,7 +500,7 @@ export default function ProfilePage() {
                   ) : isOwnProfile ? (
                     <button
                       onClick={() => setShowFavoritesModal(true)}
-                      className="h-full w-full rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--background-lighter)] flex items-center justify-center hover:border-yellow-500/50 transition-colors"
+                      className="h-full w-full rounded-lg border-2 border-dashed border-[var(--border)] bg-[var(--background-lighter)] flex items-center justify-center hover:border-[var(--accent)]/50 transition-colors"
                     >
                       <Gamepad2 className="h-8 w-8 text-[var(--foreground-muted)]" />
                     </button>
@@ -584,13 +584,20 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Rating Badge (always visible if rated) */}
-              {log.rating && (
-                <div className="absolute right-1 top-1 flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-medium text-yellow-400">
-                  <Star className="h-3 w-3 fill-yellow-400" />
-                  {log.rating}
-                </div>
-              )}
+              {/* Badges (Rating and Review) */}
+              <div className="absolute right-1 top-1 flex flex-col gap-1">
+                {log.rating && (
+                  <div className="flex items-center gap-0.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-medium text-yellow-400">
+                    <Star className="h-3 w-3 fill-yellow-400" />
+                    {log.rating}
+                  </div>
+                )}
+                {log.review && (
+                  <div className="flex items-center justify-center rounded bg-black/70 p-1" title="Has review">
+                    <MessageSquare className="h-3 w-3 text-[var(--accent)]" />
+                  </div>
+                )}
+              </div>
             </Link>
           ))}
         </div>

@@ -63,10 +63,14 @@ A video game tracking app — like Letterboxd, but for games. Track what you're 
 - [x] Form validation with user-friendly error messages
 - [x] Favorite Games feature (up to 3 per profile)
 - [x] EditFavoritesModal for managing favorite games
-- [x] Gold star styling for favorite games display
+- [x] Green heart styling for favorite games display
+- [x] Text reviews in game logging (optional, max 2000 chars)
+- [x] Reviews section on game detail page
+- [x] Review indicator on profile game cards
+- [x] Community ratings on game detail page (aggregated user ratings)
+- [x] Randomized gaming-themed dashboard welcome messages
 
 ### Not Started
-- [ ] Reviews (text reviews with game logs)
 - [ ] Activity feed
 - [ ] Social features (following users)
 
@@ -144,6 +148,8 @@ sweaty/
 │   │   ├── EditFavoritesModal.tsx   # Modal for editing favorite games
 │   │   ├── GameCard.tsx             # Reusable game card with cover
 │   │   ├── GameLogButton.tsx        # Log game button with auth handling
+│   │   ├── GameRatings.tsx          # Aggregated community ratings display
+│   │   ├── GameReviews.tsx          # Reviews display for game detail page
 │   │   ├── LogGameModal.tsx         # Modal for logging games (mobile-optimized)
 │   │   └── Navbar.tsx               # Navigation with search dropdown
 │   ├── lib/
@@ -268,3 +274,31 @@ sweaty/
 
 **Dependencies Added:**
 - `sonner` - Toast notification library
+
+### Session 3 (Dec 17, 2024)
+**Text Reviews Feature:**
+- Added review textarea to LogGameModal (optional, max 2000 characters with counter)
+- Reviews saved to game_logs table (column already existed)
+- Created GameReviews.tsx component for displaying reviews on game detail page
+- Reviews show user avatar, username, display name, rating, review text, and date
+- Added Reviews section to game detail page (`/game/[id]`)
+- Loading skeleton and empty state for reviews
+- Added review indicator (MessageSquare icon) on profile game cards
+- Badges stack vertically on game cards (rating above, review below)
+
+**Community Ratings Feature:**
+- Created GameRatings.tsx component showing aggregated user ratings
+- Displays average rating (out of 5) with rating count
+- Replaced static "Sweaty Ratings" placeholder with dynamic community ratings
+- Shows "No ratings yet" message when no users have rated
+
+**Favorite Games Styling Update:**
+- Changed favorite games icon from yellow star to green heart (matches app accent color)
+- Updated game card ring color from yellow to green (var(--accent))
+- Updated empty placeholder hover border to green
+
+**Dashboard Welcome Messages:**
+- Replaced time-based greeting with randomized gaming-themed messages
+- Messages include: "Press Start", "Continue", "New quest awaits", "The hero returns", "Quest log updated", "You've respawned", "Ready to game", "One more game", "Touch grass later"
+- Question messages end with "?" after username (e.g., "Continue, Abdulla?")
+- Statement messages end with "!" after username (e.g., "Press Start, Abdulla!")

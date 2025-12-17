@@ -94,15 +94,29 @@ export default async function DashboardPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  // Get greeting based on time of day
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 18) return 'Good afternoon'
-    return 'Good evening'
-  }
+  // Gaming-themed welcome messages
+  // Messages ending with ? will have the ? moved after the username
+  const welcomeMessages = [
+    { text: 'Press Start', isQuestion: false },
+    { text: 'Continue', isQuestion: true },
+    { text: 'New quest awaits', isQuestion: false },
+    { text: 'The hero returns', isQuestion: false },
+    { text: 'Quest log updated', isQuestion: false },
+    { text: "You've respawned", isQuestion: false },
+    { text: 'Ready to game', isQuestion: false },
+    { text: 'One more game', isQuestion: true },
+    { text: 'Touch grass later', isQuestion: false },
+  ]
+
+  // Pick a random message on each render
+  const randomMessageObj = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)]
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
+
+  // Format: "Message, Name!" or "Message, Name?" depending on isQuestion
+  const welcomeText = randomMessageObj.isQuestion
+    ? `${randomMessageObj.text}, ${displayName}?`
+    : `${randomMessageObj.text}, ${displayName}!`
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -126,8 +140,7 @@ export default async function DashboardPage() {
               )}
             </div>
             <div>
-              <p className="text-sm text-[var(--foreground-muted)]">{getGreeting()},</p>
-              <h1 className="text-2xl font-bold sm:text-3xl">{displayName}!</h1>
+              <h1 className="text-2xl font-bold sm:text-3xl">{welcomeText}</h1>
               {stats.total > 0 && (
                 <p className="mt-1 text-sm text-[var(--foreground-muted)]">
                   You&apos;ve logged {stats.total} game{stats.total !== 1 ? 's' : ''}

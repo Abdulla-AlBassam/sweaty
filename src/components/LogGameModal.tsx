@@ -62,6 +62,7 @@ export default function LogGameModal({
   const [rating, setRating] = useState<number | null>(null)
   const [platform, setPlatform] = useState<string>('')
   const [completedAt, setCompletedAt] = useState<string>('')
+  const [review, setReview] = useState<string>('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -72,12 +73,14 @@ export default function LogGameModal({
       setRating(existingLog.rating)
       setPlatform(existingLog.platform || '')
       setCompletedAt(existingLog.completed_at || '')
+      setReview(existingLog.review || '')
     } else {
       // Reset form for new log
       setStatus('playing')
       setRating(null)
       setPlatform('')
       setCompletedAt('')
+      setReview('')
     }
     setError(null)
   }, [existingLog, isOpen])
@@ -140,6 +143,7 @@ export default function LogGameModal({
         rating,
         platform: platform || null,
         completed_at: status === 'completed' && completedAt ? completedAt : null,
+        review: review.trim() || null,
       }
 
       // Upsert game log
@@ -401,6 +405,24 @@ export default function LogGameModal({
               />
             </div>
           )}
+
+          {/* Review */}
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Review <span className="text-[var(--foreground-muted)]">(optional)</span>
+            </label>
+            <textarea
+              value={review}
+              onChange={(e) => setReview(e.target.value.slice(0, 2000))}
+              placeholder="Share your thoughts on this game..."
+              rows={4}
+              className="w-full rounded-lg bg-[var(--background-card)] px-4 py-3 border border-[var(--border)]
+                       focus:outline-none focus:border-[var(--accent)] transition-colors resize-none"
+            />
+            <p className="mt-1 text-xs text-[var(--foreground-muted)] text-right">
+              {review.length}/2000
+            </p>
+          </div>
         </div>
 
         {/* Footer */}

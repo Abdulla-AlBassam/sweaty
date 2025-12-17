@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
 import { getGameById } from '@/lib/igdb'
 import GameLogButton from '@/components/GameLogButton'
+import GameRatings from '@/components/GameRatings'
+import GameReviews from '@/components/GameReviews'
 
 interface GamePageProps {
   params: Promise<{ id: string }>
@@ -195,12 +197,9 @@ export default async function GamePage({ params }: GamePageProps) {
                 <GameLogButton game={game} />
               </div>
 
-              {/* User Rating Section */}
-              <div className="mt-8 rounded-lg bg-[var(--background-lighter)] p-6">
-                <h3 className="font-semibold">Sweaty Ratings</h3>
-                <p className="mt-2 text-[var(--foreground-muted)]">
-                  No ratings yet. Be the first to log this game!
-                </p>
+              {/* Community Ratings */}
+              <div className="mt-8">
+                <GameRatings gameId={gameId} />
               </div>
             </div>
           </div>
@@ -219,6 +218,12 @@ export default async function GamePage({ params }: GamePageProps) {
             No description available.
           </p>
         )}
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mx-auto max-w-6xl px-4 pb-12">
+        <h2 className="text-2xl font-bold mb-6">Reviews</h2>
+        <GameReviews gameId={gameId} />
       </div>
     </div>
   )
