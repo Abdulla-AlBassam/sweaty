@@ -78,6 +78,9 @@ A video game tracking app — like Letterboxd, but for games. Track what you're 
 - [x] User search API route (`/api/users/search`)
 - [x] Unified search in navbar (games and users)
 - [x] Login with username or email
+- [x] Enhanced PWA setup with service worker
+- [x] PNG icons for PWA (192x192, 512x512)
+- [x] InstallPrompt component for "Add to Home Screen"
 
 ## Database Schema
 
