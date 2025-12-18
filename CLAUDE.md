@@ -178,7 +178,9 @@ sweaty/
 │   │   ├── GameRatings.tsx          # Aggregated community ratings display
 │   │   ├── GameReviews.tsx          # Reviews display for game detail page
 │   │   ├── LogGameModal.tsx         # Modal for logging games (mobile-optimized)
-│   │   └── Navbar.tsx               # Navigation with search dropdown
+│   │   ├── Navbar.tsx               # Navigation with search dropdown
+│   │   ├── ServiceWorkerRegister.tsx # PWA service worker registration
+│   │   └── InstallPrompt.tsx        # PWA install prompt (iOS + Chrome)
 │   ├── lib/
 │   │   ├── igdb.ts                  # IGDB API helper
 │   │   └── supabase/
@@ -187,7 +189,10 @@ sweaty/
 │   └── middleware.ts                # Auth session refresh
 ├── public/
 │   ├── icon.svg                     # Favicon (green S on dark bg)
+│   ├── icon-192.png                 # PWA icon 192x192
+│   ├── icon-512.png                 # PWA icon 512x512
 │   ├── og-image.svg                 # Open Graph image
+│   ├── sw.js                        # Service worker for offline caching
 │   └── site.webmanifest             # PWA manifest
 ├── .env.local                       # Environment variables (not in git)
 ├── next.config.ts                   # Next.js config (IGDB images)
@@ -379,3 +384,36 @@ sweaty/
 - If input contains "@", treated as email (direct auth)
 - If no "@", treated as username (lookup email first, then auth)
 - Error messages: "Username not found" or "Invalid login credentials"
+
+### Session 4 (Dec 18, 2024)
+**Vercel Deployment:**
+- Fixed TypeScript compilation errors for Vercel deployment
+- Added `as unknown as Type[]` casts for Supabase query results
+- Added explicit type annotations for callback parameters
+- Fixed GameLog interface `id` property to be optional
+- Added `played` status to STATUS_LABELS in GameLogButton
+- Fixed cachedToken return type in igdb.ts
+- Made GitHub repository public for Vercel deployment
+
+**Enhanced PWA Setup:**
+- Updated `site.webmanifest` with complete PWA config (start_url: /dashboard)
+- Generated PNG icons (icon-192.png, icon-512.png) from SVG using rsvg-convert
+- Created service worker (`/public/sw.js`) with caching strategies:
+  - Cache-first for static assets (images, CSS, JS)
+  - Network-first for API calls and HTML pages
+  - Offline fallback support
+- Created ServiceWorkerRegister component (registers SW in production only)
+- Created InstallPrompt component with dismissable install banner:
+  - Detects `beforeinstallprompt` event for Chrome/Edge
+  - Shows iOS-specific instructions (tap Share > Add to Home Screen)
+  - Appears on mobile devices or after 2+ visits
+  - Stores dismissal in localStorage
+  - Detects if already running as standalone app
+- Added ServiceWorkerRegister and InstallPrompt to root layout
+
+**New Files:**
+- `/public/sw.js` - Service worker for offline caching
+- `/public/icon-192.png` - PWA icon (192x192)
+- `/public/icon-512.png` - PWA icon (512x512)
+- `/src/components/ServiceWorkerRegister.tsx` - SW registration component
+- `/src/components/InstallPrompt.tsx` - PWA install prompt with iOS support
