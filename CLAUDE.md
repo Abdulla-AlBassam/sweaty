@@ -75,6 +75,9 @@ A video game tracking app — like Letterboxd, but for games. Track what you're 
 - [x] Followers/Following modal with user lists
 - [x] Activity feed on dashboard (shows followed users' activity)
 - [x] "Played" status option for games (in addition to Playing, Completed, etc.)
+- [x] User search API route (`/api/users/search`)
+- [x] Unified search in navbar (games and users)
+- [x] Login with username or email
 
 ## Database Schema
 
@@ -141,9 +144,14 @@ Tracks user follow relationships.
 sweaty/
 ├── src/
 │   ├── app/
-│   │   ├── api/games/
-│   │   │   ├── search/route.ts      # GET /api/games/search?q=zelda
-│   │   │   └── [id]/route.ts        # GET /api/games/123
+│   │   ├── api/
+│   │   │   ├── games/
+│   │   │   │   ├── search/route.ts  # GET /api/games/search?q=zelda
+│   │   │   │   └── [id]/route.ts    # GET /api/games/123
+│   │   │   ├── users/
+│   │   │   │   └── search/route.ts  # GET /api/users/search?q=john
+│   │   │   └── auth/
+│   │   │       └── lookup-email/route.ts  # POST - get email from username
 │   │   ├── dashboard/page.tsx       # Protected dashboard with stats
 │   │   ├── game/[id]/page.tsx       # Game detail page (dynamic meta)
 │   │   ├── login/page.tsx           # Login form
@@ -351,3 +359,20 @@ sweaty/
 - Updated LogGameModal with "Played" button (🕹️ icon)
 - Updated profile page filter tabs to include "Played"
 - Updated ActivityFeed to show "played" status text
+
+**User Search:**
+- Created `/api/users/search` API route (GET with ?q= parameter)
+- Searches profiles by username and display_name (case-insensitive, partial match)
+- Excludes current user from results, limits to 10
+- Updated Navbar search to query both games and users in parallel
+- Search dropdown now shows "Users" section above "Games" section
+- Clicking a user navigates to their profile page
+- Updated search placeholder to "Search games or users..."
+
+**Login with Username:**
+- Created `/api/auth/lookup-email` API route (POST with { username })
+- Uses database function `get_email_by_username` to securely get email from username
+- Updated login page to accept email or username
+- If input contains "@", treated as email (direct auth)
+- If no "@", treated as username (lookup email first, then auth)
+- Error messages: "Username not found" or "Invalid login credentials"

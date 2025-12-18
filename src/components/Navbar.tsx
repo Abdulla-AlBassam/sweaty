@@ -5,9 +5,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Menu, X, Search } from 'lucide-react'
+import { Menu, X, Search, User as UserIcon } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { Game } from '@/lib/igdb'
+
+interface UserResult {
+  id: string
+  username: string
+  display_name: string | null
+  avatar_url: string | null
+}
 
 export default function Navbar() {
   const router = useRouter()
@@ -16,6 +23,7 @@ export default function Navbar() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Game[]>([])
+  const [userResults, setUserResults] = useState<UserResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const [searching, setSearching] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -60,6 +68,7 @@ export default function Navbar() {
 
     if (!searchQuery.trim()) {
       setSearchResults([])
+      setUserResults([])
       setShowDropdown(false)
       return
     }
@@ -67,9 +76,15 @@ export default function Navbar() {
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const res = await fetch(`/api/games/search?q=${encodeURIComponent(searchQuery)}&limit=5`)
-        const data = await res.json()
-        setSearchResults(data.games || [])
+        // Search both games and users in parallel
+        const [gamesRes, usersRes] = await Promise.all([
+          fetch(`/api/games/search?q=${encodeURIComponent(searchQuery)}&limit=5`),
+          fetch(`/api/users/search?q=${encodeURIComponent(searchQuery)}`)
+        ])
+        const gamesData = await gamesRes.json()
+        const usersData = await usersRes.json()
+        setSearchResults(gamesData.games || [])
+        setUserResults(usersData.users || [])
         setShowDropdown(true)
       } catch (error) {
         console.error('Search failed:', error)
@@ -99,6 +114,12 @@ export default function Navbar() {
     router.push(`/game/${gameId}`)
   }
 
+  const handleUserClick = (username: string) => {
+    setShowDropdown(false)
+    setSearchQuery('')
+    router.push(`/profile/${username}`)
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setMobileMenuOpen(false)
@@ -123,10 +144,10 @@ export default function Navbar() {
               <form onSubmit={handleSearch}>
                 <input
                   type="text"
-                  placeholder="Search games..."
+                  placeholder="Search games or users..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                  onFocus={() => (searchResults.length > 0 || userResults.length > 0) && setShowDropdown(true)}
                   className="w-full rounded-lg bg-[var(--background-lighter)] px-4 py-2 text-sm
                            placeholder-[var(--foreground-muted)] border border-[var(--border)]
                            focus:outline-none focus:border-[var(--accent)] transition-colors"
@@ -173,9 +194,55 @@ export default function Navbar() {
 
               {/* Search Dropdown */}
               {showDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-[var(--border)] bg-[var(--background-lighter)] shadow-xl overflow-hidden">
-                  {searchResults.length > 0 ? (
-                    <>
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-lg border border-[var(--border)] bg-[var(--background-lighter)] shadow-xl overflow-hidden max-h-[70vh] overflow-y-auto">
+                  {/* Users Section */}
+                  {userResults.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2 text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider bg-[var(--background-card)]">
+                        Users
+                      </div>
+                      {userResults.slice(0, 5).map((userResult) => (
+                        <button
+                          key={userResult.id}
+                          onClick={() => handleUserClick(userResult.username)}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-[var(--background-card)] transition-colors"
+                        >
+                          {/* User Avatar */}
+                          <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-full bg-[var(--background-card)]">
+                            {userResult.avatar_url ? (
+                              <Image
+                                src={userResult.avatar_url}
+                                alt={userResult.username}
+                                fill
+                                className="object-cover"
+                                sizes="40px"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <UserIcon className="h-5 w-5 text-[var(--foreground-muted)]" />
+                              </div>
+                            )}
+                          </div>
+                          {/* User Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate text-sm font-medium">
+                              {userResult.display_name || userResult.username}
+                            </p>
+                            <p className="text-xs text-[var(--foreground-muted)]">
+                              @{userResult.username}
+                            </p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Games Section */}
+                  {searchResults.length > 0 && (
+                    <div>
+                      <div className="px-4 py-2 text-xs font-semibold text-[var(--foreground-muted)] uppercase tracking-wider bg-[var(--background-card)]">
+                        Games
+                      </div>
                       {searchResults.map((game) => (
                         <button
                           key={game.id}
@@ -226,12 +293,15 @@ export default function Navbar() {
                         onClick={() => handleSearch({ preventDefault: () => {} } as React.FormEvent)}
                         className="w-full border-t border-[var(--border)] px-4 py-3 text-center text-sm text-[var(--accent)] hover:bg-[var(--background-card)] transition-colors"
                       >
-                        View all results
+                        View all game results
                       </button>
-                    </>
-                  ) : (
+                    </div>
+                  )}
+
+                  {/* No Results */}
+                  {searchResults.length === 0 && userResults.length === 0 && (
                     <div className="px-4 py-3 text-sm text-[var(--foreground-muted)]">
-                      No games found
+                      No results found
                     </div>
                   )}
                 </div>
@@ -317,7 +387,7 @@ export default function Navbar() {
             <form onSubmit={(e) => { handleSearch(e); setMobileSearchOpen(false); }}>
               <input
                 type="text"
-                placeholder="Search games..."
+                placeholder="Search games or users..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus

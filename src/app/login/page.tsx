@@ -11,7 +11,7 @@ function LoginForm() {
   const redirect = searchParams.get('redirect') || '/dashboard'
   const supabase = createClient()
 
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('') // Can be email or username
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -21,8 +21,40 @@ function LoginForm() {
     setError(null)
     setLoading(true)
 
+    let emailToUse = identifier.trim()
+
+    // If identifier doesn't contain @, treat it as a username
+    if (!identifier.includes('@')) {
+      try {
+        const res = await fetch('/api/auth/lookup-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: identifier.trim() }),
+        })
+
+        if (!res.ok) {
+          const data = await res.json()
+          if (res.status === 404) {
+            setError('Username not found')
+          } else {
+            setError(data.error || 'Failed to lookup username')
+          }
+          setLoading(false)
+          return
+        }
+
+        const data = await res.json()
+        emailToUse = data.email
+      } catch (err) {
+        console.error('Username lookup error:', err)
+        setError('Failed to lookup username')
+        setLoading(false)
+        return
+      }
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: emailToUse,
       password,
     })
 
@@ -55,21 +87,21 @@ function LoginForm() {
             </div>
           )}
 
-          {/* Email Field */}
+          {/* Email or Username Field */}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium">
-              Email
+            <label htmlFor="identifier" className="block text-sm font-medium">
+              Email or Username
             </label>
             <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="identifier"
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
               className="mt-2 w-full rounded-lg bg-[var(--background-lighter)] px-4 py-3
                        border border-[var(--border)] placeholder-[var(--foreground-muted)]
                        focus:outline-none focus:border-[var(--accent)] transition-colors"
-              placeholder="you@example.com"
+              placeholder="you@example.com or username"
             />
           </div>
 
