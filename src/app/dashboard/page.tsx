@@ -3,6 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import DashboardSearch from '@/components/DashboardSearch'
+import ActivityFeed from '@/components/ActivityFeed'
 
 interface GameLog {
   id: string
@@ -358,6 +359,17 @@ export default async function DashboardPage() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+
+          {/* Activity Feed Section */}
+          <div className="mt-10">
+            <h2 className="text-xl font-semibold">Activity Feed</h2>
+            <p className="text-sm text-[var(--foreground-muted)] mt-1">
+              Recent activity from people you follow
+            </p>
+            <div className="mt-4">
+              <ActivityFeed userId={user.id} />
             </div>
           </div>
         </>

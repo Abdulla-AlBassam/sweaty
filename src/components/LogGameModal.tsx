@@ -10,6 +10,7 @@ import type { Game } from '@/lib/igdb'
 const STATUS_OPTIONS = [
   { value: 'playing', label: 'Playing', icon: '🎮' },
   { value: 'completed', label: 'Completed', icon: '✅' },
+  { value: 'played', label: 'Played', icon: '🕹️' },
   { value: 'want_to_play', label: 'Want to Play', icon: '📋' },
   { value: 'on_hold', label: 'On Hold', icon: '⏸️' },
   { value: 'dropped', label: 'Dropped', icon: '❌' },

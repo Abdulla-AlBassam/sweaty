@@ -69,10 +69,12 @@ A video game tracking app — like Letterboxd, but for games. Track what you're 
 - [x] Review indicator on profile game cards
 - [x] Community ratings on game detail page (aggregated user ratings)
 - [x] Randomized gaming-themed dashboard welcome messages
-
-### Not Started
-- [ ] Activity feed
-- [ ] Social features (following users)
+- [x] Follow system database structure (follows table with RLS)
+- [x] Follow/Unfollow button on profiles
+- [x] Follower and following counts on profiles
+- [x] Followers/Following modal with user lists
+- [x] Activity feed on dashboard (shows followed users' activity)
+- [x] "Played" status option for games (in addition to Playing, Completed, etc.)
 
 ## Database Schema
 
@@ -111,7 +113,7 @@ Tracks user's game library and progress.
 | id | uuid | Primary key |
 | user_id | uuid | References profiles |
 | game_id | bigint | References games_cache |
-| status | text | playing, completed, dropped, want_to_play, on_hold |
+| status | text | playing, completed, played, dropped, want_to_play, on_hold |
 | rating | numeric(2,1) | 0.5-5 rating (half stars) |
 | platform | text | Platform played on |
 | review | text | User's review |
@@ -120,6 +122,18 @@ Tracks user's game library and progress.
 | completed_at | date | When completed |
 | created_at | timestamp | Auto-generated |
 | updated_at | timestamp | Auto-updated |
+
+### follows
+Tracks user follow relationships.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| follower_id | uuid | User who is following (references profiles) |
+| following_id | uuid | User being followed (references profiles) |
+| created_at | timestamp | When follow was created |
+
+**Constraints:** UNIQUE(follower_id, following_id), no self-follows
+**Indexes:** follower_id, following_id
 
 ## Important Files
 
@@ -145,7 +159,9 @@ sweaty/
 │   │   ├── layout.tsx               # Root layout with Navbar + Toaster
 │   │   └── page.tsx                 # Landing page
 │   ├── components/
+│   │   ├── ActivityFeed.tsx         # Activity feed showing followed users' game logs
 │   │   ├── EditFavoritesModal.tsx   # Modal for editing favorite games
+│   │   ├── FollowersModal.tsx       # Modal for followers/following lists
 │   │   ├── GameCard.tsx             # Reusable game card with cover
 │   │   ├── GameLogButton.tsx        # Log game button with auth handling
 │   │   ├── GameRatings.tsx          # Aggregated community ratings display
@@ -302,3 +318,36 @@ sweaty/
 - Messages include: "Press Start", "Continue", "New quest awaits", "The hero returns", "Quest log updated", "You've respawned", "Ready to game", "One more game", "Touch grass later"
 - Question messages end with "?" after username (e.g., "Continue, Abdulla?")
 - Statement messages end with "!" after username (e.g., "Press Start, Abdulla!")
+
+**Follow System (Social Features):**
+- Created `follows` table in Supabase with follower_id and following_id
+- RLS policies: anyone can view, users can only manage their own follows
+- Indexes on follower_id and following_id for performance
+- Constraint to prevent self-following
+- Profile page shows follower and following counts
+- Follow/Unfollow button on other users' profiles
+- Button shows "Follow" (green) or "Following" (gray, turns red "Unfollow" on hover)
+- Loading spinner while processing follow/unfollow
+- Redirects to login if not authenticated when trying to follow
+- Created FollowersModal component for viewing followers/following lists
+- Clicking "X Followers" or "Y Following" opens modal with user list
+- Each user shows avatar, display name, username, and follow button
+- Can follow/unfollow users directly from the modal
+- Empty states for no followers/not following anyone
+
+**Activity Feed:**
+- Created ActivityFeed.tsx component for dashboard
+- Fetches recent game_logs from users the current user follows
+- Shows "[username] [status] [game]" format with optional rating
+- Relative timestamps (e.g., "5m ago", "2h ago", "3d ago")
+- User avatar links to profile, game name links to game page
+- Game cover thumbnail on the right side
+- Empty state for "not following anyone" with prompt to follow users
+- Empty state for "no recent activity" when following but no activity
+
+**Played Status:**
+- Added "Played" status option (for games you've played but not necessarily completed)
+- Status order: Playing, Completed, Played, Want to Play, On Hold, Dropped
+- Updated LogGameModal with "Played" button (🕹️ icon)
+- Updated profile page filter tabs to include "Played"
+- Updated ActivityFeed to show "played" status text

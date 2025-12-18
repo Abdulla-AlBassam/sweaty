@@ -5,9 +5,10 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { User, Calendar, Gamepad2, Star, Pencil, MessageSquare, Heart } from 'lucide-react'
+import { User, Calendar, Gamepad2, Star, Pencil, MessageSquare, Heart, UserPlus, UserMinus, Loader2 } from 'lucide-react'
 import LogGameModal from '@/components/LogGameModal'
 import EditFavoritesModal from '@/components/EditFavoritesModal'
+import FollowersModal from '@/components/FollowersModal'
 import { ProfileHeaderSkeleton, GameCardSkeleton } from '@/components/Skeleton'
 import type { Game } from '@/lib/igdb'
 
@@ -52,6 +53,7 @@ interface Stats {
   total: number
   playing: number
   completed: number
+  played: number
   want_to_play: number
   on_hold: number
   dropped: number
@@ -62,6 +64,7 @@ const STATUS_FILTERS = [
   { value: 'all', label: 'All' },
   { value: 'playing', label: 'Playing' },
   { value: 'completed', label: 'Completed' },
+  { value: 'played', label: 'Played' },
   { value: 'want_to_play', label: 'Want to Play' },
   { value: 'on_hold', label: 'On Hold' },
   { value: 'dropped', label: 'Dropped' },
@@ -83,6 +86,12 @@ export default function ProfilePage() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [favoriteGames, setFavoriteGames] = useState<FavoriteGameData[]>([])
   const [showFavoritesModal, setShowFavoritesModal] = useState(false)
+  const [followerCount, setFollowerCount] = useState(0)
+  const [followingCount, setFollowingCount] = useState(0)
+  const [isFollowing, setIsFollowing] = useState(false)
+  const [followLoading, setFollowLoading] = useState(false)
+  const [showFollowersModal, setShowFollowersModal] = useState(false)
+  const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
 
   useEffect(() => {
     async function fetchProfile() {
@@ -146,6 +155,7 @@ export default function ProfilePage() {
         total: logs.length,
         playing: logs.filter(l => l.status === 'playing').length,
         completed: logs.filter(l => l.status === 'completed').length,
+        played: logs.filter(l => l.status === 'played').length,
         want_to_play: logs.filter(l => l.status === 'want_to_play').length,
         on_hold: logs.filter(l => l.status === 'on_hold').length,
         dropped: logs.filter(l => l.status === 'dropped').length,
@@ -194,6 +204,28 @@ export default function ProfilePage() {
         setFavoriteGames([])
       }
 
+      // Fetch follower and following counts, and check if current user follows this profile
+      const [{ count: followers }, { count: following }, followCheck] = await Promise.all([
+        supabase
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('following_id', profileData.id),
+        supabase
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('follower_id', profileData.id),
+        user ? supabase
+          .from('follows')
+          .select('id')
+          .eq('follower_id', user.id)
+          .eq('following_id', profileData.id)
+          .single() : Promise.resolve({ data: null }),
+      ])
+
+      setFollowerCount(followers || 0)
+      setFollowingCount(following || 0)
+      setIsFollowing(!!followCheck.data)
+
       setLoading(false)
     }
 
@@ -207,6 +239,48 @@ export default function ProfilePage() {
 
   // Check if viewing own profile
   const isOwnProfile = currentUserId && profile?.id === currentUserId
+
+  // Handle follow/unfollow
+  const handleFollow = async () => {
+    if (!currentUserId) {
+      // Redirect to login if not logged in
+      window.location.href = `/login?redirect=/profile/${username}`
+      return
+    }
+
+    if (!profile) return
+
+    setFollowLoading(true)
+
+    if (isFollowing) {
+      // Unfollow
+      const { error } = await supabase
+        .from('follows')
+        .delete()
+        .eq('follower_id', currentUserId)
+        .eq('following_id', profile.id)
+
+      if (!error) {
+        setIsFollowing(false)
+        setFollowerCount(prev => prev - 1)
+      }
+    } else {
+      // Follow
+      const { error } = await supabase
+        .from('follows')
+        .insert({
+          follower_id: currentUserId,
+          following_id: profile.id,
+        })
+
+      if (!error) {
+        setIsFollowing(true)
+        setFollowerCount(prev => prev + 1)
+      }
+    }
+
+    setFollowLoading(false)
+  }
 
   // Handle clicking on a game card
   const handleGameClick = (log: GameLog, e: React.MouseEvent) => {
@@ -338,6 +412,7 @@ export default function ProfilePage() {
       total: logs.length,
       playing: logs.filter(l => l.status === 'playing').length,
       completed: logs.filter(l => l.status === 'completed').length,
+      played: logs.filter(l => l.status === 'played').length,
       want_to_play: logs.filter(l => l.status === 'want_to_play').length,
       on_hold: logs.filter(l => l.status === 'on_hold').length,
       dropped: logs.filter(l => l.status === 'dropped').length,
@@ -420,7 +495,54 @@ export default function ProfilePage() {
               <Calendar className="h-4 w-4" />
               Joined {new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             </span>
+            <button
+              onClick={() => {
+                setFollowersModalType('followers')
+                setShowFollowersModal(true)
+              }}
+              className="flex items-center gap-1 hover:text-white transition-colors"
+            >
+              <span className="font-semibold text-white">{followerCount}</span> Followers
+            </button>
+            <button
+              onClick={() => {
+                setFollowersModalType('following')
+                setShowFollowersModal(true)
+              }}
+              className="flex items-center gap-1 hover:text-white transition-colors"
+            >
+              <span className="font-semibold text-white">{followingCount}</span> Following
+            </button>
           </div>
+
+          {/* Follow/Unfollow Button - only show on other users' profiles */}
+          {!isOwnProfile && (
+            <button
+              onClick={handleFollow}
+              disabled={followLoading}
+              className={`mt-4 flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+                isFollowing
+                  ? 'bg-[var(--background-lighter)] text-white hover:bg-red-500/20 hover:text-red-400 group'
+                  : 'bg-[var(--accent)] text-black hover:bg-[var(--accent-hover)]'
+              }`}
+            >
+              {followLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isFollowing ? (
+                <>
+                  <UserMinus className="h-4 w-4 hidden group-hover:block" />
+                  <UserPlus className="h-4 w-4 group-hover:hidden" />
+                  <span className="group-hover:hidden">Following</span>
+                  <span className="hidden group-hover:inline">Unfollow</span>
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  Follow
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Stats */}
@@ -623,7 +745,7 @@ export default function ProfilePage() {
           }}
           existingLog={{
             id: editingLog.id,
-            status: editingLog.status as 'playing' | 'completed' | 'want_to_play' | 'on_hold' | 'dropped',
+            status: editingLog.status as 'playing' | 'completed' | 'played' | 'want_to_play' | 'on_hold' | 'dropped',
             rating: editingLog.rating,
             platform: editingLog.platform,
             completed_at: editingLog.completed_at,
@@ -644,6 +766,16 @@ export default function ProfilePage() {
           onSave={handleFavoritesSave}
         />
       )}
+
+      {/* Followers/Following Modal */}
+      <FollowersModal
+        isOpen={showFollowersModal}
+        onClose={() => setShowFollowersModal(false)}
+        profileId={profile?.id || ''}
+        profileUsername={username}
+        type={followersModalType}
+        currentUserId={currentUserId}
+      />
     </div>
   )
 }
