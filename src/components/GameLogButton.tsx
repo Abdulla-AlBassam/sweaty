@@ -8,8 +8,8 @@ import type { Game } from '@/lib/igdb'
 import type { User } from '@supabase/supabase-js'
 
 interface GameLog {
-  id: string
-  status: 'playing' | 'completed' | 'want_to_play' | 'on_hold' | 'dropped'
+  id?: string
+  status: 'playing' | 'completed' | 'played' | 'want_to_play' | 'on_hold' | 'dropped'
   rating: number | null
   platform: string | null
   completed_at: string | null
@@ -19,6 +19,7 @@ interface GameLog {
 const STATUS_LABELS: Record<string, { label: string; icon: string }> = {
   playing: { label: 'Playing', icon: '🎮' },
   completed: { label: 'Completed', icon: '✅' },
+  played: { label: 'Played', icon: '🕹️' },
   want_to_play: { label: 'Want to Play', icon: '📋' },
   on_hold: { label: 'On Hold', icon: '⏸️' },
   dropped: { label: 'Dropped', icon: '❌' },

@@ -49,7 +49,7 @@ export default function GameReviews({ gameId }: GameReviewsProps) {
       if (error) {
         console.error('Error fetching reviews:', error)
       } else {
-        setReviews((data || []) as Review[])
+        setReviews((data || []) as unknown as Review[])
       }
       setLoading(false)
     }

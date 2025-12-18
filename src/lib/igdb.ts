@@ -74,7 +74,7 @@ async function getAccessToken(): Promise<string> {
   // expires_in is in seconds, convert to milliseconds and add to current time
   tokenExpiresAt = Date.now() + data.expires_in * 1000
 
-  return cachedToken
+  return cachedToken!
 }
 
 // ============================================

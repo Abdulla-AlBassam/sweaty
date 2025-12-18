@@ -147,7 +147,7 @@ export default function ProfilePage() {
         console.error('Error fetching game logs:', logsError)
       }
 
-      const logs = (logsData || []) as GameLog[]
+      const logs = (logsData || []) as unknown as GameLog[]
       setGameLogs(logs)
 
       // Calculate stats
@@ -186,7 +186,7 @@ export default function ProfilePage() {
         if (favoriteGamesData && favoriteGamesData.length > 0) {
           // Sort to match the order of favorite_games array
           const orderedFavs = profileData.favorite_games
-            .map(favId => {
+            .map((favId: number) => {
               const game = favoriteGamesData.find(g => String(g.id) === String(favId))
               return game ? {
                 id: Number(game.id),
@@ -194,7 +194,7 @@ export default function ProfilePage() {
                 cover_url: game.cover_url,
               } : null
             })
-            .filter((g): g is FavoriteGameData => g !== null)
+            .filter((g: FavoriteGameData | null): g is FavoriteGameData => g !== null)
 
           setFavoriteGames(orderedFavs)
         } else {
@@ -297,14 +297,13 @@ export default function ProfilePage() {
     return {
       id: log.games_cache.id,
       name: log.games_cache.name,
-      slug: log.games_cache.slug || '',
-      coverUrl: log.games_cache.cover_url || undefined,
-      summary: log.games_cache.summary || undefined,
-      firstReleaseDate: log.games_cache.first_release_date
-        ? new Date(log.games_cache.first_release_date).getTime()
-        : undefined,
-      genres: log.games_cache.genres || undefined,
-      platforms: log.games_cache.platforms || undefined,
+      slug: log.games_cache.slug || null,
+      coverUrl: log.games_cache.cover_url || null,
+      summary: log.games_cache.summary || null,
+      firstReleaseDate: log.games_cache.first_release_date || null,
+      genres: log.games_cache.genres || [],
+      platforms: log.games_cache.platforms || [],
+      rating: null,
     }
   }
 
@@ -373,7 +372,7 @@ export default function ProfilePage() {
       .order('created_at', { ascending: false })
 
     if (logsData) {
-      const logs = logsData as GameLog[]
+      const logs = logsData as unknown as GameLog[]
       setGameLogs(logs)
       recalculateStats(logs)
 

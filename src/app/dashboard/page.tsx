@@ -60,7 +60,7 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  const logs = (gameLogs || []) as GameLog[]
+  const logs = (gameLogs || []) as unknown as GameLog[]
 
   // Calculate stats
   const ratedGames = logs.filter(l => l.rating !== null)

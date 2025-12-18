@@ -83,7 +83,7 @@ export default function ActivityFeed({ userId }: ActivityFeedProps) {
       if (activityError) {
         console.error('Error fetching activity:', activityError)
       } else {
-        setActivities((activityData || []) as ActivityItem[])
+        setActivities((activityData || []) as unknown as ActivityItem[])
       }
 
       setLoading(false)
