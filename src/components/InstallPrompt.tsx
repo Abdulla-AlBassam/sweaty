@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Download } from 'lucide-react'
+import { X, Download, Share } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -11,6 +11,8 @@ interface BeforeInstallPromptEvent extends Event {
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showPrompt, setShowPrompt] = useState(false)
+  const [isIOS, setIsIOS] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
@@ -21,6 +23,16 @@ export default function InstallPrompt() {
       return
     }
 
+    // Check if already running as standalone app
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+      || ('standalone' in window.navigator && (window.navigator as { standalone?: boolean }).standalone === true)
+    setIsStandalone(standalone)
+    if (standalone) return
+
+    // Detect iOS
+    const iOS = /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window as { MSStream?: unknown }).MSStream
+    setIsIOS(iOS)
+
     // Track visit count
     const visitCount = parseInt(localStorage.getItem('sweaty-visit-count') || '0', 10) + 1
     localStorage.setItem('sweaty-visit-count', String(visitCount))
@@ -29,6 +41,13 @@ export default function InstallPrompt() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
     const shouldShow = isMobile || visitCount >= 2
 
+    // For iOS, show the prompt after a delay if conditions met
+    if (iOS && shouldShow) {
+      setTimeout(() => setShowPrompt(true), 2000)
+      return
+    }
+
+    // For other browsers, listen for the beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
@@ -71,8 +90,43 @@ export default function InstallPrompt() {
     localStorage.setItem('sweaty-install-dismissed', 'true')
   }
 
-  if (!showPrompt || dismissed) return null
+  if (!showPrompt || dismissed || isStandalone) return null
 
+  // iOS-specific instructions
+  if (isIOS) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-4">
+        <div className="mx-auto max-w-lg rounded-xl border border-[var(--border)] bg-[var(--background-card)] p-4 shadow-xl">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[var(--accent)]/10">
+              <Share className="h-5 w-5 text-[var(--accent)]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold">Install Sweaty</h3>
+              <p className="mt-1 text-sm text-[var(--foreground-muted)]">
+                Tap the <span className="inline-flex items-center"><Share className="mx-1 h-4 w-4" /></span> share button, then <strong>&quot;Add to Home Screen&quot;</strong>
+              </p>
+              <button
+                onClick={handleDismiss}
+                className="mt-3 rounded-lg px-4 py-2 text-sm text-[var(--foreground-muted)] hover:bg-[var(--background-lighter)] transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+            <button
+              onClick={handleDismiss}
+              className="flex-shrink-0 rounded-lg p-1 text-[var(--foreground-muted)] hover:bg-[var(--background-lighter)] transition-colors"
+              aria-label="Dismiss"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Standard install prompt for Chrome/Edge/etc
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6">
       <div className="mx-auto max-w-lg rounded-xl border border-[var(--border)] bg-[var(--background-card)] p-4 shadow-xl backdrop-blur">
