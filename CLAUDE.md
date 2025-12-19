@@ -81,6 +81,7 @@ A video game tracking app — like Letterboxd, but for games. Track what you're 
 - [x] Enhanced PWA setup with service worker
 - [x] PNG icons for PWA (192x192, 512x512)
 - [x] InstallPrompt component for "Add to Home Screen"
+- [x] Mobile-friendly full-screen search overlay
 
 ## Database Schema
 
@@ -180,7 +181,8 @@ sweaty/
 │   │   ├── LogGameModal.tsx         # Modal for logging games (mobile-optimized)
 │   │   ├── Navbar.tsx               # Navigation with search dropdown
 │   │   ├── ServiceWorkerRegister.tsx # PWA service worker registration
-│   │   └── InstallPrompt.tsx        # PWA install prompt (iOS + Chrome)
+│   │   ├── InstallPrompt.tsx        # PWA install prompt (iOS + Chrome)
+│   │   └── MobileSearchOverlay.tsx  # Full-screen mobile search
 │   ├── lib/
 │   │   ├── igdb.ts                  # IGDB API helper
 │   │   └── supabase/
@@ -417,3 +419,16 @@ sweaty/
 - `/public/icon-512.png` - PWA icon (512x512)
 - `/src/components/ServiceWorkerRegister.tsx` - SW registration component
 - `/src/components/InstallPrompt.tsx` - PWA install prompt with iOS support
+
+**Mobile Search Fix:**
+- Created MobileSearchOverlay component for full-screen mobile search
+- On mobile (< 768px), tapping search icon opens full-screen overlay
+- Overlay features:
+  - Auto-focused search input at top
+  - Close button (X) in top right
+  - Full-screen scrollable results
+  - "Users" and "Games" sections with sticky headers
+  - Large touch targets (min 64px height per result)
+  - Closes on escape, back button, or selecting a result
+- Desktop keeps existing dropdown behavior unchanged
+- Prevents body scroll when overlay is open

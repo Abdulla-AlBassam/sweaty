@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Menu, X, Search, User as UserIcon } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { Game } from '@/lib/igdb'
+import MobileSearchOverlay from './MobileSearchOverlay'
 
 interface UserResult {
   id: string
@@ -360,7 +361,7 @@ export default function Navbar() {
           <div className="flex items-center gap-2 sm:hidden">
             {user && (
               <button
-                onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+                onClick={() => setMobileSearchOpen(true)}
                 className="rounded-lg p-2 hover:bg-[var(--background-lighter)] transition-colors"
                 aria-label="Search"
               >
@@ -381,23 +382,11 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
-        {user && mobileSearchOpen && (
-          <div className="border-t border-[var(--border)] py-3 sm:hidden">
-            <form onSubmit={(e) => { handleSearch(e); setMobileSearchOpen(false); }}>
-              <input
-                type="text"
-                placeholder="Search games or users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-                className="w-full rounded-lg bg-[var(--background-lighter)] px-4 py-2 text-sm
-                         placeholder-[var(--foreground-muted)] border border-[var(--border)]
-                         focus:outline-none focus:border-[var(--accent)] transition-colors"
-              />
-            </form>
-          </div>
-        )}
+        {/* Mobile Search Overlay */}
+        <MobileSearchOverlay
+          isOpen={mobileSearchOpen}
+          onClose={() => setMobileSearchOpen(false)}
+        />
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
