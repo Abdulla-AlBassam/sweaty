@@ -29,7 +29,7 @@ export default function Home() {
             Keep a diary of every game you play. Rate, review, and share your thoughts
             with a community of gamers. Like Letterboxd, but for games.
           </p>
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4 w-full max-w-xs sm:max-w-none sm:w-auto justify-center">
+          <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:gap-4 sm:w-auto justify-center">
             <Link
               href="/signup"
               className="rounded-lg bg-[var(--accent)] px-8 py-3 text-lg font-semibold
