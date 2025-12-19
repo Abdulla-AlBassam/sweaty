@@ -10,6 +10,8 @@ import LogGameModal from '@/components/LogGameModal'
 import EditFavoritesModal from '@/components/EditFavoritesModal'
 import FollowersModal from '@/components/FollowersModal'
 import { ProfileHeaderSkeleton, GameCardSkeleton } from '@/components/Skeleton'
+import XPProgressBar from '@/components/XPProgressBar'
+import { calculateGamerXP, calculateSocialXP, getGamerLevel, getSocialLevel } from '@/lib/xp'
 import type { Game } from '@/lib/igdb'
 
 interface Profile {
@@ -629,6 +631,48 @@ export default function ProfilePage() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* XP & Ranks Section */}
+      {gameLogs.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Star className="h-5 w-5 text-yellow-400" />
+            Ranks
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-[var(--background-lighter)]">
+            {/* Gamer XP */}
+            {(() => {
+              const gamerXP = calculateGamerXP(gameLogs)
+              const gamerLevel = getGamerLevel(gamerXP)
+              return (
+                <XPProgressBar
+                  currentXP={gamerLevel.currentXP}
+                  xpForNextLevel={gamerLevel.xpForNextLevel}
+                  progress={gamerLevel.progress}
+                  level={gamerLevel.level}
+                  rank={gamerLevel.rank}
+                  type="gamer"
+                />
+              )
+            })()}
+            {/* Social XP */}
+            {(() => {
+              const socialXP = calculateSocialXP(gameLogs, followerCount)
+              const socialLevel = getSocialLevel(socialXP)
+              return (
+                <XPProgressBar
+                  currentXP={socialLevel.currentXP}
+                  xpForNextLevel={socialLevel.xpForNextLevel}
+                  progress={socialLevel.progress}
+                  level={socialLevel.level}
+                  rank={socialLevel.rank}
+                  type="social"
+                />
+              )
+            })()}
           </div>
         </div>
       )}
