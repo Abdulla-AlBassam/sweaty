@@ -82,6 +82,11 @@ A video game tracking app — like Letterboxd, but for games. Track what you're 
 - [x] PNG icons for PWA (192x192, 512x512)
 - [x] InstallPrompt component for "Add to Home Screen"
 - [x] Mobile-friendly full-screen search overlay
+- [x] Landing page hero background image with gradient overlays
+- [x] Dual XP system (Gamer XP + Social XP)
+- [x] Level/Rank progression with 11 tiers each
+- [x] XP toast notifications on game log save
+- [x] Level up celebration toasts
 
 ## Database Schema
 
@@ -182,9 +187,12 @@ sweaty/
 │   │   ├── Navbar.tsx               # Navigation with search dropdown
 │   │   ├── ServiceWorkerRegister.tsx # PWA service worker registration
 │   │   ├── InstallPrompt.tsx        # PWA install prompt (iOS + Chrome)
-│   │   └── MobileSearchOverlay.tsx  # Full-screen mobile search
+│   │   ├── MobileSearchOverlay.tsx  # Full-screen mobile search
+│   │   ├── LevelBadge.tsx           # XP level badge component
+│   │   └── XPProgressBar.tsx        # XP progress bar component
 │   ├── lib/
 │   │   ├── igdb.ts                  # IGDB API helper
+│   │   ├── xp.ts                    # XP/Level calculation system
 │   │   └── supabase/
 │   │       ├── client.ts            # Browser Supabase client
 │   │       └── server.ts            # Server Supabase client
@@ -193,6 +201,7 @@ sweaty/
 │   ├── icon.svg                     # Favicon (green S on dark bg)
 │   ├── icon-192.png                 # PWA icon 192x192
 │   ├── icon-512.png                 # PWA icon 512x512
+│   ├── hero-bg.jpg                  # Landing page hero background
 │   ├── og-image.svg                 # Open Graph image
 │   ├── sw.js                        # Service worker for offline caching
 │   └── site.webmanifest             # PWA manifest
@@ -434,3 +443,50 @@ sweaty/
 - Prevents body scroll when overlay is open
 - Uses React Portal (createPortal) to render outside navbar DOM
 - Updated /search page to show both users and games
+
+### Session 5 (Dec 19, 2024)
+**Landing Page Hero Background:**
+- Added cinematic hero background image (`/public/hero-bg.jpg`)
+- Dual gradient overlays for text readability (left-to-right and bottom-to-top)
+- Mobile responsive with `object-[30%_center]` positioning
+- Text shadows and glassmorphism login button
+- Fixed mobile button centering with `items-center`
+
+**Dual XP and Level System:**
+- Created `/src/lib/xp.ts` with XP calculation functions:
+  - Gamer XP: completed=100, played=50, playing/on_hold=25, dropped=10, want_to_play=0
+  - Social XP: review=30, rating=5, follower=10 each
+  - 11 levels (0-10) with rank names for each type
+- Created `/src/components/LevelBadge.tsx` - Colored badges showing level & rank
+- Created `/src/components/XPProgressBar.tsx` - Progress bar with XP counter
+- Added "Ranks" section to profile page (above Favorite Games)
+
+**Gamer Ranks (Level 0-10):**
+Rookie → Beginner → Casual → Gamer → Dedicated → Hardcore → Veteran → Elite → Master → Legend → Mythic
+
+**Social Ranks (Level 0-10):**
+Lurker → Newcomer → Contributor → Reviewer → Critic → Voice → Influencer → Tastemaker → Authority → Icon → Legend
+
+**Gamer XP Thresholds:**
+[0, 100, 500, 1000, 2000, 3500, 5000, 7500, 10000, 15000, 20000]
+
+**Social XP Thresholds:**
+[0, 50, 200, 500, 1000, 2000, 3500, 5500, 8000, 12000, 15000]
+
+**XP Toast Notifications:**
+- Shows "+X Gamer XP" and "+X Social XP" after saving a game log
+- Shows level up toast when user reaches new level
+- Calculates XP diff between before/after save
+- Uses Sonner toast library
+
+**UI Tweaks:**
+- Rank labels use gray text (not accent color)
+- Both progress bars use app accent green color
+- Favorite Games heart icon is outline/hollow (not filled)
+- Ranks section moved above Favorite Games
+
+**New Files:**
+- `/public/hero-bg.jpg` - Landing page hero background
+- `/src/lib/xp.ts` - XP calculation system
+- `/src/components/LevelBadge.tsx` - Level badge component
+- `/src/components/XPProgressBar.tsx` - XP progress bar component
