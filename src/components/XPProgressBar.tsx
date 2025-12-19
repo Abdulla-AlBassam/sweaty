@@ -24,7 +24,7 @@ export default function XPProgressBar({
     <div className="space-y-1.5">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-[var(--accent)]">
+        <span className="text-sm font-semibold text-gray-400">
           {typeLabel} Level {level} • {rank}
         </span>
         <span className="text-xs text-[var(--foreground-muted)]">

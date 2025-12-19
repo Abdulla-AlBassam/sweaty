@@ -621,7 +621,7 @@ export default function ProfilePage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Heart className="h-5 w-5 text-[var(--accent)] fill-[var(--accent)]" />
+              <Heart className="h-5 w-5 text-[var(--accent)]" />
               Favorite Games
             </h2>
             {isOwnProfile && (
