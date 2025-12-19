@@ -5,6 +5,22 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Star, X } from 'lucide-react'
 import type { Game } from '@/lib/igdb'
+import {
+  calculateGamerXP,
+  calculateSocialXP,
+  getGamerLevel,
+  getSocialLevel,
+} from '@/lib/xp'
+
+// XP values for status (used for toast display)
+const STATUS_XP: Record<string, number> = {
+  completed: 100,
+  played: 50,
+  playing: 25,
+  on_hold: 25,
+  dropped: 10,
+  want_to_play: 0,
+}
 
 // Game log status options
 const STATUS_OPTIONS = [
@@ -98,6 +114,29 @@ export default function LogGameModal({
         return
       }
 
+      // Fetch current game logs to calculate XP before save
+      const { data: currentLogs } = await supabase
+        .from('game_logs')
+        .select('status, rating, review')
+        .eq('user_id', user.id)
+
+      // Fetch follower count for social XP
+      const { count: followerCount } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', user.id)
+
+      // Calculate current XP and levels
+      const logsForXP = (currentLogs || []).map(l => ({
+        status: l.status,
+        rating: l.rating,
+        review: l.review,
+      }))
+      const currentGamerXP = calculateGamerXP(logsForXP)
+      const currentSocialXP = calculateSocialXP(logsForXP, followerCount || 0)
+      const currentGamerLevel = getGamerLevel(currentGamerXP)
+      const currentSocialLevel = getSocialLevel(currentSocialXP)
+
       // First, ensure game is cached in games_cache
       // Convert firstReleaseDate to ISO string if it exists
       const releaseDate = game.firstReleaseDate
@@ -170,7 +209,73 @@ export default function LogGameModal({
         completed_at: data.completed_at,
         review: data.review,
       })
+
+      // Calculate XP changes and show toasts
+      // For new log: add new log's XP
+      // For edit: calculate difference
+      const newStatus = data.status
+      const newRating = data.rating
+      const newReview = data.review
+
+      // Build updated logs array for XP calculation
+      let updatedLogs = [...logsForXP]
+      if (existingLog) {
+        // Find and update the existing log
+        const existingIndex = updatedLogs.findIndex(l =>
+          l.status === existingLog.status &&
+          l.rating === existingLog.rating &&
+          l.review === existingLog.review
+        )
+        if (existingIndex >= 0) {
+          updatedLogs[existingIndex] = { status: newStatus, rating: newRating, review: newReview }
+        }
+      } else {
+        // Add new log
+        updatedLogs.push({ status: newStatus, rating: newRating, review: newReview })
+      }
+
+      const newGamerXP = calculateGamerXP(updatedLogs)
+      const newSocialXP = calculateSocialXP(updatedLogs, followerCount || 0)
+      const newGamerLevel = getGamerLevel(newGamerXP)
+      const newSocialLevel = getSocialLevel(newSocialXP)
+
+      // Calculate XP gained
+      const gamerXPGained = newGamerXP - currentGamerXP
+      const socialXPGained = newSocialXP - currentSocialXP
+
+      // Show success toast
       toast.success(existingLog ? 'Game log updated!' : 'Game added to library!')
+
+      // Show XP gained toasts (with slight delay for effect)
+      setTimeout(() => {
+        if (gamerXPGained > 0) {
+          toast(`+${gamerXPGained} Gamer XP`, {
+            icon: '⬆️',
+            duration: 3000,
+          })
+        }
+        if (socialXPGained > 0) {
+          toast(`+${socialXPGained} Social XP`, {
+            icon: '⬆️',
+            duration: 3000,
+          })
+        }
+      }, 300)
+
+      // Check for level ups
+      setTimeout(() => {
+        if (newGamerLevel.level > currentGamerLevel.level) {
+          toast.success(`Level Up! You're now a ${newGamerLevel.rank} (Gamer Level ${newGamerLevel.level})`, {
+            duration: 5000,
+          })
+        }
+        if (newSocialLevel.level > currentSocialLevel.level) {
+          toast.success(`Level Up! You're now a ${newSocialLevel.rank} (Social Level ${newSocialLevel.level})`, {
+            duration: 5000,
+          })
+        }
+      }, 600)
+
       onClose()
     } catch (err) {
       console.error('Save error:', err)
