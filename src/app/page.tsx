@@ -1,32 +1,50 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Home() {
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center px-4 py-24 text-center">
-        <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
-          Track your <span className="text-[var(--accent)]">gaming journey</span>
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg text-[var(--foreground-muted)]">
-          Keep a diary of every game you play. Rate, review, and share your thoughts
-          with a community of gamers. Like Letterboxd, but for games.
-        </p>
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4 w-full max-w-xs sm:max-w-none sm:w-auto">
-          <Link
-            href="/signup"
-            className="rounded-lg bg-[var(--accent)] px-8 py-3 text-lg font-semibold
-                     text-black hover:bg-[var(--accent-hover)] transition-colors text-center"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/login"
-            className="rounded-lg border border-[var(--border)] px-8 py-3 text-lg font-semibold
-                     hover:bg-[var(--background-lighter)] transition-colors text-center"
-          >
-            Log in
-          </Link>
+      <section className="relative flex flex-col items-center justify-center px-4 py-24 text-center min-h-[80vh]">
+        {/* Background Image */}
+        <Image
+          src="/hero-bg.jpg"
+          alt=""
+          fill
+          priority
+          className="object-cover object-[30%_center] sm:object-center"
+          sizes="100vw"
+        />
+
+        {/* Dark Overlay - gradient from left/bottom */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
+
+        {/* Content */}
+        <div className="relative z-10">
+          <h1 className="text-5xl font-bold tracking-tight sm:text-6xl drop-shadow-lg">
+            Track your <span className="text-[var(--accent)]">gaming journey</span>
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg text-gray-200 drop-shadow-md">
+            Keep a diary of every game you play. Rate, review, and share your thoughts
+            with a community of gamers. Like Letterboxd, but for games.
+          </p>
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:gap-4 w-full max-w-xs sm:max-w-none sm:w-auto justify-center">
+            <Link
+              href="/signup"
+              className="rounded-lg bg-[var(--accent)] px-8 py-3 text-lg font-semibold
+                       text-black hover:bg-[var(--accent-hover)] transition-colors text-center shadow-lg"
+            >
+              Get started
+            </Link>
+            <Link
+              href="/login"
+              className="rounded-lg border border-white/30 bg-white/10 backdrop-blur-sm px-8 py-3 text-lg font-semibold
+                       hover:bg-white/20 transition-colors text-center shadow-lg"
+            >
+              Log in
+            </Link>
+          </div>
         </div>
       </section>
 
