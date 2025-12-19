@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { X, Search, User as UserIcon } from 'lucide-react'
@@ -25,7 +26,13 @@ export default function MobileSearchOverlay({ isOpen, onClose }: MobileSearchOve
   const [searchResults, setSearchResults] = useState<Game[]>([])
   const [userResults, setUserResults] = useState<UserResult[]>([])
   const [searching, setSearching] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Handle client-side mounting for portal
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Auto-focus input when overlay opens
   useEffect(() => {
@@ -125,10 +132,10 @@ export default function MobileSearchOverlay({ isOpen, onClose }: MobileSearchOve
     handleClose()
   }
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
-    <div className="fixed inset-0 z-[100] bg-[var(--background)] flex flex-col">
+  const overlayContent = (
+    <div className="fixed inset-0 z-[9999] bg-[var(--background)] flex flex-col">
       {/* Header with search input */}
       <div className="flex items-center gap-3 border-b border-[var(--border)] px-4 py-3">
         <form onSubmit={handleSearch} className="flex-1 relative">
@@ -313,4 +320,6 @@ export default function MobileSearchOverlay({ isOpen, onClose }: MobileSearchOve
       </div>
     </div>
   )
+
+  return createPortal(overlayContent, document.body)
 }
