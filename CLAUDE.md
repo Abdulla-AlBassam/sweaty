@@ -426,9 +426,11 @@ sweaty/
 - Overlay features:
   - Auto-focused search input at top
   - Close button (X) in top right
-  - Full-screen scrollable results
+  - Full-screen scrollable results with live autocomplete
   - "Users" and "Games" sections with sticky headers
   - Large touch targets (min 64px height per result)
   - Closes on escape, back button, or selecting a result
 - Desktop keeps existing dropdown behavior unchanged
 - Prevents body scroll when overlay is open
+- Uses React Portal (createPortal) to render outside navbar DOM
+- Updated /search page to show both users and games
