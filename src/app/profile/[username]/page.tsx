@@ -5,10 +5,11 @@ import { useParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { User, Calendar, Gamepad2, Star, Pencil, MessageSquare, Heart, UserPlus, UserMinus, Loader2 } from 'lucide-react'
+import { User, Calendar, Gamepad2, Star, Pencil, MessageSquare, Heart, UserPlus, UserMinus, Loader2, ImageIcon } from 'lucide-react'
 import LogGameModal from '@/components/LogGameModal'
 import EditFavoritesModal from '@/components/EditFavoritesModal'
 import FollowersModal from '@/components/FollowersModal'
+import PosterSelectModal from '@/components/PosterSelectModal'
 import { ProfileHeaderSkeleton, GameCardSkeleton } from '@/components/Skeleton'
 import XPProgressBar from '@/components/XPProgressBar'
 import { calculateGamerXP, calculateSocialXP, getGamerLevel, getSocialLevel } from '@/lib/xp'
@@ -22,6 +23,7 @@ interface Profile {
   bio: string | null
   favorite_games: number[] | null
   created_at: string
+  is_premium: boolean
 }
 
 interface FavoriteGameData {
@@ -38,6 +40,7 @@ interface GameLog {
   platform: string | null
   completed_at: string | null
   review: string | null
+  cover_variant: number | null
   created_at: string
   games_cache: {
     id: number
@@ -48,6 +51,7 @@ interface GameLog {
     first_release_date?: string | null
     genres?: string[]
     platforms?: string[]
+    artwork_urls?: string[]
   } | null
 }
 
@@ -94,6 +98,8 @@ export default function ProfilePage() {
   const [followLoading, setFollowLoading] = useState(false)
   const [showFollowersModal, setShowFollowersModal] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
+  const [showPosterModal, setShowPosterModal] = useState(false)
+  const [posterSelectLog, setPosterSelectLog] = useState<GameLog | null>(null)
 
   useEffect(() => {
     async function fetchProfile() {
@@ -130,6 +136,7 @@ export default function ProfilePage() {
           platform,
           completed_at,
           review,
+          cover_variant,
           created_at,
           games_cache (
             id,
@@ -139,7 +146,8 @@ export default function ProfilePage() {
             summary,
             first_release_date,
             genres,
-            platforms
+            platforms,
+            artwork_urls
           )
         `)
         .eq('user_id', profileData.id)
@@ -358,6 +366,7 @@ export default function ProfilePage() {
         platform,
         completed_at,
         review,
+        cover_variant,
         created_at,
         games_cache (
           id,
@@ -367,7 +376,8 @@ export default function ProfilePage() {
           summary,
           first_release_date,
           genres,
-          platforms
+          platforms,
+          artwork_urls
         )
       `)
       .eq('user_id', profile?.id)
@@ -425,6 +435,33 @@ export default function ProfilePage() {
       newStats.avgRating = Math.round((sum / ratedGames.length) * 10) / 10
     }
     setStats(newStats)
+  }
+
+  // Get display cover URL based on cover_variant
+  const getDisplayCoverUrl = (log: GameLog): string | null => {
+    if (log.cover_variant !== null && log.games_cache?.artwork_urls && log.games_cache.artwork_urls[log.cover_variant]) {
+      return log.games_cache.artwork_urls[log.cover_variant]
+    }
+    return log.games_cache?.cover_url || null
+  }
+
+  // Handle poster selection
+  const handlePosterSelect = (log: GameLog, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setPosterSelectLog(log)
+    setShowPosterModal(true)
+  }
+
+  // Handle poster save
+  const handlePosterSave = (variant: number | null) => {
+    if (posterSelectLog) {
+      setGameLogs(prev => prev.map(log =>
+        log.id === posterSelectLog.id
+          ? { ...log, cover_variant: variant }
+          : log
+      ))
+    }
   }
 
   if (loading) {
@@ -713,10 +750,10 @@ export default function ProfilePage() {
                 isOwnProfile ? 'cursor-pointer' : ''
               }`}
             >
-              {log.games_cache?.cover_url ? (
+              {getDisplayCoverUrl(log) ? (
                 <Image
-                  src={log.games_cache.cover_url}
-                  alt={log.games_cache.name || 'Game cover'}
+                  src={getDisplayCoverUrl(log)!}
+                  alt={log.games_cache?.name || 'Game cover'}
                   fill
                   className="object-cover"
                   sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, (max-width: 1024px) 20vw, 14vw"
@@ -725,6 +762,17 @@ export default function ProfilePage() {
                 <div className="flex h-full w-full items-center justify-center">
                   <Gamepad2 className="h-8 w-8 text-[var(--foreground-muted)]" />
                 </div>
+              )}
+
+              {/* Poster selection button - only on own profile with artworks */}
+              {isOwnProfile && log.games_cache?.artwork_urls && log.games_cache.artwork_urls.length > 0 && (
+                <button
+                  onClick={(e) => handlePosterSelect(log, e)}
+                  className="absolute top-1 left-1 rounded bg-black/70 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
+                  title={profile?.is_premium ? 'Change poster' : 'Premium feature'}
+                >
+                  <ImageIcon className="h-3 w-3 text-white" />
+                </button>
               )}
 
               {/* Hover Overlay */}
@@ -819,6 +867,24 @@ export default function ProfilePage() {
         type={followersModalType}
         currentUserId={currentUserId}
       />
+
+      {/* Poster Selection Modal */}
+      {posterSelectLog && (
+        <PosterSelectModal
+          isOpen={showPosterModal}
+          onClose={() => {
+            setShowPosterModal(false)
+            setPosterSelectLog(null)
+          }}
+          gameLogId={posterSelectLog.id}
+          gameName={posterSelectLog.games_cache?.name || 'Game'}
+          defaultCoverUrl={posterSelectLog.games_cache?.cover_url || null}
+          artworkUrls={posterSelectLog.games_cache?.artwork_urls || []}
+          currentVariant={posterSelectLog.cover_variant}
+          onSelect={handlePosterSave}
+          isPremium={profile?.is_premium || false}
+        />
+      )}
     </div>
   )
 }

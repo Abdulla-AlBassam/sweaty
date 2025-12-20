@@ -153,6 +153,7 @@ export default function LogGameModal({
         genres: game.genres || [],
         platforms: game.platforms || [],
         rating: game.rating || null,
+        artwork_urls: game.artworkUrls || [],
         cached_at: new Date().toISOString(),
       }
 

@@ -20,6 +20,8 @@ export interface IGDBGame {
   rating?: number
   rating_count?: number
   total_rating?: number
+  artworks?: { id: number; url: string; width: number; height: number; image_id: string }[]
+  screenshots?: { id: number; url: string; width: number; height: number; image_id: string }[]
 }
 
 // Transformed game data (cleaner format for our app)
@@ -33,6 +35,7 @@ export interface Game {
   genres: string[]
   platforms: string[]
   rating: number | null
+  artworkUrls?: string[] // Optional array of artwork URLs for poster selection
 }
 
 // ============================================
@@ -122,9 +125,24 @@ function unixToIso(timestamp?: number): string | null {
   return new Date(timestamp * 1000).toISOString()
 }
 
+// Convert IGDB artwork to full URL with specified size
+// Sizes: t_thumb, t_cover_big, t_720p, t_1080p, t_screenshot_big
+export function getArtworkUrl(imageId: string, size: string = 't_720p'): string {
+  return `https://images.igdb.com/igdb/image/upload/${size}/${imageId}.jpg`
+}
+
+// Get artwork URLs from IGDB artworks array, filtered by minimum width
+function getArtworkUrls(artworks?: IGDBGame['artworks'], minWidth: number = 500): string[] {
+  if (!artworks || artworks.length === 0) return []
+
+  return artworks
+    .filter(art => art.width >= minWidth && art.image_id)
+    .map(art => getArtworkUrl(art.image_id, 't_720p'))
+}
+
 // Transform IGDB response to our cleaner Game format
-function transformGame(game: IGDBGame): Game {
-  return {
+function transformGame(game: IGDBGame, includeArtworks: boolean = false): Game {
+  const result: Game = {
     id: game.id,
     name: game.name,
     slug: game.slug || null,
@@ -135,6 +153,12 @@ function transformGame(game: IGDBGame): Game {
     platforms: game.platforms?.map(p => p.name) || [],
     rating: game.total_rating ? Math.round(game.total_rating) : null,
   }
+
+  if (includeArtworks && game.artworks) {
+    result.artworkUrls = getArtworkUrls(game.artworks)
+  }
+
+  return result
 }
 
 // ============================================
@@ -179,21 +203,22 @@ limit ${limit};`
     return a.name.localeCompare(b.name)
   })
 
-  return sorted.map(transformGame)
+  return sorted.map(game => transformGame(game))
 }
 
 // Get a single game by ID
 export async function getGameById(id: number): Promise<Game | null> {
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, rating, rating_count;
+           genres.name, platforms.name, total_rating, rating, rating_count,
+           artworks.url, artworks.width, artworks.height, artworks.image_id;
     where id = ${id};
   `
 
   const games = await igdbFetch('games', body) as IGDBGame[]
 
   if (games.length === 0) return null
-  return transformGame(games[0])
+  return transformGame(games[0], true) // Include artworks for game detail pages
 }
 
 // Get multiple games by IDs (useful for batch fetching)
@@ -208,5 +233,5 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
   `
 
   const games = await igdbFetch('games', body) as IGDBGame[]
-  return games.map(transformGame)
+  return games.map(game => transformGame(game))
 }
