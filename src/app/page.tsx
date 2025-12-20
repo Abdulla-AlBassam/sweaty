@@ -50,12 +50,12 @@ export default function Home() {
 
       {/* Features Section */}
       <section className="border-t border-[var(--border)] bg-[var(--background-lighter)] px-4 py-20">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-4xl">
           <h2 className="text-center text-3xl font-bold">
             Everything you need to track your games
           </h2>
-          <div className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Feature 1 */}
+          <div className="mt-16 grid gap-8 grid-cols-1 sm:grid-cols-2">
+            {/* Feature 1: Log your games */}
             <div className="rounded-xl bg-[var(--background-card)] p-6">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent)]/10">
                 <svg
@@ -78,7 +78,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 2 */}
+            {/* Feature 2: Rate and review */}
             <div className="rounded-xl bg-[var(--background-card)] p-6">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent)]/10">
                 <svg
@@ -101,7 +101,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Feature 3 */}
+            {/* Feature 3: Level up */}
             <div className="rounded-xl bg-[var(--background-card)] p-6">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent)]/10">
                 <svg
@@ -114,42 +114,41 @@ export default function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold">Discover games</h3>
+              <h3 className="text-xl font-semibold">Level up</h3>
               <p className="mt-2 text-[var(--foreground-muted)]">
-                Search from thousands of games powered by IGDB&apos;s comprehensive database.
+                Earn XP for every game you log and for contributing socially.
+              </p>
+            </div>
+
+            {/* Feature 4: Join the community */}
+            <div className="rounded-xl bg-[var(--background-card)] p-6">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent)]/10">
+                <svg
+                  className="h-6 w-6 text-[var(--accent)]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold">Join the community</h3>
+              <p className="mt-2 text-[var(--foreground-muted)]">
+                Follow friends, see what they&apos;re playing, and share your gaming journey.
               </p>
             </div>
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <section className="px-4 py-20">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold">Ready to start tracking?</h2>
-          <p className="mt-4 text-[var(--foreground-muted)]">
-            Join gamers who are keeping track of their gaming experiences.
-          </p>
-          <Link
-            href="/signup"
-            className="mt-8 inline-block rounded-lg bg-[var(--accent)] px-8 py-3 text-lg
-                     font-semibold text-black hover:bg-[var(--accent-hover)] transition-colors"
-          >
-            Create free account
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-[var(--border)] px-4 py-8">
-        <div className="mx-auto max-w-6xl text-center text-sm text-[var(--foreground-muted)]">
-          <p>Built with Next.js, Supabase, and IGDB</p>
-        </div>
-      </footer>
     </div>
   )
 }
