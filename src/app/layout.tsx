@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     default: "Sweaty - Track Your Games",
     template: "%s | Sweaty",
   },
-  description: "Track, rate, and share your video game journey. Like Letterboxd, but for games.",
+  description: "Track, rate, and share your video game journey.",
   keywords: ["games", "video games", "game tracking", "gaming", "reviews", "ratings", "backlog"],
   authors: [{ name: "Sweaty" }],
   creator: "Sweaty",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     url: "https://sweaty.gg",
     siteName: "Sweaty",
     title: "Sweaty - Track Your Games",
-    description: "Track, rate, and share your video game journey. Like Letterboxd, but for games.",
+    description: "Track, rate, and share your video game journey.",
     images: [
       {
         url: "/og-image.png",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Sweaty - Track Your Games",
-    description: "Track, rate, and share your video game journey. Like Letterboxd, but for games.",
+    description: "Track, rate, and share your video game journey.",
     images: ["/og-image.png"],
   },
   icons: {

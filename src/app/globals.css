@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Dark mode by default - Letterboxd-inspired color palette */
+  /* Dark mode by default */
   --background: #14181c;
   --background-lighter: #1c2228;
   --background-card: #242c34;

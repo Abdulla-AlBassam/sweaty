@@ -27,7 +27,7 @@ export default function Home() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-gray-200 drop-shadow-md">
             Keep a diary of every game you play. Rate, review, and share your thoughts
-            with a community of gamers. Like Letterboxd, but for games.
+            with a community of gamers.
           </p>
           <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:gap-4 sm:w-auto justify-center">
             <Link
