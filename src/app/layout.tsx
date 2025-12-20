@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import InstallPrompt from "@/components/InstallPrompt";
 
@@ -78,6 +79,7 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         <Navbar />
         <main>{children}</main>
+        <Footer />
         <InstallPrompt />
       </body>
     </html>
