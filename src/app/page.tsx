@@ -50,11 +50,11 @@ export default function Home() {
 
       {/* Features Section */}
       <section className="border-t border-[var(--border)] bg-[var(--background-lighter)] px-4 py-20">
-        <div className="mx-auto max-w-4xl">
+        <div className="mx-auto max-w-6xl">
           <h2 className="text-center text-3xl font-bold">
             Everything you need to track your games
           </h2>
-          <div className="mt-16 grid gap-8 grid-cols-1 sm:grid-cols-2">
+          <div className="mt-16 grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {/* Feature 1: Log your games */}
             <div className="rounded-xl bg-[var(--background-card)] p-6">
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--accent)]/10">
