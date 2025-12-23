@@ -340,7 +340,6 @@ export default function ProfileScreen() {
                       <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
                     </View>
                   )}
-                  <Text style={styles.gameTitle} numberOfLines={2}>{log.game?.name}</Text>
                   {log.rating && (
                     <View style={styles.ratingBadge}>
                       <StarRating rating={log.rating} size={10} />

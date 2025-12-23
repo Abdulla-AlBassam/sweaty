@@ -171,9 +171,6 @@ export default function DashboardScreen() {
                         <Text style={styles.placeholderText}>?</Text>
                       </View>
                     )}
-                    <Text style={styles.gameTitle} numberOfLines={2}>
-                      {game.name}
-                    </Text>
                   </TouchableOpacity>
                 )
               })}

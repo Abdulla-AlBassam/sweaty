@@ -65,9 +65,6 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
           )}
         </View>
       )}
-      <Text style={styles.title} numberOfLines={2}>
-        {game.name}
-      </Text>
     </TouchableOpacity>
   )
 }
