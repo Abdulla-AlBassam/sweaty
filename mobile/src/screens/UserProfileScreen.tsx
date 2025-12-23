@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
+import FollowersModal from '../components/FollowersModal'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -70,6 +71,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const [isFollowing, setIsFollowing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isFollowLoading, setIsFollowLoading] = useState(false)
+  const [followersModalVisible, setFollowersModalVisible] = useState(false)
+  const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
 
   const isOwnProfile = user?.id === profile?.id
 
@@ -312,14 +315,26 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
           {/* Follow Stats */}
           <View style={styles.followStats}>
-            <View style={styles.followStat}>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => {
+                setFollowersModalType('followers')
+                setFollowersModalVisible(true)
+              }}
+            >
               <Text style={styles.followCount}>{followerCount}</Text>
               <Text style={styles.followLabel}>Followers</Text>
-            </View>
-            <View style={styles.followStat}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.followStat}
+              onPress={() => {
+                setFollowersModalType('following')
+                setFollowersModalVisible(true)
+              }}
+            >
               <Text style={styles.followCount}>{followingCount}</Text>
               <Text style={styles.followLabel}>Following</Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Follow Button (only show for other users) */}
@@ -436,6 +451,16 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           )}
         </View>
       </ScrollView>
+
+      {/* Followers/Following Modal */}
+      {profile && (
+        <FollowersModal
+          visible={followersModalVisible}
+          onClose={() => setFollowersModalVisible(false)}
+          userId={profile.id}
+          type={followersModalType}
+        />
+      )}
     </SafeAreaView>
   )
 }

@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase'
 import XPProgressBar from '../components/XPProgressBar'
 import LogGameModal from '../components/LogGameModal'
 import EditFavoritesModal from '../components/EditFavoritesModal'
+import FollowersModal from '../components/FollowersModal'
 
 interface FavoriteGame {
   id: number
@@ -52,6 +53,8 @@ export default function ProfileScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [favorites, setFavorites] = useState<FavoriteGame[]>([])
   const [isFavoritesModalVisible, setIsFavoritesModalVisible] = useState(false)
+  const [followersModalVisible, setFollowersModalVisible] = useState(false)
+  const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
   const username = profile?.username || ''
@@ -183,14 +186,26 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>{completed}</Text>
             <Text style={styles.statLabel}>Completed</Text>
           </View>
-          <View style={styles.stat}>
+          <TouchableOpacity
+            style={styles.stat}
+            onPress={() => {
+              setFollowersModalType('followers')
+              setFollowersModalVisible(true)
+            }}
+          >
             <Text style={styles.statValue}>{followers}</Text>
             <Text style={styles.statLabel}>Followers</Text>
-          </View>
-          <View style={styles.stat}>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.stat}
+            onPress={() => {
+              setFollowersModalType('following')
+              setFollowersModalVisible(true)
+            }}
+          >
             <Text style={styles.statValue}>{following}</Text>
             <Text style={styles.statLabel}>Following</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Ranks */}
@@ -326,6 +341,16 @@ export default function ProfileScreen() {
           currentFavorites={favorites}
           userId={user.id}
           onSaveSuccess={handleFavoritesSaveSuccess}
+        />
+      )}
+
+      {/* Followers/Following Modal */}
+      {user && (
+        <FollowersModal
+          visible={followersModalVisible}
+          onClose={() => setFollowersModalVisible(false)}
+          userId={user.id}
+          type={followersModalType}
         />
       )}
     </SafeAreaView>
