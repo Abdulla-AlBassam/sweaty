@@ -44,7 +44,7 @@ function getRandomWelcomeMessage() {
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
-  const { user, profile, signOut } = useAuth()
+  const { user, profile } = useAuth()
   const { logs, isLoading: logsLoading, refetch: refetchLogs } = useGameLogs(user?.id)
   const { activities, isLoading: activitiesLoading, refetch: refetchActivities } = useActivityFeed(user?.id)
   const { followers } = useFollowCounts(user?.id)
@@ -110,9 +110,6 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.logo}>sweaty</Text>
-          <TouchableOpacity onPress={signOut} style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={24} color={Colors.textMuted} />
-          </TouchableOpacity>
         </View>
 
         {/* Welcome Section */}
@@ -237,9 +234,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     fontWeight: 'bold',
     color: Colors.accent,
-  },
-  settingsButton: {
-    padding: Spacing.sm,
   },
   welcomeSection: {
     paddingHorizontal: Spacing.lg,
