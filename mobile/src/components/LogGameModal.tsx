@@ -223,12 +223,19 @@ export default function LogGameModal({
       const newGamerLevel = getGamerLevel(finalGamerXP)
       const newSocialLevel = getSocialLevel(finalSocialXP)
 
+      console.log('=== XP TOAST DEBUG ===')
+      console.log('existingLog:', existingLog)
+      console.log('status:', status, 'rating:', rating, 'review length:', review.trim().length)
+      console.log('oldGamerXP:', oldGamerXP, 'newGamerXP:', newGamerXP, 'gamerXPDiff:', gamerXPDiff)
+      console.log('oldSocialXP:', oldSocialXP, 'newSocialXP:', newSocialXP, 'socialXPDiff:', socialXPDiff)
+
       // Show XP toasts
       if (gamerXPDiff > 0 || socialXPDiff > 0) {
         const xpParts: string[] = []
         if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
         if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
+        console.log('Showing XP toast:', xpParts.join('  •  '))
         Toast.show({
           type: 'xp',
           text1: xpParts.join('  •  '),
@@ -236,6 +243,8 @@ export default function LogGameModal({
           visibilityTime: 2000,
           position: 'top',
         })
+      } else {
+        console.log('No XP gain, skipping toast')
       }
 
       // Check for level ups

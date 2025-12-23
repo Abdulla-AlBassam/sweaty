@@ -94,8 +94,8 @@ export default function App() {
           <StatusBar style="light" />
           <Navigation />
         </NavigationContainer>
-        <Toast config={toastConfig} />
       </AuthProvider>
+      <Toast config={toastConfig} topOffset={60} />
     </SafeAreaProvider>
   )
 }
