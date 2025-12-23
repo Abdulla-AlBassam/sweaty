@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import GameReviews from '../components/GameReviews'
+import StarRating from '../components/StarRating'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
@@ -210,8 +211,13 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Ionicons name="checkmark-circle" size={16} color={Colors.accent} />
             <Text style={styles.statusText}>
               {STATUS_LABELS[userLog.status] || userLog.status}
-              {userLog.rating && ` • ★ ${userLog.rating}`}
             </Text>
+            {userLog.rating && (
+              <View style={styles.statusRating}>
+                <Text style={styles.statusText}> • </Text>
+                <StarRating rating={userLog.rating} size={14} />
+              </View>
+            )}
           </View>
         )}
 
@@ -349,6 +355,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.accent,
     fontWeight: '500',
+  },
+  statusRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   logButton: {
     backgroundColor: Colors.accent,

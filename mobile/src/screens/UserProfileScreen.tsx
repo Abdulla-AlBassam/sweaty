@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import FollowersModal from '../components/FollowersModal'
+import StarRating from '../components/StarRating'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -490,7 +491,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                   <Text style={styles.gameTitle} numberOfLines={2}>{log.game?.name}</Text>
                   {log.rating && (
                     <View style={styles.ratingBadge}>
-                      <Text style={styles.ratingText}>★ {log.rating}</Text>
+                      <StarRating rating={log.rating} size={10} />
                     </View>
                   )}
                   {log.review && (

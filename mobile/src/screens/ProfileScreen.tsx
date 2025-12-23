@@ -20,6 +20,7 @@ import XPProgressBar from '../components/XPProgressBar'
 import LogGameModal from '../components/LogGameModal'
 import EditFavoritesModal from '../components/EditFavoritesModal'
 import FollowersModal from '../components/FollowersModal'
+import StarRating from '../components/StarRating'
 
 interface FavoriteGame {
   id: number
@@ -342,7 +343,7 @@ export default function ProfileScreen() {
                   <Text style={styles.gameTitle} numberOfLines={2}>{log.game?.name}</Text>
                   {log.rating && (
                     <View style={styles.ratingBadge}>
-                      <Text style={styles.ratingText}>★ {log.rating}</Text>
+                      <StarRating rating={log.rating} size={10} />
                     </View>
                   )}
                   {log.review && (

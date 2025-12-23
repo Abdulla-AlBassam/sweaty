@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { ActivityItem as ActivityItemType, GameStatus } from '../types'
 import { STATUS_LABELS, getIGDBImageUrl } from '../constants'
+import StarRating from './StarRating'
 
 interface ActivityItemProps {
   activity: ActivityItemType
@@ -76,7 +77,9 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
 
         <View style={styles.meta}>
           {rating && (
-            <Text style={styles.rating}>★ {rating}</Text>
+            <View style={styles.ratingContainer}>
+              <StarRating rating={rating} size={12} />
+            </View>
           )}
           <Text style={styles.time}>{getRelativeTime(created_at)}</Text>
         </View>
@@ -143,10 +146,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     gap: Spacing.sm,
   },
-  rating: {
-    fontSize: FontSize.xs,
-    color: Colors.accent,
-    fontWeight: '600',
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   time: {
     fontSize: FontSize.xs,

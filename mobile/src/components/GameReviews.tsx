@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import StarRating from './StarRating'
 
 interface Review {
   id: string
@@ -147,8 +148,7 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
             <View style={styles.reviewMeta}>
               {review.rating && (
                 <View style={styles.ratingBadge}>
-                  <Ionicons name="star" size={12} color={Colors.accent} />
-                  <Text style={styles.ratingText}>{review.rating}</Text>
+                  <StarRating rating={review.rating} size={12} />
                 </View>
               )}
               <Text style={styles.timeText}>{getRelativeTime(review.created_at)}</Text>

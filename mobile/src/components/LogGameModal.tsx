@@ -35,6 +35,31 @@ const SOCIAL_XP_VALUES = {
   rating: 5,
 }
 
+// Helper component to render a star with half-star support
+interface StarIconProps {
+  starNumber: number
+  rating: number | null
+  size?: number
+  color?: string
+}
+
+function StarIcon({ starNumber, rating, size = 32, color = Colors.accent }: StarIconProps) {
+  if (!rating) {
+    return <Ionicons name="star-outline" size={size} color={Colors.textDim} />
+  }
+
+  if (rating >= starNumber) {
+    // Full star
+    return <Ionicons name="star" size={size} color={color} />
+  } else if (rating >= starNumber - 0.5) {
+    // Half star
+    return <Ionicons name="star-half" size={size} color={color} />
+  } else {
+    // Empty star
+    return <Ionicons name="star-outline" size={size} color={Colors.textDim} />
+  }
+}
+
 interface GameData {
   id: number
   name: string
@@ -106,6 +131,13 @@ export default function LogGameModal({
   const handleRatingPress = (value: number) => {
     // Toggle off if same rating
     setRating(rating === value ? null : value)
+  }
+
+  // Handle half-star rating: left side = X.5, right side = X.0
+  const handleHalfStarPress = (starNumber: number, isLeftHalf: boolean) => {
+    const newRating = isLeftHalf ? starNumber - 0.5 : starNumber
+    // Toggle off if same rating
+    setRating(rating === newRating ? null : newRating)
   }
 
   const handleSave = async () => {
@@ -361,20 +393,27 @@ export default function LogGameModal({
             </View>
 
             {/* Rating */}
-            <Text style={styles.sectionLabel}>Rating</Text>
+            <Text style={styles.sectionLabel}>Rating {rating ? `(${rating})` : ''}</Text>
             <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => handleRatingPress(star)}
-                  style={styles.starButton}
-                >
-                  <Ionicons
-                    name={rating && star <= rating ? 'star' : 'star-outline'}
-                    size={32}
-                    color={rating && star <= rating ? Colors.accent : Colors.textDim}
+              {[1, 2, 3, 4, 5].map((starNumber) => (
+                <View key={starNumber} style={styles.starWrapper}>
+                  {/* Left half - gives X.5 rating */}
+                  <TouchableOpacity
+                    style={styles.starHalfTouch}
+                    onPress={() => handleHalfStarPress(starNumber, true)}
+                    activeOpacity={0.7}
                   />
-                </TouchableOpacity>
+                  {/* Right half - gives X.0 rating */}
+                  <TouchableOpacity
+                    style={styles.starHalfTouch}
+                    onPress={() => handleHalfStarPress(starNumber, false)}
+                    activeOpacity={0.7}
+                  />
+                  {/* Star icon (positioned absolutely so touch zones work) */}
+                  <View style={styles.starIconContainer} pointerEvents="none">
+                    <StarIcon starNumber={starNumber} rating={rating} size={36} />
+                  </View>
+                </View>
               ))}
               {rating && (
                 <TouchableOpacity onPress={() => setRating(null)} style={styles.clearRating}>
@@ -570,6 +609,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.xl,
+  },
+  starWrapper: {
+    width: 44,
+    height: 44,
+    flexDirection: 'row',
+    position: 'relative',
+  },
+  starHalfTouch: {
+    width: 22,
+    height: 44,
+    zIndex: 1,
+  },
+  starIconContainer: {
+    position: 'absolute',
+    left: 4,
+    top: 4,
+    zIndex: 0,
   },
   starButton: {
     padding: Spacing.xs,
