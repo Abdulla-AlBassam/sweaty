@@ -3,13 +3,18 @@ import { View, StyleSheet } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
+import { useQuickLog } from '../contexts/QuickLogContext'
 
 // Screens
 import DashboardScreen from '../screens/DashboardScreen'
 import SearchScreen from '../screens/SearchScreen'
-import QuickLogScreen from '../screens/QuickLogScreen'
 import ActivityScreen from '../screens/ActivityScreen'
 import ProfileScreen from '../screens/ProfileScreen'
+
+// Placeholder component for Add tab (never rendered, modal opens instead)
+function EmptyScreen() {
+  return null
+}
 
 export type MainTabsParamList = {
   Home: undefined
@@ -55,6 +60,8 @@ function AddTabIcon() {
 
 
 export default function MainTabs() {
+  const { openQuickLog } = useQuickLog()
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -81,9 +88,17 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="Add"
-        component={QuickLogScreen}
+        component={EmptyScreen}
         options={{
           tabBarIcon: () => <AddTabIcon />,
+        }}
+        listeners={{
+          tabPress: (e) => {
+            // Prevent default navigation
+            e.preventDefault()
+            // Open the quick log modal instead
+            openQuickLog()
+          },
         }}
       />
       <Tab.Screen

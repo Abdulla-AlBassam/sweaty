@@ -3,8 +3,10 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import Toast, { BaseToast, ToastConfig } from 'react-native-toast-message'
 import { AuthProvider } from './src/contexts/AuthContext'
+import { QuickLogProvider, useQuickLog } from './src/contexts/QuickLogContext'
 import { Colors } from './src/constants/colors'
 import Navigation from './src/navigation'
+import QuickLogModal from './src/components/QuickLogModal'
 
 // Custom toast configuration
 const toastConfig: ToastConfig = {
@@ -86,14 +88,27 @@ const theme = {
   },
 }
 
+function AppContent() {
+  const { isQuickLogOpen, closeQuickLog } = useQuickLog()
+
+  return (
+    <>
+      <NavigationContainer theme={theme}>
+        <StatusBar style="light" />
+        <Navigation />
+      </NavigationContainer>
+      <QuickLogModal visible={isQuickLogOpen} onClose={closeQuickLog} />
+    </>
+  )
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <NavigationContainer theme={theme}>
-          <StatusBar style="light" />
-          <Navigation />
-        </NavigationContainer>
+        <QuickLogProvider>
+          <AppContent />
+        </QuickLogProvider>
       </AuthProvider>
       <Toast config={toastConfig} topOffset={60} />
     </SafeAreaProvider>
