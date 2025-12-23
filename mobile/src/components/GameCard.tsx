@@ -20,7 +20,7 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
   const [imageLoading, setImageLoading] = useState(true)
 
   const coverUrl = game.cover_url || game.coverUrl
-  const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'hd') : null
+  const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'coverBig2x') : null
 
   const dimensions = {
     small: { width: 80, height: 107 },

@@ -126,7 +126,7 @@ export default function LogGameModal({
   }, [existingLog, visible])
 
   const coverUrl = game.coverUrl || game.cover_url
-  const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'coverBig') : null
+  const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'coverBig2x') : null
 
   const handleRatingPress = (value: number) => {
     // Toggle off if same rating

@@ -128,7 +128,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
-    return url ? getIGDBImageUrl(url, 'hd') : null
+    return url ? getIGDBImageUrl(url, 'coverBig2x') : null
   }
 
   const getReleaseYear = () => {

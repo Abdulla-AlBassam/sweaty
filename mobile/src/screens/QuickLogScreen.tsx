@@ -84,7 +84,7 @@ export default function QuickLogScreen() {
 
   const getCoverUrl = (game: Game) => {
     const url = game.coverUrl || game.cover_url
-    return url ? getIGDBImageUrl(url, 'coverBig') : null
+    return url ? getIGDBImageUrl(url, 'coverBig2x') : null
   }
 
   const getReleaseYear = (game: Game) => {

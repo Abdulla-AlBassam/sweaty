@@ -156,7 +156,7 @@ export default function DashboardScreen() {
                 const game = log.games_cache
                 if (!game) return null
                 const coverUrl = game.cover_url
-                  ? getIGDBImageUrl(game.cover_url, 'hd')
+                  ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
                   : null
                 return (
                   <TouchableOpacity

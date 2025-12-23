@@ -33,6 +33,7 @@ export const IGDB_IMAGE_SIZES = {
   thumb: 't_thumb',
   coverSmall: 't_cover_small',
   coverBig: 't_cover_big',
+  coverBig2x: 't_cover_big_2x',  // 528x748 - HD covers for retina
   screenshot: 't_screenshot_med',
   screenshotBig: 't_screenshot_big',
   hd: 't_720p',

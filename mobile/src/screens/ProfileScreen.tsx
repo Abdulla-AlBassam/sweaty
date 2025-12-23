@@ -255,7 +255,7 @@ export default function ProfileScreen() {
               const game = favorites[index]
               if (game) {
                 const coverUrl = game.cover_url
-                  ? getIGDBImageUrl(game.cover_url, 'hd')
+                  ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
                   : null
                 return (
                   <View key={game.id} style={styles.favoriteSlot}>
@@ -332,7 +332,7 @@ export default function ProfileScreen() {
                 >
                   {log.game?.cover_url ? (
                     <Image
-                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'hd') }}
+                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
                       style={styles.gameCover}
                     />
                   ) : (

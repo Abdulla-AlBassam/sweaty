@@ -41,7 +41,7 @@ function getStatusVerb(status: GameStatus): string {
 export default function ActivityItem({ activity, onUserPress, onGamePress }: ActivityItemProps) {
   const { user, game, status, rating, created_at } = activity
   const displayName = user.display_name || user.username
-  const coverUrl = game.cover_url ? getIGDBImageUrl(game.cover_url, 'coverBig') : null
+  const coverUrl = game.cover_url ? getIGDBImageUrl(game.cover_url, 'coverBig2x') : null
 
   return (
     <View style={styles.container}>
