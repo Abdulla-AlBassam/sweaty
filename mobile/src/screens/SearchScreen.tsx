@@ -8,17 +8,14 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Keyboard,
+  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
-import { MainStackParamList } from '../navigation'
 import GameCard from '../components/GameCard'
-
-type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 
 interface SearchGame {
   id: number
@@ -32,7 +29,7 @@ const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
 export default function SearchScreen() {
-  const navigation = useNavigation<NavigationProp>()
+  const navigation = useNavigation()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchGame[]>([])
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
@@ -103,15 +100,21 @@ export default function SearchScreen() {
   }, [query])
 
   const handleGamePress = (gameId: number) => {
-    console.log('SearchScreen: handleGamePress called with gameId:', gameId)
+    console.log('=== NEW CODE v2 === handleGamePress:', gameId)
     const game = results.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
     if (game) {
       saveRecentSearch(game)
     }
     Keyboard.dismiss()
-    console.log('SearchScreen: Calling navigation.navigate to GameDetail')
-    navigation.navigate('GameDetail', { gameId })
-    console.log('SearchScreen: navigation.navigate called')
+
+    // Use CommonActions for more reliable navigation
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'GameDetail',
+        params: { gameId },
+      })
+    )
+    console.log('=== Navigation dispatched ===')
   }
 
   const clearSearch = () => {

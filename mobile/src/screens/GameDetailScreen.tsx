@@ -49,7 +49,8 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    console.log('GameDetailScreen mounted with gameId:', gameId)
+    console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
+    console.log('=== route.params:', JSON.stringify(route.params))
     fetchGameDetails()
     if (user) {
       fetchUserLog()
