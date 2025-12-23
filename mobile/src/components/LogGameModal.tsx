@@ -453,6 +453,26 @@ export default function LogGameModal({
               <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
 
+            {/* Platform Dropdown */}
+            {game.platforms && game.platforms.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>Platform</Text>
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setPlatformPickerVisible(true)}
+                >
+                  <View style={styles.dropdownContent}>
+                    {platform ? (
+                      <Text style={styles.dropdownText}>{platform}</Text>
+                    ) : (
+                      <Text style={styles.dropdownPlaceholder}>Select platform</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </>
+            )}
+
             {/* Rating */}
             <Text style={styles.sectionLabel}>Rating {rating ? `(${rating})` : ''}</Text>
             <View style={styles.ratingContainer}>
@@ -482,26 +502,6 @@ export default function LogGameModal({
                 </TouchableOpacity>
               )}
             </View>
-
-            {/* Platform Dropdown */}
-            {game.platforms && game.platforms.length > 0 && (
-              <>
-                <Text style={styles.sectionLabel}>Platform</Text>
-                <TouchableOpacity
-                  style={styles.dropdown}
-                  onPress={() => setPlatformPickerVisible(true)}
-                >
-                  <View style={styles.dropdownContent}>
-                    {platform ? (
-                      <Text style={styles.dropdownText}>{platform}</Text>
-                    ) : (
-                      <Text style={styles.dropdownPlaceholder}>Select platform</Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
-                </TouchableOpacity>
-              </>
-            )}
 
             {/* Review */}
             <Text style={styles.sectionLabel}>Review</Text>
