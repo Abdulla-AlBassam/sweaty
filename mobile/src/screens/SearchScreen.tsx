@@ -48,18 +48,37 @@ export default function SearchScreen() {
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [popularGames, setPopularGames] = useState<SearchGame[]>([])
-  const [isLoadingPopular, setIsLoadingPopular] = useState(true)
+  const [trendingGames, setTrendingGames] = useState<SearchGame[]>([])
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true)
+  const [communityGames, setCommunityGames] = useState<SearchGame[]>([])
+  const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
 
-  // Load recent searches and popular games on mount
+  // Load recent searches and discovery sections on mount
   useEffect(() => {
     loadRecentSearches()
-    loadPopularGames()
+    loadTrendingGames()
+    loadCommunityGames()
   }, [])
 
-  const loadPopularGames = async () => {
+  // Load trending games from IGDB (global trending)
+  const loadTrendingGames = async () => {
     try {
-      setIsLoadingPopular(true)
+      setIsLoadingTrending(true)
+      const response = await fetch(`${API_BASE_URL}/api/games/popular?limit=15`)
+      if (!response.ok) throw new Error('Failed to fetch trending games')
+      const data = await response.json()
+      setTrendingGames(data.games || [])
+    } catch (err) {
+      console.error('Failed to load trending games:', err)
+    } finally {
+      setIsLoadingTrending(false)
+    }
+  }
+
+  // Load community popular games from local database (what Sweaty users like)
+  const loadCommunityGames = async () => {
+    try {
+      setIsLoadingCommunity(true)
       const { data, error } = await supabase
         .from('games_cache')
         .select('id, name, cover_url')
@@ -68,11 +87,11 @@ export default function SearchScreen() {
         .limit(15)
 
       if (error) throw error
-      setPopularGames(data || [])
+      setCommunityGames(data || [])
     } catch (err) {
-      console.error('Failed to load popular games:', err)
+      console.error('Failed to load community games:', err)
     } finally {
-      setIsLoadingPopular(false)
+      setIsLoadingCommunity(false)
     }
   }
 
@@ -295,13 +314,23 @@ export default function SearchScreen() {
         </View>
       ) : (
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {/* Popular Games Section */}
+          {/* Trending Games from IGDB (global trending) */}
           <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>Popular Right Now</Text>
+            <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
             <HorizontalGameList
-              games={popularGames}
+              games={trendingGames}
               onGamePress={(game) => handleGamePress(game.id)}
-              isLoading={isLoadingPopular}
+              isLoading={isLoadingTrending}
+            />
+          </View>
+
+          {/* Community Popular Games (what Sweaty users like) */}
+          <View style={styles.discoverySection}>
+            <Text style={styles.discoverySectionTitle}>Popular in Community</Text>
+            <HorizontalGameList
+              games={communityGames}
+              onGamePress={(game) => handleGamePress(game.id)}
+              isLoading={isLoadingCommunity}
             />
           </View>
         </ScrollView>
