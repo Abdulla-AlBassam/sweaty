@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native'
 import YoutubePlayer from 'react-native-youtube-iframe'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -63,8 +63,13 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
 
       {/* Video selector if multiple trailers */}
       {videos.length > 1 && (
-        <View style={styles.videoSelector}>
-          {videos.slice(0, 5).map((video, index) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.videoSelectorScroll}
+          contentContainerStyle={styles.videoSelectorContent}
+        >
+          {videos.map((video, index) => (
             <TouchableOpacity
               key={video.videoId}
               style={[
@@ -92,7 +97,7 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       )}
     </View>
   )
@@ -118,11 +123,13 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: Spacing.sm,
   },
-  videoSelector: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
+  videoSelectorScroll: {
     marginTop: Spacing.md,
+  },
+  videoSelectorContent: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingRight: Spacing.lg,
   },
   selectorButton: {
     flexDirection: 'row',
