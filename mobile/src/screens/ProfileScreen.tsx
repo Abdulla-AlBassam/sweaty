@@ -331,10 +331,17 @@ export default function ProfileScreen() {
                   onPress={() => handleGamePress(log)}
                 >
                   {log.game?.cover_url ? (
-                    <Image
-                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig') }}
-                      style={styles.gameCover}
-                    />
+                    <>
+                      {console.log('DEBUG ProfileScreen:', {
+                        gameName: log.game?.name,
+                        rawCoverUrl: log.game.cover_url,
+                        finalUrl: getIGDBImageUrl(log.game.cover_url, 'coverBig')
+                      })}
+                      <Image
+                        source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig') }}
+                        style={styles.gameCover}
+                      />
+                    </>
                   ) : (
                     <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
                       <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
