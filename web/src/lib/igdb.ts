@@ -239,26 +239,52 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
 // Get popular/trending games from IGDB
 // Fetches highly rated games sorted by rating
 export async function getPopularGames(limit: number = 15): Promise<Game[]> {
-  // IGDB query for popular games:
-  // - Main games only (category 0)
-  // - Has a cover image
-  // - Has a rating
-  // - Sorted by total_rating descending (highest rated first)
+  // Try simplest possible query first for debugging
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, rating_count;
-    where category = 0
-      & cover != null
-      & total_rating != null;
+           genres.name, platforms.name, total_rating;
     sort total_rating desc;
     limit ${limit};
   `
 
-  console.log('IGDB Popular Games Query:', body)
+  console.log('=== IGDB Popular Games Debug ===')
+  console.log('Query:', body)
 
-  const games = await igdbFetch('games', body) as IGDBGame[]
+  try {
+    const token = await getAccessToken()
+    console.log('Token obtained:', token ? 'yes' : 'no')
 
-  console.log('IGDB Popular Games Response:', games.length, 'games')
+    const response = await fetch('https://api.igdb.com/v4/games', {
+      method: 'POST',
+      headers: {
+        'Client-ID': process.env.TWITCH_CLIENT_ID!,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain',
+      },
+      body,
+    })
 
-  return games.map(game => transformGame(game))
+    console.log('Response status:', response.status)
+    console.log('Response ok:', response.ok)
+
+    const responseText = await response.text()
+    console.log('Raw response (first 1000 chars):', responseText.slice(0, 1000))
+
+    if (!response.ok) {
+      console.error('IGDB error:', responseText)
+      throw new Error(`IGDB API error: ${response.status}`)
+    }
+
+    const games = JSON.parse(responseText) as IGDBGame[]
+    console.log('Parsed games count:', games.length)
+
+    if (games.length > 0) {
+      console.log('First game:', JSON.stringify(games[0]))
+    }
+
+    return games.map(game => transformGame(game))
+  } catch (error) {
+    console.error('getPopularGames error:', error)
+    throw error
+  }
 }
