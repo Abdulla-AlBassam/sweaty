@@ -237,26 +237,18 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
 }
 
 // Get popular/trending games from IGDB
-// Fetches recently released games with high ratings, sorted by popularity
+// Fetches games with the most followers/interest, sorted by popularity
 export async function getPopularGames(limit: number = 15): Promise<Game[]> {
-  // Get date from 2 years ago as Unix timestamp
-  const twoYearsAgo = Math.floor(Date.now() / 1000) - (2 * 365 * 24 * 60 * 60)
-
   // IGDB query for popular games:
   // - Main games only (category 0)
-  // - Released in last 2 years
   // - Has a cover image
-  // - Has rating > 70
-  // - Sorted by total_rating descending (most popular first)
+  // - Sorted by follows (most followed games)
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, rating_count, hypes;
+           genres.name, platforms.name, total_rating, follows;
     where category = 0
-      & cover != null
-      & first_release_date > ${twoYearsAgo}
-      & total_rating > 70
-      & rating_count > 5;
-    sort total_rating desc;
+      & cover != null;
+    sort follows desc;
     limit ${limit};
   `
 
