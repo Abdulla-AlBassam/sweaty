@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "Sweaty",
+    "slug": "sweaty",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "sweaty",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#14181c"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sweaty.app"
+    },
+    "android": {
+      "package": "com.sweaty.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#14181c"
+      },
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    }
+  }
+}
