@@ -236,22 +236,27 @@ export default function LogGameModal({
         if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
         console.log('Showing XP toast:', xpParts.join('  •  '))
-        Toast.show({
-          type: 'xp',
-          text1: xpParts.join('  •  '),
-          text2: game.name,
-          visibilityTime: 2000,
-          position: 'top',
-        })
+
+        // Use setTimeout to show toast after modal closes
+        setTimeout(() => {
+          Toast.show({
+            type: 'success',
+            text1: xpParts.join('  •  '),
+            text2: game.name,
+            visibilityTime: 2500,
+            position: 'top',
+          })
+        }, 300)
       } else {
         console.log('No XP gain, skipping toast')
       }
 
       // Check for level ups
+      const showXpToast = gamerXPDiff > 0 || socialXPDiff > 0
       setTimeout(() => {
         if (newGamerLevel.level > currentGamerLevel.level) {
           Toast.show({
-            type: 'levelUp',
+            type: 'success',
             text1: '🎮 Level Up!',
             text2: `Gamer Rank: ${newGamerLevel.rank}`,
             visibilityTime: 3000,
@@ -262,7 +267,7 @@ export default function LogGameModal({
         setTimeout(() => {
           if (newSocialLevel.level > currentSocialLevel.level) {
             Toast.show({
-              type: 'levelUp',
+              type: 'success',
               text1: '🌟 Level Up!',
               text2: `Social Rank: ${newSocialLevel.rank}`,
               visibilityTime: 3000,
@@ -270,7 +275,7 @@ export default function LogGameModal({
             })
           }
         }, newGamerLevel.level > currentGamerLevel.level ? 3500 : 0)
-      }, gamerXPDiff > 0 || socialXPDiff > 0 ? 2500 : 0)
+      }, showXpToast ? 3000 : 300)
 
       onSaveSuccess?.()
       onClose()

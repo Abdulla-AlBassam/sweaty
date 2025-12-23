@@ -44,7 +44,7 @@ interface GameLogWithGame {
 
 export default function ProfileScreen() {
   const { user, profile, refreshProfile } = useAuth()
-  const { logs, refresh: refreshLogs } = useGameLogs(user?.id)
+  const { logs, refetch: refreshLogs } = useGameLogs(user?.id)
   const { followers, following } = useFollowCounts(user?.id)
   const navigation = useNavigation()
 
