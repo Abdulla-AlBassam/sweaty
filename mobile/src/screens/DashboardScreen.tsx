@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import {
   View,
   Text,
@@ -15,15 +15,15 @@ import { useAuth } from '../contexts/AuthContext'
 import { MainStackParamList } from '../navigation'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
-import { useGameLogs, useActivityFeed, useFollowCounts } from '../hooks/useSupabase'
-import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
+import { useGameLogs } from '../hooks/useSupabase'
+import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
-import { getIGDBImageUrl } from '../constants'
+import { getIGDBImageUrl, API_CONFIG } from '../constants'
+import { supabase } from '../lib/supabase'
 import StatCard from '../components/StatCard'
-import XPProgressBar from '../components/XPProgressBar'
-import ActivityItem from '../components/ActivityItem'
+import HorizontalGameList from '../components/HorizontalGameList'
+import StackedAvatars from '../components/StackedAvatars'
 import Skeleton from '../components/Skeleton'
-import { ActivitySkeletonList } from '../components/skeletons'
 
 // Gaming-themed welcome messages (same as web)
 const WELCOME_MESSAGES = [
@@ -42,21 +42,77 @@ function getRandomWelcomeMessage() {
   return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]
 }
 
+interface DiscoveryGame {
+  id: number
+  name: string
+  coverUrl?: string | null
+  cover_url?: string | null
+}
+
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user, profile } = useAuth()
   const { logs, isLoading: logsLoading, refetch: refetchLogs } = useGameLogs(user?.id)
-  const { activities, isLoading: activitiesLoading, refetch: refetchActivities } = useActivityFeed(user?.id)
-  const { followers } = useFollowCounts(user?.id)
+  const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
 
   const [refreshing, setRefreshing] = useState(false)
   const [welcomeMessage] = useState(getRandomWelcomeMessage)
+  const [trendingGames, setTrendingGames] = useState<DiscoveryGame[]>([])
+  const [isLoadingTrending, setIsLoadingTrending] = useState(true)
+  const [communityGames, setCommunityGames] = useState<DiscoveryGame[]>([])
+  const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
+
+  // Load discovery sections on mount
+  useEffect(() => {
+    loadTrendingGames()
+    loadCommunityGames()
+  }, [])
+
+  // Load trending games from IGDB (global trending)
+  const loadTrendingGames = async () => {
+    try {
+      setIsLoadingTrending(true)
+      const response = await fetch(`${API_CONFIG.baseUrl}/api/popular-games?limit=15`)
+      if (!response.ok) throw new Error('Failed to fetch trending games')
+      const data = await response.json()
+      setTrendingGames(data.games || [])
+    } catch (err) {
+      console.error('Failed to load trending games:', err)
+    } finally {
+      setIsLoadingTrending(false)
+    }
+  }
+
+  // Load community popular games from local database (what Sweaty users like)
+  const loadCommunityGames = async () => {
+    try {
+      setIsLoadingCommunity(true)
+      const { data, error } = await supabase
+        .from('games_cache')
+        .select('id, name, cover_url')
+        .not('cover_url', 'is', null)
+        .order('rating', { ascending: false, nullsFirst: false })
+        .limit(15)
+
+      if (error) throw error
+      setCommunityGames(data || [])
+    } catch (err) {
+      console.error('Failed to load community games:', err)
+    } finally {
+      setIsLoadingCommunity(false)
+    }
+  }
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await Promise.all([refetchLogs(), refetchActivities()])
+    await Promise.all([
+      refetchLogs(),
+      loadTrendingGames(),
+      loadCommunityGames(),
+      refetchFriendsPlaying(),
+    ])
     setRefreshing(false)
-  }, [refetchLogs, refetchActivities])
+  }, [refetchLogs, refetchFriendsPlaying])
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -70,12 +126,6 @@ export default function DashboardScreen() {
     return { total, completed, playing, avgRating }
   }, [logs])
 
-  // Calculate XP and levels
-  const gamerXP = useMemo(() => calculateGamerXP(logs), [logs])
-  const gamerLevel = useMemo(() => getGamerLevel(gamerXP), [gamerXP])
-  const socialXP = useMemo(() => calculateSocialXP(logs, followers), [logs, followers])
-  const socialLevel = useMemo(() => getSocialLevel(socialXP), [socialXP])
-
   // Currently playing games
   const currentlyPlaying = useMemo(() => {
     return logs
@@ -84,10 +134,6 @@ export default function DashboardScreen() {
   }, [logs])
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
-
-  const handleUserPress = (userId: string, username: string) => {
-    navigation.navigate('UserProfile', { username, userId })
-  }
 
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
@@ -98,6 +144,7 @@ export default function DashboardScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -150,19 +197,10 @@ export default function DashboardScreen() {
           )}
         </View>
 
-        {/* Ranks Section */}
-        <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>Ranks</Text>
-          <XPProgressBar type="gamer" levelInfo={gamerLevel} />
-          <XPProgressBar type="social" levelInfo={socialLevel} />
-        </View>
-
         {/* Currently Playing */}
         {currentlyPlaying.length > 0 && (
-          <View style={styles.currentlyPlayingSection}>
-            <Text style={[styles.sectionTitle, { paddingHorizontal: Spacing.lg }]}>
-              Currently Playing
-            </Text>
+          <View style={styles.discoverySection}>
+            <Text style={styles.discoverySectionTitle}>Currently Playing</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -194,30 +232,52 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* Activity Feed */}
-        <View style={styles.activitySection}>
-          <Text style={styles.sectionTitle}>Activity</Text>
-          {activitiesLoading ? (
-            <ActivitySkeletonList count={5} />
-          ) : activities.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>
-                Follow users to see their activity
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.activityList}>
-              {activities.slice(0, 10).map((activity) => (
-                <ActivityItem
-                  key={activity.id}
-                  activity={activity}
-                  onUserPress={handleUserPress}
-                  onGamePress={handleGamePress}
-                />
-              ))}
-            </View>
-          )}
+        {/* Trending Games from IGDB (global trending) */}
+        <View style={styles.discoverySection}>
+          <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
+          <HorizontalGameList
+            games={trendingGames}
+            onGamePress={(game) => handleGamePress(game.id)}
+            isLoading={isLoadingTrending}
+          />
         </View>
+
+        {/* Community Popular Games (what Sweaty users like) */}
+        <View style={styles.discoverySection}>
+          <Text style={styles.discoverySectionTitle}>Popular in Community</Text>
+          <HorizontalGameList
+            games={communityGames}
+            onGamePress={(game) => handleGamePress(game.id)}
+            isLoading={isLoadingCommunity}
+          />
+        </View>
+
+        {/* What Your Friends Are Playing */}
+        {friendsPlaying.length > 0 && (
+          <View style={styles.discoverySection}>
+            <Text style={styles.discoverySectionTitle}>What Your Friends Are Playing</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScroll}
+            >
+              {friendsPlaying.map((game) => (
+                <TouchableOpacity
+                  key={game.id}
+                  style={styles.friendsGameCard}
+                  onPress={() => handleGamePress(game.id)}
+                  activeOpacity={0.8}
+                >
+                  <Image
+                    source={{ uri: getIGDBImageUrl(game.cover_url) }}
+                    style={styles.friendsGameCover}
+                  />
+                  <StackedAvatars users={game.friends} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   )
@@ -298,12 +358,15 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     alignItems: 'center',
   },
-  ranksSection: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
+  discoverySection: {
+    paddingTop: Spacing.lg,
   },
-  currentlyPlayingSection: {
-    marginBottom: Spacing.lg,
+  discoverySectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    marginLeft: Spacing.lg,
+    marginBottom: 12,
   },
   horizontalScroll: {
     paddingHorizontal: Spacing.lg,
@@ -316,7 +379,6 @@ const styles = StyleSheet.create({
     width: 100,
     height: 133,
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing.xs,
   },
   gameCoverPlaceholder: {
     backgroundColor: Colors.surface,
@@ -327,28 +389,14 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     color: Colors.textDim,
   },
-  gameTitle: {
-    fontSize: FontSize.xs,
-    color: Colors.text,
-    textAlign: 'center',
+  friendsGameCard: {
+    position: 'relative',
+    width: 100,
   },
-  activitySection: {
-    paddingHorizontal: Spacing.lg,
-  },
-  activityList: {
+  friendsGameCover: {
+    width: 100,
+    height: 133,
+    borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
-  },
-  emptyState: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    textAlign: 'center',
   },
 })

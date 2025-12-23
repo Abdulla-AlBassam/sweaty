@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Keyboard,
   Image,
-  RefreshControl,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -19,9 +19,6 @@ import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import GameCard from '../components/GameCard'
-import HorizontalGameList from '../components/HorizontalGameList'
-import StackedAvatars from '../components/StackedAvatars'
-import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 
@@ -39,10 +36,52 @@ interface SearchUser {
   avatar_url: string | null
 }
 
+interface FilterOption {
+  label: string
+  value: string
+}
+
 // TEMPORARY: Using local API for testing - change back to Vercel before deploying
 const API_BASE_URL = 'http://192.168.100.152:3000'
 const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
+
+// Popular genres for browsing
+const GENRE_OPTIONS: FilterOption[] = [
+  { label: 'Action', value: 'Action' },
+  { label: 'Adventure', value: 'Adventure' },
+  { label: 'RPG', value: 'Role-playing (RPG)' },
+  { label: 'Shooter', value: 'Shooter' },
+  { label: 'Strategy', value: 'Strategy' },
+  { label: 'Puzzle', value: 'Puzzle' },
+  { label: 'Indie', value: 'Indie' },
+  { label: 'Racing', value: 'Racing' },
+  { label: 'Sports', value: 'Sport' },
+  { label: 'Simulation', value: 'Simulator' },
+  { label: 'Fighting', value: 'Fighting' },
+  { label: 'Platform', value: 'Platform' },
+]
+
+// Platform options for browsing
+const PLATFORM_OPTIONS: FilterOption[] = [
+  { label: 'PC', value: 'PC' },
+  { label: 'PS5', value: 'PlayStation 5' },
+  { label: 'PS4', value: 'PlayStation 4' },
+  { label: 'Xbox Series', value: 'Xbox Series X|S' },
+  { label: 'Xbox One', value: 'Xbox One' },
+  { label: 'Switch', value: 'Nintendo Switch' },
+  { label: 'iOS', value: 'iOS' },
+  { label: 'Android', value: 'Android' },
+]
+
+// Year options for browsing (current year back to 2015)
+const currentYear = new Date().getFullYear()
+const YEAR_OPTIONS: FilterOption[] = Array.from({ length: currentYear - 2014 }, (_, i) => {
+  const year = currentYear - i
+  return { label: year.toString(), value: year.toString() }
+})
+
+type FilterType = 'genre' | 'platform' | 'year' | null
 
 export default function SearchScreen() {
   const navigation = useNavigation()
@@ -53,67 +92,17 @@ export default function SearchScreen() {
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [trendingGames, setTrendingGames] = useState<SearchGame[]>([])
-  const [isLoadingTrending, setIsLoadingTrending] = useState(true)
-  const [communityGames, setCommunityGames] = useState<SearchGame[]>([])
-  const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
 
-  // Get games that friends are currently playing
-  const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
+  // Filter browsing state
+  const [activeFilter, setActiveFilter] = useState<FilterType>(null)
+  const [selectedValue, setSelectedValue] = useState<string | null>(null)
+  const [filterResults, setFilterResults] = useState<SearchGame[]>([])
+  const [isLoadingFilter, setIsLoadingFilter] = useState(false)
 
-  // Load recent searches and discovery sections on mount
+  // Load recent searches on mount
   useEffect(() => {
     loadRecentSearches()
-    loadTrendingGames()
-    loadCommunityGames()
   }, [])
-
-  // Pull-to-refresh handler
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await Promise.all([
-      loadTrendingGames(),
-      loadCommunityGames(),
-      refetchFriendsPlaying(),
-    ])
-    setRefreshing(false)
-  }, [refetchFriendsPlaying])
-
-  // Load trending games from IGDB (global trending)
-  const loadTrendingGames = async () => {
-    try {
-      setIsLoadingTrending(true)
-      const response = await fetch(`${API_BASE_URL}/api/popular-games?limit=15`)
-      if (!response.ok) throw new Error('Failed to fetch trending games')
-      const data = await response.json()
-      setTrendingGames(data.games || [])
-    } catch (err) {
-      console.error('Failed to load trending games:', err)
-    } finally {
-      setIsLoadingTrending(false)
-    }
-  }
-
-  // Load community popular games from local database (what Sweaty users like)
-  const loadCommunityGames = async () => {
-    try {
-      setIsLoadingCommunity(true)
-      const { data, error } = await supabase
-        .from('games_cache')
-        .select('id, name, cover_url')
-        .not('cover_url', 'is', null)
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(15)
-
-      if (error) throw error
-      setCommunityGames(data || [])
-    } catch (err) {
-      console.error('Failed to load community games:', err)
-    } finally {
-      setIsLoadingCommunity(false)
-    }
-  }
 
   const loadRecentSearches = async () => {
     try {
@@ -163,6 +152,65 @@ export default function SearchScreen() {
     }
   }
 
+  // Load games by filter
+  const loadGamesByFilter = useCallback(async (filterType: FilterType, value: string) => {
+    if (!filterType || !value) return
+
+    setIsLoadingFilter(true)
+    try {
+      let query = supabase
+        .from('games_cache')
+        .select('id, name, cover_url')
+        .not('cover_url', 'is', null)
+
+      if (filterType === 'genre') {
+        query = query.contains('genres', [value])
+      } else if (filterType === 'platform') {
+        query = query.contains('platforms', [value])
+      } else if (filterType === 'year') {
+        // Filter by year from first_release_date
+        const startDate = `${value}-01-01`
+        const endDate = `${value}-12-31`
+        query = query
+          .gte('first_release_date', startDate)
+          .lte('first_release_date', endDate)
+      }
+
+      const { data, error } = await query
+        .order('rating', { ascending: false, nullsFirst: false })
+        .limit(30)
+
+      if (error) throw error
+      setFilterResults(data || [])
+    } catch (err) {
+      console.error('Failed to load filtered games:', err)
+      setFilterResults([])
+    } finally {
+      setIsLoadingFilter(false)
+    }
+  }, [])
+
+  // Handle filter selection
+  const handleFilterSelect = (filterType: FilterType, value: string) => {
+    if (activeFilter === filterType && selectedValue === value) {
+      // Deselect if same filter clicked
+      setActiveFilter(null)
+      setSelectedValue(null)
+      setFilterResults([])
+    } else {
+      setActiveFilter(filterType)
+      setSelectedValue(value)
+      loadGamesByFilter(filterType, value)
+    }
+  }
+
+  // Clear filter selection
+  const clearFilter = () => {
+    setActiveFilter(null)
+    setSelectedValue(null)
+    setFilterResults([])
+  }
+
   // Debounced search for both games and users
   useEffect(() => {
     if (!query || query.length < 2) {
@@ -203,7 +251,9 @@ export default function SearchScreen() {
   }, [query])
 
   const handleGamePress = (gameId: number) => {
-    const game = gameResults.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
+    const game = gameResults.find((g) => g.id === gameId) ||
+                 recentSearches.find((g) => g.id === gameId) ||
+                 filterResults.find((g) => g.id === gameId)
     if (game) {
       saveRecentSearch(game)
     }
@@ -240,7 +290,16 @@ export default function SearchScreen() {
   }
 
   const hasResults = userResults.length > 0 || gameResults.length > 0
-  const showDiscovery = query.length < 2
+  const isSearching = query.length >= 2
+
+  // Get the label for the current filter
+  const getFilterLabel = () => {
+    if (!activeFilter || !selectedValue) return ''
+    const options = activeFilter === 'genre' ? GENRE_OPTIONS :
+                    activeFilter === 'platform' ? PLATFORM_OPTIONS : YEAR_OPTIONS
+    const option = options.find(o => o.value === selectedValue)
+    return option?.label || selectedValue
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -339,7 +398,7 @@ export default function SearchScreen() {
             </View>
           )}
         </ScrollView>
-      ) : query.length >= 2 ? (
+      ) : isSearching ? (
         <View style={styles.centered}>
           <Text style={styles.emptyText}>No results found</Text>
         </View>
@@ -347,20 +406,12 @@ export default function SearchScreen() {
         <ScrollView
           style={styles.scrollView}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={Colors.accent}
-              colors={[Colors.accent]}
-            />
-          }
         >
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
-            <View style={styles.discoverySection}>
+            <View style={styles.browseSection}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.recentSectionTitle}>Recent Searches</Text>
+                <Text style={styles.browseSectionTitle}>Recent Searches</Text>
                 <TouchableOpacity onPress={clearRecentSearches}>
                   <Text style={styles.clearText}>Clear</Text>
                 </TouchableOpacity>
@@ -391,52 +442,131 @@ export default function SearchScreen() {
             </View>
           )}
 
-          {/* Trending Games from IGDB (global trending) */}
-          <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
-            <HorizontalGameList
-              games={trendingGames}
-              onGamePress={(game) => handleGamePress(game.id)}
-              isLoading={isLoadingTrending}
-            />
-          </View>
-
-          {/* Community Popular Games (what Sweaty users like) */}
-          <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>Popular in Community</Text>
-            <HorizontalGameList
-              games={communityGames}
-              onGamePress={(game) => handleGamePress(game.id)}
-              isLoading={isLoadingCommunity}
-            />
-          </View>
-
-          {/* What Your Friends Are Playing */}
-          {friendsPlaying.length > 0 && (
-            <View style={styles.discoverySection}>
-              <Text style={styles.discoverySectionTitle}>What Your Friends Are Playing</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.friendsPlayingList}
-              >
-                {friendsPlaying.map((game) => (
-                  <TouchableOpacity
-                    key={game.id}
-                    style={styles.friendsGameCard}
-                    onPress={() => handleGamePress(game.id)}
-                    activeOpacity={0.8}
+          {/* Browse by Genre */}
+          <View style={styles.browseSection}>
+            <Text style={styles.browseSectionTitle}>Browse by Genre</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterPillsList}
+            >
+              {GENRE_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.filterPill,
+                    activeFilter === 'genre' && selectedValue === option.value && styles.filterPillActive,
+                  ]}
+                  onPress={() => handleFilterSelect('genre', option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      activeFilter === 'genre' && selectedValue === option.value && styles.filterPillTextActive,
+                    ]}
                   >
-                    <Image
-                      source={{ uri: getIGDBImageUrl(game.cover_url) }}
-                      style={styles.friendsGameCover}
-                    />
-                    <StackedAvatars users={game.friends} />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Browse by Year */}
+          <View style={styles.browseSection}>
+            <Text style={styles.browseSectionTitle}>Browse by Year</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterPillsList}
+            >
+              {YEAR_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.filterPill,
+                    activeFilter === 'year' && selectedValue === option.value && styles.filterPillActive,
+                  ]}
+                  onPress={() => handleFilterSelect('year', option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      activeFilter === 'year' && selectedValue === option.value && styles.filterPillTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Browse by Platform */}
+          <View style={styles.browseSection}>
+            <Text style={styles.browseSectionTitle}>Browse by Platform</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterPillsList}
+            >
+              {PLATFORM_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.filterPill,
+                    activeFilter === 'platform' && selectedValue === option.value && styles.filterPillActive,
+                  ]}
+                  onPress={() => handleFilterSelect('platform', option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      activeFilter === 'platform' && selectedValue === option.value && styles.filterPillTextActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Filter Results */}
+          {activeFilter && selectedValue && (
+            <View style={styles.filterResultsSection}>
+              <View style={styles.filterResultsHeader}>
+                <Text style={styles.filterResultsTitle}>
+                  {getFilterLabel()} Games
+                </Text>
+                <TouchableOpacity onPress={clearFilter} style={styles.clearFilterButton}>
+                  <Ionicons name="close" size={16} color={Colors.text} />
+                  <Text style={styles.clearFilterText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+
+              {isLoadingFilter ? (
+                <View style={styles.filterLoading}>
+                  <ActivityIndicator color={Colors.accent} size="large" />
+                </View>
+              ) : filterResults.length > 0 ? (
+                <View style={styles.gamesGrid}>
+                  {filterResults.map((game) => (
+                    <View key={game.id} style={styles.gridItem}>
+                      <GameCard game={game} onPress={handleGamePress} size="medium" />
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <View style={styles.filterEmpty}>
+                  <Text style={styles.filterEmptyText}>No games found</Text>
+                </View>
+              )}
             </View>
           )}
+
+          {/* Bottom spacing */}
+          <View style={{ height: Spacing.xxl }} />
         </ScrollView>
       )}
     </SafeAreaView>
@@ -481,15 +611,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.lg,
-  },
-  emptyIcon: {
-    marginBottom: Spacing.md,
-  },
-  emptyTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: Spacing.sm,
   },
   emptyText: {
     fontSize: FontSize.sm,
@@ -557,7 +678,7 @@ const styles = StyleSheet.create({
     width: '30%',
     marginBottom: Spacing.md,
   },
-  discoverySection: {
+  browseSection: {
     paddingTop: Spacing.lg,
   },
   sectionHeaderRow: {
@@ -567,12 +688,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     marginBottom: 12,
   },
-  recentSectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  discoverySectionTitle: {
+  browseSectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.text,
@@ -610,20 +726,70 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     maxWidth: 120,
   },
-  friendsPlayingList: {
+  filterPillsList: {
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
-  friendsGameCard: {
-    position: 'relative',
-    width: 100,
-    aspectRatio: 3 / 4,
-  },
-  friendsGameCover: {
-    width: '100%',
-    height: '100%',
-    borderRadius: BorderRadius.md,
+  filterPill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
     backgroundColor: Colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  filterPillActive: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  filterPillText: {
+    color: Colors.textMuted,
+    fontSize: FontSize.sm,
+    fontWeight: '500',
+  },
+  filterPillTextActive: {
+    color: Colors.background,
+    fontWeight: '600',
+  },
+  filterResultsSection: {
+    paddingTop: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+  },
+  filterResultsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  filterResultsTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  clearFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.sm,
+  },
+  clearFilterText: {
+    color: Colors.text,
+    fontSize: FontSize.sm,
+  },
+  filterLoading: {
+    paddingVertical: Spacing.xxl,
+    alignItems: 'center',
+  },
+  filterEmpty: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
+  },
+  filterEmptyText: {
+    color: Colors.textMuted,
+    fontSize: FontSize.sm,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
