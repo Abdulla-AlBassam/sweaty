@@ -12,10 +12,27 @@ import {
   TextInput,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import Toast from 'react-native-toast-message'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { getGamerLevel, getSocialLevel } from '../lib/xp'
+
+// XP values for different statuses
+const GAMER_XP_VALUES: Record<string, number> = {
+  completed: 100,
+  played: 50,
+  playing: 25,
+  on_hold: 25,
+  dropped: 10,
+  want_to_play: 0,
+}
+
+const SOCIAL_XP_VALUES = {
+  review: 30,
+  rating: 5,
+}
 
 interface GameData {
   id: number
@@ -97,6 +114,34 @@ export default function LogGameModal({
     setError(null)
 
     try {
+      // Calculate XP before save (for comparison)
+      const { data: existingLogs } = await supabase
+        .from('game_logs')
+        .select('status, rating, review')
+        .eq('user_id', user.id)
+
+      const { count: followerCount } = await supabase
+        .from('follows')
+        .select('*', { count: 'exact', head: true })
+        .eq('following_id', user.id)
+
+      // Calculate current XP totals
+      const logsForXP = existingLogs || []
+      let currentGamerXP = logsForXP.reduce((total, log) => {
+        return total + (GAMER_XP_VALUES[log.status || 'want_to_play'] || 0)
+      }, 0)
+      let currentSocialXP = logsForXP.reduce((total, log) => {
+        if (log.review && log.review.trim().length > 0) {
+          return total + SOCIAL_XP_VALUES.review
+        } else if (log.rating !== null && log.rating !== undefined) {
+          return total + SOCIAL_XP_VALUES.rating
+        }
+        return total
+      }, 0) + (followerCount || 0) * 10
+
+      const currentGamerLevel = getGamerLevel(currentGamerXP)
+      const currentSocialLevel = getSocialLevel(currentSocialXP)
+
       // First, ensure game is in games_cache
       const { error: cacheError } = await supabase
         .from('games_cache')
@@ -149,6 +194,74 @@ export default function LogGameModal({
 
         if (insertError) throw insertError
       }
+
+      // Calculate XP earned from this action
+      const oldGamerXP = existingLog ? GAMER_XP_VALUES[existingLog.status] || 0 : 0
+      const newGamerXP = GAMER_XP_VALUES[status] || 0
+      const gamerXPDiff = newGamerXP - oldGamerXP
+
+      let oldSocialXP = 0
+      if (existingLog) {
+        if (existingLog.review && existingLog.review.trim().length > 0) {
+          oldSocialXP = SOCIAL_XP_VALUES.review
+        } else if (existingLog.rating !== null && existingLog.rating !== undefined) {
+          oldSocialXP = SOCIAL_XP_VALUES.rating
+        }
+      }
+
+      let newSocialXP = 0
+      if (review.trim().length > 0) {
+        newSocialXP = SOCIAL_XP_VALUES.review
+      } else if (rating !== null) {
+        newSocialXP = SOCIAL_XP_VALUES.rating
+      }
+      const socialXPDiff = newSocialXP - oldSocialXP
+
+      // Calculate new totals
+      const finalGamerXP = currentGamerXP + gamerXPDiff
+      const finalSocialXP = currentSocialXP + socialXPDiff
+      const newGamerLevel = getGamerLevel(finalGamerXP)
+      const newSocialLevel = getSocialLevel(finalSocialXP)
+
+      // Show XP toasts
+      if (gamerXPDiff > 0 || socialXPDiff > 0) {
+        const xpParts: string[] = []
+        if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
+        if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
+
+        Toast.show({
+          type: 'xp',
+          text1: xpParts.join('  •  '),
+          text2: game.name,
+          visibilityTime: 2000,
+          position: 'top',
+        })
+      }
+
+      // Check for level ups
+      setTimeout(() => {
+        if (newGamerLevel.level > currentGamerLevel.level) {
+          Toast.show({
+            type: 'levelUp',
+            text1: '🎮 Level Up!',
+            text2: `Gamer Rank: ${newGamerLevel.rank}`,
+            visibilityTime: 3000,
+            position: 'top',
+          })
+        }
+
+        setTimeout(() => {
+          if (newSocialLevel.level > currentSocialLevel.level) {
+            Toast.show({
+              type: 'levelUp',
+              text1: '🌟 Level Up!',
+              text2: `Social Rank: ${newSocialLevel.rank}`,
+              visibilityTime: 3000,
+              position: 'top',
+            })
+          }
+        }, newGamerLevel.level > currentGamerLevel.level ? 3500 : 0)
+      }, gamerXPDiff > 0 || socialXPDiff > 0 ? 2500 : 0)
 
       onSaveSuccess?.()
       onClose()
