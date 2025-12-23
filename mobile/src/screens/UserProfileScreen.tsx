@@ -508,7 +508,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                 {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
               </Text>
             </View>
-          )
+          )}
         </View>
       </ScrollView>
 
