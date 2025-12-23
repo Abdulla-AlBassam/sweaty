@@ -251,13 +251,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           onPress={() => setIsModalVisible(true)}
         >
           <Ionicons
-            name={userLog ? 'create-outline' : 'add-circle-outline'}
-            size={20}
+            name={userLog ? 'create-outline' : 'add'}
+            size={userLog ? 24 : 28}
             color={Colors.background}
           />
-          <Text style={styles.logButtonText}>
-            {userLog ? 'Edit Log' : 'Log Game'}
-          </Text>
         </TouchableOpacity>
 
         {/* About */}
@@ -386,18 +383,11 @@ const styles = StyleSheet.create({
   },
   logButton: {
     backgroundColor: Colors.accent,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  logButtonText: {
-    color: Colors.background,
-    fontSize: FontSize.md,
-    fontWeight: '600',
   },
   section: {
     marginBottom: Spacing.lg,
