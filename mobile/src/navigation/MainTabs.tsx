@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
 
 // Screens
@@ -19,25 +20,34 @@ export type MainTabsParamList = {
 
 const Tab = createBottomTabNavigator<MainTabsParamList>()
 
-// Simple icon components using text/emoji (can be replaced with vector icons later)
+type IconName = keyof typeof Ionicons.glyphMap
+
+// Tab icon component using Ionicons
 function TabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const icons: Record<string, string> = {
-    Home: '🏠',
-    Search: '🔍',
-    Add: '➕',
-    Activity: '🔔',
-    Profile: '👤',
+  const iconMap: Record<string, { outline: IconName; filled: IconName }> = {
+    Home: { outline: 'home-outline', filled: 'home' },
+    Search: { outline: 'search-outline', filled: 'search' },
+    Activity: { outline: 'notifications-outline', filled: 'notifications' },
+    Profile: { outline: 'person-outline', filled: 'person' },
   }
 
+  const icons = iconMap[name]
+  if (!icons) return null
+
   return (
-    <View style={[styles.iconContainer, name === 'Add' && styles.addIconContainer]}>
-      <Text style={[
-        styles.icon,
-        { color: focused ? Colors.accent : Colors.textDim },
-        name === 'Add' && styles.addIcon,
-      ]}>
-        {icons[name]}
-      </Text>
+    <Ionicons
+      name={focused ? icons.filled : icons.outline}
+      size={24}
+      color={focused ? Colors.accent : Colors.textDim}
+    />
+  )
+}
+
+// Add button with green circle
+function AddTabIcon() {
+  return (
+    <View style={styles.addIconContainer}>
+      <Ionicons name="add" size={28} color={Colors.background} />
     </View>
   )
 }
@@ -57,8 +67,7 @@ export default function MainTabs() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
-        tabBarShowLabel: true,
-        tabBarLabelStyle: styles.tabLabel,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: Colors.accent,
         tabBarInactiveTintColor: Colors.textDim,
       }}
@@ -81,8 +90,7 @@ export default function MainTabs() {
         name="Add"
         component={AddPlaceholder}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon name="Add" focused={focused} />,
-          tabBarLabel: '',
+          tabBarIcon: () => <AddTabIcon />,
         }}
       />
       <Tab.Screen
@@ -112,29 +120,14 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     paddingTop: 8,
   },
-  tabLabel: {
-    fontSize: 10,
-    fontWeight: '500',
-  },
-  iconContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 20,
-  },
   addIconContainer: {
     backgroundColor: Colors.accent,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -10,
-  },
-  addIcon: {
-    color: Colors.background,
-    fontSize: 24,
+    marginTop: -12,
   },
   placeholder: {
     flex: 1,

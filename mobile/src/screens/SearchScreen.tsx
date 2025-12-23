@@ -10,6 +10,7 @@ import {
   Keyboard,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import GameCard from '../components/GameCard'
@@ -124,7 +125,7 @@ export default function SearchScreen() {
       {/* Search Header */}
       <View style={styles.header}>
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
           <TextInput
             style={styles.input}
             placeholder="Search games..."
@@ -137,7 +138,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-              <Text style={styles.clearText}>✕</Text>
+              <Ionicons name="close-circle" size={18} color={Colors.textDim} />
             </TouchableOpacity>
           )}
         </View>
@@ -180,7 +181,7 @@ export default function SearchScreen() {
         </View>
       ) : (
         <View style={styles.centered}>
-          <Text style={styles.emptyIcon}>🎮</Text>
+          <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
           <Text style={styles.emptyTitle}>Search for Games</Text>
           <Text style={styles.emptyText}>
             Find games to add to your library
@@ -210,7 +211,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
   },
   searchIcon: {
-    fontSize: 16,
     marginRight: Spacing.sm,
   },
   input: {
@@ -222,10 +222,6 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: Spacing.sm,
   },
-  clearText: {
-    color: Colors.textDim,
-    fontSize: 16,
-  },
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -233,7 +229,6 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: Spacing.md,
   },
   emptyTitle: {

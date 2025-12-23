@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useActivityFeed, useFollowCounts } from '../hooks/useSupabase'
 import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
@@ -106,7 +107,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <Text style={styles.logo}>sweaty</Text>
           <TouchableOpacity onPress={signOut} style={styles.settingsButton}>
-            <Text style={styles.settingsText}>⚙️</Text>
+            <Ionicons name="settings-outline" size={24} color={Colors.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -235,9 +236,6 @@ const styles = StyleSheet.create({
   },
   settingsButton: {
     padding: Spacing.sm,
-  },
-  settingsText: {
-    fontSize: FontSize.xl,
   },
   welcomeSection: {
     paddingHorizontal: Spacing.lg,

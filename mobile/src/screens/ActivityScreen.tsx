@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
 import { useActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -56,7 +57,7 @@ export default function ActivityScreen() {
           <ActivityIndicator color={Colors.accent} style={styles.loader} />
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>👥</Text>
+            <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
             <Text style={styles.emptyTitle}>No Activity Yet</Text>
             <Text style={styles.emptyText}>
               Follow other gamers to see what they're playing
@@ -111,7 +112,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxl * 2,
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: Spacing.md,
   },
   emptyTitle: {
