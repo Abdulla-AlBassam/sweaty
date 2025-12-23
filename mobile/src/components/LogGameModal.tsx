@@ -311,7 +311,7 @@ export default function LogGameModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              {existingLog ? 'Edit Log' : 'Log Game'}
+              {existingLog ? 'Edit Log' : 'Log Game'} (DEBUG v2)
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.text} />
