@@ -1,36 +1,36 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Game, GameLog, Profile } from '../types'
+import { Game, GameLog, Profile, ActivityItem } from '../types'
 
 export function useGameLogs(userId: string | undefined) {
   const [logs, setLogs] = useState<GameLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const fetchLogs = async () => {
     if (!userId) {
       setLogs([])
       setIsLoading(false)
       return
     }
 
-    const fetchLogs = async () => {
-      setIsLoading(true)
-      const { data, error } = await supabase
-        .from('game_logs')
-        .select('*, games_cache (id, name, cover_url, slug)')
-        .eq('user_id', userId)
-        .order('updated_at', { ascending: false })
+    setIsLoading(true)
+    const { data, error } = await supabase
+      .from('game_logs')
+      .select('*, games_cache (id, name, cover_url, slug)')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false })
 
-      if (error) setError(error.message)
-      else setLogs(data as GameLog[])
-      setIsLoading(false)
-    }
+    if (error) setError(error.message)
+    else setLogs(data as GameLog[])
+    setIsLoading(false)
+  }
 
+  useEffect(() => {
     fetchLogs()
   }, [userId])
 
-  return { logs, isLoading, error }
+  return { logs, isLoading, error, refetch: fetchLogs }
 }
 
 export function useProfile(username: string) {
@@ -92,6 +92,88 @@ export function useFollowCounts(userId: string | undefined) {
   }, [userId])
 
   return { followers, following, isLoading }
+}
+
+export function useActivityFeed(userId: string | undefined) {
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchActivities = async () => {
+    if (!userId) {
+      setActivities([])
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Get users the current user follows
+      const { data: following } = await supabase
+        .from('follows')
+        .select('following_id')
+        .eq('follower_id', userId)
+
+      if (!following || following.length === 0) {
+        setActivities([])
+        setIsLoading(false)
+        return
+      }
+
+      const followingIds = following.map((f) => f.following_id)
+
+      // Get recent game logs from followed users
+      const { data: logs, error: logsError } = await supabase
+        .from('game_logs')
+        .select(`
+          id,
+          status,
+          rating,
+          created_at,
+          user_id,
+          game_id,
+          profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url),
+          games_cache!game_logs_game_id_fkey (id, name, cover_url)
+        `)
+        .in('user_id', followingIds)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (logsError) throw logsError
+
+      const formattedActivities: ActivityItem[] = (logs || []).map((log: any) => ({
+        id: log.id,
+        user: {
+          id: log.profiles.id,
+          username: log.profiles.username,
+          display_name: log.profiles.display_name,
+          avatar_url: log.profiles.avatar_url,
+        },
+        game: {
+          id: log.games_cache.id,
+          name: log.games_cache.name,
+          cover_url: log.games_cache.cover_url,
+        },
+        status: log.status,
+        rating: log.rating,
+        created_at: log.created_at,
+      }))
+
+      setActivities(formattedActivities)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch activity')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchActivities()
+  }, [userId])
+
+  return { activities, isLoading, error, refetch: fetchActivities }
 }
 
 export function useGameSearch(query: string) {
