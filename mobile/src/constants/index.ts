@@ -40,27 +40,30 @@ export const IGDB_IMAGE_SIZES = {
 }
 
 // Helper to construct IGDB image URLs
-// Handles both imageId (e.g., "abc123") and full URLs (e.g., "//images.igdb.com/...")
+// Extracts image ID from any format and rebuilds with desired size
 export function getIGDBImageUrl(
   imageIdOrUrl: string | null | undefined,
   size: keyof typeof IGDB_IMAGE_SIZES = 'coverBig'
 ): string {
   if (!imageIdOrUrl) return ''
 
-  // If it's already a full URL, transform it
-  if (imageIdOrUrl.includes('images.igdb.com')) {
-    let url = imageIdOrUrl
-    // Add https if missing
-    if (url.startsWith('//')) {
-      url = `https:${url}`
+  // Extract just the image ID from any format
+  let imageId = imageIdOrUrl
+
+  // If it's a full URL, extract the image ID (e.g., "co4jni" from the URL)
+  if (imageIdOrUrl.includes('igdb.com') || imageIdOrUrl.includes('/')) {
+    // Match the image ID pattern (letters + numbers, typically like "co4jni")
+    const match = imageIdOrUrl.match(/([a-z0-9]+)\.(jpg|png|webp)$/i)
+    if (match) {
+      imageId = match[1]
+    } else {
+      // Try to get the last path segment before any extension
+      const segments = imageIdOrUrl.split('/')
+      const lastSegment = segments[segments.length - 1]
+      imageId = lastSegment.replace(/\.(jpg|png|webp)$/i, '')
     }
-    // Replace size placeholder
-    Object.values(IGDB_IMAGE_SIZES).forEach((sizeValue) => {
-      url = url.replace(sizeValue, IGDB_IMAGE_SIZES[size])
-    })
-    return url
   }
 
-  // Otherwise, construct from imageId
-  return `https://images.igdb.com/igdb/image/upload/${IGDB_IMAGE_SIZES[size]}/${imageIdOrUrl}.jpg`
+  // Always construct fresh URL with desired size
+  return `https://images.igdb.com/igdb/image/upload/${IGDB_IMAGE_SIZES[size]}/${imageId}.jpg`
 }
