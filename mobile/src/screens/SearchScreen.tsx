@@ -4,17 +4,20 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  FlatList,
+  ScrollView,
   ActivityIndicator,
   TouchableOpacity,
   Keyboard,
-  Alert,
+  Image,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { getIGDBImageUrl } from '../constants'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
 import GameCard from '../components/GameCard'
 
 interface SearchGame {
@@ -24,14 +27,23 @@ interface SearchGame {
   cover_url?: string | null
 }
 
+interface SearchUser {
+  id: string
+  username: string
+  display_name: string | null
+  avatar_url: string | null
+}
+
 const API_BASE_URL = 'https://sweaty-v1.vercel.app'
 const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
 export default function SearchScreen() {
   const navigation = useNavigation()
+  const { user } = useAuth()
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchGame[]>([])
+  const [gameResults, setGameResults] = useState<SearchGame[]>([])
+  const [userResults, setUserResults] = useState<SearchUser[]>([])
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -65,10 +77,35 @@ export default function SearchScreen() {
     }
   }
 
-  // Debounced search
+  // Search for users in Supabase
+  const searchUsers = async (searchQuery: string): Promise<SearchUser[]> => {
+    try {
+      let query = supabase
+        .from('profiles')
+        .select('id, username, display_name, avatar_url')
+        .or(`username.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
+        .limit(5)
+
+      // Exclude current user
+      if (user) {
+        query = query.neq('id', user.id)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+      return data || []
+    } catch (err) {
+      console.error('User search error:', err)
+      return []
+    }
+  }
+
+  // Debounced search for both games and users
   useEffect(() => {
     if (!query || query.length < 2) {
-      setResults([])
+      setGameResults([])
+      setUserResults([])
       setError(null)
       return
     }
@@ -78,19 +115,23 @@ export default function SearchScreen() {
       setError(null)
 
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/games/search?q=${encodeURIComponent(query)}`
-        )
+        // Search games and users in parallel
+        const [gamesResponse, users] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/games/search?q=${encodeURIComponent(query)}`),
+          searchUsers(query),
+        ])
 
-        if (!response.ok) {
+        if (!gamesResponse.ok) {
           throw new Error('Search failed')
         }
 
-        const data = await response.json()
-        setResults(data.games || [])
+        const gamesData = await gamesResponse.json()
+        setGameResults(gamesData.games || [])
+        setUserResults(users)
       } catch (err) {
-        setError('Failed to search games')
-        setResults([])
+        setError('Failed to search')
+        setGameResults([])
+        setUserResults([])
       } finally {
         setIsLoading(false)
       }
@@ -100,36 +141,39 @@ export default function SearchScreen() {
   }, [query])
 
   const handleGamePress = (gameId: number) => {
-    console.log('=== NEW CODE v2 === handleGamePress:', gameId)
-    const game = results.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
+    const game = gameResults.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
     if (game) {
       saveRecentSearch(game)
     }
     Keyboard.dismiss()
 
-    // Use CommonActions for more reliable navigation
     navigation.dispatch(
       CommonActions.navigate({
         name: 'GameDetail',
         params: { gameId },
       })
     )
-    console.log('=== Navigation dispatched ===')
+  }
+
+  const handleUserPress = (userProfile: SearchUser) => {
+    Keyboard.dismiss()
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'UserProfile',
+        params: { username: userProfile.username, userId: userProfile.id },
+      })
+    )
   }
 
   const clearSearch = () => {
     setQuery('')
-    setResults([])
+    setGameResults([])
+    setUserResults([])
     Keyboard.dismiss()
   }
 
-  const renderGameItem = ({ item }: { item: SearchGame }) => (
-    <View style={styles.gridItem}>
-      <GameCard game={item} onPress={handleGamePress} size="medium" />
-    </View>
-  )
-
   const showRecentSearches = query.length < 2 && recentSearches.length > 0
+  const hasResults = userResults.length > 0 || gameResults.length > 0
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -139,7 +183,7 @@ export default function SearchScreen() {
           <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Search games..."
+            placeholder="Search games or users..."
             placeholderTextColor={Colors.textDim}
             value={query}
             onChangeText={setQuery}
@@ -165,37 +209,73 @@ export default function SearchScreen() {
           <Text style={styles.errorText}>{error}</Text>
         </View>
       ) : showRecentSearches ? (
-        <View style={styles.recentSection}>
+        <ScrollView style={styles.scrollView}>
           <Text style={styles.sectionTitle}>Recent Searches</Text>
-          <FlatList
-            data={recentSearches}
-            renderItem={renderGameItem}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={3}
-            columnWrapperStyle={styles.row}
-            contentContainerStyle={styles.gridContent}
-          />
-        </View>
-      ) : results.length > 0 ? (
-        <FlatList
-          data={results}
-          renderItem={renderGameItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={3}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.gridContent}
-          keyboardShouldPersistTaps="handled"
-        />
+          <View style={styles.gamesGrid}>
+            {recentSearches.map((game) => (
+              <View key={game.id} style={styles.gridItem}>
+                <GameCard game={game} onPress={handleGamePress} size="medium" />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      ) : hasResults ? (
+        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+          {/* Users Section */}
+          {userResults.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Users</Text>
+              {userResults.map((userProfile) => (
+                <TouchableOpacity
+                  key={userProfile.id}
+                  style={styles.userRow}
+                  onPress={() => handleUserPress(userProfile)}
+                >
+                  {userProfile.avatar_url ? (
+                    <Image source={{ uri: userProfile.avatar_url }} style={styles.userAvatar} />
+                  ) : (
+                    <View style={[styles.userAvatar, styles.userAvatarPlaceholder]}>
+                      <Text style={styles.userAvatarText}>
+                        {(userProfile.display_name || userProfile.username)[0].toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.userInfo}>
+                    <Text style={styles.userDisplayName}>
+                      {userProfile.display_name || userProfile.username}
+                    </Text>
+                    <Text style={styles.userUsername}>@{userProfile.username}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Games Section */}
+          {gameResults.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Games</Text>
+              <View style={styles.gamesGrid}>
+                {gameResults.map((game) => (
+                  <View key={game.id} style={styles.gridItem}>
+                    <GameCard game={game} onPress={handleGamePress} size="medium" />
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+        </ScrollView>
       ) : query.length >= 2 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>No games found</Text>
+          <Text style={styles.emptyText}>No results found</Text>
         </View>
       ) : (
         <View style={styles.centered}>
-          <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
-          <Text style={styles.emptyTitle}>Search for Games</Text>
+          <Ionicons name="search-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
+          <Text style={styles.emptyTitle}>Search for Games or Users</Text>
           <Text style={styles.emptyText}>
-            Find games to add to your library
+            Find games to add to your library or users to follow
           </Text>
         </View>
       )}
@@ -233,6 +313,9 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: Spacing.sm,
   },
+  scrollView: {
+    flex: 1,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -257,23 +340,57 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.error,
   },
-  recentSection: {
-    flex: 1,
+  section: {
+    paddingTop: Spacing.md,
   },
   sectionTitle: {
     fontSize: FontSize.md,
     fontWeight: '600',
     color: Colors.textMuted,
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
     paddingBottom: Spacing.md,
   },
-  gridContent: {
-    padding: Spacing.lg,
-    paddingTop: Spacing.sm,
+  userRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  row: {
-    justifyContent: 'flex-start',
+  userAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  userAvatarPlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userAvatarText: {
+    fontSize: FontSize.md,
+    fontWeight: 'bold',
+    color: Colors.accent,
+  },
+  userInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  userDisplayName: {
+    fontSize: FontSize.md,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  userUsername: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  gamesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: Spacing.lg,
     gap: Spacing.md,
   },
   gridItem: {
