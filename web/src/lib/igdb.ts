@@ -237,13 +237,20 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
 }
 
 // Get popular/trending games from IGDB
-// Fetches highly rated games sorted by rating
+// Fetches hyped upcoming/recent games sorted by anticipation
 export async function getPopularGames(limit: number = 15): Promise<Game[]> {
-  // Try simplest possible query first for debugging
+  // Query for hyped games (what people are excited about)
+  // - category = 0: Main games only (excludes DLCs, expansions, bundles)
+  // - hypes > 100: Has significant anticipation
+  // - sort by hypes desc: Most anticipated first
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating;
-    sort total_rating desc;
+           genres.name, platforms.name, total_rating, hypes;
+    where category = 0
+      & cover != null
+      & hypes != null
+      & hypes > 100;
+    sort hypes desc;
     limit ${limit};
   `
 
