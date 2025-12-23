@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -102,14 +102,14 @@ export default function SearchScreen() {
     return () => clearTimeout(timeoutId)
   }, [query])
 
-  const handleGamePress = useCallback((gameId: number) => {
+  const handleGamePress = (gameId: number) => {
     const game = results.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
     if (game) {
       saveRecentSearch(game)
     }
     Keyboard.dismiss()
     navigation.navigate('GameDetail', { gameId })
-  }, [results, recentSearches, navigation])
+  }
 
   const clearSearch = () => {
     setQuery('')

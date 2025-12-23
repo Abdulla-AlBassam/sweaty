@@ -1,5 +1,6 @@
-import React from 'react'
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
+import React, { useState } from 'react'
+import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 
@@ -15,6 +16,9 @@ interface GameCardProps {
 }
 
 export default function GameCard({ game, onPress, size = 'medium' }: GameCardProps) {
+  const [imageError, setImageError] = useState(false)
+  const [imageLoading, setImageLoading] = useState(true)
+
   const coverUrl = game.cover_url || game.coverUrl
   const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'coverBig') : null
 
@@ -26,17 +30,39 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
 
   const { width, height } = dimensions[size]
 
+  const handlePress = () => {
+    onPress(game.id)
+  }
+
+  const showPlaceholder = !imageUrl || imageError
+
   return (
-    <TouchableOpacity style={[styles.container, { width }]} onPress={() => onPress(game.id)}>
-      {imageUrl ? (
-        <Image
-          source={{ uri: imageUrl }}
-          style={[styles.cover, { width, height }]}
-          resizeMode="cover"
-        />
-      ) : (
+    <TouchableOpacity
+      style={[styles.container, { width }]}
+      onPress={handlePress}
+      activeOpacity={0.7}
+    >
+      {showPlaceholder ? (
         <View style={[styles.placeholder, { width, height }]}>
-          <Text style={styles.placeholderText}>?</Text>
+          <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
+        </View>
+      ) : (
+        <View style={[styles.imageContainer, { width, height }]}>
+          <Image
+            source={{ uri: imageUrl }}
+            style={[styles.cover, { width, height }]}
+            resizeMode="cover"
+            onLoad={() => setImageLoading(false)}
+            onError={() => {
+              setImageError(true)
+              setImageLoading(false)
+            }}
+          />
+          {imageLoading && (
+            <View style={[styles.loadingOverlay, { width, height }]}>
+              <ActivityIndicator size="small" color={Colors.textDim} />
+            </View>
+          )}
         </View>
       )}
       <Text style={styles.title} numberOfLines={2}>
@@ -50,19 +76,27 @@ const styles = StyleSheet.create({
   container: {
     marginBottom: Spacing.sm,
   },
+  imageContainer: {
+    position: 'relative',
+  },
   cover: {
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   placeholder: {
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  placeholderText: {
-    fontSize: FontSize.xxl,
-    color: Colors.textDim,
   },
   title: {
     fontSize: FontSize.xs,
