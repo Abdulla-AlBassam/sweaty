@@ -44,7 +44,7 @@ export const IGDB_IMAGE_SIZES = {
 // Extracts image ID from any format and rebuilds with desired size
 export function getIGDBImageUrl(
   imageIdOrUrl: string | null | undefined,
-  size: keyof typeof IGDB_IMAGE_SIZES = 'coverBig'
+  size: keyof typeof IGDB_IMAGE_SIZES = 'coverBig2x'
 ): string {
   if (!imageIdOrUrl) return ''
 
