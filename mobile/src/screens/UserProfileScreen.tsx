@@ -73,8 +73,31 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const [isFollowLoading, setIsFollowLoading] = useState(false)
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
+  const [selectedFilter, setSelectedFilter] = useState<string>('all')
 
   const isOwnProfile = user?.id === profile?.id
+
+  // Filter tabs configuration
+  const filterTabs = [
+    { key: 'all', label: 'All' },
+    { key: 'playing', label: 'Playing' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'played', label: 'Played' },
+    { key: 'want_to_play', label: 'Want to Play' },
+    { key: 'on_hold', label: 'On Hold' },
+    { key: 'dropped', label: 'Dropped' },
+  ]
+
+  // Get count for each status
+  const getStatusCount = (status: string) => {
+    if (status === 'all') return gameLogs.length
+    return gameLogs.filter(log => log.status === status).length
+  }
+
+  // Filter game logs based on selected filter
+  const filteredGameLogs = selectedFilter === 'all'
+    ? gameLogs
+    : gameLogs.filter(log => log.status === selectedFilter)
 
   useEffect(() => {
     console.log('=== USER PROFILE SCREEN MOUNTED === username:', username)
@@ -411,9 +434,44 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         {/* Game Library */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Game Library</Text>
-          {gameLogs.length > 0 ? (
+
+          {/* Filter Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterTabsContainer}
+            contentContainerStyle={styles.filterTabsContent}
+          >
+            {filterTabs.map((tab) => {
+              const count = getStatusCount(tab.key)
+              const isSelected = selectedFilter === tab.key
+              return (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[
+                    styles.filterTab,
+                    isSelected && styles.filterTabSelected,
+                    count === 0 && !isSelected && styles.filterTabDimmed,
+                  ]}
+                  onPress={() => setSelectedFilter(tab.key)}
+                >
+                  <Text
+                    style={[
+                      styles.filterTabText,
+                      isSelected && styles.filterTabTextSelected,
+                      count === 0 && !isSelected && styles.filterTabTextDimmed,
+                    ]}
+                  >
+                    {tab.label} ({count})
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+
+          {filteredGameLogs.length > 0 ? (
             <View style={styles.gamesGrid}>
-              {gameLogs.map((log) => (
+              {filteredGameLogs.map((log) => (
                 <TouchableOpacity
                   key={log.id}
                   style={styles.gameCard}
@@ -446,9 +504,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           ) : (
             <View style={styles.emptyState}>
               <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
-              <Text style={styles.emptyText}>No games logged yet</Text>
+              <Text style={styles.emptyText}>
+                {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
+              </Text>
             </View>
-          )}
+          )
         </View>
       </ScrollView>
 
@@ -606,6 +666,40 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
+  },
+  filterTabsContainer: {
+    marginBottom: Spacing.md,
+    marginHorizontal: -Spacing.lg,
+  },
+  filterTabsContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  filterTab: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: 'transparent',
+  },
+  filterTabSelected: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  filterTabDimmed: {
+    opacity: 0.5,
+  },
+  filterTabText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  filterTabTextSelected: {
+    color: Colors.background,
+    fontWeight: '600',
+  },
+  filterTabTextDimmed: {
+    color: Colors.textDim,
   },
   gamesGrid: {
     flexDirection: 'row',
