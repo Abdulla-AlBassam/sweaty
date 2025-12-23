@@ -76,7 +76,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
   const fetchGameDetails = async () => {
     try {
-      // First try to get from cache
+      // First try to get from cache for quick display
       const { data: cached } = await supabase
         .from('games_cache')
         .select('*')
@@ -96,14 +96,18 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           rating: cached.rating,
         })
         setIsLoading(false)
-        return
       }
 
-      // If not cached, fetch from API
+      // Always fetch from API to get videos (cache doesn't store them)
       const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}`)
       if (response.ok) {
         const data = await response.json()
-        setGame(data.game)
+        if (data.game) {
+          setGame(prev => ({
+            ...prev,
+            ...data.game,
+          }))
+        }
       }
     } catch (error) {
       console.error('Error fetching game:', error)
