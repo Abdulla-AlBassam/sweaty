@@ -141,6 +141,7 @@ export default function QuickLogScreen() {
           onChangeText={handleSearchChange}
           autoCapitalize="none"
           autoCorrect={false}
+          autoFocus={true}
         />
         {query.length > 0 && (
           <TouchableOpacity onPress={() => { setQuery(''); setResults([]) }}>
