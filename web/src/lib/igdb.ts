@@ -272,7 +272,9 @@ async function getPopularGameIds(limit: number = 15): Promise<number[]> {
     console.log('First primitive:', JSON.stringify(data[0]))
   }
 
-  return data.map((item: { game_id: number }) => item.game_id)
+  // Deduplicate game IDs (popularity_primitives can return multiple entries per game)
+  const gameIds = [...new Set(data.map((item: { game_id: number }) => item.game_id))]
+  return gameIds.slice(0, limit)
 }
 
 // Get popular/trending games from IGDB
