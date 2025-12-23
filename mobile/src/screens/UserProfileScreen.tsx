@@ -27,6 +27,13 @@ interface Profile {
   display_name: string | null
   avatar_url: string | null
   bio: string | null
+  favorite_games?: number[] | null
+}
+
+interface FavoriteGame {
+  id: number
+  name: string
+  cover_url: string | null
 }
 
 interface GameLog {
@@ -55,6 +62,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [gameLogs, setGameLogs] = useState<GameLog[]>([])
+  const [favorites, setFavorites] = useState<FavoriteGame[]>([])
   const [stats, setStats] = useState<Stats>({ totalGames: 0, completed: 0, playing: 0, averageRating: null })
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
@@ -73,11 +81,36 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     if (profile) {
       fetchGameLogs()
       fetchFollowCounts()
+      fetchFavorites()
       if (user && !isOwnProfile) {
         checkIfFollowing()
       }
     }
   }, [profile, user])
+
+  const fetchFavorites = async () => {
+    if (!profile?.favorite_games || profile.favorite_games.length === 0) {
+      setFavorites([])
+      return
+    }
+
+    try {
+      const { data } = await supabase
+        .from('games_cache')
+        .select('id, name, cover_url')
+        .in('id', profile.favorite_games)
+
+      if (data) {
+        // Sort by the order in favorite_games array
+        const sorted = profile.favorite_games
+          .map(id => data.find(g => g.id === id))
+          .filter(Boolean) as FavoriteGame[]
+        setFavorites(sorted)
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error)
+    }
+  }
 
   const fetchProfile = async () => {
     try {
@@ -325,6 +358,39 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           </View>
         </View>
 
+        {/* Favorites */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Favorites</Text>
+          {favorites.length > 0 ? (
+            <View style={styles.favoritesRow}>
+              {favorites.map((game) => {
+                const coverUrl = game.cover_url
+                  ? getIGDBImageUrl(game.cover_url, 'coverSmall')
+                  : null
+                return (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.favoriteSlot}
+                    onPress={() => handleGamePress(game.id)}
+                  >
+                    {coverUrl ? (
+                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                    ) : (
+                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                        <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          ) : (
+            <View style={styles.emptyFavorites}>
+              <Text style={styles.emptyFavoritesText}>No favorites yet</Text>
+            </View>
+          )}
+        </View>
+
         {/* Game Library */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Game Library</Text>
@@ -556,5 +622,35 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: Spacing.md,
+  },
+  favoritesRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  favoriteSlot: {
+    flex: 1,
+    maxWidth: '31%',
+  },
+  favoriteCover: {
+    width: '100%',
+    aspectRatio: 3 / 4,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+    borderColor: Colors.accent,
+  },
+  favoriteCoverPlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyFavorites: {
+    backgroundColor: Colors.surface,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  emptyFavoritesText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
   },
 })

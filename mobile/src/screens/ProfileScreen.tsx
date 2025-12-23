@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation, CommonActions } from '@react-navigation/native'
+import { useNavigation } from '@react-navigation/native'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
 import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
@@ -18,6 +18,13 @@ import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import XPProgressBar from '../components/XPProgressBar'
 import LogGameModal from '../components/LogGameModal'
+import EditFavoritesModal from '../components/EditFavoritesModal'
+
+interface FavoriteGame {
+  id: number
+  name: string
+  cover_url: string | null
+}
 
 interface GameLogWithGame {
   id: string
@@ -34,7 +41,7 @@ interface GameLogWithGame {
 }
 
 export default function ProfileScreen() {
-  const { user, profile } = useAuth()
+  const { user, profile, refreshProfile } = useAuth()
   const { logs, refresh: refreshLogs } = useGameLogs(user?.id)
   const { followers, following } = useFollowCounts(user?.id)
   const navigation = useNavigation()
@@ -42,6 +49,8 @@ export default function ProfileScreen() {
   const [gameLogs, setGameLogs] = useState<GameLogWithGame[]>([])
   const [selectedGame, setSelectedGame] = useState<GameLogWithGame | null>(null)
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [favorites, setFavorites] = useState<FavoriteGame[]>([])
+  const [isFavoritesModalVisible, setIsFavoritesModalVisible] = useState(false)
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
   const username = profile?.username || ''
@@ -90,6 +99,39 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchGameLogs()
   }, [fetchGameLogs])
+
+  // Fetch favorite games
+  const fetchFavorites = useCallback(async () => {
+    if (!profile?.favorite_games || profile.favorite_games.length === 0) {
+      setFavorites([])
+      return
+    }
+
+    try {
+      const { data } = await supabase
+        .from('games_cache')
+        .select('id, name, cover_url')
+        .in('id', profile.favorite_games)
+
+      if (data) {
+        // Sort by the order in favorite_games array
+        const sorted = profile.favorite_games
+          .map(id => data.find(g => g.id === id))
+          .filter(Boolean) as FavoriteGame[]
+        setFavorites(sorted)
+      }
+    } catch (error) {
+      console.error('Error fetching favorites:', error)
+    }
+  }, [profile?.favorite_games])
+
+  useEffect(() => {
+    fetchFavorites()
+  }, [fetchFavorites])
+
+  const handleFavoritesSaveSuccess = () => {
+    refreshProfile()
+  }
 
   const handleGamePress = (log: GameLogWithGame) => {
     setSelectedGame(log)
@@ -156,6 +198,51 @@ export default function ProfileScreen() {
           <XPProgressBar type="social" levelInfo={socialLevel} />
         </View>
 
+        {/* Favorites */}
+        <View style={styles.favoritesSection}>
+          <View style={styles.favoritesTitleRow}>
+            <Text style={styles.sectionTitle}>Favorites</Text>
+            <TouchableOpacity
+              onPress={() => setIsFavoritesModalVisible(true)}
+              style={styles.editButton}
+            >
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.favoritesRow}>
+            {[0, 1, 2].map((index) => {
+              const game = favorites[index]
+              if (game) {
+                const coverUrl = game.cover_url
+                  ? getIGDBImageUrl(game.cover_url, 'coverSmall')
+                  : null
+                return (
+                  <View key={game.id} style={styles.favoriteSlot}>
+                    {coverUrl ? (
+                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                    ) : (
+                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                        <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      </View>
+                    )}
+                  </View>
+                )
+              }
+              return (
+                <TouchableOpacity
+                  key={`empty-${index}`}
+                  style={styles.favoriteSlot}
+                  onPress={() => setIsFavoritesModalVisible(true)}
+                >
+                  <View style={[styles.favoriteCover, styles.emptyFavoriteSlot]}>
+                    <Ionicons name="add" size={24} color={Colors.textDim} />
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </View>
+
         {/* Game Library */}
         <View style={styles.librarySection}>
           <Text style={styles.sectionTitle}>Game Library</Text>
@@ -220,6 +307,17 @@ export default function ProfileScreen() {
             platform: selectedGame.platform,
           }}
           onSaveSuccess={handleLogSaveSuccess}
+        />
+      )}
+
+      {/* Edit Favorites Modal */}
+      {user && (
+        <EditFavoritesModal
+          visible={isFavoritesModalVisible}
+          onClose={() => setIsFavoritesModalVisible(false)}
+          currentFavorites={favorites}
+          userId={user.id}
+          onSaveSuccess={handleFavoritesSaveSuccess}
         />
       )}
     </SafeAreaView>
@@ -326,6 +424,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
+  },
+  favoritesSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  favoritesTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  editButton: {
+    padding: Spacing.sm,
+  },
+  editButtonText: {
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+    fontWeight: '600',
+  },
+  favoritesRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+  },
+  favoriteSlot: {
+    flex: 1,
+  },
+  favoriteCover: {
+    width: '100%',
+    aspectRatio: 3 / 4,
+    borderRadius: BorderRadius.md,
+    borderWidth: 2,
+    borderColor: Colors.accent,
+  },
+  favoriteCoverPlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyFavoriteSlot: {
+    borderStyle: 'dashed',
+    borderColor: Colors.textDim,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   librarySection: {
     paddingHorizontal: Spacing.lg,
