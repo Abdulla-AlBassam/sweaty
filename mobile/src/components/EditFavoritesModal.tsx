@@ -144,7 +144,7 @@ export default function EditFavoritesModal({
 
   const getCoverUrl = (game: Game) => {
     const url = game.cover_url || game.coverUrl
-    return url ? getIGDBImageUrl(url, 'coverSmall') : null
+    return url ? getIGDBImageUrl(url, 'coverBig') : null
   }
 
   const renderSearchResult = ({ item }: { item: Game }) => {

@@ -406,7 +406,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <View style={styles.favoritesRow}>
               {favorites.map((game) => {
                 const coverUrl = game.cover_url
-                  ? getIGDBImageUrl(game.cover_url, 'coverSmall')
+                  ? getIGDBImageUrl(game.cover_url, 'coverBig')
                   : null
                 return (
                   <TouchableOpacity
@@ -480,7 +480,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                 >
                   {log.game?.cover_url ? (
                     <Image
-                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverSmall') }}
+                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig') }}
                       style={styles.gameCover}
                     />
                   ) : (
