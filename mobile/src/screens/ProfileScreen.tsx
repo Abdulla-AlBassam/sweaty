@@ -370,14 +370,6 @@ export default function ProfileScreen() {
                       <StarRating rating={log.rating} size={10} />
                     </View>
                   )}
-                  {log.review && (
-                    <View style={styles.reviewBadge}>
-                      <Ionicons name="chatbubble" size={10} color={Colors.text} />
-                    </View>
-                  )}
-                  <View style={styles.editBadge}>
-                    <Ionicons name="create-outline" size={12} color={Colors.text} />
-                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -660,27 +652,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: Spacing.xs,
     paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  ratingText: {
-    fontSize: FontSize.xs,
-    color: Colors.accent,
-    fontWeight: '600',
-  },
-  editBadge: {
-    position: 'absolute',
-    top: Spacing.xs,
-    left: Spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 4,
-    borderRadius: BorderRadius.sm,
-  },
-  reviewBadge: {
-    position: 'absolute',
-    top: 28,
-    right: Spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 4,
     borderRadius: BorderRadius.sm,
   },
   emptyState: {
