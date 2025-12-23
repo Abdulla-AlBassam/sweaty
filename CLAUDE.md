@@ -147,68 +147,95 @@ Tracks user follow relationships.
 **Constraints:** UNIQUE(follower_id, following_id), no self-follows
 **Indexes:** follower_id, following_id
 
-## Important Files
+## Project Structure (Monorepo)
 
 ```
 sweaty/
-├── src/
-│   ├── app/
-│   │   ├── api/
-│   │   │   ├── games/
-│   │   │   │   ├── search/route.ts  # GET /api/games/search?q=zelda
-│   │   │   │   └── [id]/route.ts    # GET /api/games/123
-│   │   │   ├── users/
-│   │   │   │   └── search/route.ts  # GET /api/users/search?q=john
-│   │   │   └── auth/
-│   │   │       └── lookup-email/route.ts  # POST - get email from username
-│   │   ├── dashboard/page.tsx       # Protected dashboard with stats
-│   │   ├── game/[id]/page.tsx       # Game detail page (dynamic meta)
-│   │   ├── login/page.tsx           # Login form
-│   │   ├── profile/[username]/
-│   │   │   ├── layout.tsx           # Profile layout (dynamic meta)
-│   │   │   └── page.tsx             # User profile with game library
-│   │   ├── search/page.tsx          # Search results grid
-│   │   ├── settings/page.tsx        # User settings (profile, password)
-│   │   ├── signup/page.tsx          # Signup form
-│   │   ├── error.tsx                # Custom 500 error page
-│   │   ├── not-found.tsx            # Custom 404 page
-│   │   ├── globals.css              # Global styles + CSS variables
-│   │   ├── layout.tsx               # Root layout with Navbar + Toaster
-│   │   └── page.tsx                 # Landing page
-│   ├── components/
-│   │   ├── ActivityFeed.tsx         # Activity feed showing followed users' game logs
-│   │   ├── EditFavoritesModal.tsx   # Modal for editing favorite games
-│   │   ├── FollowersModal.tsx       # Modal for followers/following lists
-│   │   ├── GameCard.tsx             # Reusable game card with cover
-│   │   ├── GameLogButton.tsx        # Log game button with auth handling
-│   │   ├── GameRatings.tsx          # Aggregated community ratings display
-│   │   ├── GameReviews.tsx          # Reviews display for game detail page
-│   │   ├── LogGameModal.tsx         # Modal for logging games (mobile-optimized)
-│   │   ├── Navbar.tsx               # Navigation with search dropdown
-│   │   ├── ServiceWorkerRegister.tsx # PWA service worker registration
-│   │   ├── InstallPrompt.tsx        # PWA install prompt (iOS + Chrome)
-│   │   ├── MobileSearchOverlay.tsx  # Full-screen mobile search
-│   │   ├── LevelBadge.tsx           # XP level badge component
-│   │   └── XPProgressBar.tsx        # XP progress bar component
-│   ├── lib/
-│   │   ├── igdb.ts                  # IGDB API helper
-│   │   ├── xp.ts                    # XP/Level calculation system
-│   │   └── supabase/
-│   │       ├── client.ts            # Browser Supabase client
-│   │       └── server.ts            # Server Supabase client
-│   └── middleware.ts                # Auth session refresh
-├── public/
-│   ├── icon.svg                     # Favicon (green S on dark bg)
-│   ├── icon-192.png                 # PWA icon 192x192
-│   ├── icon-512.png                 # PWA icon 512x512
-│   ├── hero-bg.jpg                  # Landing page hero background
-│   ├── og-image.svg                 # Open Graph image
-│   ├── sw.js                        # Service worker for offline caching
-│   └── site.webmanifest             # PWA manifest
-├── .env.local                       # Environment variables (not in git)
-├── next.config.ts                   # Next.js config (IGDB images)
-├── tailwind.config.ts               # Tailwind configuration
-└── claude.md                        # This file
+├── web/                             # Next.js web application
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── api/
+│   │   │   │   ├── games/
+│   │   │   │   │   ├── search/route.ts  # GET /api/games/search?q=zelda
+│   │   │   │   │   └── [id]/route.ts    # GET /api/games/123
+│   │   │   │   ├── users/
+│   │   │   │   │   └── search/route.ts  # GET /api/users/search?q=john
+│   │   │   │   └── auth/
+│   │   │   │       └── lookup-email/route.ts  # POST - get email from username
+│   │   │   ├── dashboard/page.tsx       # Protected dashboard with stats
+│   │   │   ├── game/[id]/page.tsx       # Game detail page (dynamic meta)
+│   │   │   ├── login/page.tsx           # Login form
+│   │   │   ├── profile/[username]/
+│   │   │   │   ├── layout.tsx           # Profile layout (dynamic meta)
+│   │   │   │   └── page.tsx             # User profile with game library
+│   │   │   ├── search/page.tsx          # Search results grid
+│   │   │   ├── settings/page.tsx        # User settings (profile, password)
+│   │   │   ├── signup/page.tsx          # Signup form
+│   │   │   ├── error.tsx                # Custom 500 error page
+│   │   │   ├── not-found.tsx            # Custom 404 page
+│   │   │   ├── globals.css              # Global styles + CSS variables
+│   │   │   ├── layout.tsx               # Root layout with Navbar + Toaster
+│   │   │   └── page.tsx                 # Landing page
+│   │   ├── components/
+│   │   │   ├── ActivityFeed.tsx         # Activity feed showing followed users' game logs
+│   │   │   ├── EditFavoritesModal.tsx   # Modal for editing favorite games
+│   │   │   ├── FollowersModal.tsx       # Modal for followers/following lists
+│   │   │   ├── GameCard.tsx             # Reusable game card with cover
+│   │   │   ├── GameLogButton.tsx        # Log game button with auth handling
+│   │   │   ├── GameRatings.tsx          # Aggregated community ratings display
+│   │   │   ├── GameReviews.tsx          # Reviews display for game detail page
+│   │   │   ├── LogGameModal.tsx         # Modal for logging games (mobile-optimized)
+│   │   │   ├── Navbar.tsx               # Navigation with search dropdown
+│   │   │   ├── ServiceWorkerRegister.tsx # PWA service worker registration
+│   │   │   ├── InstallPrompt.tsx        # PWA install prompt (iOS + Chrome)
+│   │   │   ├── MobileSearchOverlay.tsx  # Full-screen mobile search
+│   │   │   ├── LevelBadge.tsx           # XP level badge component
+│   │   │   └── XPProgressBar.tsx        # XP progress bar component
+│   │   ├── lib/
+│   │   │   ├── igdb.ts                  # IGDB API helper
+│   │   │   ├── xp.ts                    # XP/Level calculation system
+│   │   │   └── supabase/
+│   │   │       ├── client.ts            # Browser Supabase client
+│   │   │       └── server.ts            # Server Supabase client
+│   │   └── middleware.ts                # Auth session refresh
+│   ├── public/
+│   │   ├── icon.svg                 # Favicon (green S on dark bg)
+│   │   ├── icon-192.png             # PWA icon 192x192
+│   │   ├── icon-512.png             # PWA icon 512x512
+│   │   ├── hero-bg.jpg              # Landing page hero background
+│   │   ├── og-image.svg             # Open Graph image
+│   │   ├── sw.js                    # Service worker for offline caching
+│   │   └── site.webmanifest         # PWA manifest
+│   ├── .env.local                   # Environment variables (not in git)
+│   ├── next.config.ts               # Next.js config (IGDB images)
+│   ├── package.json                 # Web app dependencies
+│   └── tsconfig.json                # TypeScript config
+│
+├── mobile/                          # React Native/Expo mobile app
+│   ├── src/
+│   │   ├── app/                     # Screen components (future)
+│   │   ├── components/              # Reusable UI components (future)
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx      # Auth state management
+│   │   ├── hooks/
+│   │   │   └── useSupabase.ts       # Data fetching hooks
+│   │   ├── lib/
+│   │   │   ├── supabase.ts          # Supabase client (AsyncStorage)
+│   │   │   └── xp.ts                # XP/Level system (shared logic)
+│   │   ├── constants/
+│   │   │   ├── colors.ts            # Theme colors (matches web)
+│   │   │   └── index.ts             # Status labels, platforms
+│   │   └── types/
+│   │       └── index.ts             # Shared TypeScript types
+│   ├── assets/                      # App icons and images
+│   ├── App.tsx                      # Root component with AuthProvider
+│   ├── app.json                     # Expo configuration
+│   ├── .env.example                 # Environment variables template
+│   └── package.json                 # Mobile app dependencies
+│
+├── CLAUDE.md                        # This file (project documentation)
+├── README.md                        # Getting started guide
+└── vercel.json                      # Vercel deployment config (deploys /web)
 ```
 
 ## Key Decisions
