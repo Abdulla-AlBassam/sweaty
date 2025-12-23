@@ -6,13 +6,11 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
@@ -21,9 +19,6 @@ import { MainStackParamList } from '../navigation'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const HEADER_HEIGHT = 250
-
 interface GameDetails {
   id: number
   name: string
@@ -31,8 +26,6 @@ interface GameDetails {
   summary?: string
   coverUrl?: string
   cover_url?: string
-  artworkUrls?: string[]
-  screenshotUrls?: string[]
   firstReleaseDate?: string
   first_release_date?: string
   genres?: string[]
@@ -47,26 +40,19 @@ interface UserGameLog {
   platform: string | null
 }
 
-interface CommunityRating {
-  averageRating: number
-  count: number
-}
-
 export default function GameDetailScreen({ navigation, route }: Props) {
   const { gameId } = route.params
   const { user } = useAuth()
 
   const [game, setGame] = useState<GameDetails | null>(null)
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
-  const [communityRating, setCommunityRating] = useState<CommunityRating | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showFullSummary, setShowFullSummary] = useState(false)
 
   useEffect(() => {
+    console.log('GameDetailScreen mounted with gameId:', gameId)
     fetchGameDetails()
     if (user) {
       fetchUserLog()
-      fetchCommunityRating()
     }
   }, [gameId, user])
 
@@ -110,50 +96,25 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
   const fetchUserLog = async () => {
     if (!user) return
-    const { data } = await supabase
-      .from('game_logs')
-      .select('id, status, rating, platform')
-      .eq('user_id', user.id)
-      .eq('game_id', gameId)
-      .single()
+    try {
+      const { data } = await supabase
+        .from('game_logs')
+        .select('id, status, rating, platform')
+        .eq('user_id', user.id)
+        .eq('game_id', gameId)
+        .single()
 
-    if (data) {
-      setUserLog(data)
-    }
-  }
-
-  const fetchCommunityRating = async () => {
-    const { data } = await supabase
-      .from('game_logs')
-      .select('rating')
-      .eq('game_id', gameId)
-      .not('rating', 'is', null)
-
-    if (data && data.length > 0) {
-      const ratings = data.map((d) => d.rating as number)
-      const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length
-      setCommunityRating({
-        averageRating: Math.round(avg * 10) / 10,
-        count: ratings.length,
-      })
+      if (data) {
+        setUserLog(data)
+      }
+    } catch (error) {
+      // Game not logged yet, that's fine
     }
   }
 
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
     return url ? getIGDBImageUrl(url, 'coverBig') : null
-  }
-
-  const getBackgroundUrl = () => {
-    // Try artwork first, then screenshot, then cover
-    if (game?.artworkUrls && game.artworkUrls.length > 0) {
-      return getIGDBImageUrl(game.artworkUrls[0], 'hd')
-    }
-    if (game?.screenshotUrls && game.screenshotUrls.length > 0) {
-      return getIGDBImageUrl(game.screenshotUrls[0], 'hd')
-    }
-    const cover = game?.coverUrl || game?.cover_url
-    return cover ? getIGDBImageUrl(cover, 'hd') : null
   }
 
   const getReleaseYear = () => {
@@ -164,98 +125,77 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={Colors.accent} />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Loading...</Text>
+        </View>
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color={Colors.accent} />
+        </View>
+      </SafeAreaView>
     )
   }
 
   if (!game) {
     return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.errorText}>Game not found</Text>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backLink}>Go back</Text>
-        </TouchableOpacity>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Not Found</Text>
+        </View>
+        <View style={styles.centered}>
+          <Ionicons name="game-controller-outline" size={64} color={Colors.textDim} />
+          <Text style={styles.errorText}>Game not found</Text>
+        </View>
+      </SafeAreaView>
     )
   }
 
   const coverUrl = getCoverUrl()
-  const backgroundUrl = getBackgroundUrl()
   const releaseYear = getReleaseYear()
-  const summary = game.summary || ''
-  const shouldTruncate = summary.length > 300
 
   return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView} bounces={false}>
-        {/* Header Image */}
-        <View style={styles.headerContainer}>
-          {backgroundUrl ? (
-            <Image source={{ uri: backgroundUrl }} style={styles.headerImage} />
-          ) : (
-            <View style={[styles.headerImage, styles.headerPlaceholder]} />
-          )}
-          <LinearGradient
-            colors={['transparent', Colors.background]}
-            style={styles.headerGradient}
-          />
-        </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>{game.name}</Text>
+      </View>
 
-        {/* Back Button */}
-        <SafeAreaView style={styles.backButtonContainer} edges={['top']}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color={Colors.text} />
-          </TouchableOpacity>
-        </SafeAreaView>
-
-        {/* Game Info */}
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        {/* Cover and Info */}
         <View style={styles.gameInfo}>
-          {/* Cover */}
-          <View style={styles.coverContainer}>
-            {coverUrl ? (
-              <Image source={{ uri: coverUrl }} style={styles.cover} />
-            ) : (
-              <View style={[styles.cover, styles.coverPlaceholder]}>
-                <Ionicons name="game-controller" size={40} color={Colors.textDim} />
-              </View>
-            )}
-          </View>
-
-          {/* Title and Meta */}
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{game.name}</Text>
-            <View style={styles.metaRow}>
-              {releaseYear && (
-                <Text style={styles.metaText}>{releaseYear}</Text>
-              )}
-              {game.platforms && game.platforms.length > 0 && (
-                <Text style={styles.metaText} numberOfLines={1}>
-                  {game.platforms.slice(0, 3).join(' • ')}
-                </Text>
-              )}
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.cover} />
+          ) : (
+            <View style={[styles.cover, styles.coverPlaceholder]}>
+              <Ionicons name="game-controller" size={40} color={Colors.textDim} />
             </View>
+          )}
+
+          <View style={styles.infoContainer}>
+            <Text style={styles.title}>{game.name}</Text>
+            {releaseYear && (
+              <Text style={styles.year}>{releaseYear}</Text>
+            )}
             {game.genres && game.genres.length > 0 && (
-              <View style={styles.genresRow}>
-                {game.genres.slice(0, 3).map((genre, index) => (
-                  <View key={index} style={styles.genreTag}>
-                    <Text style={styles.genreText}>{genre}</Text>
-                  </View>
-                ))}
-              </View>
+              <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
           </View>
         </View>
 
         {/* User Status */}
         {userLog && (
-          <View style={styles.userStatus}>
+          <View style={styles.statusBadge}>
             <Ionicons name="checkmark-circle" size={16} color={Colors.accent} />
-            <Text style={styles.userStatusText}>
+            <Text style={styles.statusText}>
               {STATUS_LABELS[userLog.status] || userLog.status}
               {userLog.rating && ` • ★ ${userLog.rating}`}
             </Text>
@@ -263,71 +203,37 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         )}
 
         {/* Action Button */}
-        <View style={styles.actionSection}>
-          <TouchableOpacity
-            style={styles.logButton}
-            onPress={() => {
-              // TODO: Open log game modal
-              console.log('Log game:', gameId)
-            }}
-          >
-            <Ionicons
-              name={userLog ? 'create-outline' : 'add-circle-outline'}
-              size={20}
-              color={Colors.background}
-            />
-            <Text style={styles.logButtonText}>
-              {userLog ? 'Edit Log' : 'Log Game'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.logButton}
+          onPress={() => console.log('Log game:', gameId)}
+        >
+          <Ionicons
+            name={userLog ? 'create-outline' : 'add-circle-outline'}
+            size={20}
+            color={Colors.background}
+          />
+          <Text style={styles.logButtonText}>
+            {userLog ? 'Edit Log' : 'Log Game'}
+          </Text>
+        </TouchableOpacity>
 
-        {/* About Section */}
-        {summary && (
+        {/* About */}
+        {game.summary && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>About</Text>
-            <Text style={styles.summaryText}>
-              {showFullSummary || !shouldTruncate
-                ? summary
-                : `${summary.slice(0, 300)}...`}
-            </Text>
-            {shouldTruncate && (
-              <TouchableOpacity onPress={() => setShowFullSummary(!showFullSummary)}>
-                <Text style={styles.readMore}>
-                  {showFullSummary ? 'Show less' : 'Read more'}
-                </Text>
-              </TouchableOpacity>
-            )}
+            <Text style={styles.summaryText}>{game.summary}</Text>
           </View>
         )}
 
-        {/* Community Rating */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Community Rating</Text>
-          {communityRating ? (
-            <View style={styles.ratingContainer}>
-              <View style={styles.ratingBig}>
-                <Ionicons name="star" size={24} color={Colors.accent} />
-                <Text style={styles.ratingValue}>{communityRating.averageRating}</Text>
-              </View>
-              <Text style={styles.ratingCount}>
-                Based on {communityRating.count} {communityRating.count === 1 ? 'rating' : 'ratings'}
-              </Text>
-            </View>
-          ) : (
-            <Text style={styles.noRatings}>No ratings yet</Text>
-          )}
-        </View>
-
-        {/* Reviews Placeholder */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Reviews</Text>
-          <Text style={styles.placeholder}>Reviews coming soon...</Text>
-        </View>
-
-        <View style={styles.bottomPadding} />
+        {/* Platforms */}
+        {game.platforms && game.platforms.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Platforms</Text>
+            <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
+          </View>
+        )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   )
 }
 
@@ -336,66 +242,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  scrollView: {
-    flex: 1,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  loadingContainer: {
+  backButton: {
+    padding: Spacing.sm,
+    marginRight: Spacing.sm,
+  },
+  headerTitle: {
     flex: 1,
-    backgroundColor: Colors.background,
+    fontSize: FontSize.lg,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  centered: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   errorText: {
-    color: Colors.text,
-    fontSize: FontSize.lg,
-    marginBottom: Spacing.md,
-  },
-  backLink: {
-    color: Colors.accent,
+    color: Colors.textMuted,
     fontSize: FontSize.md,
+    marginTop: Spacing.md,
   },
-  headerContainer: {
-    height: HEADER_HEIGHT,
-    width: SCREEN_WIDTH,
+  scrollView: {
+    flex: 1,
   },
-  headerImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  headerPlaceholder: {
-    backgroundColor: Colors.surface,
-  },
-  headerGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-  },
-  backButtonContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  backButton: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 20,
-    padding: Spacing.sm,
-    marginLeft: Spacing.md,
-    marginTop: Spacing.sm,
+  scrollContent: {
+    padding: Spacing.lg,
   },
   gameInfo: {
     flexDirection: 'row',
-    paddingHorizontal: Spacing.lg,
-    marginTop: -60,
-  },
-  coverContainer: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    marginBottom: Spacing.lg,
   },
   cover: {
     width: 120,
@@ -407,10 +290,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titleContainer: {
+  infoContainer: {
     flex: 1,
     marginLeft: Spacing.md,
-    paddingTop: 70,
+    justifyContent: 'center',
   },
   title: {
     fontSize: FontSize.xl,
@@ -418,44 +301,29 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.xs,
   },
-  metaRow: {
+  year: {
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
-  metaText: {
+  genres: {
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: Colors.textDim,
   },
-  genresRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  genreTag: {
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  genreText: {
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-  },
-  userStatus: {
+  statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.md,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
     gap: Spacing.xs,
   },
-  userStatusText: {
+  statusText: {
     fontSize: FontSize.sm,
     color: Colors.accent,
     fontWeight: '500',
-  },
-  actionSection: {
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
   },
   logButton: {
     backgroundColor: Colors.accent,
@@ -464,6 +332,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
     gap: Spacing.sm,
   },
   logButtonText: {
@@ -472,59 +341,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   sectionTitle: {
     fontSize: FontSize.md,
     fontWeight: '600',
     color: Colors.textMuted,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   summaryText: {
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 22,
   },
-  readMore: {
+  platformsText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
-    marginTop: Spacing.sm,
-  },
-  ratingContainer: {
-    backgroundColor: Colors.surface,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-  },
-  ratingBig: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  ratingValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
     color: Colors.text,
-  },
-  ratingCount: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginTop: Spacing.sm,
-  },
-  noRatings: {
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-    textAlign: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  placeholder: {
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-    textAlign: 'center',
-    paddingVertical: Spacing.lg,
-  },
-  bottomPadding: {
-    height: Spacing.xxl,
   },
 })

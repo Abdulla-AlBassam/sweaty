@@ -103,12 +103,15 @@ export default function SearchScreen() {
   }, [query])
 
   const handleGamePress = (gameId: number) => {
+    console.log('SearchScreen: handleGamePress called with gameId:', gameId)
     const game = results.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
     if (game) {
       saveRecentSearch(game)
     }
     Keyboard.dismiss()
+    console.log('SearchScreen: Calling navigation.navigate to GameDetail')
     navigation.navigate('GameDetail', { gameId })
+    console.log('SearchScreen: navigation.navigate called')
   }
 
   const clearSearch = () => {
