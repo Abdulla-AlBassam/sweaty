@@ -112,8 +112,17 @@ export default function DashboardScreen() {
           <Text style={styles.logo}>sweaty</Text>
         </View>
 
-        {/* Welcome Section */}
+        {/* Welcome Section with Avatar */}
         <View style={styles.welcomeSection}>
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
+          ) : (
+            <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
+              <Text style={styles.headerAvatarInitial}>
+                {displayName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <Text style={styles.welcomeText}>
             {welcomeMessage.text}, {displayName}{welcomeMessage.isQuestion ? '?' : '!'}
           </Text>
@@ -240,13 +249,33 @@ const styles = StyleSheet.create({
     color: Colors.accent,
   },
   welcomeSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xl,
   },
+  headerAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Colors.surface,
+  },
+  headerAvatarFallback: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.accent,
+  },
+  headerAvatarInitial: {
+    color: Colors.background,
+    fontSize: 22,
+    fontWeight: '700',
+  },
   welcomeText: {
-    fontSize: FontSize.xl,
-    fontWeight: '600',
+    fontSize: 26,
+    fontWeight: '700',
     color: Colors.text,
+    flex: 1,
   },
   statsSection: {
     paddingHorizontal: Spacing.lg,
