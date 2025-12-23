@@ -1,29 +1,30 @@
 // Colors matching the Sweaty web app theme
 export const Colors = {
   // Backgrounds
-  background: '#14181c',
-  backgroundLighter: '#1c2228',
-  backgroundCard: '#242c34',
-
-  // Text
-  foreground: '#ffffff',
-  foregroundMuted: '#99aabb',
+  background: '#0f0f0f',
+  surface: '#1a1a1a',
+  surfaceLight: '#2a2a2a',
 
   // Accent (green)
-  accent: '#00e054',
-  accentHover: '#00c349',
+  accent: '#22c55e',
+  accentDark: '#16a34a',
+
+  // Text
+  text: '#ffffff',
+  textMuted: '#9ca3af',
+  textDim: '#6b7280',
 
   // Border
-  border: '#2c3440',
+  border: '#2a2a2a',
 
   // Status colors
   error: '#ef4444',
   warning: '#f59e0b',
-  success: '#00e054',
+  success: '#22c55e',
 
   // Game status colors
   statusPlaying: '#3b82f6',
-  statusCompleted: '#00e054',
+  statusCompleted: '#22c55e',
   statusPlayed: '#8b5cf6',
   statusWantToPlay: '#f59e0b',
   statusOnHold: '#6b7280',

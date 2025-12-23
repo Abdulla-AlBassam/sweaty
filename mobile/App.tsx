@@ -17,8 +17,7 @@ function AppContent() {
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <Text style={styles.title}>sweaty</Text>
-      <Text style={styles.subtitle}>Track Your Games</Text>
+      <Text style={styles.title}>Sweaty Mobile</Text>
 
       {user ? (
         <View style={styles.userInfo}>
@@ -26,7 +25,7 @@ function AppContent() {
             Welcome, {profile?.display_name || profile?.username || 'Gamer'}!
           </Text>
           <Text style={styles.mutedText}>
-            You are signed in as {user.email}
+            Signed in as {user.email}
           </Text>
         </View>
       ) : (
@@ -34,10 +33,6 @@ function AppContent() {
           Sign in to start tracking your games
         </Text>
       )}
-
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>Supabase Connected</Text>
-      </View>
     </View>
   )
 }
@@ -59,42 +54,23 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 48,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: Colors.accent,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: Colors.foregroundMuted,
-    marginBottom: 32,
+    color: Colors.text,
+    marginBottom: 24,
   },
   userInfo: {
     alignItems: 'center',
     marginBottom: 24,
   },
   welcomeText: {
-    fontSize: 20,
-    color: Colors.foreground,
+    fontSize: 18,
+    color: Colors.text,
     marginBottom: 8,
   },
   mutedText: {
     fontSize: 14,
-    color: Colors.foregroundMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
-  },
-  badge: {
-    marginTop: 40,
-    backgroundColor: Colors.backgroundCard,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.accent,
-  },
-  badgeText: {
-    color: Colors.accent,
-    fontSize: 12,
-    fontWeight: '600',
   },
 })
