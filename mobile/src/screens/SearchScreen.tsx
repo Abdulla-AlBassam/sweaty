@@ -234,8 +234,13 @@ export default function SearchScreen() {
     Keyboard.dismiss()
   }
 
-  const showRecentSearches = query.length < 2 && recentSearches.length > 0
+  const clearRecentSearches = async () => {
+    setRecentSearches([])
+    await AsyncStorage.removeItem(RECENT_SEARCHES_KEY)
+  }
+
   const hasResults = userResults.length > 0 || gameResults.length > 0
+  const showDiscovery = query.length < 2
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -287,17 +292,6 @@ export default function SearchScreen() {
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
         </View>
-      ) : showRecentSearches ? (
-        <ScrollView style={styles.scrollView}>
-          <Text style={styles.sectionTitle}>Recent Searches</Text>
-          <View style={styles.gamesGrid}>
-            {recentSearches.map((game) => (
-              <View key={game.id} style={styles.gridItem}>
-                <GameCard game={game} onPress={handleGamePress} size="medium" />
-              </View>
-            ))}
-          </View>
-        </ScrollView>
       ) : hasResults ? (
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           {/* Users Section */}
@@ -362,6 +356,41 @@ export default function SearchScreen() {
             />
           }
         >
+          {/* Recent Searches */}
+          {recentSearches.length > 0 && (
+            <View style={styles.discoverySection}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.recentSectionTitle}>Recent Searches</Text>
+                <TouchableOpacity onPress={clearRecentSearches}>
+                  <Text style={styles.clearText}>Clear</Text>
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.recentSearchesList}
+              >
+                {recentSearches.map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.recentChip}
+                    onPress={() => handleGamePress(game.id)}
+                  >
+                    {(game.coverUrl || game.cover_url) && (
+                      <Image
+                        source={{ uri: getIGDBImageUrl(game.coverUrl || game.cover_url) }}
+                        style={styles.recentChipImage}
+                      />
+                    )}
+                    <Text style={styles.recentChipText} numberOfLines={1}>
+                      {game.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+
           {/* Trending Games from IGDB (global trending) */}
           <View style={styles.discoverySection}>
             <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
@@ -531,12 +560,55 @@ const styles = StyleSheet.create({
   discoverySection: {
     paddingTop: Spacing.lg,
   },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    marginBottom: 12,
+  },
+  recentSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+  },
   discoverySectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.text,
     marginLeft: Spacing.lg,
     marginBottom: 12,
+  },
+  clearText: {
+    color: Colors.textMuted,
+    fontSize: FontSize.sm,
+  },
+  recentSearchesList: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  recentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    paddingRight: Spacing.md,
+    paddingVertical: Spacing.xs,
+    paddingLeft: Spacing.xs,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  recentChipImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.surfaceLight,
+  },
+  recentChipText: {
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    maxWidth: 120,
   },
   friendsPlayingList: {
     paddingHorizontal: Spacing.lg,
