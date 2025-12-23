@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Keyboard,
   Image,
-  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -19,9 +18,6 @@ import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import GameCard from '../components/GameCard'
-import HorizontalGameList from '../components/HorizontalGameList'
-import StackedAvatars from '../components/StackedAvatars'
-import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 
@@ -53,67 +49,11 @@ export default function SearchScreen() {
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [trendingGames, setTrendingGames] = useState<SearchGame[]>([])
-  const [isLoadingTrending, setIsLoadingTrending] = useState(true)
-  const [communityGames, setCommunityGames] = useState<SearchGame[]>([])
-  const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
 
-  // Get games that friends are currently playing
-  const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
-
-  // Load recent searches and discovery sections on mount
+  // Load recent searches on mount
   useEffect(() => {
     loadRecentSearches()
-    loadTrendingGames()
-    loadCommunityGames()
   }, [])
-
-  // Pull-to-refresh handler
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await Promise.all([
-      loadTrendingGames(),
-      loadCommunityGames(),
-      refetchFriendsPlaying(),
-    ])
-    setRefreshing(false)
-  }, [refetchFriendsPlaying])
-
-  // Load trending games from IGDB (global trending)
-  const loadTrendingGames = async () => {
-    try {
-      setIsLoadingTrending(true)
-      const response = await fetch(`${API_BASE_URL}/api/popular-games?limit=15`)
-      if (!response.ok) throw new Error('Failed to fetch trending games')
-      const data = await response.json()
-      setTrendingGames(data.games || [])
-    } catch (err) {
-      console.error('Failed to load trending games:', err)
-    } finally {
-      setIsLoadingTrending(false)
-    }
-  }
-
-  // Load community popular games from local database (what Sweaty users like)
-  const loadCommunityGames = async () => {
-    try {
-      setIsLoadingCommunity(true)
-      const { data, error } = await supabase
-        .from('games_cache')
-        .select('id, name, cover_url')
-        .not('cover_url', 'is', null)
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(15)
-
-      if (error) throw error
-      setCommunityGames(data || [])
-    } catch (err) {
-      console.error('Failed to load community games:', err)
-    } finally {
-      setIsLoadingCommunity(false)
-    }
-  }
 
   const loadRecentSearches = async () => {
     try {
@@ -239,8 +179,12 @@ export default function SearchScreen() {
     await AsyncStorage.removeItem(RECENT_SEARCHES_KEY)
   }
 
+  const openFilterModal = (filterType: 'genre' | 'year' | 'platform') => {
+    // TODO: Implement filter modal navigation in next step
+    console.log('Open filter modal:', filterType)
+  }
+
   const hasResults = userResults.length > 0 || gameResults.length > 0
-  const showDiscovery = query.length < 2
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -346,19 +290,12 @@ export default function SearchScreen() {
       ) : (
         <ScrollView
           style={styles.scrollView}
+          contentContainerStyle={styles.browseContent}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={Colors.accent}
-              colors={[Colors.accent]}
-            />
-          }
         >
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
-            <View style={styles.discoverySection}>
+            <View style={styles.recentSection}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.recentSectionTitle}>Recent Searches</Text>
                 <TouchableOpacity onPress={clearRecentSearches}>
@@ -391,52 +328,29 @@ export default function SearchScreen() {
             </View>
           )}
 
-          {/* Trending Games from IGDB (global trending) */}
-          <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
-            <HorizontalGameList
-              games={trendingGames}
-              onGamePress={(game) => handleGamePress(game.id)}
-              isLoading={isLoadingTrending}
-            />
-          </View>
+          {/* Browse by Section */}
+          <View style={styles.browseSection}>
+            <Text style={styles.browseSectionTitle}>Browse by</Text>
 
-          {/* Community Popular Games (what Sweaty users like) */}
-          <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>Popular in Community</Text>
-            <HorizontalGameList
-              games={communityGames}
-              onGamePress={(game) => handleGamePress(game.id)}
-              isLoading={isLoadingCommunity}
-            />
-          </View>
+            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('genre')}>
+              <Text style={styles.browseRowText}>Genre</Text>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
 
-          {/* What Your Friends Are Playing */}
-          {friendsPlaying.length > 0 && (
-            <View style={styles.discoverySection}>
-              <Text style={styles.discoverySectionTitle}>What Your Friends Are Playing</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.friendsPlayingList}
-              >
-                {friendsPlaying.map((game) => (
-                  <TouchableOpacity
-                    key={game.id}
-                    style={styles.friendsGameCard}
-                    onPress={() => handleGamePress(game.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Image
-                      source={{ uri: getIGDBImageUrl(game.cover_url) }}
-                      style={styles.friendsGameCover}
-                    />
-                    <StackedAvatars users={game.friends} />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
+            <View style={styles.browseRowDivider} />
+
+            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('year')}>
+              <Text style={styles.browseRowText}>Release date</Text>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
+
+            <View style={styles.browseRowDivider} />
+
+            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('platform')}>
+              <Text style={styles.browseRowText}>Platform</Text>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -476,20 +390,15 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  browseContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xxl,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.lg,
-  },
-  emptyIcon: {
-    marginBottom: Spacing.md,
-  },
-  emptyTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: '600',
-    color: Colors.text,
-    marginBottom: Spacing.sm,
   },
   emptyText: {
     fontSize: FontSize.sm,
@@ -557,14 +466,13 @@ const styles = StyleSheet.create({
     width: '30%',
     marginBottom: Spacing.md,
   },
-  discoverySection: {
+  recentSection: {
     paddingTop: Spacing.lg,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
     marginBottom: 12,
   },
   recentSectionTitle: {
@@ -572,19 +480,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: Colors.text,
   },
-  discoverySectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text,
-    marginLeft: Spacing.lg,
-    marginBottom: 12,
-  },
   clearText: {
     color: Colors.textMuted,
     fontSize: FontSize.sm,
   },
   recentSearchesList: {
-    paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
   },
   recentChip: {
@@ -610,20 +510,28 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     maxWidth: 120,
   },
-  friendsPlayingList: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
+  browseSection: {
+    marginTop: 24,
   },
-  friendsGameCard: {
-    position: 'relative',
-    width: 100,
-    aspectRatio: 3 / 4,
+  browseSectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 16,
   },
-  friendsGameCover: {
-    width: '100%',
-    height: '100%',
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
+  browseRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  browseRowText: {
+    fontSize: 16,
+    color: Colors.text,
+  },
+  browseRowDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
