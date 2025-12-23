@@ -32,8 +32,7 @@ export default function ActivityScreen() {
   }, [refetch])
 
   const handleUserPress = (userId: string, username: string) => {
-    // TODO: Navigate to user profile when UserProfile screen is ready
-    console.log('Navigate to profile:', username)
+    navigation.navigate('UserProfile', { username, userId })
   }
 
   const handleGamePress = (gameId: number) => {

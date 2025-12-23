@@ -86,8 +86,7 @@ export default function DashboardScreen() {
   const displayName = profile?.display_name || profile?.username || 'Gamer'
 
   const handleUserPress = (userId: string, username: string) => {
-    // TODO: Navigate to profile screen
-    console.log('Navigate to profile:', username)
+    navigation.navigate('UserProfile', { username, userId })
   }
 
   const handleGamePress = (gameId: number) => {

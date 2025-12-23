@@ -9,6 +9,7 @@ import LoginScreen from '../screens/LoginScreen'
 import SignupScreen from '../screens/SignupScreen'
 import MainTabs from './MainTabs'
 import GameDetailScreen from '../screens/GameDetailScreen'
+import UserProfileScreen from '../screens/UserProfileScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -55,9 +56,13 @@ function MainNavigator() {
           animation: 'slide_from_right',
         }}
       />
-      {/* Future:
-      <MainStack.Screen name="UserProfile" component={UserProfileScreen} />
-      */}
+      <MainStack.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
     </MainStack.Navigator>
   )
 }
