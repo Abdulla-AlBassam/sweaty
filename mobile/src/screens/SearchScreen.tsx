@@ -35,7 +35,8 @@ interface SearchUser {
   avatar_url: string | null
 }
 
-const API_BASE_URL = 'https://sweaty-v1.vercel.app'
+// TEMPORARY: Using local API for testing - change back to Vercel before deploying
+const API_BASE_URL = 'http://192.168.100.152:3000'
 const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
