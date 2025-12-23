@@ -19,6 +19,7 @@ import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import GameCard from '../components/GameCard'
+import HorizontalGameList from '../components/HorizontalGameList'
 
 interface SearchGame {
   id: number
@@ -47,11 +48,33 @@ export default function SearchScreen() {
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [popularGames, setPopularGames] = useState<SearchGame[]>([])
+  const [isLoadingPopular, setIsLoadingPopular] = useState(true)
 
-  // Load recent searches on mount
+  // Load recent searches and popular games on mount
   useEffect(() => {
     loadRecentSearches()
+    loadPopularGames()
   }, [])
+
+  const loadPopularGames = async () => {
+    try {
+      setIsLoadingPopular(true)
+      const { data, error } = await supabase
+        .from('games_cache')
+        .select('id, name, cover_url')
+        .not('cover_url', 'is', null)
+        .order('rating', { ascending: false, nullsFirst: false })
+        .limit(15)
+
+      if (error) throw error
+      setPopularGames(data || [])
+    } catch (err) {
+      console.error('Failed to load popular games:', err)
+    } finally {
+      setIsLoadingPopular(false)
+    }
+  }
 
   const loadRecentSearches = async () => {
     try {
@@ -271,13 +294,17 @@ export default function SearchScreen() {
           <Text style={styles.emptyText}>No results found</Text>
         </View>
       ) : (
-        <View style={styles.centered}>
-          <Ionicons name="search-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
-          <Text style={styles.emptyTitle}>Search for Games or Users</Text>
-          <Text style={styles.emptyText}>
-            Find games to add to your library or users to follow
-          </Text>
-        </View>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Popular Games Section */}
+          <View style={styles.discoverySection}>
+            <Text style={styles.discoverySectionTitle}>Popular Right Now</Text>
+            <HorizontalGameList
+              games={popularGames}
+              onGamePress={(game) => handleGamePress(game.id)}
+              isLoading={isLoadingPopular}
+            />
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   )
@@ -396,5 +423,15 @@ const styles = StyleSheet.create({
   gridItem: {
     width: '30%',
     marginBottom: Spacing.md,
+  },
+  discoverySection: {
+    paddingTop: Spacing.lg,
+  },
+  discoverySectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.text,
+    marginLeft: Spacing.lg,
+    marginBottom: 12,
   },
 })
