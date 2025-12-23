@@ -141,9 +141,6 @@ export default function LogGameModal({
   }
 
   const handleSave = async () => {
-    // DEBUG: Test if this code is even running
-    Alert.alert('DEBUG', `Saving with status: ${status}, rating: ${rating}`)
-
     if (!user || !status) return
 
     setIsSaving(true)
@@ -264,9 +261,6 @@ export default function LogGameModal({
       if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
       if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
-      // DEBUG: Always show what we calculated
-      console.log('XP DEBUG:', { gamerXPDiff, socialXPDiff, xpParts })
-
       // Build level up message
       const levelUpParts: string[] = []
       if (newGamerLevel.level > currentGamerLevel.level) {
@@ -343,7 +337,7 @@ export default function LogGameModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              {existingLog ? 'Edit Log' : 'Log Game'} (DEBUG v2)
+              {existingLog ? 'Edit Log' : 'Log Game'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.text} />
