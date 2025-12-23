@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
+import LogGameModal from '../components/LogGameModal'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
@@ -47,11 +48,14 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [game, setGame] = useState<GameDetails | null>(null)
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isModalVisible, setIsModalVisible] = useState(false)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
-    console.log('=== route.params:', JSON.stringify(route.params))
     fetchGameDetails()
+  }, [gameId])
+
+  useEffect(() => {
     if (user) {
       fetchUserLog()
     }
@@ -95,7 +99,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     }
   }
 
-  const fetchUserLog = async () => {
+  const fetchUserLog = useCallback(async () => {
     if (!user) return
     try {
       const { data } = await supabase
@@ -105,13 +109,17 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         .eq('game_id', gameId)
         .single()
 
-      if (data) {
-        setUserLog(data)
-      }
+      setUserLog(data || null)
     } catch (error) {
       // Game not logged yet, that's fine
+      setUserLog(null)
     }
-  }
+  }, [user, gameId])
+
+  const handleLogSaveSuccess = useCallback(() => {
+    // Refresh the user's log after saving
+    fetchUserLog()
+  }, [fetchUserLog])
 
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
@@ -206,7 +214,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         {/* Action Button */}
         <TouchableOpacity
           style={styles.logButton}
-          onPress={() => console.log('Log game:', gameId)}
+          onPress={() => setIsModalVisible(true)}
         >
           <Ionicons
             name={userLog ? 'create-outline' : 'add-circle-outline'}
@@ -234,6 +242,15 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
       </ScrollView>
+
+      {/* Log Game Modal */}
+      <LogGameModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        game={game}
+        existingLog={userLog}
+        onSaveSuccess={handleLogSaveSuccess}
+      />
     </SafeAreaView>
   )
 }
