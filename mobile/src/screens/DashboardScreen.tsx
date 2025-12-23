@@ -256,9 +256,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
   },
   headerAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.surface,
   },
   headerAvatarFallback: {
@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
   },
   headerAvatarInitial: {
     color: Colors.background,
-    fontSize: 22,
+    fontSize: 26,
     fontWeight: '700',
   },
   welcomeText: {
