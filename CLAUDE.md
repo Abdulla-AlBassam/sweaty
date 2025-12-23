@@ -517,3 +517,54 @@ Lurker → Newcomer → Contributor → Reviewer → Critic → Voice → Influe
 - `/src/lib/xp.ts` - XP calculation system
 - `/src/components/LevelBadge.tsx` - Level badge component
 - `/src/components/XPProgressBar.tsx` - XP progress bar component
+
+### Session 6 (Dec 23, 2024)
+**Monorepo Restructure:**
+- Restructured repo to monorepo with `/web` and `/mobile` folders
+- Moved all Next.js files into `/web` folder
+- Created `/mobile` folder for React Native/Expo app
+- Removed `vercel.json` (using Vercel dashboard settings for root directory)
+- Updated `README.md` with monorepo structure and getting started guide
+- Updated `CLAUDE.md` with new project structure
+
+**Mobile App Setup (Expo/React Native):**
+- Initialized Expo project with TypeScript template
+- Created folder structure: `src/app`, `src/components`, `src/lib`, `src/hooks`, `src/contexts`, `src/constants`, `src/types`
+- Installed dependencies: `@supabase/supabase-js`, `expo-secure-store`, `react-native-url-polyfill`
+
+**Mobile Auth & Supabase:**
+- Created `src/lib/supabase.ts` with Supabase client using `expo-secure-store` for secure token storage
+- Created `src/contexts/AuthContext.tsx` with full auth flow:
+  - `signIn(email, password)`, `signUp(email, password, username, displayName)`, `signOut()`
+  - Session persistence and `onAuthStateChange` listener
+  - Profile fetching and `refreshProfile()` method
+  - Loading state for initial session check
+- Added `.env` with Supabase credentials
+
+**Mobile Shared Code:**
+- Created `src/constants/colors.ts` with theme colors:
+  - `background: '#0f0f0f'`, `surface: '#1a1a1a'`, `surfaceLight: '#2a2a2a'`
+  - `accent: '#22c55e'`, `accentDark: '#16a34a'`
+  - `text: '#ffffff'`, `textMuted: '#9ca3af'`, `textDim: '#6b7280'`
+- Created `src/constants/index.ts` with status labels, platforms, IGDB image helpers
+- Created `src/types/index.ts` with shared types: `Game`, `Profile`, `GameLog`, `GameStatus`, `LevelInfo`, etc.
+- Copied `src/lib/xp.ts` from web app (XP/Level calculation - pure functions)
+- Created `src/hooks/useSupabase.ts` with data fetching hooks:
+  - `useGameLogs(userId)`, `useProfile(username)`, `useFollowCounts(userId)`, `useGameSearch(query)`
+
+**Mobile App Entry:**
+- Updated `App.tsx` with AuthProvider wrapper
+- Shows "Sweaty Mobile" centered on black background (#0f0f0f)
+- Displays loading spinner during auth check
+- Shows welcome message when signed in
+
+**New Mobile Files:**
+- `mobile/src/lib/supabase.ts` - Supabase client with SecureStore
+- `mobile/src/contexts/AuthContext.tsx` - Auth state management
+- `mobile/src/constants/colors.ts` - Theme colors
+- `mobile/src/constants/index.ts` - Status labels, platforms
+- `mobile/src/types/index.ts` - Shared TypeScript types
+- `mobile/src/lib/xp.ts` - XP/Level system
+- `mobile/src/hooks/useSupabase.ts` - Data fetching hooks
+- `mobile/.env` - Supabase credentials (gitignored)
+- `mobile/.env.example` - Environment template
