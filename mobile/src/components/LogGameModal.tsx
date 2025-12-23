@@ -229,6 +229,9 @@ export default function LogGameModal({
       if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
       if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
+      // DEBUG: Always show what we calculated
+      console.log('XP DEBUG:', { gamerXPDiff, socialXPDiff, xpParts })
+
       // Build level up message
       const levelUpParts: string[] = []
       if (newGamerLevel.level > currentGamerLevel.level) {
@@ -238,7 +241,7 @@ export default function LogGameModal({
         levelUpParts.push(`🌟 Social Rank: ${newSocialLevel.rank}`)
       }
 
-      // Show XP notification using Alert (guaranteed to work)
+      // Show XP notification using Alert (show BEFORE closing modal)
       if (xpParts.length > 0 || levelUpParts.length > 0) {
         const title = levelUpParts.length > 0 ? '🎉 Level Up!' : 'XP Earned!'
         const message = [
@@ -246,10 +249,17 @@ export default function LogGameModal({
           ...(levelUpParts.length > 0 ? ['', ...levelUpParts] : [])
         ].join('\n')
 
-        // Show after modal closes
-        setTimeout(() => {
-          Alert.alert(title, message)
-        }, 300)
+        // Show alert and close modal when user dismisses it
+        Alert.alert(title, message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              onSaveSuccess?.()
+              onClose()
+            }
+          }
+        ])
+        return // Don't call onSaveSuccess/onClose below since we do it in the alert callback
       }
 
       onSaveSuccess?.()
