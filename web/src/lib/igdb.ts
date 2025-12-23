@@ -22,6 +22,13 @@ export interface IGDBGame {
   total_rating?: number
   artworks?: { id: number; url: string; width: number; height: number; image_id: string }[]
   screenshots?: { id: number; url: string; width: number; height: number; image_id: string }[]
+  videos?: { id: number; video_id: string; name?: string }[] // YouTube video IDs
+}
+
+// Video data for trailers
+export interface GameVideo {
+  videoId: string  // YouTube video ID
+  name: string     // e.g., "Launch Trailer", "Gameplay Trailer"
 }
 
 // Transformed game data (cleaner format for our app)
@@ -36,6 +43,7 @@ export interface Game {
   platforms: string[]
   rating: number | null
   artworkUrls?: string[] // Optional array of artwork URLs for poster selection
+  videos?: GameVideo[]   // YouTube trailers
 }
 
 // ============================================
@@ -141,7 +149,14 @@ function getArtworkUrls(artworks?: IGDBGame['artworks'], minWidth: number = 500)
 }
 
 // Transform IGDB response to our cleaner Game format
-function transformGame(game: IGDBGame, includeArtworks: boolean = false): Game {
+interface TransformOptions {
+  includeArtworks?: boolean
+  includeVideos?: boolean
+}
+
+function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
+  const { includeArtworks = false, includeVideos = false } = options
+
   const result: Game = {
     id: game.id,
     name: game.name,
@@ -156,6 +171,13 @@ function transformGame(game: IGDBGame, includeArtworks: boolean = false): Game {
 
   if (includeArtworks && game.artworks) {
     result.artworkUrls = getArtworkUrls(game.artworks)
+  }
+
+  if (includeVideos && game.videos) {
+    result.videos = game.videos.map(v => ({
+      videoId: v.video_id,
+      name: v.name || 'Trailer'
+    }))
   }
 
   return result
@@ -211,14 +233,15 @@ export async function getGameById(id: number): Promise<Game | null> {
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
            genres.name, platforms.name, total_rating, rating, rating_count,
-           artworks.url, artworks.width, artworks.height, artworks.image_id;
+           artworks.url, artworks.width, artworks.height, artworks.image_id,
+           videos.video_id, videos.name;
     where id = ${id};
   `
 
   const games = await igdbFetch('games', body) as IGDBGame[]
 
   if (games.length === 0) return null
-  return transformGame(games[0], true) // Include artworks for game detail pages
+  return transformGame(games[0], { includeArtworks: true, includeVideos: true })
 }
 
 // Get multiple games by IDs (useful for batch fetching)

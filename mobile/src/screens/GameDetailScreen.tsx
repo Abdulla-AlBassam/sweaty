@@ -19,9 +19,15 @@ import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
+import TrailerSection from '../components/TrailerSection'
 import { GameDetailSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
+
+interface GameVideo {
+  videoId: string
+  name: string
+}
 
 interface GameDetails {
   id: number
@@ -35,6 +41,7 @@ interface GameDetails {
   genres?: string[]
   platforms?: string[]
   rating?: number
+  videos?: GameVideo[]
 }
 
 interface UserGameLog {
@@ -263,6 +270,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.summaryText}>{game.summary}</Text>
           </View>
+        )}
+
+        {/* Trailers */}
+        {game.videos && game.videos.length > 0 && (
+          <TrailerSection videos={game.videos} />
         )}
 
         {/* Platforms */}
