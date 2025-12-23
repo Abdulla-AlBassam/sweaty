@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Pressable,
+  TextInput,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -37,6 +38,7 @@ interface LogGameModalProps {
     status: string
     rating: number | null
     platform: string | null
+    review?: string | null
   } | null
   onSaveSuccess?: () => void
 }
@@ -61,6 +63,7 @@ export default function LogGameModal({
   const [status, setStatus] = useState<string | null>(null)
   const [rating, setRating] = useState<number | null>(null)
   const [platform, setPlatform] = useState<string | null>(null)
+  const [review, setReview] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -70,10 +73,12 @@ export default function LogGameModal({
       setStatus(existingLog.status)
       setRating(existingLog.rating)
       setPlatform(existingLog.platform)
+      setReview(existingLog.review || '')
     } else {
       setStatus(null)
       setRating(null)
       setPlatform(null)
+      setReview('')
     }
   }, [existingLog, visible])
 
@@ -121,6 +126,7 @@ export default function LogGameModal({
         status,
         rating,
         platform,
+        review: review.trim() || null,
         updated_at: new Date().toISOString(),
       }
 
@@ -294,6 +300,24 @@ export default function LogGameModal({
               </>
             )}
 
+            {/* Review */}
+            <Text style={styles.sectionLabel}>Review</Text>
+            <View style={styles.reviewContainer}>
+              <TextInput
+                style={styles.reviewInput}
+                placeholder="Write your thoughts about this game..."
+                placeholderTextColor={Colors.textDim}
+                value={review}
+                onChangeText={(text) => setReview(text.slice(0, 2000))}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+              <Text style={styles.reviewCharCount}>
+                {review.length}/2000
+              </Text>
+            </View>
+
             {/* Error */}
             {error && (
               <View style={styles.errorContainer}>
@@ -465,6 +489,25 @@ const styles = StyleSheet.create({
   platformChipTextSelected: {
     color: Colors.background,
     fontWeight: '600',
+  },
+  reviewContainer: {
+    marginBottom: Spacing.xl,
+  },
+  reviewInput: {
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    minHeight: 100,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  reviewCharCount: {
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textAlign: 'right',
+    marginTop: Spacing.xs,
   },
   errorContainer: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',

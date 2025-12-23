@@ -41,6 +41,7 @@ interface GameLog {
   game_id: number
   status: string
   rating: number | null
+  review: string | null
   game: {
     id: number
     name: string
@@ -140,6 +141,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           game_id,
           status,
           rating,
+          review,
           game:games_cache(id, name, cover_url)
         `)
         .eq('user_id', profile.id)
@@ -418,6 +420,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                       <Text style={styles.ratingText}>★ {log.rating}</Text>
                     </View>
                   )}
+                  {log.review && (
+                    <View style={styles.reviewBadge}>
+                      <Ionicons name="chatbubble" size={10} color={Colors.text} />
+                    </View>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -613,6 +620,14 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.accent,
     fontWeight: '600',
+  },
+  reviewBadge: {
+    position: 'absolute',
+    top: 28,
+    right: Spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 4,
+    borderRadius: BorderRadius.sm,
   },
   emptyState: {
     alignItems: 'center',

@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
+import GameReviews from '../components/GameReviews'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
@@ -39,6 +40,7 @@ interface UserGameLog {
   status: string
   rating: number | null
   platform: string | null
+  review: string | null
 }
 
 export default function GameDetailScreen({ navigation, route }: Props) {
@@ -49,6 +51,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
@@ -104,7 +107,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     try {
       const { data } = await supabase
         .from('game_logs')
-        .select('id, status, rating, platform')
+        .select('id, status, rating, platform, review')
         .eq('user_id', user.id)
         .eq('game_id', gameId)
         .single()
@@ -117,8 +120,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   }, [user, gameId])
 
   const handleLogSaveSuccess = useCallback(() => {
-    // Refresh the user's log after saving
+    // Refresh the user's log and reviews after saving
     fetchUserLog()
+    setReviewsRefreshKey(prev => prev + 1)
   }, [fetchUserLog])
 
   const getCoverUrl = () => {
@@ -241,6 +245,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
           </View>
         )}
+
+        {/* Reviews */}
+        <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
       </ScrollView>
 
       {/* Log Game Modal */}

@@ -32,6 +32,7 @@ interface GameLogWithGame {
   status: string
   rating: number | null
   platform: string | null
+  review: string | null
   game: {
     id: number
     name: string
@@ -78,6 +79,7 @@ export default function ProfileScreen() {
           status,
           rating,
           platform,
+          review,
           game:games_cache(id, name, cover_url, platforms)
         `)
         .eq('user_id', user.id)
@@ -270,6 +272,11 @@ export default function ProfileScreen() {
                       <Text style={styles.ratingText}>★ {log.rating}</Text>
                     </View>
                   )}
+                  {log.review && (
+                    <View style={styles.reviewBadge}>
+                      <Ionicons name="chatbubble" size={10} color={Colors.text} />
+                    </View>
+                  )}
                   <View style={styles.editBadge}>
                     <Ionicons name="create-outline" size={12} color={Colors.text} />
                   </View>
@@ -305,6 +312,7 @@ export default function ProfileScreen() {
             status: selectedGame.status,
             rating: selectedGame.rating,
             platform: selectedGame.platform,
+            review: selectedGame.review,
           }}
           onSaveSuccess={handleLogSaveSuccess}
         />
@@ -517,6 +525,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: Spacing.xs,
     left: Spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 4,
+    borderRadius: BorderRadius.sm,
+  },
+  reviewBadge: {
+    position: 'absolute',
+    top: 28,
+    right: Spacing.xs,
     backgroundColor: 'rgba(0,0,0,0.7)',
     padding: 4,
     borderRadius: BorderRadius.sm,
