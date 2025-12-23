@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Pressable,
   TextInput,
+  Alert,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import Toast from 'react-native-toast-message'
@@ -223,59 +224,33 @@ export default function LogGameModal({
       const newGamerLevel = getGamerLevel(finalGamerXP)
       const newSocialLevel = getSocialLevel(finalSocialXP)
 
-      console.log('=== XP TOAST DEBUG ===')
-      console.log('existingLog:', existingLog)
-      console.log('status:', status, 'rating:', rating, 'review length:', review.trim().length)
-      console.log('oldGamerXP:', oldGamerXP, 'newGamerXP:', newGamerXP, 'gamerXPDiff:', gamerXPDiff)
-      console.log('oldSocialXP:', oldSocialXP, 'newSocialXP:', newSocialXP, 'socialXPDiff:', socialXPDiff)
+      // Build XP notification message
+      const xpParts: string[] = []
+      if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
+      if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
-      // Show XP toasts
-      if (gamerXPDiff > 0 || socialXPDiff > 0) {
-        const xpParts: string[] = []
-        if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
-        if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
-
-        console.log('Showing XP toast:', xpParts.join('  •  '))
-
-        // Use setTimeout to show toast after modal closes
-        setTimeout(() => {
-          Toast.show({
-            type: 'success',
-            text1: xpParts.join('  •  '),
-            text2: game.name,
-            visibilityTime: 2500,
-            position: 'top',
-          })
-        }, 300)
-      } else {
-        console.log('No XP gain, skipping toast')
+      // Build level up message
+      const levelUpParts: string[] = []
+      if (newGamerLevel.level > currentGamerLevel.level) {
+        levelUpParts.push(`🎮 Gamer Rank: ${newGamerLevel.rank}`)
+      }
+      if (newSocialLevel.level > currentSocialLevel.level) {
+        levelUpParts.push(`🌟 Social Rank: ${newSocialLevel.rank}`)
       }
 
-      // Check for level ups
-      const showXpToast = gamerXPDiff > 0 || socialXPDiff > 0
-      setTimeout(() => {
-        if (newGamerLevel.level > currentGamerLevel.level) {
-          Toast.show({
-            type: 'success',
-            text1: '🎮 Level Up!',
-            text2: `Gamer Rank: ${newGamerLevel.rank}`,
-            visibilityTime: 3000,
-            position: 'top',
-          })
-        }
+      // Show XP notification using Alert (guaranteed to work)
+      if (xpParts.length > 0 || levelUpParts.length > 0) {
+        const title = levelUpParts.length > 0 ? '🎉 Level Up!' : 'XP Earned!'
+        const message = [
+          ...xpParts,
+          ...(levelUpParts.length > 0 ? ['', ...levelUpParts] : [])
+        ].join('\n')
 
+        // Show after modal closes
         setTimeout(() => {
-          if (newSocialLevel.level > currentSocialLevel.level) {
-            Toast.show({
-              type: 'success',
-              text1: '🌟 Level Up!',
-              text2: `Social Rank: ${newSocialLevel.rank}`,
-              visibilityTime: 3000,
-              position: 'top',
-            })
-          }
-        }, newGamerLevel.level > currentGamerLevel.level ? 3500 : 0)
-      }, showXpToast ? 3000 : 300)
+          Alert.alert(title, message)
+        }, 300)
+      }
 
       onSaveSuccess?.()
       onClose()
