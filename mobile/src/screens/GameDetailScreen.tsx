@@ -7,6 +7,7 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -53,6 +54,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
@@ -126,6 +128,17 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     setReviewsRefreshKey(prev => prev + 1)
   }, [fetchUserLog])
 
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([
+      fetchGameDetails(),
+      fetchUserLog(),
+    ])
+    setReviewsRefreshKey(prev => prev + 1)
+    setRefreshing(false)
+  }, [fetchUserLog])
+
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
     return url ? getIGDBImageUrl(url, 'coverBig2x') : null
@@ -183,7 +196,18 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         <Text style={styles.headerTitle} numberOfLines={1}>{game.name}</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.accent}
+            colors={[Colors.accent]}
+          />
+        }
+      >
         {/* Cover and Info */}
         <View style={styles.gameInfo}>
           {coverUrl ? (

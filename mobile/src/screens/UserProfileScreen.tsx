@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   FlatList,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -75,6 +76,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
+  const [refreshing, setRefreshing] = useState(false)
 
   const isOwnProfile = user?.id === profile?.id
 
@@ -274,6 +276,18 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     )
   }
 
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([
+      fetchProfile(),
+      fetchGameLogs(),
+      fetchFollowCounts(),
+      fetchFavorites(),
+    ])
+    setRefreshing(false)
+  }, [profile])
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -317,7 +331,18 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         <Text style={styles.headerTitle}>@{profile.username}</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.accent}
+            colors={[Colors.accent]}
+          />
+        }
+      >
         {/* Profile Info */}
         <View style={styles.profileSection}>
           {profile.avatar_url ? (

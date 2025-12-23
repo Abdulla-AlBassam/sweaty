@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -57,6 +58,7 @@ export default function ProfileScreen() {
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
+  const [refreshing, setRefreshing] = useState(false)
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
 
@@ -158,6 +160,18 @@ export default function ProfileScreen() {
     fetchFavorites()
   }, [fetchFavorites])
 
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([
+      refreshProfile(),
+      fetchGameLogs(),
+      fetchFavorites(),
+      refreshLogs(),
+    ])
+    setRefreshing(false)
+  }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs])
+
   const handleFavoritesSaveSuccess = () => {
     refreshProfile()
   }
@@ -174,7 +188,18 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.accent}
+            colors={[Colors.accent]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>

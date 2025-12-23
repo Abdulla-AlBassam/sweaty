@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Keyboard,
   Image,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -55,9 +56,10 @@ export default function SearchScreen() {
   const [isLoadingTrending, setIsLoadingTrending] = useState(true)
   const [communityGames, setCommunityGames] = useState<SearchGame[]>([])
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Get games that friends are currently playing
-  const { games: friendsPlaying, isLoading: isLoadingFriends } = useFriendsPlaying(user?.id)
+  const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
 
   // Load recent searches and discovery sections on mount
   useEffect(() => {
@@ -65,6 +67,17 @@ export default function SearchScreen() {
     loadTrendingGames()
     loadCommunityGames()
   }, [])
+
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([
+      loadTrendingGames(),
+      loadCommunityGames(),
+      refetchFriendsPlaying(),
+    ])
+    setRefreshing(false)
+  }, [refetchFriendsPlaying])
 
   // Load trending games from IGDB (global trending)
   const loadTrendingGames = async () => {
@@ -319,7 +332,18 @@ export default function SearchScreen() {
           <Text style={styles.emptyText}>No results found</Text>
         </View>
       ) : (
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollView}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Colors.accent}
+              colors={[Colors.accent]}
+            />
+          }
+        >
           {/* Trending Games from IGDB (global trending) */}
           <View style={styles.discoverySection}>
             <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
