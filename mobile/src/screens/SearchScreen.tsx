@@ -20,6 +20,8 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
+import StackedAvatars from '../components/StackedAvatars'
+import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 
 interface SearchGame {
   id: number
@@ -53,6 +55,9 @@ export default function SearchScreen() {
   const [isLoadingTrending, setIsLoadingTrending] = useState(true)
   const [communityGames, setCommunityGames] = useState<SearchGame[]>([])
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
+
+  // Get games that friends are currently playing
+  const { games: friendsPlaying, isLoading: isLoadingFriends } = useFriendsPlaying(user?.id)
 
   // Load recent searches and discovery sections on mount
   useEffect(() => {
@@ -334,6 +339,33 @@ export default function SearchScreen() {
               isLoading={isLoadingCommunity}
             />
           </View>
+
+          {/* What Your Friends Are Playing */}
+          {friendsPlaying.length > 0 && (
+            <View style={styles.discoverySection}>
+              <Text style={styles.discoverySectionTitle}>What Your Friends Are Playing</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.friendsPlayingList}
+              >
+                {friendsPlaying.map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.friendsGameCard}
+                    onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.cover_url) }}
+                      style={styles.friendsGameCover}
+                    />
+                    <StackedAvatars users={game.friends} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -463,5 +495,20 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginLeft: Spacing.lg,
     marginBottom: 12,
+  },
+  friendsPlayingList: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  friendsGameCard: {
+    position: 'relative',
+    width: 100,
+    aspectRatio: 3 / 4,
+  },
+  friendsGameCover: {
+    width: '100%',
+    height: '100%',
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
   },
 })
