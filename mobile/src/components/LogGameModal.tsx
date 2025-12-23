@@ -109,6 +109,9 @@ export default function LogGameModal({
   }
 
   const handleSave = async () => {
+    // DEBUG: Test if this code is even running
+    Alert.alert('DEBUG', `Saving with status: ${status}, rating: ${rating}`)
+
     if (!user || !status) return
 
     setIsSaving(true)
