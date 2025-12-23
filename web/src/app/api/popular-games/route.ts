@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPopularGames } from '@/lib/igdb'
 
-// GET /api/games/popular?limit=15
+// GET /api/popular-games?limit=15
 // Returns trending/popular games from IGDB
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams

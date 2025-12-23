@@ -64,7 +64,7 @@ export default function SearchScreen() {
   const loadTrendingGames = async () => {
     try {
       setIsLoadingTrending(true)
-      const response = await fetch(`${API_BASE_URL}/api/games/popular?limit=15`)
+      const response = await fetch(`${API_BASE_URL}/api/popular-games?limit=15`)
       if (!response.ok) throw new Error('Failed to fetch trending games')
       const data = await response.json()
       setTrendingGames(data.games || [])
