@@ -1,6 +1,6 @@
 export * from './colors'
 
-// Game status labels and icons
+// Game status labels
 export const STATUS_LABELS: Record<string, string> = {
   playing: 'Playing',
   completed: 'Completed',
@@ -8,15 +8,6 @@ export const STATUS_LABELS: Record<string, string> = {
   want_to_play: 'Want to Play',
   on_hold: 'On Hold',
   dropped: 'Dropped',
-}
-
-export const STATUS_EMOJI: Record<string, string> = {
-  playing: '🎮',
-  completed: '✅',
-  played: '🕹️',
-  want_to_play: '📋',
-  on_hold: '⏸️',
-  dropped: '❌',
 }
 
 // Platform options for game logging
@@ -34,7 +25,7 @@ export const PLATFORMS = [
 
 // API configuration
 export const API_CONFIG = {
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000',
+  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://sweaty-v1.vercel.app',
 }
 
 // Image sizes for IGDB
@@ -43,11 +34,33 @@ export const IGDB_IMAGE_SIZES = {
   coverSmall: 't_cover_small',
   coverBig: 't_cover_big',
   screenshot: 't_screenshot_med',
+  screenshotBig: 't_screenshot_big',
   hd: 't_720p',
   fullHd: 't_1080p',
 }
 
 // Helper to construct IGDB image URLs
-export function getIGDBImageUrl(imageId: string, size: keyof typeof IGDB_IMAGE_SIZES = 'coverBig'): string {
-  return `https://images.igdb.com/igdb/image/upload/${IGDB_IMAGE_SIZES[size]}/${imageId}.jpg`
+// Handles both imageId (e.g., "abc123") and full URLs (e.g., "//images.igdb.com/...")
+export function getIGDBImageUrl(
+  imageIdOrUrl: string | null | undefined,
+  size: keyof typeof IGDB_IMAGE_SIZES = 'coverBig'
+): string {
+  if (!imageIdOrUrl) return ''
+
+  // If it's already a full URL, transform it
+  if (imageIdOrUrl.includes('images.igdb.com')) {
+    let url = imageIdOrUrl
+    // Add https if missing
+    if (url.startsWith('//')) {
+      url = `https:${url}`
+    }
+    // Replace size placeholder
+    Object.values(IGDB_IMAGE_SIZES).forEach((sizeValue) => {
+      url = url.replace(sizeValue, IGDB_IMAGE_SIZES[size])
+    })
+    return url
+  }
+
+  // Otherwise, construct from imageId
+  return `https://images.igdb.com/igdb/image/upload/${IGDB_IMAGE_SIZES[size]}/${imageIdOrUrl}.jpg`
 }

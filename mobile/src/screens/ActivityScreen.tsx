@@ -8,13 +8,19 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
 import { useActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { MainStackParamList } from '../navigation'
 import ActivityItem from '../components/ActivityItem'
 
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>
+
 export default function ActivityScreen() {
+  const navigation = useNavigation<NavigationProp>()
   const { user } = useAuth()
   const { activities, isLoading, refetch } = useActivityFeed(user?.id)
   const [refreshing, setRefreshing] = useState(false)
@@ -26,13 +32,12 @@ export default function ActivityScreen() {
   }, [refetch])
 
   const handleUserPress = (userId: string, username: string) => {
-    // TODO: Navigate to profile
+    // TODO: Navigate to user profile when UserProfile screen is ready
     console.log('Navigate to profile:', username)
   }
 
   const handleGamePress = (gameId: number) => {
-    // TODO: Navigate to game detail
-    console.log('Navigate to game:', gameId)
+    navigation.navigate('GameDetail', { gameId })
   }
 
   return (

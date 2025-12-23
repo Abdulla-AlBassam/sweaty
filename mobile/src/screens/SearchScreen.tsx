@@ -10,10 +10,15 @@ import {
   Keyboard,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { MainStackParamList } from '../navigation'
 import GameCard from '../components/GameCard'
+
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 
 interface SearchGame {
   id: number
@@ -27,6 +32,7 @@ const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
 export default function SearchScreen() {
+  const navigation = useNavigation<NavigationProp>()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchGame[]>([])
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
@@ -101,10 +107,9 @@ export default function SearchScreen() {
     if (game) {
       saveRecentSearch(game)
     }
-    // TODO: Navigate to game detail screen
-    console.log('Navigate to game:', gameId)
     Keyboard.dismiss()
-  }, [results, recentSearches])
+    navigation.navigate('GameDetail', { gameId })
+  }, [results, recentSearches, navigation])
 
   const clearSearch = () => {
     setQuery('')

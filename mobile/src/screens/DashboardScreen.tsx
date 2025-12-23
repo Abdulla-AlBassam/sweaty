@@ -10,8 +10,13 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
+import { MainStackParamList } from '../navigation'
+
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useActivityFeed, useFollowCounts } from '../hooks/useSupabase'
 import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -38,6 +43,7 @@ function getRandomWelcomeMessage() {
 }
 
 export default function DashboardScreen() {
+  const navigation = useNavigation<NavigationProp>()
   const { user, profile, signOut } = useAuth()
   const { logs, isLoading: logsLoading, refetch: refetchLogs } = useGameLogs(user?.id)
   const { activities, isLoading: activitiesLoading, refetch: refetchActivities } = useActivityFeed(user?.id)
@@ -85,8 +91,7 @@ export default function DashboardScreen() {
   }
 
   const handleGamePress = (gameId: number) => {
-    // TODO: Navigate to game detail screen
-    console.log('Navigate to game:', gameId)
+    navigation.navigate('GameDetail', { gameId })
   }
 
   return (

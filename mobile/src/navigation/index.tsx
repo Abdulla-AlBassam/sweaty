@@ -8,6 +8,7 @@ import { Colors } from '../constants/colors'
 import LoginScreen from '../screens/LoginScreen'
 import SignupScreen from '../screens/SignupScreen'
 import MainTabs from './MainTabs'
+import GameDetailScreen from '../screens/GameDetailScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -18,7 +19,7 @@ export type AuthStackParamList = {
 export type MainStackParamList = {
   MainTabs: undefined
   GameDetail: { gameId: number }
-  UserProfile: { username: string }
+  UserProfile: { username: string; userId?: string }
 }
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -47,8 +48,14 @@ function MainNavigator() {
       }}
     >
       <MainStack.Screen name="MainTabs" component={MainTabs} />
-      {/* Future screens that overlay tabs:
-      <MainStack.Screen name="GameDetail" component={GameDetailScreen} />
+      <MainStack.Screen
+        name="GameDetail"
+        component={GameDetailScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      {/* Future:
       <MainStack.Screen name="UserProfile" component={UserProfileScreen} />
       */}
     </MainStack.Navigator>
