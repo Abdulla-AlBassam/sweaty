@@ -237,23 +237,28 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
 }
 
 // Get popular/trending games from IGDB
-// Fetches games with the most followers/interest, sorted by popularity
+// Fetches highly rated games sorted by rating
 export async function getPopularGames(limit: number = 15): Promise<Game[]> {
   // IGDB query for popular games:
   // - Main games only (category 0)
   // - Has a cover image
-  // - Sorted by follows (most followed games)
+  // - Has a rating
+  // - Sorted by total_rating descending (highest rated first)
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, follows;
+           genres.name, platforms.name, total_rating, rating_count;
     where category = 0
-      & cover != null;
-    sort follows desc;
+      & cover != null
+      & total_rating != null;
+    sort total_rating desc;
     limit ${limit};
   `
 
   console.log('IGDB Popular Games Query:', body)
 
   const games = await igdbFetch('games', body) as IGDBGame[]
+
+  console.log('IGDB Popular Games Response:', games.length, 'games')
+
   return games.map(game => transformGame(game))
 }
