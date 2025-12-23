@@ -7,7 +7,6 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  FlatList,
   RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -21,6 +20,7 @@ import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
+import { ProfileSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -297,9 +297,9 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Loading...</Text>
         </View>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.accent} />
-        </View>
+        <ScrollView style={styles.scrollView}>
+          <ProfileSkeleton />
+        </ScrollView>
       </SafeAreaView>
     )
   }

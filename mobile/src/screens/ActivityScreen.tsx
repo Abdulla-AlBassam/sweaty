@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -16,6 +15,7 @@ import { useActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { MainStackParamList } from '../navigation'
 import ActivityItem from '../components/ActivityItem'
+import { ActivitySkeletonList } from '../components/skeletons'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 
@@ -58,7 +58,7 @@ export default function ActivityScreen() {
         }
       >
         {isLoading ? (
-          <ActivityIndicator color={Colors.accent} style={styles.loader} />
+          <ActivitySkeletonList count={6} />
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
@@ -105,9 +105,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.lg,
-  },
-  loader: {
-    marginVertical: Spacing.xxl,
   },
   emptyState: {
     flex: 1,

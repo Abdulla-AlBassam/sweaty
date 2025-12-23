@@ -5,7 +5,6 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  ActivityIndicator,
   TouchableOpacity,
   Keyboard,
   Image,
@@ -23,6 +22,8 @@ import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import StackedAvatars from '../components/StackedAvatars'
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
+import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
+import { GameCardSkeletonGrid } from '../components/skeletons'
 
 interface SearchGame {
   id: number
@@ -262,9 +263,26 @@ export default function SearchScreen() {
 
       {/* Content */}
       {isLoading ? (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.accent} />
-        </View>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.searchSkeletonContent}>
+          {/* Users skeleton */}
+          <View style={styles.section}>
+            <SkeletonText width={60} height={16} style={styles.sectionTitleSkeleton} />
+            {[1, 2, 3].map((i) => (
+              <View key={i} style={styles.userRowSkeleton}>
+                <SkeletonCircle size={44} />
+                <View style={styles.userInfoSkeleton}>
+                  <SkeletonText width={120} height={14} />
+                  <SkeletonText width={80} height={12} style={{ marginTop: 6 }} />
+                </View>
+              </View>
+            ))}
+          </View>
+          {/* Games skeleton */}
+          <View style={styles.section}>
+            <SkeletonText width={60} height={16} style={styles.sectionTitleSkeleton} />
+            <GameCardSkeletonGrid count={6} cardWidth={100} />
+          </View>
+        </ScrollView>
       ) : error ? (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
@@ -534,5 +552,24 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+  },
+  searchSkeletonContent: {
+    paddingBottom: Spacing.xl,
+  },
+  sectionTitleSkeleton: {
+    marginLeft: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  userRowSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  userInfoSkeleton: {
+    flex: 1,
+    marginLeft: Spacing.md,
   },
 })

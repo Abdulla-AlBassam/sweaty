@@ -6,7 +6,6 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -20,6 +19,7 @@ import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
+import { GameDetailSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
@@ -159,9 +159,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Loading...</Text>
         </View>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.accent} />
-        </View>
+        <ScrollView style={styles.scrollView}>
+          <GameDetailSkeleton />
+        </ScrollView>
       </SafeAreaView>
     )
   }

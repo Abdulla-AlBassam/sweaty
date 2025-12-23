@@ -7,12 +7,10 @@ import {
   RefreshControl,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
 import { MainStackParamList } from '../navigation'
 
@@ -24,6 +22,8 @@ import { getIGDBImageUrl } from '../constants'
 import StatCard from '../components/StatCard'
 import XPProgressBar from '../components/XPProgressBar'
 import ActivityItem from '../components/ActivityItem'
+import Skeleton from '../components/Skeleton'
+import { ActivitySkeletonList } from '../components/skeletons'
 
 // Gaming-themed welcome messages (same as web)
 const WELCOME_MESSAGES = [
@@ -123,7 +123,14 @@ export default function DashboardScreen() {
         <View style={styles.statsSection}>
           <Text style={styles.sectionTitle}>Your Stats</Text>
           {logsLoading ? (
-            <ActivityIndicator color={Colors.accent} />
+            <View style={styles.statsGrid}>
+              {[1, 2, 3, 4].map((i) => (
+                <View key={i} style={styles.statCardSkeleton}>
+                  <Skeleton width={40} height={24} borderRadius={4} />
+                  <Skeleton width={60} height={12} borderRadius={4} style={{ marginTop: 8 }} />
+                </View>
+              ))}
+            </View>
           ) : (
             <View style={styles.statsGrid}>
               <StatCard label="Games Logged" value={stats.total} />
@@ -182,7 +189,7 @@ export default function DashboardScreen() {
         <View style={styles.activitySection}>
           <Text style={styles.sectionTitle}>Activity</Text>
           {activitiesLoading ? (
-            <ActivityIndicator color={Colors.accent} style={styles.loader} />
+            <ActivitySkeletonList count={5} />
           ) : activities.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateText}>
@@ -255,6 +262,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.sm,
   },
+  statCardSkeleton: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
   ranksSection: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
@@ -296,9 +310,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-  },
-  loader: {
-    marginVertical: Spacing.xl,
   },
   emptyState: {
     backgroundColor: Colors.surface,
