@@ -104,20 +104,27 @@ export default function GameDetailScreen({ navigation, route }: Props) {
       }
 
       // Always fetch from API to get videos (cache doesn't store them)
-      const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
-      console.log('API Response status:', response.status)
+      try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
+        console.log('API Response status:', response.status)
 
-      if (response.ok) {
-        const data = await response.json()
-        console.log('API Response videos:', data.videos?.length || 0, 'videos')
-        if (data.videos) {
-          console.log('Video IDs:', data.videos.map((v: GameVideo) => v.videoId))
+        if (response.ok) {
+          const data = await response.json()
+          console.log('API Response videos:', data.videos?.length || 0, 'videos')
+          if (data.videos) {
+            console.log('Video IDs:', data.videos.map((v: GameVideo) => v.videoId))
+          }
+
+          setGame(prev => ({
+            ...prev,
+            ...data,
+          }))
+        } else {
+          console.log('API returned non-OK status, continuing without videos')
         }
-
-        setGame(prev => ({
-          ...prev,
-          ...data,
-        }))
+      } catch (apiError) {
+        // API fetch failed - continue without videos, game still works from cache
+        console.log('Could not fetch from API (videos unavailable):', apiError)
       }
     } catch (error) {
       console.error('Error fetching game:', error)
