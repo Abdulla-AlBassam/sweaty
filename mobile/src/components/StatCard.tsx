@@ -23,19 +23,19 @@ export default function StatCard({ label, value, icon }: StatCardProps) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    minWidth: 80,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    flex: 1,
     alignItems: 'center',
   },
   value: {
-    fontSize: FontSize.xl,
+    fontSize: FontSize.lg,
     fontWeight: 'bold',
     color: Colors.accent,
-    marginBottom: Spacing.xs,
+    marginBottom: 2,
   },
   label: {
-    fontSize: FontSize.xs,
+    fontSize: 10,
     color: Colors.textMuted,
     textAlign: 'center',
   },
