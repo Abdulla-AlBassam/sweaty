@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
@@ -7,6 +7,7 @@ import { Colors } from '../constants/colors'
 // Screens
 import DashboardScreen from '../screens/DashboardScreen'
 import SearchScreen from '../screens/SearchScreen'
+import QuickLogScreen from '../screens/QuickLogScreen'
 import ActivityScreen from '../screens/ActivityScreen'
 import ProfileScreen from '../screens/ProfileScreen'
 
@@ -52,14 +53,6 @@ function AddTabIcon() {
   )
 }
 
-// Placeholder for Add screen (opens modal)
-function AddPlaceholder() {
-  return (
-    <View style={styles.placeholder}>
-      <Text style={styles.placeholderText}>Quick Log Coming Soon</Text>
-    </View>
-  )
-}
 
 export default function MainTabs() {
   return (
@@ -88,7 +81,7 @@ export default function MainTabs() {
       />
       <Tab.Screen
         name="Add"
-        component={AddPlaceholder}
+        component={QuickLogScreen}
         options={{
           tabBarIcon: () => <AddTabIcon />,
         }}
@@ -128,15 +121,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -12,
-  },
-  placeholder: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    color: Colors.textMuted,
-    fontSize: 16,
   },
 })

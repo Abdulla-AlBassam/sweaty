@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -8,16 +8,40 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { useNavigation, CommonActions } from '@react-navigation/native'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
 import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { getIGDBImageUrl } from '../constants'
+import { supabase } from '../lib/supabase'
 import XPProgressBar from '../components/XPProgressBar'
+import LogGameModal from '../components/LogGameModal'
+
+interface GameLogWithGame {
+  id: string
+  game_id: number
+  status: string
+  rating: number | null
+  platform: string | null
+  game: {
+    id: number
+    name: string
+    cover_url: string | null
+    platforms?: string[]
+  }
+}
 
 export default function ProfileScreen() {
-  const { user, profile, signOut } = useAuth()
-  const { logs } = useGameLogs(user?.id)
+  const { user, profile } = useAuth()
+  const { logs, refresh: refreshLogs } = useGameLogs(user?.id)
   const { followers, following } = useFollowCounts(user?.id)
+  const navigation = useNavigation()
+
+  const [gameLogs, setGameLogs] = useState<GameLogWithGame[]>([])
+  const [selectedGame, setSelectedGame] = useState<GameLogWithGame | null>(null)
+  const [isModalVisible, setIsModalVisible] = useState(false)
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
   const username = profile?.username || ''
@@ -32,14 +56,62 @@ export default function ProfileScreen() {
   const socialXP = calculateSocialXP(logs, followers)
   const socialLevel = getSocialLevel(socialXP)
 
+  // Fetch game logs with game details
+  const fetchGameLogs = useCallback(async () => {
+    if (!user) return
+
+    try {
+      const { data } = await supabase
+        .from('game_logs')
+        .select(`
+          id,
+          game_id,
+          status,
+          rating,
+          platform,
+          game:games_cache(id, name, cover_url, platforms)
+        `)
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+
+      if (data) {
+        const logsWithGames = data.map((log: any) => ({
+          ...log,
+          game: Array.isArray(log.game) ? log.game[0] : log.game
+        })).filter((log: any) => log.game) as GameLogWithGame[]
+
+        setGameLogs(logsWithGames)
+      }
+    } catch (error) {
+      console.error('Error fetching game logs:', error)
+    }
+  }, [user])
+
+  useEffect(() => {
+    fetchGameLogs()
+  }, [fetchGameLogs])
+
+  const handleGamePress = (log: GameLogWithGame) => {
+    setSelectedGame(log)
+    setIsModalVisible(true)
+  }
+
+  const handleLogSaveSuccess = () => {
+    fetchGameLogs()
+    refreshLogs()
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
-          <TouchableOpacity onPress={signOut}>
-            <Text style={styles.signOutText}>Sign Out</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Settings' as never)}
+            style={styles.settingsButton}
+          >
+            <Ionicons name="settings-outline" size={24} color={Colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -84,16 +156,72 @@ export default function ProfileScreen() {
           <XPProgressBar type="social" levelInfo={socialLevel} />
         </View>
 
-        {/* Placeholder for game library */}
+        {/* Game Library */}
         <View style={styles.librarySection}>
           <Text style={styles.sectionTitle}>Game Library</Text>
-          <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>
-              Full library view coming soon...
-            </Text>
-          </View>
+          {gameLogs.length > 0 ? (
+            <View style={styles.gamesGrid}>
+              {gameLogs.map((log) => (
+                <TouchableOpacity
+                  key={log.id}
+                  style={styles.gameCard}
+                  onPress={() => handleGamePress(log)}
+                >
+                  {log.game?.cover_url ? (
+                    <Image
+                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverSmall') }}
+                      style={styles.gameCover}
+                    />
+                  ) : (
+                    <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
+                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                    </View>
+                  )}
+                  <Text style={styles.gameTitle} numberOfLines={2}>{log.game?.name}</Text>
+                  {log.rating && (
+                    <View style={styles.ratingBadge}>
+                      <Text style={styles.ratingText}>★ {log.rating}</Text>
+                    </View>
+                  )}
+                  <View style={styles.editBadge}>
+                    <Ionicons name="create-outline" size={12} color={Colors.text} />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+              <Text style={styles.emptyText}>No games logged yet</Text>
+              <Text style={styles.emptySubtext}>Search for games to start tracking!</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
+
+      {/* Log Game Modal */}
+      {selectedGame && (
+        <LogGameModal
+          visible={isModalVisible}
+          onClose={() => {
+            setIsModalVisible(false)
+            setSelectedGame(null)
+          }}
+          game={{
+            id: selectedGame.game_id,
+            name: selectedGame.game.name,
+            cover_url: selectedGame.game.cover_url,
+            platforms: selectedGame.game.platforms,
+          }}
+          existingLog={{
+            id: selectedGame.id,
+            status: selectedGame.status,
+            rating: selectedGame.rating,
+            platform: selectedGame.platform,
+          }}
+          onSaveSuccess={handleLogSaveSuccess}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -123,9 +251,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: Colors.text,
   },
-  signOutText: {
-    fontSize: FontSize.sm,
-    color: Colors.error,
+  settingsButton: {
+    padding: Spacing.sm,
   },
   profileSection: {
     alignItems: 'center',
@@ -204,14 +331,67 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
   },
-  placeholder: {
+  gamesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+  },
+  gameCard: {
+    width: '30%',
+    marginBottom: Spacing.sm,
+  },
+  gameCover: {
+    width: '100%',
+    aspectRatio: 3 / 4,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surface,
+  },
+  gameCoverPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gameTitle: {
+    fontSize: FontSize.xs,
+    color: Colors.text,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  ratingBadge: {
+    position: 'absolute',
+    top: Spacing.xs,
+    right: Spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+  },
+  ratingText: {
+    fontSize: FontSize.xs,
+    color: Colors.accent,
+    fontWeight: '600',
+  },
+  editBadge: {
+    position: 'absolute',
+    top: Spacing.xs,
+    left: Spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    padding: 4,
+    borderRadius: BorderRadius.sm,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
-    alignItems: 'center',
   },
-  placeholderText: {
-    fontSize: FontSize.sm,
+  emptyText: {
+    fontSize: FontSize.md,
     color: Colors.textMuted,
+    marginTop: Spacing.md,
+  },
+  emptySubtext: {
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginTop: Spacing.xs,
   },
 })
