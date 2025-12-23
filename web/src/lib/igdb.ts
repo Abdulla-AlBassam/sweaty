@@ -236,65 +236,78 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
   return games.map(game => transformGame(game))
 }
 
-// Get popular/trending games from IGDB
-// Fetches recent popular games that people are actively playing and rating
-export async function getPopularGames(limit: number = 15): Promise<Game[]> {
-  // Get Unix timestamp for 2 years ago (use 2 years for more results)
-  const twoYearsAgo = Math.floor(Date.now() / 1000) - (2 * 365 * 24 * 60 * 60)
+// Get popular game IDs from IGDB's popularity_primitives endpoint
+// This is the same data source as IGDB's homepage "Popular Right Now"
+async function getPopularGameIds(limit: number = 15): Promise<number[]> {
+  const token = await getAccessToken()
 
-  // Query for recent popular games:
-  // - category = 0: Main games only (excludes DLCs, expansions, bundles)
-  // - first_release_date > twoYearsAgo: Released in last 2 years
-  // - rating_count > 10: Has enough reviews to be meaningful
-  // - sort by rating_count desc: Most reviewed/popular games first
-  const body = `
-    fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, rating_count;
-    where category = 0
-      & cover != null
-      & first_release_date > ${twoYearsAgo}
-      & total_rating != null
-      & rating_count > 10;
-    sort rating_count desc;
+  const query = `
+    fields game_id, value, popularity_type;
+    sort value desc;
     limit ${limit};
   `
 
-  console.log('=== IGDB Popular Games Debug ===')
-  console.log('Query:', body)
+  console.log('=== IGDB Popularity Primitives ===')
+  console.log('Query:', query)
+
+  const response = await fetch('https://api.igdb.com/v4/popularity_primitives', {
+    method: 'POST',
+    headers: {
+      'Client-ID': process.env.TWITCH_CLIENT_ID!,
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'text/plain',
+    },
+    body: query,
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('Popularity primitives error:', response.status, errorText)
+    throw new Error(`IGDB API error: ${response.status}`)
+  }
+
+  const data = await response.json()
+  console.log('Popularity primitives count:', data.length)
+  if (data.length > 0) {
+    console.log('First primitive:', JSON.stringify(data[0]))
+  }
+
+  return data.map((item: { game_id: number }) => item.game_id)
+}
+
+// Get popular/trending games from IGDB
+// Uses the popularity_primitives endpoint (same as IGDB homepage "Popular Right Now")
+export async function getPopularGames(limit: number = 15): Promise<Game[]> {
+  console.log('=== IGDB Popular Games ===')
 
   try {
-    const token = await getAccessToken()
-    console.log('Token obtained:', token ? 'yes' : 'no')
+    // First get popular game IDs from popularity_primitives
+    const gameIds = await getPopularGameIds(limit)
 
-    const response = await fetch('https://api.igdb.com/v4/games', {
-      method: 'POST',
-      headers: {
-        'Client-ID': process.env.TWITCH_CLIENT_ID!,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'text/plain',
-      },
-      body,
-    })
-
-    console.log('Response status:', response.status)
-    console.log('Response ok:', response.ok)
-
-    const responseText = await response.text()
-    console.log('Raw response (first 1000 chars):', responseText.slice(0, 1000))
-
-    if (!response.ok) {
-      console.error('IGDB error:', responseText)
-      throw new Error(`IGDB API error: ${response.status}`)
+    if (gameIds.length === 0) {
+      console.log('No popular game IDs found')
+      return []
     }
 
-    const games = JSON.parse(responseText) as IGDBGame[]
-    console.log('Parsed games count:', games.length)
+    console.log('Popular game IDs:', gameIds)
 
-    if (games.length > 0) {
-      console.log('First game:', JSON.stringify(games[0]))
-    }
+    // Then fetch full game details for those IDs
+    const body = `
+      fields name, slug, summary, cover.image_id, first_release_date,
+             genres.name, platforms.name, total_rating;
+      where id = (${gameIds.join(',')});
+      limit ${limit};
+    `
 
-    return games.map(game => transformGame(game))
+    const games = await igdbFetch('games', body) as IGDBGame[]
+    console.log('Fetched games count:', games.length)
+
+    // Sort by original popularity order (preserve ranking from popularity_primitives)
+    const sortedGames = gameIds
+      .map(id => games.find(g => g.id === id))
+      .filter((g): g is IGDBGame => g !== undefined)
+
+    return sortedGames.map(game => transformGame(game))
   } catch (error) {
     console.error('getPopularGames error:', error)
     throw error
