@@ -17,13 +17,22 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [playing, setPlaying] = useState(false)
 
+  console.log('=== TRAILER SECTION ===')
+  console.log('Videos received:', videos?.length || 0)
+  if (videos?.length > 0) {
+    console.log('First video:', videos[0].videoId, videos[0].name)
+  }
+
   const onStateChange = useCallback((state: string) => {
     if (state === 'ended') {
       setPlaying(false)
     }
   }, [])
 
-  if (!videos || videos.length === 0) return null
+  if (!videos || videos.length === 0) {
+    console.log('TrailerSection: No videos, returning null')
+    return null
+  }
 
   const screenWidth = Dimensions.get('window').width
   const playerWidth = screenWidth - (Spacing.lg * 2)

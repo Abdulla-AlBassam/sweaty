@@ -75,6 +75,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   }, [gameId, user])
 
   const fetchGameDetails = async () => {
+    console.log('=== FETCHING GAME DETAILS ===')
+    console.log('Game ID:', gameId)
+    console.log('API URL:', `${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
+
     try {
       // First try to get from cache for quick display
       const { data: cached } = await supabase
@@ -84,6 +88,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         .single()
 
       if (cached) {
+        console.log('Loaded from cache:', cached.name)
         setGame({
           id: cached.id,
           name: cached.name,
@@ -99,15 +104,20 @@ export default function GameDetailScreen({ navigation, route }: Props) {
       }
 
       // Always fetch from API to get videos (cache doesn't store them)
-      const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}`)
+      const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
+      console.log('API Response status:', response.status)
+
       if (response.ok) {
         const data = await response.json()
-        if (data.game) {
-          setGame(prev => ({
-            ...prev,
-            ...data.game,
-          }))
+        console.log('API Response videos:', data.videos?.length || 0, 'videos')
+        if (data.videos) {
+          console.log('Video IDs:', data.videos.map((v: GameVideo) => v.videoId))
         }
+
+        setGame(prev => ({
+          ...prev,
+          ...data,
+        }))
       }
     } catch (error) {
       console.error('Error fetching game:', error)
