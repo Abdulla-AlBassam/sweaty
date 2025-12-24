@@ -24,6 +24,7 @@ import StatCard from '../components/StatCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import StackedAvatars from '../components/StackedAvatars'
 import Skeleton from '../components/Skeleton'
+import AnimatedGradientBorder from '../components/AnimatedGradientBorder'
 
 // Gaming-themed welcome messages (same as web)
 const WELCOME_MESSAGES = [
@@ -215,16 +216,24 @@ export default function DashboardScreen() {
                 return (
                   <TouchableOpacity
                     key={log.id}
-                    style={styles.gameCard}
+                    style={styles.currentlyPlayingCard}
                     onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.9}
                   >
-                    {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.gameCover} />
-                    ) : (
-                      <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                        <Text style={styles.placeholderText}>?</Text>
-                      </View>
-                    )}
+                    <AnimatedGradientBorder
+                      width={104}
+                      height={139}
+                      borderWidth={2}
+                      borderRadius={BorderRadius.md}
+                    >
+                      {coverUrl ? (
+                        <Image source={{ uri: coverUrl }} style={styles.currentlyPlayingCover} />
+                      ) : (
+                        <View style={[styles.currentlyPlayingCover, styles.gameCoverPlaceholder]}>
+                          <Text style={styles.placeholderText}>?</Text>
+                        </View>
+                      )}
+                    </AnimatedGradientBorder>
                   </TouchableOpacity>
                 )
               })}
@@ -379,6 +388,14 @@ const styles = StyleSheet.create({
     width: 100,
     height: 133,
     borderRadius: BorderRadius.md,
+  },
+  currentlyPlayingCard: {
+    // Wrapper for animated border cards
+  },
+  currentlyPlayingCover: {
+    width: 100,
+    height: 133,
+    borderRadius: BorderRadius.md - 2,
   },
   gameCoverPlaceholder: {
     backgroundColor: Colors.surface,
