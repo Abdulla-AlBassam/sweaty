@@ -189,39 +189,6 @@ export async function GET(request: NextRequest) {
           // Full query with genre
           testQuery = 'fields name, cover.image_id, genres.name; where cover != null & parent_game = null & genres = 5; sort total_rating desc; limit 10;'
           break
-        // === COMBINED ARRAY FILTER TESTS ===
-        case '8':
-          // Themes only (Horror = 19)
-          testQuery = 'fields name, themes.name; where themes = 19; limit 10;'
-          break
-        case '9':
-          // Platforms only (PS5 = 167)
-          testQuery = 'fields name, platforms.name; where platforms = 167; limit 10;'
-          break
-        case '10':
-          // Combined: themes AND platforms (basic syntax)
-          testQuery = 'fields name, themes.name, platforms.name; where themes = 19 & platforms = 167; limit 10;'
-          break
-        case '11':
-          // Combined with parentheses around each condition
-          testQuery = 'fields name, themes.name, platforms.name; where (themes = 19) & (platforms = 167); limit 10;'
-          break
-        case '12':
-          // Try array syntax with parentheses for values
-          testQuery = 'fields name, themes.name, platforms.name; where themes = (19) & platforms = (167); limit 10;'
-          break
-        case '13':
-          // Search for specific game to confirm it exists
-          testQuery = 'search "Resident Evil Village"; fields name, themes.name, platforms.name, total_rating_count; limit 5;'
-          break
-        case '14':
-          // Try with themes.id instead of themes
-          testQuery = 'fields name, themes.name, platforms.name; where themes.id = 19 & platforms.id = 167; limit 10;'
-          break
-        case '15':
-          // Minimal combined - just Horror + PS5, no other filters, sorted by rating_count
-          testQuery = 'fields name, themes.name, platforms.name, total_rating_count; where themes = 19 & platforms = 167; sort total_rating_count desc; limit 10;'
-          break
         default:
           testQuery = 'fields name; limit 5;'
       }
@@ -322,8 +289,7 @@ export async function GET(request: NextRequest) {
     ]
 
     // Genre/Theme filter - use IDs for reliability
-    // Single value: genres = 5 (no parentheses)
-    // Multiple values: genres = (5,31) (with parentheses)
+    // Always use parentheses: genres = (5) for proper array containment matching
     if (genres.length > 0) {
       const genreIdList: number[] = []
       const themeIdList: number[] = []
@@ -336,15 +302,11 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (genreIdList.length === 1) {
-        whereConditions.push(`genres = ${genreIdList[0]}`)
-      } else if (genreIdList.length > 1) {
+      if (genreIdList.length > 0) {
         whereConditions.push(`genres = (${genreIdList.join(',')})`)
       }
 
-      if (themeIdList.length === 1) {
-        whereConditions.push(`themes = ${themeIdList[0]}`)
-      } else if (themeIdList.length > 1) {
+      if (themeIdList.length > 0) {
         whereConditions.push(`themes = (${themeIdList.join(',')})`)
       }
     }
@@ -375,13 +337,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Platform filter - use IDs
-    // Single value: platforms = 167 (no parentheses)
-    // Multiple values: platforms = (167,48) (with parentheses)
+    // Always use parentheses: platforms = (167) for proper array containment matching
     if (platforms.length > 0) {
       const platformIdList = platforms.map(p => PLATFORM_IDS[p]).filter(Boolean)
-      if (platformIdList.length === 1) {
-        whereConditions.push(`platforms = ${platformIdList[0]}`)
-      } else if (platformIdList.length > 1) {
+      if (platformIdList.length > 0) {
         whereConditions.push(`platforms = (${platformIdList.join(',')})`)
       }
     }
