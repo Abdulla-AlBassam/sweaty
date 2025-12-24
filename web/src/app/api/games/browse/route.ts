@@ -246,9 +246,11 @@ export async function GET(request: NextRequest) {
 
     // Start with basic conditions
     // Note: category = 0 is DEPRECATED in IGDB v4 and breaks queries
+    // total_rating_count > 5 filters out obscure games (IGDB sorts NULL first)
     const whereConditions: string[] = [
       'cover != null',
-      'parent_game = null',  // Excludes DLC/expansions (they have a parent)
+      'parent_game = null',
+      'total_rating_count > 5',
     ]
 
     // Genre/Theme filter - use IDs for reliability
