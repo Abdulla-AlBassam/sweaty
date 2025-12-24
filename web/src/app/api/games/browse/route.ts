@@ -367,6 +367,7 @@ export async function GET(request: NextRequest) {
     console.log('=== BROWSE QUERY ===')
     console.log('Where clause:', whereClause)
     console.log('Full query:', query)
+    console.log('Endpoint: https://api.igdb.com/v4/games')
 
     const response = await fetch('https://api.igdb.com/v4/games', {
       method: 'POST',
@@ -378,10 +379,23 @@ export async function GET(request: NextRequest) {
       body: query,
     })
 
-    const games = await response.json()
+    console.log('IGDB Response Status:', response.status)
+    const rawText = await response.text()
+    console.log('IGDB Raw Response (first 500 chars):', rawText.slice(0, 500))
 
-    console.log('Response count:', games.length)
-    if (games.length > 0) {
+    let games
+    try {
+      games = JSON.parse(rawText)
+    } catch (e) {
+      console.error('Failed to parse IGDB response:', e)
+      return NextResponse.json(
+        { error: 'Failed to parse IGDB response', raw: rawText.slice(0, 500) },
+        { status: 500 }
+      )
+    }
+
+    console.log('Parsed games count:', Array.isArray(games) ? games.length : 'not an array')
+    if (Array.isArray(games) && games.length > 0) {
       console.log('First game:', games[0].name)
     }
 
