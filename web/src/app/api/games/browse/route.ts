@@ -319,10 +319,10 @@ export async function GET(request: NextRequest) {
     const whereClause = whereConditions.join(' & ')
 
     const query = `
-      fields name, slug, summary, cover.image_id, first_release_date,
-             genres.name, platforms.name, themes.name, total_rating, follows;
+      fields name, slug, cover.image_id, first_release_date,
+             genres.name, platforms.name, total_rating, total_rating_count;
       where ${whereClause};
-      sort follows desc;
+      sort total_rating_count desc;
       offset ${offset};
       limit ${limit};
     `
@@ -371,7 +371,7 @@ export async function GET(request: NextRequest) {
       genres: game.genres?.map((g: any) => g.name) || [],
       platforms: game.platforms?.map((p: any) => p.name) || [],
       rating: game.total_rating ? Math.round(game.total_rating) : null,
-      follows: game.follows || 0,
+      ratingCount: game.total_rating_count || 0,
     }))
 
     return NextResponse.json({
