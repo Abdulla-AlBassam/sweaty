@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   userAvatarText: {
     fontSize: FontSize.md,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   userInfo: {
     flex: 1,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   clearAllText: {
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontSize: FontSize.sm,
     fontWeight: '500',
   },

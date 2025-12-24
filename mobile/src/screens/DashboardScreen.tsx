@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: FontSize.xxl,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   welcomeSection: {
     flexDirection: 'row',

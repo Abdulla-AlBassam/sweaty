@@ -37,7 +37,7 @@ function StarIcon({
 export default function StarRating({
   rating,
   size = 16,
-  color = Colors.accent,
+  color = Colors.accentLight,
   showEmpty = false
 }: StarRatingProps) {
   if (!rating && !showEmpty) {

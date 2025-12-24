@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
   level: {
     fontSize: FontSize.sm,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   rank: {
     fontSize: FontSize.sm,

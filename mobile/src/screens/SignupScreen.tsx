@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
     textAlign: 'center',
     marginBottom: Spacing.xs,
   },
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
   },
   footerLink: {
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontSize: FontSize.sm,
     fontWeight: '600',
   },

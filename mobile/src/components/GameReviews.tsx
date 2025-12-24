@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: FontSize.sm,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   userInfo: {
     flex: 1,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   ratingText: {
     fontSize: FontSize.xs,
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '600',
   },
   timeText: {

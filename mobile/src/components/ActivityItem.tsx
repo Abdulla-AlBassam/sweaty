@@ -94,26 +94,31 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
   )
 }
 
+const PILL_HEIGHT = 72
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.accentDark,
+    borderRadius: PILL_HEIGHT / 2,
     paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.sm,
+    minHeight: PILL_HEIGHT,
   },
   avatarContainer: {
     marginRight: Spacing.sm,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -138,7 +143,7 @@ const styles = StyleSheet.create({
   },
   gameName: {
     fontWeight: '600',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   meta: {
     flexDirection: 'row',
@@ -155,8 +160,8 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   cover: {
-    width: 45,
-    height: 60,
-    borderRadius: BorderRadius.sm,
+    width: 48,
+    height: 64,
+    borderRadius: BorderRadius.md,
   },
 })
