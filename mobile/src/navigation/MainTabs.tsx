@@ -1,13 +1,7 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { View, StyleSheet } from 'react-native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { Ionicons } from '@expo/vector-icons'
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withSequence,
-} from 'react-native-reanimated'
 import { Colors } from '../constants/colors'
 import { useQuickLog } from '../contexts/QuickLogContext'
 
@@ -34,10 +28,8 @@ const Tab = createBottomTabNavigator<MainTabsParamList>()
 
 type IconName = keyof typeof Ionicons.glyphMap
 
-// Animated tab icon component with bounce effect
-function AnimatedTabIcon({ name, focused }: { name: string; focused: boolean }) {
-  const scale = useSharedValue(1)
-
+// Tab icon component using Ionicons
+function TabIcon({ name, focused }: { name: string; focused: boolean }) {
   const iconMap: Record<string, { outline: IconName; filled: IconName }> = {
     Home: { outline: 'home-outline', filled: 'home' },
     Search: { outline: 'search-outline', filled: 'search' },
@@ -48,28 +40,12 @@ function AnimatedTabIcon({ name, focused }: { name: string; focused: boolean }) 
   const icons = iconMap[name]
   if (!icons) return null
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }))
-
-  // Trigger bounce animation when focused changes to true
-  useEffect(() => {
-    if (focused) {
-      scale.value = withSequence(
-        withSpring(0.85, { damping: 10, stiffness: 400 }),
-        withSpring(1, { damping: 8, stiffness: 300 })
-      )
-    }
-  }, [focused, scale])
-
   return (
-    <Animated.View style={animatedStyle}>
-      <Ionicons
-        name={focused ? icons.filled : icons.outline}
-        size={24}
-        color={focused ? Colors.accentLight : Colors.textDim}
-      />
-    </Animated.View>
+    <Ionicons
+      name={focused ? icons.filled : icons.outline}
+      size={24}
+      color={focused ? Colors.accentLight : Colors.textDim}
+    />
   )
 }
 
@@ -100,14 +76,14 @@ export default function MainTabs() {
         name="Home"
         component={DashboardScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon name="Home" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="Home" focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Search"
         component={SearchScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon name="Search" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="Search" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -129,14 +105,14 @@ export default function MainTabs() {
         name="Activity"
         component={ActivityScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon name="Activity" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="Activity" focused={focused} />,
         }}
       />
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
         options={{
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon name="Profile" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon name="Profile" focused={focused} />,
         }}
       />
     </Tab.Navigator>
