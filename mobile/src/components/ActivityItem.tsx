@@ -98,14 +98,10 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.surfaceLight,
-    borderRadius: BorderRadius.xl,
-    paddingVertical: Spacing.sm,
-    paddingLeft: Spacing.sm,
-    paddingRight: Spacing.sm,
-    minHeight: 72,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceLight,
   },
   avatarContainer: {
     marginRight: Spacing.sm,

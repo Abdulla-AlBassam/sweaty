@@ -128,6 +128,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   activityList: {
-    gap: Spacing.sm,
+    // Items separated by bottom borders, no gap needed
   },
 })
