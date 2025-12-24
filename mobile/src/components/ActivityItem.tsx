@@ -94,18 +94,18 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
   )
 }
 
-const PILL_HEIGHT = 72
-
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.accentDark,
-    borderRadius: PILL_HEIGHT / 2,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.surfaceLight,
+    borderRadius: BorderRadius.xl,
     paddingVertical: Spacing.sm,
     paddingLeft: Spacing.sm,
     paddingRight: Spacing.sm,
-    minHeight: PILL_HEIGHT,
+    minHeight: 72,
   },
   avatarContainer: {
     marginRight: Spacing.sm,
