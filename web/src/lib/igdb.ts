@@ -296,8 +296,7 @@ async function getPopularGameIds(limit: number = 15): Promise<number[]> {
   }
 
   // Deduplicate game IDs (popularity_primitives can return multiple entries per game)
-  const allGameIds = data.map((item: { game_id: number }) => item.game_id)
-  const gameIds = [...new Set(allGameIds)] as number[]
+  const gameIds: number[] = [...new Set<number>(data.map((item: { game_id: number }) => item.game_id))]
   return gameIds.slice(0, limit)
 }
 
