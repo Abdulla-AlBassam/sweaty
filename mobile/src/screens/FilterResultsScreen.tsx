@@ -14,8 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
-import { getIGDBImageUrl } from '../constants'
-import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'FilterResults'>
@@ -23,11 +21,13 @@ type Props = NativeStackScreenProps<MainStackParamList, 'FilterResults'>
 interface FilterGame {
   id: number
   name: string
-  cover_url: string | null
+  coverUrl: string | null
   rating: number | null
 }
 
-const PAGE_SIZE = 30
+// TEMPORARY: Using local API for testing - change back to Vercel before deploying
+const API_BASE_URL = 'http://192.168.100.152:3000'
+const PAGE_SIZE = 50
 
 export default function FilterResultsScreen({ navigation, route }: Props) {
   const { genres = [], years = [], platforms = [] } = route.params || {}
@@ -37,7 +37,7 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [hasMore, setHasMore] = useState(true)
-  const [page, setPage] = useState(0)
+  const [offset, setOffset] = useState(0)
 
   // Active filter state (can be modified by removing pills)
   const [activeGenres, setActiveGenres] = useState<string[]>(genres)
@@ -46,79 +46,44 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
 
   const hasFilters = activeGenres.length > 0 || activeYears.length > 0 || activePlatforms.length > 0
 
-  // Build query based on filters
-  const buildQuery = useCallback(() => {
-    let query = supabase
-      .from('games_cache')
-      .select('id, name, cover_url, rating')
-      .not('cover_url', 'is', null)
+  // Build query params for API
+  const buildQueryParams = useCallback((currentOffset: number = 0) => {
+    const params = new URLSearchParams()
 
-    // Apply genre filter
     if (activeGenres.length > 0) {
-      // Match any of the selected genres
-      query = query.overlaps('genres', activeGenres)
+      params.append('genres', activeGenres.join(','))
     }
-
-    // Apply platform filter
-    if (activePlatforms.length > 0) {
-      query = query.overlaps('platforms', activePlatforms)
-    }
-
-    // Apply year filter
     if (activeYears.length > 0) {
-      // Build OR conditions for years
-      const yearConditions: string[] = []
-      activeYears.forEach(year => {
-        if (year.endsWith('s')) {
-          // Decade like "2010s", "2000s"
-          const decadeStart = parseInt(year.replace('s', ''))
-          yearConditions.push(
-            `and(first_release_date.gte.${decadeStart}-01-01,first_release_date.lt.${decadeStart + 10}-01-01)`
-          )
-        } else {
-          // Single year like "2024"
-          yearConditions.push(
-            `and(first_release_date.gte.${year}-01-01,first_release_date.lt.${parseInt(year) + 1}-01-01)`
-          )
-        }
-      })
-      // Note: Supabase doesn't support complex OR for date ranges easily
-      // For simplicity, we'll filter by the first year/decade only if multiple selected
-      if (activeYears.length === 1) {
-        const year = activeYears[0]
-        if (year.endsWith('s')) {
-          const decadeStart = parseInt(year.replace('s', ''))
-          query = query
-            .gte('first_release_date', `${decadeStart}-01-01`)
-            .lt('first_release_date', `${decadeStart + 10}-01-01`)
-        } else {
-          query = query
-            .gte('first_release_date', `${year}-01-01`)
-            .lt('first_release_date', `${parseInt(year) + 1}-01-01`)
-        }
-      }
+      params.append('years', activeYears.join(','))
+    }
+    if (activePlatforms.length > 0) {
+      params.append('platforms', activePlatforms.join(','))
     }
 
-    return query.order('rating', { ascending: false, nullsFirst: false })
+    params.append('limit', PAGE_SIZE.toString())
+    params.append('offset', currentOffset.toString())
+
+    return params.toString()
   }, [activeGenres, activeYears, activePlatforms])
 
-  // Fetch games
-  const fetchGames = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (pageNum === 0) {
+  // Fetch games from API
+  const fetchGames = useCallback(async (currentOffset: number = 0, append: boolean = false) => {
+    if (currentOffset === 0) {
       setIsLoading(true)
     } else {
       setIsLoadingMore(true)
     }
 
     try {
-      const query = buildQuery()
-        .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
+      const queryString = buildQueryParams(currentOffset)
+      const response = await fetch(`${API_BASE_URL}/api/games/browse?${queryString}`)
 
-      const { data, error } = await query
+      if (!response.ok) {
+        throw new Error('Failed to fetch games')
+      }
 
-      if (error) throw error
-
-      const newGames = data || []
+      const data = await response.json()
+      const newGames: FilterGame[] = data.games || []
 
       if (append) {
         setGames(prev => [...prev, ...newGames])
@@ -126,24 +91,29 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
         setGames(newGames)
       }
 
-      setHasMore(newGames.length === PAGE_SIZE)
-      setPage(pageNum)
+      setHasMore(data.hasMore || false)
+      setOffset(currentOffset + newGames.length)
     } catch (err) {
       console.error('Failed to fetch filtered games:', err)
+      if (!append) {
+        setGames([])
+      }
     } finally {
       setIsLoading(false)
       setIsLoadingMore(false)
     }
-  }, [buildQuery])
+  }, [buildQueryParams])
 
   // Initial load and when filters change
   useEffect(() => {
+    setOffset(0)
     fetchGames(0)
   }, [activeGenres, activeYears, activePlatforms])
 
   // Pull to refresh
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
+    setOffset(0)
     await fetchGames(0)
     setRefreshing(false)
   }, [fetchGames])
@@ -151,9 +121,9 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
   // Load more
   const loadMore = useCallback(() => {
     if (!isLoadingMore && hasMore && !isLoading) {
-      fetchGames(page + 1, true)
+      fetchGames(offset, true)
     }
-  }, [isLoadingMore, hasMore, isLoading, page, fetchGames])
+  }, [isLoadingMore, hasMore, isLoading, offset, fetchGames])
 
   // Remove filter pill
   const removeGenre = (genre: string) => {
@@ -188,16 +158,14 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
 
   // Render game item
   const renderGame = ({ item }: { item: FilterGame }) => {
-    const coverUrl = item.cover_url ? getIGDBImageUrl(item.cover_url, 'coverBig2x') : null
-
     return (
       <TouchableOpacity
         style={styles.gameCard}
         onPress={() => handleGamePress(item.id)}
         activeOpacity={0.8}
       >
-        {coverUrl ? (
-          <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+        {item.coverUrl ? (
+          <Image source={{ uri: item.coverUrl }} style={styles.gameCover} />
         ) : (
           <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
             <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
