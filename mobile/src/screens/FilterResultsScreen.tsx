@@ -191,10 +191,10 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Browse Games</Text>
+        <Text style={styles.headerTitle}>browse games</Text>
         {hasFilters && (
           <TouchableOpacity onPress={clearAll} style={styles.clearAllButton}>
-            <Text style={styles.clearAllText}>Clear all</Text>
+            <Text style={styles.clearAllText}>clear all</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -221,8 +221,8 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
       ) : games.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
-          <Text style={styles.emptyText}>No games found</Text>
-          <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+          <Text style={styles.emptyText}>no games found</Text>
+          <Text style={styles.emptySubtext}>try adjusting your filters</Text>
         </View>
       ) : (
         <FlatList

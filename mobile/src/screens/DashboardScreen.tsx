@@ -177,7 +177,7 @@ export default function DashboardScreen() {
 
         {/* Stats Cards */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Your Stats</Text>
+          <Text style={styles.sectionTitle}>your stats</Text>
           {logsLoading ? (
             <View style={styles.statsGrid}>
               {[1, 2, 3, 4].map((i) => (
@@ -200,7 +200,7 @@ export default function DashboardScreen() {
         {/* Currently Playing */}
         {currentlyPlaying.length > 0 && (
           <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>Currently Playing</Text>
+            <Text style={styles.discoverySectionTitle}>currently playing</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -234,7 +234,7 @@ export default function DashboardScreen() {
 
         {/* Trending Games from IGDB (global trending) */}
         <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
+          <Text style={styles.discoverySectionTitle}>trending right now</Text>
           <HorizontalGameList
             games={trendingGames}
             onGamePress={(game) => handleGamePress(game.id)}
@@ -244,7 +244,7 @@ export default function DashboardScreen() {
 
         {/* Community Popular Games (what Sweaty users like) */}
         <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>Popular in Community</Text>
+          <Text style={styles.discoverySectionTitle}>popular in community</Text>
           <HorizontalGameList
             games={communityGames}
             onGamePress={(game) => handleGamePress(game.id)}
@@ -255,7 +255,7 @@ export default function DashboardScreen() {
         {/* What Your Friends Are Playing */}
         {friendsPlaying.length > 0 && (
           <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>What Your Friends Are Playing</Text>
+            <Text style={styles.discoverySectionTitle}>what your friends are playing</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}

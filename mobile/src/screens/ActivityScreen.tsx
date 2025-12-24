@@ -42,7 +42,7 @@ export default function ActivityScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Activity</Text>
+        <Text style={styles.title}>activity</Text>
       </View>
 
       <ScrollView
@@ -62,9 +62,9 @@ export default function ActivityScreen() {
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
-            <Text style={styles.emptyTitle}>No Activity Yet</Text>
+            <Text style={styles.emptyTitle}>no activity yet</Text>
             <Text style={styles.emptyText}>
-              Follow other gamers to see what they're playing
+              follow other gamers to see what they're playing
             </Text>
           </View>
         ) : (

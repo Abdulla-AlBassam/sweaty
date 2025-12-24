@@ -64,13 +64,13 @@ export default function ProfileScreen() {
 
   // Filter tabs configuration
   const filterTabs = [
-    { key: 'all', label: 'All' },
-    { key: 'playing', label: 'Playing' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'played', label: 'Played' },
-    { key: 'want_to_play', label: 'Want to Play' },
-    { key: 'on_hold', label: 'On Hold' },
-    { key: 'dropped', label: 'Dropped' },
+    { key: 'all', label: 'all' },
+    { key: 'playing', label: 'playing' },
+    { key: 'completed', label: 'completed' },
+    { key: 'played', label: 'played' },
+    { key: 'want_to_play', label: 'want to play' },
+    { key: 'on_hold', label: 'on hold' },
+    { key: 'dropped', label: 'dropped' },
   ]
 
   // Get count for each status
@@ -202,7 +202,7 @@ export default function ProfileScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle}>profile</Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('Settings' as never)}
             style={styles.settingsButton}
@@ -229,11 +229,11 @@ export default function ProfileScreen() {
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{totalGames}</Text>
-            <Text style={styles.statLabel}>Games</Text>
+            <Text style={styles.statLabel}>games</Text>
           </View>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{completed}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statLabel}>completed</Text>
           </View>
           <TouchableOpacity
             style={styles.stat}
@@ -243,7 +243,7 @@ export default function ProfileScreen() {
             }}
           >
             <Text style={styles.statValue}>{followers}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
+            <Text style={styles.statLabel}>followers</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.stat}
@@ -253,13 +253,13 @@ export default function ProfileScreen() {
             }}
           >
             <Text style={styles.statValue}>{following}</Text>
-            <Text style={styles.statLabel}>Following</Text>
+            <Text style={styles.statLabel}>following</Text>
           </TouchableOpacity>
         </View>
 
         {/* Ranks */}
         <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>Ranks</Text>
+          <Text style={styles.sectionTitle}>ranks</Text>
           <XPProgressBar type="gamer" levelInfo={gamerLevel} />
           <XPProgressBar type="social" levelInfo={socialLevel} />
         </View>
@@ -267,12 +267,12 @@ export default function ProfileScreen() {
         {/* Favorites */}
         <View style={styles.favoritesSection}>
           <View style={styles.favoritesTitleRow}>
-            <Text style={styles.sectionTitle}>Favorites</Text>
+            <Text style={styles.sectionTitle}>favorites</Text>
             <TouchableOpacity
               onPress={() => setIsFavoritesModalVisible(true)}
               style={styles.editButton}
             >
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={styles.editButtonText}>edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.favoritesRow}>
@@ -311,7 +311,7 @@ export default function ProfileScreen() {
 
         {/* Game Library */}
         <View style={styles.librarySection}>
-          <Text style={styles.sectionTitle}>Game Library</Text>
+          <Text style={styles.sectionTitle}>game library</Text>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -377,10 +377,10 @@ export default function ProfileScreen() {
             <View style={styles.emptyState}>
               <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
               <Text style={styles.emptyText}>
-                {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
+                {gameLogs.length === 0 ? 'no games logged yet' : 'no games in this category'}
               </Text>
               {gameLogs.length === 0 && (
-                <Text style={styles.emptySubtext}>Search for games to start tracking!</Text>
+                <Text style={styles.emptySubtext}>search for games to start tracking!</Text>
               )}
             </View>
           )}

@@ -127,7 +127,7 @@ export default function QuickLogScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Quick Log</Text>
+        <Text style={styles.headerTitle}>quick log</Text>
       </View>
 
       {/* Search Input */}
@@ -135,7 +135,7 @@ export default function QuickLogScreen() {
         <Ionicons name="search" size={20} color={Colors.textDim} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search for a game to log..."
+          placeholder="search for a game to log..."
           placeholderTextColor={Colors.textDim}
           value={query}
           onChangeText={handleSearchChange}
@@ -166,13 +166,13 @@ export default function QuickLogScreen() {
       ) : query.length >= 2 ? (
         <View style={styles.centered}>
           <Ionicons name="search-outline" size={48} color={Colors.textDim} />
-          <Text style={styles.emptyText}>No games found</Text>
+          <Text style={styles.emptyText}>no games found</Text>
         </View>
       ) : (
         <View style={styles.centered}>
           <Ionicons name="game-controller-outline" size={64} color={Colors.textDim} />
-          <Text style={styles.emptyText}>Search for a game</Text>
-          <Text style={styles.emptySubtext}>Type at least 2 characters to search</Text>
+          <Text style={styles.emptyText}>search for a game</Text>
+          <Text style={styles.emptySubtext}>type at least 2 characters to search</Text>
         </View>
       )}
 

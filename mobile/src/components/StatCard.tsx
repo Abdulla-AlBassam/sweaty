@@ -15,7 +15,7 @@ export default function StatCard({ label, value, icon }: StatCardProps) {
         {icon && `${icon} `}
         {value}
       </Text>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{label.toLowerCase()}</Text>
     </View>
   )
 }
@@ -27,12 +27,14 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   value: {
     fontSize: FontSize.lg,
     fontWeight: 'bold',
     color: Colors.accentLight,
     marginBottom: 2,
+    textAlign: 'center',
   },
   label: {
     fontSize: 10,

@@ -69,9 +69,9 @@ const FILTER_OPTIONS: Record<string, string[]> = {
 }
 
 const FILTER_TITLES: Record<string, string> = {
-  genre: 'Select Genre',
-  year: 'Select Year',
-  platform: 'Select Platform',
+  genre: 'select genre',
+  year: 'select year',
+  platform: 'select platform',
 }
 
 export default function FilterModal({
@@ -174,14 +174,14 @@ export default function FilterModal({
                   style={styles.clearButton}
                   onPress={handleClear}
                 >
-                  <Text style={styles.clearButtonText}>Clear</Text>
+                  <Text style={styles.clearButtonText}>clear</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.applyButton}
                   onPress={handleApply}
                 >
                   <Text style={styles.applyButtonText}>
-                    Apply{localSelected.length > 0 ? ` (${localSelected.length})` : ''}
+                    apply{localSelected.length > 0 ? ` (${localSelected.length})` : ''}
                   </Text>
                 </TouchableOpacity>
               </View>

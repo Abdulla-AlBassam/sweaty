@@ -84,13 +84,13 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
   // Filter tabs configuration
   const filterTabs = [
-    { key: 'all', label: 'All' },
-    { key: 'playing', label: 'Playing' },
-    { key: 'completed', label: 'Completed' },
-    { key: 'played', label: 'Played' },
-    { key: 'want_to_play', label: 'Want to Play' },
-    { key: 'on_hold', label: 'On Hold' },
-    { key: 'dropped', label: 'Dropped' },
+    { key: 'all', label: 'all' },
+    { key: 'playing', label: 'playing' },
+    { key: 'completed', label: 'completed' },
+    { key: 'played', label: 'played' },
+    { key: 'want_to_play', label: 'want to play' },
+    { key: 'on_hold', label: 'on hold' },
+    { key: 'dropped', label: 'dropped' },
   ]
 
   // Get count for each status
@@ -297,7 +297,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading...</Text>
+          <Text style={styles.headerTitle}>loading...</Text>
         </View>
         <ScrollView style={styles.scrollView}>
           <ProfileSkeleton />
@@ -313,11 +313,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Not Found</Text>
+          <Text style={styles.headerTitle}>not found</Text>
         </View>
         <View style={styles.centered}>
           <Ionicons name="person-outline" size={64} color={Colors.textDim} />
-          <Text style={styles.errorText}>User not found</Text>
+          <Text style={styles.errorText}>user not found</Text>
         </View>
       </SafeAreaView>
     )
@@ -375,7 +375,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                 <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
               ) : (
                 <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {isFollowing ? 'following' : 'follow'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -386,11 +386,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.totalGames}</Text>
-            <Text style={styles.statLabel}>Games</Text>
+            <Text style={styles.statLabel}>games</Text>
           </View>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.completed}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statLabel}>completed</Text>
           </View>
           <TouchableOpacity
             style={styles.stat}
@@ -400,7 +400,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             }}
           >
             <Text style={styles.statValue}>{followerCount}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
+            <Text style={styles.statLabel}>followers</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.stat}
@@ -410,20 +410,20 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             }}
           >
             <Text style={styles.statValue}>{followingCount}</Text>
-            <Text style={styles.statLabel}>Following</Text>
+            <Text style={styles.statLabel}>following</Text>
           </TouchableOpacity>
         </View>
 
         {/* Ranks */}
         <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>Ranks</Text>
+          <Text style={styles.sectionTitle}>ranks</Text>
           <XPProgressBar type="gamer" levelInfo={getGamerLevel(calculateGamerXP(gameLogs))} />
           <XPProgressBar type="social" levelInfo={getSocialLevel(calculateSocialXP(gameLogs, followerCount))} />
         </View>
 
         {/* Favorites */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Favorites</Text>
+          <Text style={styles.sectionTitle}>favorites</Text>
           {favorites.length > 0 ? (
             <View style={styles.favoritesRow}>
               {favorites.map((game) => {
@@ -449,14 +449,14 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </View>
           ) : (
             <View style={styles.emptyFavorites}>
-              <Text style={styles.emptyFavoritesText}>No favorites yet</Text>
+              <Text style={styles.emptyFavoritesText}>no favorites yet</Text>
             </View>
           )}
         </View>
 
         {/* Game Library */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Game Library</Text>
+          <Text style={styles.sectionTitle}>game library</Text>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -522,7 +522,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <View style={styles.emptyState}>
               <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
               <Text style={styles.emptyText}>
-                {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
+                {gameLogs.length === 0 ? 'no games logged yet' : 'no games in this category'}
               </Text>
             </View>
           )}

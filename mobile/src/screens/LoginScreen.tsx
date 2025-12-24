@@ -28,12 +28,12 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setError('Please fill in all fields')
+      setError('please fill in all fields')
       return
     }
 
     if (!email.includes('@')) {
-      setError('Please enter a valid email address')
+      setError('please enter a valid email address')
       return
     }
 
@@ -44,10 +44,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       const { error: signInError } = await signIn(email.trim(), password)
 
       if (signInError) {
-        setError('Invalid email or password')
+        setError('invalid email or password')
       }
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError('an error occurred. please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -65,7 +65,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         <View style={styles.content}>
           {/* Logo */}
           <Text style={styles.logo}>sweaty</Text>
-          <Text style={styles.tagline}>Track your gaming journey</Text>
+          <Text style={styles.tagline}>track your gaming journey</Text>
 
           {/* Error Message */}
           {error && (
@@ -78,7 +78,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder="email"
               placeholderTextColor={Colors.textDim}
               value={email}
               onChangeText={setEmail}
@@ -89,7 +89,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder="password"
               placeholderTextColor={Colors.textDim}
               value={password}
               onChangeText={setPassword}
@@ -105,16 +105,16 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               {isLoading ? (
                 <ActivityIndicator color={Colors.background} />
               ) : (
-                <Text style={styles.buttonText}>Log in</Text>
+                <Text style={styles.buttonText}>log in</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Sign Up Link */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Text style={styles.footerText}>don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.footerLink}>Sign up</Text>
+              <Text style={styles.footerLink}>sign up</Text>
             </TouchableOpacity>
           </View>
         </View>

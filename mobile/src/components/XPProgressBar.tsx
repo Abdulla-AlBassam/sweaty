@@ -16,8 +16,8 @@ export default function XPProgressBar({ type, levelInfo }: XPProgressBarProps) {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.labelRow}>
-          <Text style={styles.type}>{type === 'gamer' ? 'Gamer' : 'Social'}</Text>
-          <Text style={styles.level}>Lv. {level}</Text>
+          <Text style={styles.type}>{type === 'gamer' ? 'gamer' : 'social'}</Text>
+          <Text style={styles.level}>lv. {level}</Text>
         </View>
         <Text style={styles.rank}>{rank}</Text>
       </View>
@@ -27,7 +27,7 @@ export default function XPProgressBar({ type, levelInfo }: XPProgressBarProps) {
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
         <Text style={styles.xpText}>
-          {isMaxLevel ? 'MAX' : `${currentXP} / ${xpForNextLevel} XP`}
+          {isMaxLevel ? 'max' : `${currentXP} / ${xpForNextLevel} xp`}
         </Text>
       </View>
     </View>

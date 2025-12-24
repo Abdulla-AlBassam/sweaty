@@ -185,7 +185,7 @@ export default function EditFavoritesModal({
         <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Edit Favorites</Text>
+            <Text style={styles.headerTitle}>edit favorites</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
@@ -194,7 +194,7 @@ export default function EditFavoritesModal({
           {/* Current Favorites */}
           <View style={styles.currentFavorites}>
             <Text style={styles.sectionLabel}>
-              Your Favorites ({favorites.length}/3)
+              your favorites ({favorites.length}/3)
             </Text>
             <View style={styles.favoritesRow}>
               {[0, 1, 2].map((index) => {
@@ -225,7 +225,7 @@ export default function EditFavoritesModal({
                     <View style={[styles.favoriteCover, styles.emptySlot]}>
                       <Ionicons name="add" size={24} color={Colors.textDim} />
                     </View>
-                    <Text style={styles.emptySlotText}>Empty</Text>
+                    <Text style={styles.emptySlotText}>empty</Text>
                   </View>
                 )
               })}
@@ -234,12 +234,12 @@ export default function EditFavoritesModal({
 
           {/* Search */}
           <View style={styles.searchSection}>
-            <Text style={styles.sectionLabel}>Add a Game</Text>
+            <Text style={styles.sectionLabel}>add a game</Text>
             <View style={styles.searchContainer}>
               <Ionicons name="search" size={20} color={Colors.textDim} style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search for a game..."
+                placeholder="search for a game..."
                 placeholderTextColor={Colors.textDim}
                 value={query}
                 onChangeText={handleSearchChange}
@@ -270,11 +270,11 @@ export default function EditFavoritesModal({
               />
             ) : query.length >= 2 ? (
               <View style={styles.centered}>
-                <Text style={styles.noResults}>No games found</Text>
+                <Text style={styles.noResults}>no games found</Text>
               </View>
             ) : (
               <View style={styles.centered}>
-                <Text style={styles.noResults}>Search for games to add</Text>
+                <Text style={styles.noResults}>search for games to add</Text>
               </View>
             )}
           </View>
@@ -289,7 +289,7 @@ export default function EditFavoritesModal({
               {isSaving ? (
                 <ActivityIndicator size="small" color={Colors.background} />
               ) : (
-                <Text style={styles.saveButtonText}>Save Favorites</Text>
+                <Text style={styles.saveButtonText}>save favorites</Text>
               )}
             </TouchableOpacity>
           </View>

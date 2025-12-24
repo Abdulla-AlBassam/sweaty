@@ -87,12 +87,12 @@ interface LogGameModalProps {
 }
 
 const STATUS_OPTIONS = [
-  { value: 'want_to_play', label: 'Want to Play', icon: 'bookmark-outline' },
-  { value: 'playing', label: 'Playing', icon: 'play-circle-outline' },
-  { value: 'played', label: 'Played', icon: 'game-controller-outline' },
-  { value: 'completed', label: 'Completed', icon: 'checkmark-circle-outline' },
-  { value: 'on_hold', label: 'On Hold', icon: 'pause-circle-outline' },
-  { value: 'dropped', label: 'Dropped', icon: 'close-circle-outline' },
+  { value: 'want_to_play', label: 'want to play', icon: 'bookmark-outline' },
+  { value: 'playing', label: 'playing', icon: 'play-circle-outline' },
+  { value: 'played', label: 'played', icon: 'game-controller-outline' },
+  { value: 'completed', label: 'completed', icon: 'checkmark-circle-outline' },
+  { value: 'on_hold', label: 'on hold', icon: 'pause-circle-outline' },
+  { value: 'dropped', label: 'dropped', icon: 'close-circle-outline' },
 ]
 
 export default function LogGameModal({
@@ -410,7 +410,7 @@ export default function LogGameModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              {existingLog ? 'Edit Log' : 'Log Game'}
+              {existingLog ? 'edit log' : 'log game'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.text} />
@@ -431,7 +431,7 @@ export default function LogGameModal({
             </View>
 
             {/* Status Dropdown */}
-            <Text style={styles.sectionLabel}>Log game as...</Text>
+            <Text style={styles.sectionLabel}>log game as...</Text>
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setStatusPickerVisible(true)}
@@ -447,7 +447,7 @@ export default function LogGameModal({
                     <Text style={styles.dropdownText}>{currentStatusOption.label}</Text>
                   </>
                 ) : (
-                  <Text style={styles.dropdownPlaceholder}>Select status</Text>
+                  <Text style={styles.dropdownPlaceholder}>select status</Text>
                 )}
               </View>
               <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
@@ -456,7 +456,7 @@ export default function LogGameModal({
             {/* Platform Dropdown */}
             {game.platforms && game.platforms.length > 0 && (
               <>
-                <Text style={styles.sectionLabel}>Platform</Text>
+                <Text style={styles.sectionLabel}>platform</Text>
                 <TouchableOpacity
                   style={styles.dropdown}
                   onPress={() => setPlatformPickerVisible(true)}
@@ -465,7 +465,7 @@ export default function LogGameModal({
                     {platform ? (
                       <Text style={styles.dropdownText}>{platform}</Text>
                     ) : (
-                      <Text style={styles.dropdownPlaceholder}>Select platform</Text>
+                      <Text style={styles.dropdownPlaceholder}>select platform</Text>
                     )}
                   </View>
                   <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
@@ -474,7 +474,7 @@ export default function LogGameModal({
             )}
 
             {/* Rating */}
-            <Text style={styles.sectionLabel}>Rating {rating ? `(${rating})` : ''}</Text>
+            <Text style={styles.sectionLabel}>rating {rating ? `(${rating})` : ''}</Text>
             <View style={styles.ratingContainer}>
               {[1, 2, 3, 4, 5].map((starNumber) => (
                 <View key={starNumber} style={styles.starWrapper}>
@@ -498,13 +498,13 @@ export default function LogGameModal({
               ))}
               {rating && (
                 <TouchableOpacity onPress={() => setRating(null)} style={styles.clearRating}>
-                  <Text style={styles.clearRatingText}>Clear</Text>
+                  <Text style={styles.clearRatingText}>clear</Text>
                 </TouchableOpacity>
               )}
             </View>
 
             {/* Review */}
-            <Text style={styles.sectionLabel}>Review</Text>
+            <Text style={styles.sectionLabel}>review</Text>
             <View style={styles.reviewContainer}>
               <TextInput
                 style={styles.reviewInput}
@@ -553,7 +553,7 @@ export default function LogGameModal({
                 <ActivityIndicator size="small" color={Colors.background} />
               ) : (
                 <Text style={styles.saveButtonText}>
-                  {existingLog ? 'Update' : 'Save'}
+                  {existingLog ? 'update' : 'save'}
                 </Text>
               )}
             </TouchableOpacity>
@@ -565,7 +565,7 @@ export default function LogGameModal({
       <PickerModal
         visible={statusPickerVisible}
         onClose={() => setStatusPickerVisible(false)}
-        title="Log game as..."
+        title="log game as..."
         options={STATUS_OPTIONS}
         selectedValue={status}
         onSelect={setStatus}
@@ -577,7 +577,7 @@ export default function LogGameModal({
         <PickerModal
           visible={platformPickerVisible}
           onClose={() => setPlatformPickerVisible(false)}
-          title="Select Platform"
+          title="select platform"
           options={game.platforms.map(p => ({ value: p, label: p }))}
           selectedValue={platform}
           onSelect={setPlatform}
