@@ -269,7 +269,7 @@ export async function GET(request: NextRequest) {
   const years = searchParams.get('years')?.split(',').filter(Boolean) || []
   const platforms = searchParams.get('platforms')?.split(',').filter(Boolean) || []
   const offset = parseInt(searchParams.get('offset') || '0')
-  const limit = parseInt(searchParams.get('limit') || '30')
+  const limit = parseInt(searchParams.get('limit') || '80')
 
   console.log('=== BROWSE GAMES API ===')
   console.log('Genres:', genres)
@@ -347,11 +347,15 @@ export async function GET(request: NextRequest) {
 
     const whereClause = whereConditions.join(' & ')
 
+    // Sports genre (ID 14) should prioritize recent games
+    const isSportsQuery = genres.includes('Sports')
+    const sortClause = isSportsQuery ? 'sort first_release_date desc' : 'sort total_rating_count desc'
+
     const query = `
       fields name, slug, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating, total_rating_count;
       where ${whereClause};
-      sort total_rating_count desc;
+      ${sortClause};
       offset ${offset};
       limit ${limit};
     `
