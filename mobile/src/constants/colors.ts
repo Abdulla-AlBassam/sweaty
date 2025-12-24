@@ -5,9 +5,9 @@ export const Colors = {
   surface: '#1a1a1a',
   surfaceLight: '#2a2a2a',
 
-  // Accent (green)
-  accent: '#22c55e',
-  accentDark: '#16a34a',
+  // Accent (deep forest green)
+  accent: '#1B4D3E',
+  accentDark: '#153d31',
 
   // Text
   text: '#ffffff',
@@ -20,11 +20,11 @@ export const Colors = {
   // Status colors
   error: '#ef4444',
   warning: '#f59e0b',
-  success: '#22c55e',
+  success: '#1B4D3E',
 
   // Game status colors
   statusPlaying: '#3b82f6',
-  statusCompleted: '#22c55e',
+  statusCompleted: '#1B4D3E',
   statusPlayed: '#8b5cf6',
   statusWantToPlay: '#f59e0b',
   statusOnHold: '#6b7280',

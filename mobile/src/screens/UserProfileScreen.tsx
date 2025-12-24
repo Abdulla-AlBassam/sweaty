@@ -514,7 +514,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     </View>
                   )}
                   {log.rating && (
-                    <View style={styles.ratingBadge}>
+                    <View style={styles.ratingContainer}>
                       <StarRating rating={log.rating} size={10} />
                     </View>
                   )}
@@ -746,14 +746,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
-  ratingBadge: {
-    position: 'absolute',
-    top: Spacing.xs,
-    right: Spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
+  ratingContainer: {
+    marginTop: Spacing.xs,
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',

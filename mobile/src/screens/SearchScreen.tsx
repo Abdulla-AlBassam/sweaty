@@ -411,45 +411,77 @@ export default function SearchScreen() {
           <View style={styles.browseSection}>
             <Text style={styles.browseSectionTitle}>Browse by</Text>
 
-            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('genre')}>
-              <Text style={styles.browseRowText}>Genre</Text>
-              <View style={styles.browseRowRight}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.browsePillsContainer}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.browsePill,
+                  getFilterCount('genre') > 0 && styles.browsePillActive,
+                ]}
+                onPress={() => openFilterModal('genre')}
+              >
+                <Text
+                  style={[
+                    styles.browsePillText,
+                    getFilterCount('genre') > 0 && styles.browsePillTextActive,
+                  ]}
+                >
+                  Genre
+                </Text>
                 {getFilterCount('genre') > 0 && (
-                  <View style={styles.filterCountBadge}>
-                    <Text style={styles.filterCountText}>{getFilterCount('genre')}</Text>
+                  <View style={styles.browsePillBadge}>
+                    <Text style={styles.browsePillBadgeText}>{getFilterCount('genre')}</Text>
                   </View>
                 )}
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <View style={styles.browseRowDivider} />
-
-            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('year')}>
-              <Text style={styles.browseRowText}>Release date</Text>
-              <View style={styles.browseRowRight}>
+              <TouchableOpacity
+                style={[
+                  styles.browsePill,
+                  getFilterCount('year') > 0 && styles.browsePillActive,
+                ]}
+                onPress={() => openFilterModal('year')}
+              >
+                <Text
+                  style={[
+                    styles.browsePillText,
+                    getFilterCount('year') > 0 && styles.browsePillTextActive,
+                  ]}
+                >
+                  Release date
+                </Text>
                 {getFilterCount('year') > 0 && (
-                  <View style={styles.filterCountBadge}>
-                    <Text style={styles.filterCountText}>{getFilterCount('year')}</Text>
+                  <View style={styles.browsePillBadge}>
+                    <Text style={styles.browsePillBadgeText}>{getFilterCount('year')}</Text>
                   </View>
                 )}
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <View style={styles.browseRowDivider} />
-
-            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('platform')}>
-              <Text style={styles.browseRowText}>Platform</Text>
-              <View style={styles.browseRowRight}>
+              <TouchableOpacity
+                style={[
+                  styles.browsePill,
+                  getFilterCount('platform') > 0 && styles.browsePillActive,
+                ]}
+                onPress={() => openFilterModal('platform')}
+              >
+                <Text
+                  style={[
+                    styles.browsePillText,
+                    getFilterCount('platform') > 0 && styles.browsePillTextActive,
+                  ]}
+                >
+                  Platform
+                </Text>
                 {getFilterCount('platform') > 0 && (
-                  <View style={styles.filterCountBadge}>
-                    <Text style={styles.filterCountText}>{getFilterCount('platform')}</Text>
+                  <View style={styles.browsePillBadge}>
+                    <Text style={styles.browsePillBadgeText}>{getFilterCount('platform')}</Text>
                   </View>
                 )}
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
 
           {/* Active Filters Display */}
@@ -682,38 +714,46 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 16,
   },
-  browseRow: {
+  browsePillsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 14,
+    gap: Spacing.sm,
   },
-  browseRowText: {
-    fontSize: 16,
-    color: Colors.text,
-  },
-  browseRowRight: {
+  browsePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: 'transparent',
+    gap: Spacing.xs,
   },
-  filterCountBadge: {
+  browsePillActive: {
     backgroundColor: Colors.accent,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
+    borderColor: Colors.accent,
   },
-  filterCountText: {
+  browsePillText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  browsePillTextActive: {
     color: Colors.background,
-    fontSize: 12,
     fontWeight: '600',
   },
-  browseRowDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
+  browsePillBadge: {
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  browsePillBadgeText: {
+    color: Colors.accent,
+    fontSize: 11,
+    fontWeight: '600',
   },
   activeFiltersSection: {
     marginTop: 24,
