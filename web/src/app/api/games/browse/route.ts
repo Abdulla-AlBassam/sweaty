@@ -147,6 +147,83 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Incremental test mode - find exactly which filter breaks
+  const testLevel = searchParams.get('test')
+  if (testLevel) {
+    try {
+      const token = await getAccessToken()
+      let testQuery = ''
+
+      switch (testLevel) {
+        case '1':
+          // Simplest - no where clause
+          testQuery = 'fields name; limit 10;'
+          break
+        case '2':
+          // Add category filter only
+          testQuery = 'fields name; where category = 0; limit 10;'
+          break
+        case '3':
+          // Add cover filter
+          testQuery = 'fields name, cover.image_id; where category = 0 & cover != null; limit 10;'
+          break
+        case '4':
+          // Add genre filter (Shooter = 5)
+          testQuery = 'fields name, genres.name; where genres = 5; limit 10;'
+          break
+        case '5':
+          // Try genre with category
+          testQuery = 'fields name, genres.name; where category = 0 & genres = 5; limit 10;'
+          break
+        case '6':
+          // Try multiple genres with OR - using | operator
+          testQuery = 'fields name, genres.name; where genres = 5 | genres = 31; limit 10;'
+          break
+        case '7':
+          // Full query with genre only
+          testQuery = 'fields name, cover.image_id, genres.name; where category = 0 & cover != null & genres = 5; sort total_rating desc; limit 10;'
+          break
+        default:
+          testQuery = 'fields name; limit 5;'
+      }
+
+      console.log('TEST QUERY:', testQuery)
+
+      const response = await fetch('https://api.igdb.com/v4/games', {
+        method: 'POST',
+        headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'text/plain',
+        },
+        body: testQuery,
+      })
+
+      const text = await response.text()
+      console.log('RAW RESPONSE:', text.slice(0, 500))
+
+      try {
+        const games = JSON.parse(text)
+        return NextResponse.json({
+          test: testLevel,
+          query: testQuery,
+          count: Array.isArray(games) ? games.length : 0,
+          games: Array.isArray(games) ? games.slice(0, 5) : games,
+          error: games.message || null,
+        })
+      } catch {
+        return NextResponse.json({
+          test: testLevel,
+          query: testQuery,
+          parseError: true,
+          raw: text.slice(0, 500),
+        })
+      }
+    } catch (e) {
+      return NextResponse.json({ error: 'Test failed', message: String(e) })
+    }
+  }
+
   const genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
   const years = searchParams.get('years')?.split(',').filter(Boolean) || []
   const platforms = searchParams.get('platforms')?.split(',').filter(Boolean) || []
