@@ -34,12 +34,12 @@ async function getAccessToken(): Promise<string> {
   return cachedToken!
 }
 
-// Genre mapping - our names to IGDB names
+// Genre mapping - our app names to exact IGDB genre names
+// Based on debug output: Shooter, Adventure, Indie, Visual Novel, Role-playing (RPG), Strategy, Platform, Sport, Racing, Arcade, Puzzle
 const GENRE_MAP: Record<string, string> = {
-  'Action': 'Action',
+  'Action': 'Hack and slash/Beat \'em up',
   'Adventure': 'Adventure',
   'RPG': 'Role-playing (RPG)',
-  'Horror': 'Horror',
   'Shooter': 'Shooter',
   'Sports': 'Sport',
   'Puzzle': 'Puzzle',
@@ -51,7 +51,11 @@ const GENRE_MAP: Record<string, string> = {
   'Indie': 'Indie',
   'MOBA': 'MOBA',
   'Music': 'Music',
+  'Arcade': 'Arcade',
 }
+
+// Horror is a THEME in IGDB, not a genre
+const HORROR_THEME = 'Horror'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -126,11 +130,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
+  let genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
   const years = searchParams.get('years')?.split(',').filter(Boolean) || []
   const platforms = searchParams.get('platforms')?.split(',').filter(Boolean) || []
   const offset = parseInt(searchParams.get('offset') || '0')
-  const limit = Math.min(parseInt(searchParams.get('limit') || '30'), 100)
+  const limit = parseInt(searchParams.get('limit') || '30')
 
   console.log('=== BROWSE GAMES API ===')
   console.log('Genres:', genres)
@@ -140,11 +144,18 @@ export async function GET(request: NextRequest) {
   try {
     const token = await getAccessToken()
 
-    // Simpler where conditions - removed total_rating requirement
+    // Start with basic conditions
     const whereConditions: string[] = [
       'category = 0',
       'cover != null',
     ]
+
+    // Check if Horror is requested (it's a theme, not genre in IGDB)
+    const includeHorror = genres.includes('Horror')
+    if (includeHorror) {
+      whereConditions.push(`themes.name = "${HORROR_THEME}"`)
+      genres = genres.filter(g => g !== 'Horror')
+    }
 
     // Genre filter - use exact match
     if (genres.length > 0) {
@@ -153,29 +164,28 @@ export async function GET(request: NextRequest) {
       whereConditions.push(`(${genreConditions})`)
     }
 
-    // Year filter
+    // Year filter - use Date.UTC for proper timestamps
     if (years.length > 0) {
       const yearConditions: string[] = []
 
       for (const year of years) {
         if (year.endsWith('s')) {
-          // Decade like "2010s"
+          // Decade like "2010s" -> 2010-2019
           const decadeStart = parseInt(year.slice(0, 4))
-          const startTimestamp = Math.floor(new Date(`${decadeStart}-01-01T00:00:00Z`).getTime() / 1000)
-          const endTimestamp = Math.floor(new Date(`${decadeStart + 10}-01-01T00:00:00Z`).getTime() / 1000)
-          yearConditions.push(`(first_release_date >= ${startTimestamp} & first_release_date < ${endTimestamp})`)
+          const startTs = Math.floor(Date.UTC(decadeStart, 0, 1) / 1000)
+          const endTs = Math.floor(Date.UTC(decadeStart + 10, 0, 1) / 1000)
+          yearConditions.push(`(first_release_date >= ${startTs} & first_release_date < ${endTs})`)
         } else {
           // Single year like "2024"
-          const yearNum = parseInt(year)
-          const startTimestamp = Math.floor(new Date(`${yearNum}-01-01T00:00:00Z`).getTime() / 1000)
-          const endTimestamp = Math.floor(new Date(`${yearNum + 1}-01-01T00:00:00Z`).getTime() / 1000)
-          yearConditions.push(`(first_release_date >= ${startTimestamp} & first_release_date < ${endTimestamp})`)
+          const y = parseInt(year)
+          const startTs = Math.floor(Date.UTC(y, 0, 1) / 1000)
+          const endTs = Math.floor(Date.UTC(y + 1, 0, 1) / 1000)
+          yearConditions.push(`(first_release_date >= ${startTs} & first_release_date < ${endTs})`)
         }
       }
 
       if (yearConditions.length > 0) {
-        const joined = yearConditions.length === 1 ? yearConditions[0] : `(${yearConditions.join(' | ')})`
-        whereConditions.push(joined)
+        whereConditions.push(`(${yearConditions.join(' | ')})`)
       }
     }
 
@@ -185,16 +195,20 @@ export async function GET(request: NextRequest) {
       whereConditions.push(`(${platformConditions})`)
     }
 
+    const whereClause = whereConditions.join(' & ')
+
     const query = `
       fields name, slug, summary, cover.image_id, first_release_date,
-             genres.name, platforms.name, total_rating, rating_count;
-      where ${whereConditions.join(' & ')};
+             genres.name, platforms.name, themes.name, total_rating;
+      where ${whereClause};
       sort total_rating desc;
       offset ${offset};
       limit ${limit};
     `
 
-    console.log('IGDB Query:', query)
+    console.log('=== BROWSE QUERY ===')
+    console.log('Where clause:', whereClause)
+    console.log('Full query:', query)
 
     const response = await fetch('https://api.igdb.com/v4/games', {
       method: 'POST',
@@ -206,18 +220,9 @@ export async function GET(request: NextRequest) {
       body: query,
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('IGDB API error:', response.status, errorText)
-      return NextResponse.json(
-        { error: `IGDB API error: ${response.status}`, games: [], count: 0 },
-        { status: 500 }
-      )
-    }
-
     const games = await response.json()
 
-    console.log('IGDB Response count:', games.length)
+    console.log('Response count:', games.length)
     if (games.length > 0) {
       console.log('First game:', games[0].name)
     }
@@ -226,7 +231,7 @@ export async function GET(request: NextRequest) {
     if (!Array.isArray(games) && games.message) {
       console.error('IGDB Error:', games.message)
       return NextResponse.json(
-        { games: [], count: 0, error: games.message },
+        { games: [], count: 0, error: games.message, query: whereClause },
         { status: 400 }
       )
     }
@@ -252,6 +257,7 @@ export async function GET(request: NextRequest) {
       count: transformedGames.length,
       offset,
       hasMore: games.length === limit,
+      debug_query: whereClause,
     })
   } catch (error) {
     console.error('Browse games error:', error)
