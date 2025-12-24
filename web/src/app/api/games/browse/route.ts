@@ -1,28 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// ============================================
-// TYPES
-// ============================================
-
-interface IGDBGame {
-  id: number
-  name: string
-  slug?: string
-  cover?: {
-    id: number
-    image_id: string
-  }
-  first_release_date?: number
-  genres?: { id: number; name: string }[]
-  platforms?: { id: number; name: string }[]
-  total_rating?: number
-  rating_count?: number
-  message?: string // For error responses
-}
-
-// ============================================
-// TOKEN MANAGEMENT
-// ============================================
+const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID!
+const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET!
 
 let cachedToken: string | null = null
 let tokenExpiresAt: number = 0
@@ -38,8 +17,8 @@ async function getAccessToken(): Promise<string> {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams({
-      client_id: process.env.TWITCH_CLIENT_ID!,
-      client_secret: process.env.TWITCH_CLIENT_SECRET!,
+      client_id: TWITCH_CLIENT_ID,
+      client_secret: TWITCH_CLIENT_SECRET,
       grant_type: 'client_credentials',
     }),
   })
@@ -55,11 +34,7 @@ async function getAccessToken(): Promise<string> {
   return cachedToken!
 }
 
-// ============================================
-// HELPER FUNCTIONS
-// ============================================
-
-// Map our genre names to IGDB genre names for exact matching
+// Genre mapping - our names to IGDB names
 const GENRE_MAP: Record<string, string> = {
   'Action': 'Action',
   'Adventure': 'Adventure',
@@ -78,12 +53,47 @@ const GENRE_MAP: Record<string, string> = {
   'Music': 'Music',
 }
 
-// ============================================
-// ROUTE HANDLER
-// ============================================
-
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
+
+  // Debug mode - show what genres IGDB uses
+  if (searchParams.get('debug') === '1') {
+    try {
+      const token = await getAccessToken()
+
+      // Simple query to get games and see their genre names
+      const testQuery = `
+        fields name, genres.name;
+        where category = 0 & cover != null;
+        limit 20;
+      `
+
+      const response = await fetch('https://api.igdb.com/v4/games', {
+        method: 'POST',
+        headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'text/plain',
+        },
+        body: testQuery,
+      })
+
+      const games = await response.json()
+
+      // Collect all unique genre names
+      const allGenres = games.flatMap((g: any) => g.genres?.map((genre: any) => genre.name) || [])
+      const uniqueGenres = [...new Set(allGenres)].sort()
+
+      return NextResponse.json({
+        debug: true,
+        games: games.map((g: any) => ({ name: g.name, genres: g.genres })),
+        availableGenres: uniqueGenres,
+      })
+    } catch (error) {
+      return NextResponse.json({ error: String(error) }, { status: 500 })
+    }
+  }
+
   const genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
   const years = searchParams.get('years')?.split(',').filter(Boolean) || []
   const platforms = searchParams.get('platforms')?.split(',').filter(Boolean) || []
@@ -94,33 +104,24 @@ export async function GET(request: NextRequest) {
   console.log('Genres:', genres)
   console.log('Years:', years)
   console.log('Platforms:', platforms)
-  console.log('Offset:', offset, 'Limit:', limit)
 
   try {
     const token = await getAccessToken()
 
-    // Build where conditions
+    // Simpler where conditions - removed total_rating requirement
     const whereConditions: string[] = [
-      'category = 0',      // Main games only
-      'cover != null',     // Must have cover
-      'total_rating != null', // Must have ratings for sorting
+      'category = 0',
+      'cover != null',
     ]
 
-    // Genre filter - use case-insensitive partial match with ~ operator
+    // Genre filter - use exact match
     if (genres.length > 0) {
-      const genreConditions = genres.map(g => {
-        const igdbGenre = GENRE_MAP[g] || g
-        return `genres.name ~ *"${igdbGenre}"*`
-      })
-      // Use | for OR between multiple genres
-      if (genreConditions.length === 1) {
-        whereConditions.push(genreConditions[0])
-      } else {
-        whereConditions.push(`(${genreConditions.join(' | ')})`)
-      }
+      const mappedGenres = genres.map(g => GENRE_MAP[g] || g)
+      const genreConditions = mappedGenres.map(g => `genres.name = "${g}"`).join(' | ')
+      whereConditions.push(`(${genreConditions})`)
     }
 
-    // Year filter - build timestamp conditions
+    // Year filter
     if (years.length > 0) {
       const yearConditions: string[] = []
 
@@ -140,21 +141,16 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (yearConditions.length === 1) {
-        whereConditions.push(yearConditions[0])
-      } else if (yearConditions.length > 1) {
-        whereConditions.push(`(${yearConditions.join(' | ')})`)
+      if (yearConditions.length > 0) {
+        const joined = yearConditions.length === 1 ? yearConditions[0] : `(${yearConditions.join(' | ')})`
+        whereConditions.push(joined)
       }
     }
 
-    // Platform filter - use case-insensitive partial match
+    // Platform filter - use exact match
     if (platforms.length > 0) {
-      const platformConditions = platforms.map(p => `platforms.name ~ *"${p}"*`)
-      if (platformConditions.length === 1) {
-        whereConditions.push(platformConditions[0])
-      } else {
-        whereConditions.push(`(${platformConditions.join(' | ')})`)
-      }
+      const platformConditions = platforms.map(p => `platforms.name = "${p}"`).join(' | ')
+      whereConditions.push(`(${platformConditions})`)
     }
 
     const query = `
@@ -171,7 +167,7 @@ export async function GET(request: NextRequest) {
     const response = await fetch('https://api.igdb.com/v4/games', {
       method: 'POST',
       headers: {
-        'Client-ID': process.env.TWITCH_CLIENT_ID!,
+        'Client-ID': TWITCH_CLIENT_ID,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'text/plain',
       },
@@ -187,24 +183,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const games = await response.json() as IGDBGame[]
+    const games = await response.json()
 
     console.log('IGDB Response count:', games.length)
     if (games.length > 0) {
       console.log('First game:', games[0].name)
     }
 
-    // Check if IGDB returned an error message
-    if (Array.isArray(games) === false && (games as unknown as { message?: string }).message) {
-      console.error('IGDB Error:', (games as unknown as { message: string }).message)
+    // Check for error message
+    if (!Array.isArray(games) && games.message) {
+      console.error('IGDB Error:', games.message)
       return NextResponse.json(
-        { games: [], count: 0, error: (games as unknown as { message: string }).message },
+        { games: [], count: 0, error: games.message },
         { status: 400 }
       )
     }
 
-    // Transform games to our format
-    const transformedGames = games.map((game) => ({
+    // Transform games
+    const transformedGames = games.map((game: any) => ({
       id: game.id,
       name: game.name,
       slug: game.slug,
@@ -214,8 +210,8 @@ export async function GET(request: NextRequest) {
       firstReleaseDate: game.first_release_date
         ? new Date(game.first_release_date * 1000).toISOString()
         : null,
-      genres: game.genres?.map((g) => g.name) || [],
-      platforms: game.platforms?.map((p) => p.name) || [],
+      genres: game.genres?.map((g: any) => g.name) || [],
+      platforms: game.platforms?.map((p: any) => p.name) || [],
       rating: game.total_rating ? Math.round(game.total_rating) : null,
     }))
 
