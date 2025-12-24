@@ -189,6 +189,39 @@ export async function GET(request: NextRequest) {
           // Full query with genre
           testQuery = 'fields name, cover.image_id, genres.name; where cover != null & parent_game = null & genres = 5; sort total_rating desc; limit 10;'
           break
+        // === COMBINED ARRAY FILTER TESTS ===
+        case '8':
+          // Themes only (Horror = 19)
+          testQuery = 'fields name, themes.name; where themes = 19; limit 10;'
+          break
+        case '9':
+          // Platforms only (PS5 = 167)
+          testQuery = 'fields name, platforms.name; where platforms = 167; limit 10;'
+          break
+        case '10':
+          // Combined: themes AND platforms (basic syntax)
+          testQuery = 'fields name, themes.name, platforms.name; where themes = 19 & platforms = 167; limit 10;'
+          break
+        case '11':
+          // Combined with parentheses around each condition
+          testQuery = 'fields name, themes.name, platforms.name; where (themes = 19) & (platforms = 167); limit 10;'
+          break
+        case '12':
+          // Try array syntax with parentheses for values
+          testQuery = 'fields name, themes.name, platforms.name; where themes = (19) & platforms = (167); limit 10;'
+          break
+        case '13':
+          // Search for specific game to confirm it exists
+          testQuery = 'search "Resident Evil Village"; fields name, themes.name, platforms.name, total_rating_count; limit 5;'
+          break
+        case '14':
+          // Try with themes.id instead of themes
+          testQuery = 'fields name, themes.name, platforms.name; where themes.id = 19 & platforms.id = 167; limit 10;'
+          break
+        case '15':
+          // Minimal combined - just Horror + PS5, no other filters, sorted by rating_count
+          testQuery = 'fields name, themes.name, platforms.name, total_rating_count; where themes = 19 & platforms = 167; sort total_rating_count desc; limit 10;'
+          break
         default:
           testQuery = 'fields name; limit 5;'
       }
