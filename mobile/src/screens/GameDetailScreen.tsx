@@ -6,7 +6,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -19,8 +19,15 @@ import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
+import TrailerSection from '../components/TrailerSection'
+import { GameDetailSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
+
+interface GameVideo {
+  videoId: string
+  name: string
+}
 
 interface GameDetails {
   id: number
@@ -34,6 +41,7 @@ interface GameDetails {
   genres?: string[]
   platforms?: string[]
   rating?: number
+  videos?: GameVideo[]
 }
 
 interface UserGameLog {
@@ -53,6 +61,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
@@ -66,8 +75,12 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   }, [gameId, user])
 
   const fetchGameDetails = async () => {
+    console.log('=== FETCHING GAME DETAILS ===')
+    console.log('Game ID:', gameId)
+    console.log('API URL:', `${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
+
     try {
-      // First try to get from cache
+      // First try to get from cache for quick display
       const { data: cached } = await supabase
         .from('games_cache')
         .select('*')
@@ -75,6 +88,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         .single()
 
       if (cached) {
+        console.log('Loaded from cache:', cached.name)
         setGame({
           id: cached.id,
           name: cached.name,
@@ -87,14 +101,30 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           rating: cached.rating,
         })
         setIsLoading(false)
-        return
       }
 
-      // If not cached, fetch from API
-      const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}`)
-      if (response.ok) {
-        const data = await response.json()
-        setGame(data.game)
+      // Always fetch from API to get videos (cache doesn't store them)
+      try {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
+        console.log('API Response status:', response.status)
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('API Response videos:', data.videos?.length || 0, 'videos')
+          if (data.videos) {
+            console.log('Video IDs:', data.videos.map((v: GameVideo) => v.videoId))
+          }
+
+          setGame(prev => ({
+            ...prev,
+            ...data,
+          }))
+        } else {
+          console.log('API returned non-OK status, continuing without videos')
+        }
+      } catch (apiError) {
+        // API fetch failed - continue without videos, game still works from cache
+        console.log('Could not fetch from API (videos unavailable):', apiError)
       }
     } catch (error) {
       console.error('Error fetching game:', error)
@@ -126,6 +156,17 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     setReviewsRefreshKey(prev => prev + 1)
   }, [fetchUserLog])
 
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([
+      fetchGameDetails(),
+      fetchUserLog(),
+    ])
+    setReviewsRefreshKey(prev => prev + 1)
+    setRefreshing(false)
+  }, [fetchUserLog])
+
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
     return url ? getIGDBImageUrl(url, 'coverBig2x') : null
@@ -146,9 +187,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Loading...</Text>
         </View>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.accent} />
-        </View>
+        <ScrollView style={styles.scrollView}>
+          <GameDetailSkeleton />
+        </ScrollView>
       </SafeAreaView>
     )
   }
@@ -183,7 +224,18 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         <Text style={styles.headerTitle} numberOfLines={1}>{game.name}</Text>
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.accent}
+            colors={[Colors.accent]}
+          />
+        }
+      >
         {/* Cover and Info */}
         <View style={styles.gameInfo}>
           {coverUrl ? (
@@ -227,13 +279,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           onPress={() => setIsModalVisible(true)}
         >
           <Ionicons
-            name={userLog ? 'create-outline' : 'add-circle-outline'}
-            size={20}
+            name={userLog ? 'create-outline' : 'add'}
+            size={userLog ? 24 : 28}
             color={Colors.background}
           />
-          <Text style={styles.logButtonText}>
-            {userLog ? 'Edit Log' : 'Log Game'}
-          </Text>
         </TouchableOpacity>
 
         {/* About */}
@@ -242,6 +291,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.summaryText}>{game.summary}</Text>
           </View>
+        )}
+
+        {/* Trailers */}
+        {game.videos && game.videos.length > 0 && (
+          <TrailerSection videos={game.videos} />
         )}
 
         {/* Platforms */}
@@ -362,18 +416,11 @@ const styles = StyleSheet.create({
   },
   logButton: {
     backgroundColor: Colors.accent,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.lg,
-    gap: Spacing.sm,
-  },
-  logButtonText: {
-    color: Colors.background,
-    fontSize: FontSize.md,
-    fontWeight: '600',
   },
   section: {
     marginBottom: Spacing.lg,

@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -57,6 +58,7 @@ export default function ProfileScreen() {
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
+  const [refreshing, setRefreshing] = useState(false)
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
 
@@ -158,6 +160,18 @@ export default function ProfileScreen() {
     fetchFavorites()
   }, [fetchFavorites])
 
+  // Pull-to-refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([
+      refreshProfile(),
+      fetchGameLogs(),
+      fetchFavorites(),
+      refreshLogs(),
+    ])
+    setRefreshing(false)
+  }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs])
+
   const handleFavoritesSaveSuccess = () => {
     refreshProfile()
   }
@@ -174,7 +188,18 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.accent}
+            colors={[Colors.accent]}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Profile</Text>
@@ -345,14 +370,6 @@ export default function ProfileScreen() {
                       <StarRating rating={log.rating} size={10} />
                     </View>
                   )}
-                  {log.review && (
-                    <View style={styles.reviewBadge}>
-                      <Ionicons name="chatbubble" size={10} color={Colors.text} />
-                    </View>
-                  )}
-                  <View style={styles.editBadge}>
-                    <Ionicons name="create-outline" size={12} color={Colors.text} />
-                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -635,27 +652,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: Spacing.xs,
     paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
-  },
-  ratingText: {
-    fontSize: FontSize.xs,
-    color: Colors.accent,
-    fontWeight: '600',
-  },
-  editBadge: {
-    position: 'absolute',
-    top: Spacing.xs,
-    left: Spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 4,
-    borderRadius: BorderRadius.sm,
-  },
-  reviewBadge: {
-    position: 'absolute',
-    top: 28,
-    right: Spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    padding: 4,
     borderRadius: BorderRadius.sm,
   },
   emptyState: {

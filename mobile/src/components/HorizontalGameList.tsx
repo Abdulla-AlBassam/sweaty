@@ -5,11 +5,11 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
+import Skeleton from './Skeleton'
 
 interface Game {
   id: number
@@ -46,9 +46,11 @@ export default function HorizontalGameList({
       >
         {[1, 2, 3, 4, 5].map((i) => (
           <View key={i} style={styles.skeletonItem}>
-            <View style={styles.skeletonCover}>
-              <ActivityIndicator size="small" color={Colors.textDim} />
-            </View>
+            <Skeleton
+              width={COVER_WIDTH}
+              height={COVER_HEIGHT}
+              borderRadius={BorderRadius.md}
+            />
           </View>
         ))}
       </ScrollView>
@@ -112,13 +114,5 @@ const styles = StyleSheet.create({
   },
   skeletonItem: {
     width: COVER_WIDTH,
-  },
-  skeletonCover: {
-    width: COVER_WIDTH,
-    height: COVER_HEIGHT,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 })

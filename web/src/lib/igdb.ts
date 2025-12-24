@@ -22,6 +22,13 @@ export interface IGDBGame {
   total_rating?: number
   artworks?: { id: number; url: string; width: number; height: number; image_id: string }[]
   screenshots?: { id: number; url: string; width: number; height: number; image_id: string }[]
+  videos?: { id: number; video_id: string; name?: string }[] // YouTube video IDs
+}
+
+// Video data for trailers
+export interface GameVideo {
+  videoId: string  // YouTube video ID
+  name: string     // e.g., "Launch Trailer", "Gameplay Trailer"
 }
 
 // Transformed game data (cleaner format for our app)
@@ -36,6 +43,7 @@ export interface Game {
   platforms: string[]
   rating: number | null
   artworkUrls?: string[] // Optional array of artwork URLs for poster selection
+  videos?: GameVideo[]   // YouTube trailers
 }
 
 // ============================================
@@ -141,7 +149,14 @@ function getArtworkUrls(artworks?: IGDBGame['artworks'], minWidth: number = 500)
 }
 
 // Transform IGDB response to our cleaner Game format
-function transformGame(game: IGDBGame, includeArtworks: boolean = false): Game {
+interface TransformOptions {
+  includeArtworks?: boolean
+  includeVideos?: boolean
+}
+
+function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
+  const { includeArtworks = false, includeVideos = false } = options
+
   const result: Game = {
     id: game.id,
     name: game.name,
@@ -156,6 +171,13 @@ function transformGame(game: IGDBGame, includeArtworks: boolean = false): Game {
 
   if (includeArtworks && game.artworks) {
     result.artworkUrls = getArtworkUrls(game.artworks)
+  }
+
+  if (includeVideos && game.videos) {
+    result.videos = game.videos.map(v => ({
+      videoId: v.video_id,
+      name: v.name || 'Trailer'
+    }))
   }
 
   return result
@@ -211,14 +233,15 @@ export async function getGameById(id: number): Promise<Game | null> {
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
            genres.name, platforms.name, total_rating, rating, rating_count,
-           artworks.url, artworks.width, artworks.height, artworks.image_id;
+           artworks.url, artworks.width, artworks.height, artworks.image_id,
+           videos.video_id, videos.name;
     where id = ${id};
   `
 
   const games = await igdbFetch('games', body) as IGDBGame[]
 
   if (games.length === 0) return null
-  return transformGame(games[0], true) // Include artworks for game detail pages
+  return transformGame(games[0], { includeArtworks: true, includeVideos: true })
 }
 
 // Get multiple games by IDs (useful for batch fetching)
@@ -236,29 +259,83 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
   return games.map(game => transformGame(game))
 }
 
-// Get popular/trending games from IGDB
-// Fetches highly rated games sorted by rating
-export async function getPopularGames(limit: number = 15): Promise<Game[]> {
-  // IGDB query for popular games:
-  // - Main games only (category 0)
-  // - Has a cover image
-  // - Has a rating
-  // - Sorted by total_rating descending (highest rated first)
-  const body = `
-    fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, rating_count;
-    where category = 0
-      & cover != null
-      & total_rating != null;
-    sort total_rating desc;
+// Get popular game IDs from IGDB's popularity_primitives endpoint
+// This is the same data source as IGDB's homepage "Popular Right Now"
+async function getPopularGameIds(limit: number = 15): Promise<number[]> {
+  const token = await getAccessToken()
+
+  const query = `
+    fields game_id, value, popularity_type;
+    sort value desc;
     limit ${limit};
   `
 
-  console.log('IGDB Popular Games Query:', body)
+  console.log('=== IGDB Popularity Primitives ===')
+  console.log('Query:', query)
 
-  const games = await igdbFetch('games', body) as IGDBGame[]
+  const response = await fetch('https://api.igdb.com/v4/popularity_primitives', {
+    method: 'POST',
+    headers: {
+      'Client-ID': process.env.TWITCH_CLIENT_ID!,
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'text/plain',
+    },
+    body: query,
+  })
 
-  console.log('IGDB Popular Games Response:', games.length, 'games')
+  if (!response.ok) {
+    const errorText = await response.text()
+    console.error('Popularity primitives error:', response.status, errorText)
+    throw new Error(`IGDB API error: ${response.status}`)
+  }
 
-  return games.map(game => transformGame(game))
+  const data = await response.json()
+  console.log('Popularity primitives count:', data.length)
+  if (data.length > 0) {
+    console.log('First primitive:', JSON.stringify(data[0]))
+  }
+
+  // Deduplicate game IDs (popularity_primitives can return multiple entries per game)
+  const allGameIds = data.map((item: { game_id: number }) => item.game_id)
+  const gameIds = [...new Set(allGameIds)] as number[]
+  return gameIds.slice(0, limit)
+}
+
+// Get popular/trending games from IGDB
+// Uses the popularity_primitives endpoint (same as IGDB homepage "Popular Right Now")
+export async function getPopularGames(limit: number = 15): Promise<Game[]> {
+  console.log('=== IGDB Popular Games ===')
+
+  try {
+    // First get popular game IDs from popularity_primitives
+    const gameIds = await getPopularGameIds(limit)
+
+    if (gameIds.length === 0) {
+      console.log('No popular game IDs found')
+      return []
+    }
+
+    console.log('Popular game IDs:', gameIds)
+
+    // Then fetch full game details for those IDs
+    const body = `
+      fields name, slug, summary, cover.image_id, first_release_date,
+             genres.name, platforms.name, total_rating;
+      where id = (${gameIds.join(',')});
+      limit ${limit};
+    `
+
+    const games = await igdbFetch('games', body) as IGDBGame[]
+    console.log('Fetched games count:', games.length)
+
+    // Sort by original popularity order (preserve ranking from popularity_primitives)
+    const sortedGames = gameIds
+      .map(id => games.find(g => g.id === id))
+      .filter((g): g is IGDBGame => g !== undefined)
+
+    return sortedGames.map(game => transformGame(game))
+  } catch (error) {
+    console.error('getPopularGames error:', error)
+    throw error
+  }
 }

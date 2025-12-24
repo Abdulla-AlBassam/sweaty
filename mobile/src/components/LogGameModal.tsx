@@ -11,9 +11,9 @@ import {
   Pressable,
   TextInput,
   Alert,
+  FlatList,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import Toast from 'react-native-toast-message'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
@@ -109,6 +109,8 @@ export default function LogGameModal({
   const [review, setReview] = useState<string>('')
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [statusPickerVisible, setStatusPickerVisible] = useState(false)
+  const [platformPickerVisible, setPlatformPickerVisible] = useState(false)
 
   // Initialize with existing log data
   useEffect(() => {
@@ -128,10 +130,8 @@ export default function LogGameModal({
   const coverUrl = game.coverUrl || game.cover_url
   const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'coverBig2x') : null
 
-  const handleRatingPress = (value: number) => {
-    // Toggle off if same rating
-    setRating(rating === value ? null : value)
-  }
+  // Get the current status option
+  const currentStatusOption = STATUS_OPTIONS.find(opt => opt.value === status)
 
   // Handle half-star rating: left side = X.5, right side = X.0
   const handleHalfStarPress = (starNumber: number, isLeftHalf: boolean) => {
@@ -325,6 +325,79 @@ export default function LogGameModal({
     }
   }
 
+  // Picker Modal Component
+  const PickerModal = ({
+    visible,
+    onClose,
+    title,
+    options,
+    selectedValue,
+    onSelect,
+    showIcons = false,
+  }: {
+    visible: boolean
+    onClose: () => void
+    title: string
+    options: { value: string; label: string; icon?: string }[]
+    selectedValue: string | null
+    onSelect: (value: string) => void
+    showIcons?: boolean
+  }) => (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <Pressable style={styles.pickerOverlay} onPress={onClose}>
+        <Pressable style={styles.pickerContainer} onPress={(e) => e.stopPropagation()}>
+          <View style={styles.pickerHeader}>
+            <Text style={styles.pickerTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.pickerCloseButton}>
+              <Ionicons name="close" size={24} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={options}
+            keyExtractor={(item) => item.value}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.pickerItem,
+                  selectedValue === item.value && styles.pickerItemSelected,
+                ]}
+                onPress={() => {
+                  onSelect(item.value)
+                  onClose()
+                }}
+              >
+                {showIcons && item.icon && (
+                  <Ionicons
+                    name={item.icon as any}
+                    size={22}
+                    color={selectedValue === item.value ? Colors.accent : Colors.textMuted}
+                    style={styles.pickerItemIcon}
+                  />
+                )}
+                <Text
+                  style={[
+                    styles.pickerItemText,
+                    selectedValue === item.value && styles.pickerItemTextSelected,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+                {selectedValue === item.value && (
+                  <Ionicons name="checkmark" size={22} color={Colors.accent} />
+                )}
+              </TouchableOpacity>
+            )}
+          />
+        </Pressable>
+      </Pressable>
+    </Modal>
+  )
+
   return (
     <Modal
       visible={visible}
@@ -357,34 +430,48 @@ export default function LogGameModal({
               <Text style={styles.gameTitle} numberOfLines={2}>{game.name}</Text>
             </View>
 
-            {/* Status Picker */}
-            <Text style={styles.sectionLabel}>Status *</Text>
-            <View style={styles.statusGrid}>
-              {STATUS_OPTIONS.map((option) => (
+            {/* Status Dropdown */}
+            <Text style={styles.sectionLabel}>Log game as...</Text>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => setStatusPickerVisible(true)}
+            >
+              <View style={styles.dropdownContent}>
+                {currentStatusOption ? (
+                  <>
+                    <Ionicons
+                      name={currentStatusOption.icon as any}
+                      size={20}
+                      color={Colors.textMuted}
+                    />
+                    <Text style={styles.dropdownText}>{currentStatusOption.label}</Text>
+                  </>
+                ) : (
+                  <Text style={styles.dropdownPlaceholder}>Select status</Text>
+                )}
+              </View>
+              <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
+
+            {/* Platform Dropdown */}
+            {game.platforms && game.platforms.length > 0 && (
+              <>
+                <Text style={styles.sectionLabel}>Platform</Text>
                 <TouchableOpacity
-                  key={option.value}
-                  style={[
-                    styles.statusChip,
-                    status === option.value && styles.statusChipSelected,
-                  ]}
-                  onPress={() => setStatus(option.value)}
+                  style={styles.dropdown}
+                  onPress={() => setPlatformPickerVisible(true)}
                 >
-                  <Ionicons
-                    name={option.icon as any}
-                    size={18}
-                    color={status === option.value ? Colors.background : Colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.statusChipText,
-                      status === option.value && styles.statusChipTextSelected,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
+                  <View style={styles.dropdownContent}>
+                    {platform ? (
+                      <Text style={styles.dropdownText}>{platform}</Text>
+                    ) : (
+                      <Text style={styles.dropdownPlaceholder}>Select platform</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
                 </TouchableOpacity>
-              ))}
-            </View>
+              </>
+            )}
 
             {/* Rating */}
             <Text style={styles.sectionLabel}>Rating {rating ? `(${rating})` : ''}</Text>
@@ -415,38 +502,6 @@ export default function LogGameModal({
                 </TouchableOpacity>
               )}
             </View>
-
-            {/* Platform Picker */}
-            {game.platforms && game.platforms.length > 0 && (
-              <>
-                <Text style={styles.sectionLabel}>Platform</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.platformScroll}
-                >
-                  {game.platforms.map((p) => (
-                    <TouchableOpacity
-                      key={p}
-                      style={[
-                        styles.platformChip,
-                        platform === p && styles.platformChipSelected,
-                      ]}
-                      onPress={() => setPlatform(platform === p ? null : p)}
-                    >
-                      <Text
-                        style={[
-                          styles.platformChipText,
-                          platform === p && styles.platformChipTextSelected,
-                        ]}
-                      >
-                        {p}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </>
-            )}
 
             {/* Review */}
             <Text style={styles.sectionLabel}>Review</Text>
@@ -505,6 +560,30 @@ export default function LogGameModal({
           </View>
         </Pressable>
       </Pressable>
+
+      {/* Status Picker Modal */}
+      <PickerModal
+        visible={statusPickerVisible}
+        onClose={() => setStatusPickerVisible(false)}
+        title="Log game as..."
+        options={STATUS_OPTIONS}
+        selectedValue={status}
+        onSelect={setStatus}
+        showIcons={true}
+      />
+
+      {/* Platform Picker Modal */}
+      {game.platforms && (
+        <PickerModal
+          visible={platformPickerVisible}
+          onClose={() => setPlatformPickerVisible(false)}
+          title="Select Platform"
+          options={game.platforms.map(p => ({ value: p, label: p }))}
+          selectedValue={platform}
+          onSelect={setPlatform}
+          showIcons={false}
+        />
+      )}
     </Modal>
   )
 }
@@ -571,34 +650,84 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginBottom: Spacing.sm,
   },
-  statusGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginBottom: Spacing.xl,
-  },
-  statusChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
+  // Dropdown styles
+  dropdown: {
+    backgroundColor: Colors.background,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: Spacing.xs,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xl,
   },
-  statusChipSelected: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
+  dropdownContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
-  statusChipText: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
+  dropdownText: {
+    color: Colors.text,
+    fontSize: 16,
   },
-  statusChipTextSelected: {
-    color: Colors.background,
+  dropdownPlaceholder: {
+    color: Colors.textDim,
+    fontSize: 16,
+  },
+  // Picker Modal styles
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  pickerContainer: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    maxHeight: '50%',
+  },
+  pickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  pickerTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  pickerCloseButton: {
+    padding: Spacing.xs,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  pickerItemSelected: {
+    backgroundColor: Colors.background,
+  },
+  pickerItemIcon: {
+    marginRight: Spacing.md,
+  },
+  pickerItemText: {
+    flex: 1,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  pickerItemTextSelected: {
+    color: Colors.accent,
     fontWeight: '600',
   },
+  // Rating styles
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -621,9 +750,6 @@ const styles = StyleSheet.create({
     top: 4,
     zIndex: 0,
   },
-  starButton: {
-    padding: Spacing.xs,
-  },
   clearRating: {
     marginLeft: Spacing.md,
     padding: Spacing.sm,
@@ -632,29 +758,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
-  platformScroll: {
-    marginBottom: Spacing.xl,
-  },
-  platformChip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginRight: Spacing.sm,
-  },
-  platformChipSelected: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  platformChipText: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-  },
-  platformChipTextSelected: {
-    color: Colors.background,
-    fontWeight: '600',
-  },
+  // Review styles
   reviewContainer: {
     marginBottom: Spacing.xl,
   },
