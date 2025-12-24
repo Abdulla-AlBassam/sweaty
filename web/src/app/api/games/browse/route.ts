@@ -16,13 +16,8 @@ interface IGDBGame {
   genres?: { id: number; name: string }[]
   platforms?: { id: number; name: string }[]
   total_rating?: number
-}
-
-interface BrowseGame {
-  id: number
-  name: string
-  coverUrl: string | null
-  rating: number | null
+  rating_count?: number
+  message?: string // For error responses
 }
 
 // ============================================
@@ -61,41 +56,10 @@ async function getAccessToken(): Promise<string> {
 }
 
 // ============================================
-// IGDB API
-// ============================================
-
-async function igdbFetch(endpoint: string, body: string): Promise<unknown> {
-  const token = await getAccessToken()
-
-  const response = await fetch(`https://api.igdb.com/v4/${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Client-ID': process.env.TWITCH_CLIENT_ID!,
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'text/plain',
-    },
-    body,
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    console.error('IGDB API error:', response.status, errorText)
-    throw new Error(`IGDB API error: ${response.status} ${errorText}`)
-  }
-
-  return response.json()
-}
-
-// ============================================
 // HELPER FUNCTIONS
 // ============================================
 
-function getCoverUrl(cover?: { image_id: string }): string | null {
-  if (!cover?.image_id) return null
-  return `https://images.igdb.com/igdb/image/upload/t_cover_big/${cover.image_id}.jpg`
-}
-
-// Map our genre names to IGDB genre names
+// Map our genre names to IGDB genre names for exact matching
 const GENRE_MAP: Record<string, string> = {
   'Action': 'Action',
   'Adventure': 'Adventure',
@@ -114,121 +78,157 @@ const GENRE_MAP: Record<string, string> = {
   'Music': 'Music',
 }
 
-// Build timestamp range for year filters
-function getYearTimestampRange(year: string): { start: number; end: number } | null {
-  if (year.endsWith('s')) {
-    // Decade like "2010s", "2000s"
-    const decadeStart = parseInt(year.replace('s', ''))
-    if (isNaN(decadeStart)) return null
-
-    const startDate = new Date(decadeStart, 0, 1) // Jan 1 of decade start
-    const endDate = new Date(decadeStart + 10, 0, 1) // Jan 1 of next decade
-
-    return {
-      start: Math.floor(startDate.getTime() / 1000),
-      end: Math.floor(endDate.getTime() / 1000),
-    }
-  } else {
-    // Single year like "2024"
-    const yearNum = parseInt(year)
-    if (isNaN(yearNum)) return null
-
-    const startDate = new Date(yearNum, 0, 1) // Jan 1
-    const endDate = new Date(yearNum + 1, 0, 1) // Jan 1 next year
-
-    return {
-      start: Math.floor(startDate.getTime() / 1000),
-      end: Math.floor(endDate.getTime() / 1000),
-    }
-  }
-}
-
 // ============================================
 // ROUTE HANDLER
 // ============================================
 
 export async function GET(request: NextRequest) {
+  const searchParams = request.nextUrl.searchParams
+  const genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
+  const years = searchParams.get('years')?.split(',').filter(Boolean) || []
+  const platforms = searchParams.get('platforms')?.split(',').filter(Boolean) || []
+  const offset = parseInt(searchParams.get('offset') || '0')
+  const limit = Math.min(parseInt(searchParams.get('limit') || '30'), 100)
+
+  console.log('=== BROWSE GAMES API ===')
+  console.log('Genres:', genres)
+  console.log('Years:', years)
+  console.log('Platforms:', platforms)
+  console.log('Offset:', offset, 'Limit:', limit)
+
   try {
-    const searchParams = request.nextUrl.searchParams
-    const genresParam = searchParams.get('genres')
-    const yearsParam = searchParams.get('years')
-    const platformsParam = searchParams.get('platforms')
-    const limitParam = searchParams.get('limit')
-    const offsetParam = searchParams.get('offset')
-
-    const genres = genresParam ? genresParam.split(',').filter(Boolean) : []
-    const years = yearsParam ? yearsParam.split(',').filter(Boolean) : []
-    const platforms = platformsParam ? platformsParam.split(',').filter(Boolean) : []
-    const limit = Math.min(parseInt(limitParam || '50'), 100)
-    const offset = parseInt(offsetParam || '0')
-
-    console.log('=== Browse Games API ===')
-    console.log('Genres:', genres)
-    console.log('Years:', years)
-    console.log('Platforms:', platforms)
-    console.log('Limit:', limit, 'Offset:', offset)
+    const token = await getAccessToken()
 
     // Build where conditions
     const whereConditions: string[] = [
-      'category = 0',  // Main games only
-      'cover != null', // Must have cover art
+      'category = 0',      // Main games only
+      'cover != null',     // Must have cover
+      'total_rating != null', // Must have ratings for sorting
     ]
 
-    // Genre filter
+    // Genre filter - use case-insensitive partial match with ~ operator
     if (genres.length > 0) {
-      const igdbGenres = genres
-        .map(g => GENRE_MAP[g] || g)
-        .map(g => `"${g}"`)
-        .join(',')
-      whereConditions.push(`genres.name = (${igdbGenres})`)
+      const genreConditions = genres.map(g => {
+        const igdbGenre = GENRE_MAP[g] || g
+        return `genres.name ~ *"${igdbGenre}"*`
+      })
+      // Use | for OR between multiple genres
+      if (genreConditions.length === 1) {
+        whereConditions.push(genreConditions[0])
+      } else {
+        whereConditions.push(`(${genreConditions.join(' | ')})`)
+      }
     }
 
-    // Platform filter
-    if (platforms.length > 0) {
-      const platformQueries = platforms.map(p => `"${p}"`).join(',')
-      whereConditions.push(`platforms.name = (${platformQueries})`)
-    }
-
-    // Year filter - use first year only for IGDB query (multiple OR not well supported)
+    // Year filter - build timestamp conditions
     if (years.length > 0) {
-      const range = getYearTimestampRange(years[0])
-      if (range) {
-        whereConditions.push(`first_release_date >= ${range.start}`)
-        whereConditions.push(`first_release_date < ${range.end}`)
+      const yearConditions: string[] = []
+
+      for (const year of years) {
+        if (year.endsWith('s')) {
+          // Decade like "2010s"
+          const decadeStart = parseInt(year.slice(0, 4))
+          const startTimestamp = Math.floor(new Date(`${decadeStart}-01-01T00:00:00Z`).getTime() / 1000)
+          const endTimestamp = Math.floor(new Date(`${decadeStart + 10}-01-01T00:00:00Z`).getTime() / 1000)
+          yearConditions.push(`(first_release_date >= ${startTimestamp} & first_release_date < ${endTimestamp})`)
+        } else {
+          // Single year like "2024"
+          const yearNum = parseInt(year)
+          const startTimestamp = Math.floor(new Date(`${yearNum}-01-01T00:00:00Z`).getTime() / 1000)
+          const endTimestamp = Math.floor(new Date(`${yearNum + 1}-01-01T00:00:00Z`).getTime() / 1000)
+          yearConditions.push(`(first_release_date >= ${startTimestamp} & first_release_date < ${endTimestamp})`)
+        }
+      }
+
+      if (yearConditions.length === 1) {
+        whereConditions.push(yearConditions[0])
+      } else if (yearConditions.length > 1) {
+        whereConditions.push(`(${yearConditions.join(' | ')})`)
+      }
+    }
+
+    // Platform filter - use case-insensitive partial match
+    if (platforms.length > 0) {
+      const platformConditions = platforms.map(p => `platforms.name ~ *"${p}"*`)
+      if (platformConditions.length === 1) {
+        whereConditions.push(platformConditions[0])
+      } else {
+        whereConditions.push(`(${platformConditions.join(' | ')})`)
       }
     }
 
     const query = `
-      fields name, slug, cover.image_id, total_rating, first_release_date, genres.name, platforms.name;
+      fields name, slug, summary, cover.image_id, first_release_date,
+             genres.name, platforms.name, total_rating, rating_count;
       where ${whereConditions.join(' & ')};
       sort total_rating desc;
-      limit ${limit};
       offset ${offset};
+      limit ${limit};
     `
 
     console.log('IGDB Query:', query)
 
-    const games = await igdbFetch('games', query) as IGDBGame[]
-    console.log('Results count:', games.length)
+    const response = await fetch('https://api.igdb.com/v4/games', {
+      method: 'POST',
+      headers: {
+        'Client-ID': process.env.TWITCH_CLIENT_ID!,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain',
+      },
+      body: query,
+    })
 
-    // Transform to simpler format
-    const results: BrowseGame[] = games.map(game => ({
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('IGDB API error:', response.status, errorText)
+      return NextResponse.json(
+        { error: `IGDB API error: ${response.status}`, games: [], count: 0 },
+        { status: 500 }
+      )
+    }
+
+    const games = await response.json() as IGDBGame[]
+
+    console.log('IGDB Response count:', games.length)
+    if (games.length > 0) {
+      console.log('First game:', games[0].name)
+    }
+
+    // Check if IGDB returned an error message
+    if (Array.isArray(games) === false && (games as unknown as { message?: string }).message) {
+      console.error('IGDB Error:', (games as unknown as { message: string }).message)
+      return NextResponse.json(
+        { games: [], count: 0, error: (games as unknown as { message: string }).message },
+        { status: 400 }
+      )
+    }
+
+    // Transform games to our format
+    const transformedGames = games.map((game) => ({
       id: game.id,
       name: game.name,
-      coverUrl: getCoverUrl(game.cover),
+      slug: game.slug,
+      coverUrl: game.cover?.image_id
+        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${game.cover.image_id}.jpg`
+        : null,
+      firstReleaseDate: game.first_release_date
+        ? new Date(game.first_release_date * 1000).toISOString()
+        : null,
+      genres: game.genres?.map((g) => g.name) || [],
+      platforms: game.platforms?.map((p) => p.name) || [],
       rating: game.total_rating ? Math.round(game.total_rating) : null,
     }))
 
     return NextResponse.json({
-      games: results,
-      count: results.length,
+      games: transformedGames,
+      count: transformedGames.length,
       offset,
-      hasMore: results.length === limit,
+      hasMore: games.length === limit,
     })
   } catch (error) {
     console.error('Browse games error:', error)
     return NextResponse.json(
-      { error: 'Failed to browse games' },
+      { error: 'Failed to fetch games', games: [], count: 0 },
       { status: 500 }
     )
   }
