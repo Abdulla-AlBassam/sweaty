@@ -160,28 +160,28 @@ export async function GET(request: NextRequest) {
           testQuery = 'fields name; limit 10;'
           break
         case '2':
-          // Add category filter only
-          testQuery = 'fields name; where category = 0; limit 10;'
+          // Cover filter only
+          testQuery = 'fields name, cover.image_id; where cover != null; limit 10;'
           break
         case '3':
-          // Add cover filter
-          testQuery = 'fields name, cover.image_id; where category = 0 & cover != null; limit 10;'
+          // Cover + parent_game filter (exclude DLC)
+          testQuery = 'fields name, cover.image_id; where cover != null & parent_game = null; limit 10;'
           break
         case '4':
-          // Add genre filter (Shooter = 5)
+          // Genre filter (Shooter = 5)
           testQuery = 'fields name, genres.name; where genres = 5; limit 10;'
           break
         case '5':
-          // Try genre with category
-          testQuery = 'fields name, genres.name; where category = 0 & genres = 5; limit 10;'
+          // Genre with cover
+          testQuery = 'fields name, genres.name, cover.image_id; where cover != null & genres = 5; limit 10;'
           break
         case '6':
-          // Try multiple genres with OR - using | operator
+          // Multiple genres with OR - using | operator
           testQuery = 'fields name, genres.name; where genres = 5 | genres = 31; limit 10;'
           break
         case '7':
-          // Full query with genre only
-          testQuery = 'fields name, cover.image_id, genres.name; where category = 0 & cover != null & genres = 5; sort total_rating desc; limit 10;'
+          // Full query with genre
+          testQuery = 'fields name, cover.image_id, genres.name; where cover != null & parent_game = null & genres = 5; sort total_rating desc; limit 10;'
           break
         default:
           testQuery = 'fields name; limit 5;'
@@ -239,9 +239,10 @@ export async function GET(request: NextRequest) {
     const token = await getAccessToken()
 
     // Start with basic conditions
+    // Note: category = 0 is DEPRECATED in IGDB v4 and breaks queries
     const whereConditions: string[] = [
-      'category = 0',
       'cover != null',
+      'parent_game = null',  // Excludes DLC/expansions (they have a parent)
     ]
 
     // Genre/Theme filter - use IDs for reliability
