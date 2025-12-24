@@ -88,6 +88,11 @@ export default function ProfileScreen() {
   // Calculate stats
   const totalGames = logs.length
   const completed = logs.filter((l) => l.status === 'completed').length
+  const playing = logs.filter((l) => l.status === 'playing').length
+  const ratings = logs.filter((l) => l.rating).map((l) => l.rating as number)
+  const avgRating = ratings.length > 0
+    ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+    : '—'
 
   // Calculate XP
   const gamerXP = calculateGamerXP(logs)
@@ -211,17 +216,45 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Profile Info */}
+        {/* Profile Info - Horizontal Layout */}
         <View style={styles.profileSection}>
-          {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
+          <View style={styles.profileHeader}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
+              </View>
+            )}
+            <View style={styles.profileDetails}>
+              <Text style={styles.displayName}>{displayName}</Text>
+              <View style={styles.usernameRow}>
+                <Text style={styles.username}>@{username}</Text>
+                <View style={styles.followCounts}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFollowersModalType('followers')
+                      setFollowersModalVisible(true)
+                    }}
+                  >
+                    <Text style={styles.followText}>
+                      <Text style={styles.followNumber}>{followers}</Text> followers
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFollowersModalType('following')
+                      setFollowersModalVisible(true)
+                    }}
+                  >
+                    <Text style={styles.followText}>
+                      <Text style={styles.followNumber}>{following}</Text> following
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-          )}
-          <Text style={styles.displayName}>{displayName}</Text>
-          <Text style={styles.username}>@{username}</Text>
+          </View>
           {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
         </View>
 
@@ -231,30 +264,21 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>{totalGames}</Text>
             <Text style={styles.statLabel}>games</Text>
           </View>
+          <View style={styles.statSeparator} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{completed}</Text>
             <Text style={styles.statLabel}>completed</Text>
           </View>
-          <TouchableOpacity
-            style={styles.stat}
-            onPress={() => {
-              setFollowersModalType('followers')
-              setFollowersModalVisible(true)
-            }}
-          >
-            <Text style={styles.statValue}>{followers}</Text>
-            <Text style={styles.statLabel}>followers</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.stat}
-            onPress={() => {
-              setFollowersModalType('following')
-              setFollowersModalVisible(true)
-            }}
-          >
-            <Text style={styles.statValue}>{following}</Text>
-            <Text style={styles.statLabel}>following</Text>
-          </TouchableOpacity>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{playing}</Text>
+            <Text style={styles.statLabel}>playing</Text>
+          </View>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{avgRating === '—' ? '—' : `★ ${avgRating}`}</Text>
+            <Text style={styles.statLabel}>avg rating</Text>
+          </View>
         </View>
 
         {/* Ranks */}
@@ -465,14 +489,17 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   profileSection: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   avatar: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    marginBottom: Spacing.md,
   },
   avatarPlaceholder: {
     width: 80,
@@ -481,29 +508,46 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.md,
   },
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
     color: Colors.accentLight,
   },
+  profileDetails: {
+    flex: 1,
+    marginLeft: Spacing.md,
+    justifyContent: 'center',
+  },
   displayName: {
     fontSize: FontSize.xl,
     fontWeight: '600',
     color: Colors.text,
   },
+  usernameRow: {
+    marginTop: Spacing.xs,
+  },
   username: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
+  },
+  followCounts: {
+    flexDirection: 'row',
+    gap: Spacing.md,
     marginTop: Spacing.xs,
+  },
+  followText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  followNumber: {
+    fontWeight: '600',
+    color: Colors.text,
   },
   bio: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
   },
   statsRow: {
     flexDirection: 'row',
@@ -516,9 +560,16 @@ const styles = StyleSheet.create({
   },
   stat: {
     alignItems: 'center',
+    flex: 1,
+  },
+  statSeparator: {
+    width: 1,
+    height: '60%',
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
   },
   statValue: {
-    fontSize: FontSize.xl,
+    fontSize: FontSize.lg,
     fontWeight: 'bold',
     color: Colors.text,
   },

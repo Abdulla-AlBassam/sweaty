@@ -345,40 +345,65 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           />
         }
       >
-        {/* Profile Info */}
+        {/* Profile Info - Horizontal Layout */}
         <View style={styles.profileSection}>
-          {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Ionicons name="person" size={40} color={Colors.textDim} />
+          <View style={styles.profileHeader}>
+            {profile.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Ionicons name="person" size={32} color={Colors.textDim} />
+              </View>
+            )}
+            <View style={styles.profileDetails}>
+              <Text style={styles.displayName}>
+                {profile.display_name || profile.username}
+              </Text>
+              <View style={styles.usernameRow}>
+                <Text style={styles.username}>@{profile.username}</Text>
+                <View style={styles.followCounts}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFollowersModalType('followers')
+                      setFollowersModalVisible(true)
+                    }}
+                  >
+                    <Text style={styles.followText}>
+                      <Text style={styles.followNumber}>{followerCount}</Text> followers
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setFollowersModalType('following')
+                      setFollowersModalVisible(true)
+                    }}
+                  >
+                    <Text style={styles.followText}>
+                      <Text style={styles.followNumber}>{followingCount}</Text> following
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {/* Follow Button (only show for other users) */}
+              {!isOwnProfile && user && (
+                <TouchableOpacity
+                  style={[styles.followButton, isFollowing && styles.followingButton]}
+                  onPress={handleFollow}
+                  disabled={isFollowLoading}
+                >
+                  {isFollowLoading ? (
+                    <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
+                  ) : (
+                    <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+                      {isFollowing ? 'following' : 'follow'}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              )}
             </View>
-          )}
-
-          <Text style={styles.displayName}>
-            {profile.display_name || profile.username}
-          </Text>
-          <Text style={styles.username}>@{profile.username}</Text>
-
+          </View>
           {profile.bio && (
             <Text style={styles.bio}>{profile.bio}</Text>
-          )}
-
-          {/* Follow Button (only show for other users) */}
-          {!isOwnProfile && user && (
-            <TouchableOpacity
-              style={[styles.followButton, isFollowing && styles.followingButton]}
-              onPress={handleFollow}
-              disabled={isFollowLoading}
-            >
-              {isFollowLoading ? (
-                <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
-              ) : (
-                <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                  {isFollowing ? 'following' : 'follow'}
-                </Text>
-              )}
-            </TouchableOpacity>
           )}
         </View>
 
@@ -388,30 +413,21 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <Text style={styles.statValue}>{stats.totalGames}</Text>
             <Text style={styles.statLabel}>games</Text>
           </View>
+          <View style={styles.statSeparator} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.completed}</Text>
             <Text style={styles.statLabel}>completed</Text>
           </View>
-          <TouchableOpacity
-            style={styles.stat}
-            onPress={() => {
-              setFollowersModalType('followers')
-              setFollowersModalVisible(true)
-            }}
-          >
-            <Text style={styles.statValue}>{followerCount}</Text>
-            <Text style={styles.statLabel}>followers</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.stat}
-            onPress={() => {
-              setFollowersModalType('following')
-              setFollowersModalVisible(true)
-            }}
-          >
-            <Text style={styles.statValue}>{followingCount}</Text>
-            <Text style={styles.statLabel}>following</Text>
-          </TouchableOpacity>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{stats.playing}</Text>
+            <Text style={styles.statLabel}>playing</Text>
+          </View>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{stats.averageRating ? `★ ${stats.averageRating}` : '—'}</Text>
+            <Text style={styles.statLabel}>avg rating</Text>
+          </View>
         </View>
 
         {/* Ranks */}
@@ -582,45 +598,65 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   profileSection: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+  },
+  profileHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: Spacing.md,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   avatarPlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  profileDetails: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
   displayName: {
     fontSize: FontSize.xl,
     fontWeight: 'bold',
     color: Colors.text,
-    marginBottom: Spacing.xs,
+  },
+  usernameRow: {
+    marginTop: Spacing.xs,
   },
   username: {
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     color: Colors.textMuted,
-    marginBottom: Spacing.sm,
+  },
+  followCounts: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.xs,
+  },
+  followText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  followNumber: {
+    fontWeight: '600',
+    color: Colors.text,
   },
   bio: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
-    textAlign: 'center',
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.md,
   },
   followButton: {
     backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    minWidth: 120,
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm,
   },
   followingButton: {
     backgroundColor: 'transparent',
@@ -629,7 +665,7 @@ const styles = StyleSheet.create({
   },
   followButtonText: {
     color: Colors.background,
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     fontWeight: '600',
   },
   followingButtonText: {
@@ -646,9 +682,16 @@ const styles = StyleSheet.create({
   },
   stat: {
     alignItems: 'center',
+    flex: 1,
+  },
+  statSeparator: {
+    width: 1,
+    height: '60%',
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
   },
   statValue: {
-    fontSize: FontSize.xl,
+    fontSize: FontSize.lg,
     fontWeight: 'bold',
     color: Colors.text,
   },
