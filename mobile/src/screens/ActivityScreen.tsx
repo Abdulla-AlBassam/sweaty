@@ -128,8 +128,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   activityList: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
   },
 })

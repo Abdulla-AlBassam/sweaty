@@ -44,7 +44,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
   const coverUrl = game.cover_url ? getIGDBImageUrl(game.cover_url, 'coverBig2x') : null
 
   return (
-    <View style={styles.container}>
+    <View style={styles.pill}>
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={() => onUserPress?.(user.id, user.username)}
@@ -59,7 +59,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Text style={styles.text}>
+        <Text style={styles.text} numberOfLines={2}>
           <Text
             style={styles.username}
             onPress={() => onUserPress?.(user.id, user.username)}
@@ -94,26 +94,31 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
   )
 }
 
+const PILL_HEIGHT = 72
+
 const styles = StyleSheet.create({
-  container: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.accentDark,
+    borderRadius: PILL_HEIGHT / 2,
     paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.sm,
+    minHeight: PILL_HEIGHT,
   },
   avatarContainer: {
     marginRight: Spacing.sm,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -155,8 +160,8 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   cover: {
-    width: 45,
-    height: 60,
+    width: 40,
+    height: 53,
     borderRadius: BorderRadius.sm,
   },
 })

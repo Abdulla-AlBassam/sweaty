@@ -3,11 +3,13 @@ import { View, StyleSheet } from 'react-native'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../Skeleton'
 import { Colors, Spacing, BorderRadius } from '../../constants/colors'
 
+const PILL_HEIGHT = 72
+
 export default function ActivityItemSkeleton() {
   return (
-    <View style={styles.container}>
+    <View style={styles.pill}>
       {/* Avatar */}
-      <SkeletonCircle size={40} />
+      <SkeletonCircle size={44} />
 
       {/* Content */}
       <View style={styles.content}>
@@ -32,24 +34,25 @@ export function ActivitySkeletonList({ count = 5 }: { count?: number }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    backgroundColor: Colors.accentDark,
+    borderRadius: PILL_HEIGHT / 2,
+    paddingVertical: Spacing.sm,
+    paddingLeft: Spacing.sm,
+    paddingRight: Spacing.sm,
+    minHeight: PILL_HEIGHT,
   },
   content: {
     flex: 1,
-    marginLeft: Spacing.md,
-    marginRight: Spacing.md,
+    marginLeft: Spacing.sm,
+    marginRight: Spacing.sm,
   },
   secondLine: {
     marginTop: Spacing.xs,
   },
   list: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
+    gap: Spacing.sm,
   },
 })
