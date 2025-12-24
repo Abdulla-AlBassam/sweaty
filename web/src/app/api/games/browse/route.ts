@@ -53,11 +53,17 @@ const GENRE_IDS: Record<string, number> = {
   'Music': 7,
 }
 
-// IGDB Theme IDs - Horror is a theme, not genre
+// IGDB Theme IDs - these are THEMES, not genres
 const THEME_IDS: Record<string, number> = {
   'Horror': 19,
   'Sci-Fi': 18,
   'Fantasy': 17,
+  'Survival': 21,
+  'Stealth': 22,
+  'Comedy': 27,
+  'Historical': 22,
+  'War': 39,
+  'Mystery': 43,
 }
 
 // IGDB Platform IDs
@@ -314,9 +320,9 @@ export async function GET(request: NextRequest) {
 
     const query = `
       fields name, slug, summary, cover.image_id, first_release_date,
-             genres.name, platforms.name, themes.name, total_rating;
+             genres.name, platforms.name, themes.name, total_rating, follows;
       where ${whereClause};
-      sort total_rating desc;
+      sort follows desc;
       offset ${offset};
       limit ${limit};
     `
@@ -365,6 +371,7 @@ export async function GET(request: NextRequest) {
       genres: game.genres?.map((g: any) => g.name) || [],
       platforms: game.platforms?.map((p: any) => p.name) || [],
       rating: game.total_rating ? Math.round(game.total_rating) : null,
+      follows: game.follows || 0,
     }))
 
     return NextResponse.json({
