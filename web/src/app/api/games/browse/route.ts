@@ -56,18 +56,41 @@ const GENRE_MAP: Record<string, string> = {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
 
-  // Debug mode - show what genres IGDB uses
+  // Debug mode - extensive logging for troubleshooting
   if (searchParams.get('debug') === '1') {
+    console.log('=== DEBUG MODE ===')
+    console.log('TWITCH_CLIENT_ID exists:', !!TWITCH_CLIENT_ID)
+    console.log('TWITCH_CLIENT_SECRET exists:', !!TWITCH_CLIENT_SECRET)
+    console.log('TWITCH_CLIENT_ID value:', TWITCH_CLIENT_ID?.slice(0, 5) + '...')
+
+    // Get token and log it
+    let token: string
     try {
-      const token = await getAccessToken()
+      const tokenResponse = await fetch(
+        `https://id.twitch.tv/oauth2/token?client_id=${TWITCH_CLIENT_ID}&client_secret=${TWITCH_CLIENT_SECRET}&grant_type=client_credentials`,
+        { method: 'POST' }
+      )
+      const tokenData = await tokenResponse.json()
+      console.log('Token response:', tokenData)
+      token = tokenData.access_token
 
-      // Simple query to get games and see their genre names
-      const testQuery = `
-        fields name, genres.name;
-        where category = 0 & cover != null;
-        limit 20;
-      `
+      if (!token) {
+        return NextResponse.json({
+          error: 'Failed to get access token',
+          tokenResponse: tokenData,
+          clientIdExists: !!TWITCH_CLIENT_ID,
+          clientSecretExists: !!TWITCH_CLIENT_SECRET,
+        })
+      }
+    } catch (e) {
+      return NextResponse.json({ error: 'Token fetch failed', message: String(e) })
+    }
 
+    // Simple query
+    const testQuery = `fields name, genres.name; limit 10;`
+    console.log('Test query:', testQuery)
+
+    try {
       const response = await fetch('https://api.igdb.com/v4/games', {
         method: 'POST',
         headers: {
@@ -78,19 +101,28 @@ export async function GET(request: NextRequest) {
         body: testQuery,
       })
 
-      const games = await response.json()
+      console.log('IGDB response status:', response.status)
+      const rawText = await response.text()
+      console.log('IGDB raw response:', rawText.slice(0, 500))
 
-      // Collect all unique genre names
-      const allGenres = games.flatMap((g: any) => g.genres?.map((genre: any) => genre.name) || [])
-      const uniqueGenres = [...new Set(allGenres)].sort()
+      // Try to parse as JSON
+      let parsed
+      try {
+        parsed = JSON.parse(rawText)
+      } catch {
+        parsed = null
+      }
 
       return NextResponse.json({
         debug: true,
-        games: games.map((g: any) => ({ name: g.name, genres: g.genres })),
-        availableGenres: uniqueGenres,
+        tokenOk: !!token,
+        tokenPreview: token.slice(0, 10) + '...',
+        igdbStatus: response.status,
+        rawResponse: rawText.slice(0, 1000),
+        parsed: parsed,
       })
-    } catch (error) {
-      return NextResponse.json({ error: String(error) }, { status: 500 })
+    } catch (e) {
+      return NextResponse.json({ error: 'IGDB fetch failed', message: String(e) })
     }
   }
 
