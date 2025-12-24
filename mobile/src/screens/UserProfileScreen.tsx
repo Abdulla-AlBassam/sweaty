@@ -18,8 +18,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
+import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
+import XPProgressBar from '../components/XPProgressBar'
 import { ProfileSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
@@ -362,30 +364,6 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <Text style={styles.bio}>{profile.bio}</Text>
           )}
 
-          {/* Follow Stats */}
-          <View style={styles.followStats}>
-            <TouchableOpacity
-              style={styles.followStat}
-              onPress={() => {
-                setFollowersModalType('followers')
-                setFollowersModalVisible(true)
-              }}
-            >
-              <Text style={styles.followCount}>{followerCount}</Text>
-              <Text style={styles.followLabel}>Followers</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.followStat}
-              onPress={() => {
-                setFollowersModalType('following')
-                setFollowersModalVisible(true)
-              }}
-            >
-              <Text style={styles.followCount}>{followingCount}</Text>
-              <Text style={styles.followLabel}>Following</Text>
-            </TouchableOpacity>
-          </View>
-
           {/* Follow Button (only show for other users) */}
           {!isOwnProfile && user && (
             <TouchableOpacity
@@ -404,24 +382,43 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsSection}>
-          <View style={styles.statCard}>
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.totalGames}</Text>
             <Text style={styles.statLabel}>Games</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.completed}</Text>
             <Text style={styles.statLabel}>Completed</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.playing}</Text>
-            <Text style={styles.statLabel}>Playing</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.averageRating ?? '-'}</Text>
-            <Text style={styles.statLabel}>Avg Rating</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.stat}
+            onPress={() => {
+              setFollowersModalType('followers')
+              setFollowersModalVisible(true)
+            }}
+          >
+            <Text style={styles.statValue}>{followerCount}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.stat}
+            onPress={() => {
+              setFollowersModalType('following')
+              setFollowersModalVisible(true)
+            }}
+          >
+            <Text style={styles.statValue}>{followingCount}</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Ranks */}
+        <View style={styles.ranksSection}>
+          <Text style={styles.sectionTitle}>Ranks</Text>
+          <XPProgressBar type="gamer" levelInfo={getGamerLevel(calculateGamerXP(gameLogs))} />
+          <XPProgressBar type="social" levelInfo={getSocialLevel(calculateSocialXP(gameLogs, followerCount))} />
         </View>
 
         {/* Favorites */}
@@ -617,23 +614,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     paddingHorizontal: Spacing.lg,
   },
-  followStats: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-    marginBottom: Spacing.md,
-  },
-  followStat: {
-    alignItems: 'center',
-  },
-  followCount: {
-    fontSize: FontSize.lg,
-    fontWeight: 'bold',
-    color: Colors.text,
-  },
-  followLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-  },
   followButton: {
     backgroundColor: Colors.accent,
     paddingHorizontal: Spacing.xl,
@@ -655,21 +635,20 @@ const styles = StyleSheet.create({
   followingButtonText: {
     color: Colors.text,
   },
-  statsSection: {
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xl,
+    justifyContent: 'space-around',
+    paddingVertical: Spacing.lg,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.border,
+    marginHorizontal: Spacing.lg,
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+  stat: {
     alignItems: 'center',
-    marginHorizontal: Spacing.xs,
   },
   statValue: {
-    fontSize: FontSize.lg,
+    fontSize: FontSize.xl,
     fontWeight: 'bold',
     color: Colors.text,
   },
@@ -677,6 +656,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
+  },
+  ranksSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
   },
   section: {
     marginBottom: Spacing.lg,
