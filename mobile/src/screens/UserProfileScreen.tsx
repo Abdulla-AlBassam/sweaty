@@ -579,11 +579,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    paddingVertical: Spacing.xl,
   },
   avatar: {
     width: 100,
@@ -662,6 +662,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
   },
   section: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
