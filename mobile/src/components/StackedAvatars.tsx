@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeholderText: {
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: 'bold',
   },
   extraBadge: {

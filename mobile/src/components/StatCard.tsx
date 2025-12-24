@@ -31,7 +31,7 @@ const styles = StyleSheet.create({
   value: {
     fontSize: FontSize.lg,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
     marginBottom: 2,
   },
   label: {

@@ -369,7 +369,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   searchContainerFocused: {
-    borderColor: Colors.accent,
+    borderColor: Colors.accentLight,
   },
   searchIcon: {
     marginRight: Spacing.sm,

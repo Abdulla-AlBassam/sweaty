@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   optionTextSelected: {
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '600',
   },
   footer: {

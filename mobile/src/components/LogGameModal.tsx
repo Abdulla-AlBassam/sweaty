@@ -43,7 +43,7 @@ interface StarIconProps {
   color?: string
 }
 
-function StarIcon({ starNumber, rating, size = 32, color = Colors.accent }: StarIconProps) {
+function StarIcon({ starNumber, rating, size = 32, color = Colors.accentLight }: StarIconProps) {
   if (!rating) {
     return <Ionicons name="star-outline" size={size} color={Colors.textDim} />
   }
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   pickerItemTextSelected: {
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '600',
   },
   // Rating styles

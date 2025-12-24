@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: FontSize.md,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   userInfo: {
     flex: 1,

@@ -772,7 +772,7 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
     borderWidth: 2,
-    borderColor: Colors.accent,
+    borderColor: Colors.accentLight,
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.surface,

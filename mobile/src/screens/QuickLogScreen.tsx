@@ -118,7 +118,7 @@ export default function QuickLogScreen() {
             </Text>
           )}
         </View>
-        <Ionicons name="add-circle-outline" size={24} color={Colors.accent} />
+        <Ionicons name="add-circle-outline" size={24} color={Colors.accentLight} />
       </TouchableOpacity>
     )
   }

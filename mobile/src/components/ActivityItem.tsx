@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
   gameName: {
     fontWeight: '600',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   meta: {
     flexDirection: 'row',

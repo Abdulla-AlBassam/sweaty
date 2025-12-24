@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '500',
   },
   statusRating: {

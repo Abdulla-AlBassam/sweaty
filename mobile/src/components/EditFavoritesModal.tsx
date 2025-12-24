@@ -168,7 +168,7 @@ export default function EditFavoritesModal({
         <Ionicons
           name="add-circle"
           size={24}
-          color={isDisabled ? Colors.textDim : Colors.accent}
+          color={isDisabled ? Colors.textDim : Colors.accentLight}
         />
       </TouchableOpacity>
     )
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
     borderWidth: 2,
-    borderColor: Colors.accent,
+    borderColor: Colors.accentLight,
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.background,

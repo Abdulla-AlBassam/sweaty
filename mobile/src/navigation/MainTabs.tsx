@@ -44,7 +44,7 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
     <Ionicons
       name={focused ? icons.filled : icons.outline}
       size={24}
-      color={focused ? Colors.accent : Colors.textDim}
+      color={focused ? Colors.accentLight : Colors.textDim}
     />
   )
 }
@@ -68,7 +68,7 @@ export default function MainTabs() {
         headerShown: false,
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: false,
-        tabBarActiveTintColor: Colors.accent,
+        tabBarActiveTintColor: Colors.accentLight,
         tabBarInactiveTintColor: Colors.textDim,
       }}
     >

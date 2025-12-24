@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   displayName: {
     fontSize: FontSize.xl,
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '600',
   },
   favoritesRow: {
@@ -568,7 +568,7 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
     borderWidth: 2,
-    borderColor: Colors.accent,
+    borderColor: Colors.accentLight,
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.surface,

@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
   clearAllText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '500',
   },
   filtersBar: {
