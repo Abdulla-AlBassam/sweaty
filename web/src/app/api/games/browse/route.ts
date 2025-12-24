@@ -230,6 +230,41 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Lookup mode - search for a specific game and show all its data
+  const lookupGame = searchParams.get('lookup')
+  if (lookupGame) {
+    try {
+      const token = await getAccessToken()
+      const lookupQuery = `
+        search "${lookupGame}";
+        fields name, themes.*, genres.*, platforms.name, total_rating, total_rating_count, follows, hypes, cover.image_id;
+        limit 5;
+      `
+
+      console.log('LOOKUP QUERY:', lookupQuery)
+
+      const response = await fetch('https://api.igdb.com/v4/games', {
+        method: 'POST',
+        headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'text/plain',
+        },
+        body: lookupQuery,
+      })
+
+      const games = await response.json()
+
+      return NextResponse.json({
+        lookup: lookupGame,
+        query: lookupQuery,
+        results: games,
+      })
+    } catch (e) {
+      return NextResponse.json({ error: 'Lookup failed', message: String(e) })
+    }
+  }
+
   const genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
   const years = searchParams.get('years')?.split(',').filter(Boolean) || []
   const platforms = searchParams.get('platforms')?.split(',').filter(Boolean) || []
