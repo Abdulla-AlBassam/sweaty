@@ -5,10 +5,10 @@ export const Colors = {
   surface: '#1a1a1a',
   surfaceLight: '#2a2a2a',
 
-  // Accent (two-tone green system)
-  accent: '#1B4D3E',        // Deep forest green - for fills, buttons, active backgrounds
-  accentDark: '#153d31',    // Darker shade for pressed states
-  accentLight: '#3D9970',   // Lighter green - for text, stars, outlines on dark backgrounds
+  // Accent (three-tone green system)
+  accent: '#255F38',        // Primary green - for fills, buttons, active backgrounds
+  accentLight: '#1F7D53',   // Lighter green - for text, stars, outlines on dark backgrounds
+  accentDark: '#27391C',    // Dark green - for subtle borders, backgrounds
 
   // Text
   text: '#ffffff',
@@ -21,11 +21,11 @@ export const Colors = {
   // Status colors
   error: '#ef4444',
   warning: '#f59e0b',
-  success: '#1B4D3E',
+  success: '#255F38',
 
   // Game status colors
   statusPlaying: '#3b82f6',
-  statusCompleted: '#3D9970',   // Use light green for visibility
+  statusCompleted: '#1F7D53',   // Use light green for visibility
   statusPlayed: '#8b5cf6',
   statusWantToPlay: '#f59e0b',
   statusOnHold: '#6b7280',
