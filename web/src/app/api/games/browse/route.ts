@@ -34,28 +34,45 @@ async function getAccessToken(): Promise<string> {
   return cachedToken!
 }
 
-// Genre mapping - our app names to exact IGDB genre names
-// Based on debug output: Shooter, Adventure, Indie, Visual Novel, Role-playing (RPG), Strategy, Platform, Sport, Racing, Arcade, Puzzle
-const GENRE_MAP: Record<string, string> = {
-  'Action': 'Hack and slash/Beat \'em up',
-  'Adventure': 'Adventure',
-  'RPG': 'Role-playing (RPG)',
-  'Shooter': 'Shooter',
-  'Sports': 'Sport',
-  'Puzzle': 'Puzzle',
-  'Strategy': 'Strategy',
-  'Racing': 'Racing',
-  'Fighting': 'Fighting',
-  'Simulation': 'Simulator',
-  'Platformer': 'Platform',
-  'Indie': 'Indie',
-  'MOBA': 'MOBA',
-  'Music': 'Music',
-  'Arcade': 'Arcade',
+// IGDB Genre IDs - more reliable than name matching
+const GENRE_IDS: Record<string, number> = {
+  'Action': 25,        // Hack and slash/Beat 'em up
+  'Adventure': 31,
+  'RPG': 12,           // Role-playing (RPG)
+  'Shooter': 5,
+  'Sports': 14,        // Sport
+  'Puzzle': 9,
+  'Strategy': 15,
+  'Racing': 10,
+  'Fighting': 4,
+  'Simulation': 13,    // Simulator
+  'Platformer': 8,     // Platform
+  'Indie': 32,
+  'MOBA': 36,
+  'Arcade': 33,
+  'Music': 7,
 }
 
-// Horror is a THEME in IGDB, not a genre
-const HORROR_THEME = 'Horror'
+// IGDB Theme IDs - Horror is a theme, not genre
+const THEME_IDS: Record<string, number> = {
+  'Horror': 19,
+  'Sci-Fi': 18,
+  'Fantasy': 17,
+}
+
+// IGDB Platform IDs
+const PLATFORM_IDS: Record<string, number> = {
+  'PlayStation 5': 167,
+  'PlayStation 4': 48,
+  'Xbox Series X|S': 169,
+  'Xbox One': 49,
+  'Nintendo Switch': 130,
+  'PC (Microsoft Windows)': 6,
+  'iOS': 39,
+  'Android': 34,
+  'macOS': 14,
+  'Linux': 3,
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -130,7 +147,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  let genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
+  const genres = searchParams.get('genres')?.split(',').filter(Boolean) || []
   const years = searchParams.get('years')?.split(',').filter(Boolean) || []
   const platforms = searchParams.get('platforms')?.split(',').filter(Boolean) || []
   const offset = parseInt(searchParams.get('offset') || '0')
@@ -150,18 +167,26 @@ export async function GET(request: NextRequest) {
       'cover != null',
     ]
 
-    // Check if Horror is requested (it's a theme, not genre in IGDB)
-    const includeHorror = genres.includes('Horror')
-    if (includeHorror) {
-      whereConditions.push(`themes.name = "${HORROR_THEME}"`)
-      genres = genres.filter(g => g !== 'Horror')
-    }
-
-    // Genre filter - use exact match
+    // Genre/Theme filter - use IDs for reliability
     if (genres.length > 0) {
-      const mappedGenres = genres.map(g => GENRE_MAP[g] || g)
-      const genreConditions = mappedGenres.map(g => `genres.name = "${g}"`).join(' | ')
-      whereConditions.push(`(${genreConditions})`)
+      const genreIdList: number[] = []
+      const themeIdList: number[] = []
+
+      for (const g of genres) {
+        if (GENRE_IDS[g]) {
+          genreIdList.push(GENRE_IDS[g])
+        } else if (THEME_IDS[g]) {
+          themeIdList.push(THEME_IDS[g])
+        }
+      }
+
+      if (genreIdList.length > 0) {
+        whereConditions.push(`genres = (${genreIdList.join(',')})`)
+      }
+
+      if (themeIdList.length > 0) {
+        whereConditions.push(`themes = (${themeIdList.join(',')})`)
+      }
     }
 
     // Year filter - use Date.UTC for proper timestamps
@@ -189,10 +214,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Platform filter - use exact match
+    // Platform filter - use IDs
     if (platforms.length > 0) {
-      const platformConditions = platforms.map(p => `platforms.name = "${p}"`).join(' | ')
-      whereConditions.push(`(${platformConditions})`)
+      const platformIdList = platforms.map(p => PLATFORM_IDS[p]).filter(Boolean)
+      if (platformIdList.length > 0) {
+        whereConditions.push(`platforms = (${platformIdList.join(',')})`)
+      }
     }
 
     const whereClause = whereConditions.join(' & ')
