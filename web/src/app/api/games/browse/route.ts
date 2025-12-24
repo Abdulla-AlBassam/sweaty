@@ -168,6 +168,8 @@ export async function GET(request: NextRequest) {
     ]
 
     // Genre/Theme filter - use IDs for reliability
+    // Single value: genres = 5 (no parentheses)
+    // Multiple values: genres = (5,31) (with parentheses)
     if (genres.length > 0) {
       const genreIdList: number[] = []
       const themeIdList: number[] = []
@@ -180,11 +182,15 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      if (genreIdList.length > 0) {
+      if (genreIdList.length === 1) {
+        whereConditions.push(`genres = ${genreIdList[0]}`)
+      } else if (genreIdList.length > 1) {
         whereConditions.push(`genres = (${genreIdList.join(',')})`)
       }
 
-      if (themeIdList.length > 0) {
+      if (themeIdList.length === 1) {
+        whereConditions.push(`themes = ${themeIdList[0]}`)
+      } else if (themeIdList.length > 1) {
         whereConditions.push(`themes = (${themeIdList.join(',')})`)
       }
     }
@@ -215,9 +221,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Platform filter - use IDs
+    // Single value: platforms = 167 (no parentheses)
+    // Multiple values: platforms = (167,48) (with parentheses)
     if (platforms.length > 0) {
       const platformIdList = platforms.map(p => PLATFORM_IDS[p]).filter(Boolean)
-      if (platformIdList.length > 0) {
+      if (platformIdList.length === 1) {
+        whereConditions.push(`platforms = ${platformIdList[0]}`)
+      } else if (platformIdList.length > 1) {
         whereConditions.push(`platforms = (${platformIdList.join(',')})`)
       }
     }
