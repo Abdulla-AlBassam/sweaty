@@ -14,7 +14,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
-import { getIGDBImageUrl } from '../constants'
+import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import GameCard from '../components/GameCard'
@@ -36,8 +36,6 @@ interface SearchUser {
   avatar_url: string | null
 }
 
-// TEMPORARY: Using local API for testing - change back to Vercel before deploying
-const API_BASE_URL = 'http://192.168.100.152:3000'
 const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
@@ -133,7 +131,7 @@ export default function SearchScreen() {
       try {
         // Search games and users in parallel
         const [gamesResponse, users] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/games/search?q=${encodeURIComponent(query)}`),
+          fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`),
           searchUsers(query),
         ])
 

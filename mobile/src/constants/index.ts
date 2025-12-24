@@ -24,9 +24,8 @@ export const PLATFORMS = [
 ]
 
 // API configuration
-// TODO: Change back to Vercel URL after deploying /details endpoint
 export const API_CONFIG = {
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.152:3000',
+  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://sweaty-v1.vercel.app',
 }
 
 // Image sizes for IGDB

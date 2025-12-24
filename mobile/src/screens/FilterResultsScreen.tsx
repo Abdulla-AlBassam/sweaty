@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { API_CONFIG } from '../constants'
 import { MainStackParamList } from '../navigation'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'FilterResults'>
@@ -25,8 +26,6 @@ interface FilterGame {
   rating: number | null
 }
 
-// TEMPORARY: Using local API for testing - change back to Vercel before deploying
-const API_BASE_URL = 'http://192.168.100.152:3000'
 const PAGE_SIZE = 50
 
 export default function FilterResultsScreen({ navigation, route }: Props) {
@@ -76,7 +75,7 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
 
     try {
       const queryString = buildQueryParams(currentOffset)
-      const response = await fetch(`${API_BASE_URL}/api/games/browse?${queryString}`)
+      const response = await fetch(`${API_CONFIG.baseUrl}/api/games/browse?${queryString}`)
 
       if (!response.ok) {
         throw new Error('Failed to fetch games')
