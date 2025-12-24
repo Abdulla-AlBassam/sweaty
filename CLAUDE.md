@@ -157,7 +157,11 @@ sweaty/
 │   │   │   ├── api/
 │   │   │   │   ├── games/
 │   │   │   │   │   ├── search/route.ts  # GET /api/games/search?q=zelda
-│   │   │   │   │   └── [id]/route.ts    # GET /api/games/123
+│   │   │   │   │   ├── browse/route.ts  # GET /api/games/browse?genres=RPG&platforms=PS5
+│   │   │   │   │   └── [id]/
+│   │   │   │   │       ├── route.ts     # GET /api/games/123 (cached)
+│   │   │   │   │       └── details/route.ts  # GET /api/games/123/details (fresh + videos)
+│   │   │   │   ├── popular-games/route.ts  # GET /api/popular-games (trending)
 │   │   │   │   ├── users/
 │   │   │   │   │   └── search/route.ts  # GET /api/users/search?q=john
 │   │   │   │   └── auth/
@@ -213,18 +217,37 @@ sweaty/
 │
 ├── mobile/                          # React Native/Expo mobile app
 │   ├── src/
-│   │   ├── app/                     # Screen components (future)
-│   │   ├── components/              # Reusable UI components (future)
+│   │   ├── screens/                 # Screen components
+│   │   │   ├── DashboardScreen.tsx  # Home with stats, trending, friends
+│   │   │   ├── SearchScreen.tsx     # Game/user search with filters
+│   │   │   ├── FilterResultsScreen.tsx  # Browse games by filter
+│   │   │   ├── GameDetailScreen.tsx # Game info, trailers, log
+│   │   │   ├── ProfileScreen.tsx    # Own profile
+│   │   │   ├── UserProfileScreen.tsx # Other user profiles
+│   │   │   ├── ActivityScreen.tsx   # Activity feed
+│   │   │   └── SettingsScreen.tsx   # Account settings
+│   │   ├── components/
+│   │   │   ├── LogGameModal.tsx     # Log/edit game modal
+│   │   │   ├── FilterModal.tsx      # Genre/platform/year filter
+│   │   │   ├── TrailerSection.tsx   # YouTube video player
+│   │   │   ├── HorizontalGameList.tsx # Scrollable game row
+│   │   │   ├── StackedAvatars.tsx   # Overlapping avatars
+│   │   │   ├── Skeleton.tsx         # Loading skeleton base
+│   │   │   ├── StatCard.tsx         # Dashboard stat card
+│   │   │   └── skeletons/           # Skeleton components
 │   │   ├── contexts/
 │   │   │   └── AuthContext.tsx      # Auth state management
 │   │   ├── hooks/
-│   │   │   └── useSupabase.ts       # Data fetching hooks
+│   │   │   ├── useSupabase.ts       # Data fetching hooks
+│   │   │   └── useFriendsPlaying.ts # Friends activity hook
+│   │   ├── navigation/
+│   │   │   └── index.tsx            # React Navigation setup
 │   │   ├── lib/
-│   │   │   ├── supabase.ts          # Supabase client (AsyncStorage)
+│   │   │   ├── supabase.ts          # Supabase client (SecureStore)
 │   │   │   └── xp.ts                # XP/Level system (shared logic)
 │   │   ├── constants/
 │   │   │   ├── colors.ts            # Theme colors (matches web)
-│   │   │   └── index.ts             # Status labels, platforms
+│   │   │   └── index.ts             # Status labels, platforms, API_CONFIG
 │   │   └── types/
 │   │       └── index.ts             # Shared TypeScript types
 │   ├── assets/                      # App icons and images
@@ -568,3 +591,275 @@ Lurker → Newcomer → Contributor → Reviewer → Critic → Voice → Influe
 - `mobile/src/hooks/useSupabase.ts` - Data fetching hooks
 - `mobile/.env` - Supabase credentials (gitignored)
 - `mobile/.env.example` - Environment template
+
+### Session 7 (Dec 24, 2024)
+**IGDB API Debugging & Fixes:**
+- Debugged `/api/games/browse` endpoint returning 0 results
+- Discovered `category = 0` is **DEPRECATED** in IGDB v4 (breaks all queries)
+- Fixed by replacing with `parent_game = null` to filter main games only
+- Fixed array filter syntax: IGDB requires parentheses for array containment
+  - WRONG: `genres = 5` (doesn't work for array fields)
+  - CORRECT: `genres = (5)` (proper containment check)
+- Discovered Horror is a **THEME** (id 19), not a genre in IGDB
+- Fixed sorting: `sort total_rating_count desc` instead of deprecated `follows`
+- Added `total_rating_count > 5` filter to exclude obscure games with no ratings
+- Sports genre gets special sorting: `sort first_release_date desc` (recency matters)
+- Increased browse limit from 30 to 80 games
+
+**Popular Games (Trending) Fix:**
+- Rewrote `getPopularGames()` to use IGDB's `popularity_primitives` endpoint
+- This matches IGDB homepage "Popular Right Now" data source
+- Fixed TypeScript error with Set spread: `new Set<number>(...)` for explicit typing
+
+**Mobile App Updates:**
+- Added FilterModal component for genre/year/platform selection
+- Added FilterResultsScreen for browsing games by filters
+- Added TrailerSection component with YouTube video player
+- Added skeleton loading states (GameCardSkeleton, ProfileSkeleton, etc.)
+- Added "What Your Friends Are Playing" section with StackedAvatars
+- Updated API URLs to use production Vercel endpoint
+- Added pull-to-refresh to multiple screens
+
+**New Files:**
+- `web/src/app/api/games/browse/route.ts` - Filtered game browsing endpoint
+- `web/src/app/api/games/[id]/details/route.ts` - Game details with videos
+- `mobile/src/screens/FilterResultsScreen.tsx` - Filter results screen
+- `mobile/src/components/FilterModal.tsx` - Filter selection modal
+- `mobile/src/components/TrailerSection.tsx` - YouTube trailer player
+- `mobile/src/components/Skeleton.tsx` - Base skeleton component
+- `mobile/src/components/StackedAvatars.tsx` - Overlapping avatar display
+- `mobile/src/components/skeletons/` - Various skeleton components
+- `mobile/src/hooks/useFriendsPlaying.ts` - Friends activity hook
+
+---
+
+## Architecture
+
+### System Overview
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
+│  Mobile App     │────▶│  Vercel API      │────▶│  IGDB API   │
+│  (Expo/RN)      │     │  (Next.js)       │     │  (Twitch)   │
+└─────────────────┘     └──────────────────┘     └─────────────┘
+        │                       │
+        │                       ▼
+        │               ┌──────────────────┐
+        └──────────────▶│  Supabase        │
+                        │  (PostgreSQL)    │
+                        │  - Auth          │
+                        │  - Database      │
+                        │  - Storage       │
+                        └──────────────────┘
+```
+
+### Data Flow
+1. **Mobile App** → Calls Vercel API for game data (search, browse, details)
+2. **Vercel API** → Authenticates with Twitch, queries IGDB
+3. **Mobile App** → Directly queries Supabase for user data (profiles, game_logs, follows)
+4. **Game Logging** → Caches IGDB game data to `games_cache` table
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/games/search?q=zelda` | GET | Search games by name |
+| `/api/games/[id]` | GET | Get game by IGDB ID (cached) |
+| `/api/games/[id]/details` | GET | Fresh IGDB data with videos |
+| `/api/games/browse` | GET | Browse with filters (genre, platform, year) |
+| `/api/popular-games?limit=15` | GET | Trending games (popularity_primitives) |
+| `/api/users/search?q=john` | GET | Search users by username |
+| `/api/auth/lookup-email` | POST | Get email from username (for login) |
+
+---
+
+## IGDB API Reference
+
+### Authentication
+- Uses Twitch OAuth client credentials flow
+- Token cached in memory with expiry tracking
+- Environment variables: `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`
+
+### Critical Query Syntax (IGDB v4)
+
+**⚠️ DEPRECATED - DO NOT USE:**
+```
+category = 0          # BREAKS QUERIES - use parent_game = null instead
+sort follows desc     # Deprecated - use total_rating_count
+```
+
+**✅ CORRECT SYNTAX:**
+```sql
+# Filter main games only (not DLC, expansions, etc.)
+where parent_game = null;
+
+# Array field containment - ALWAYS use parentheses
+where genres = (12);           # Single genre (RPG)
+where genres = (12,31);        # Multiple genres (RPG OR Adventure)
+where platforms = (167,48);    # PS5 OR PS4
+where themes = (19);           # Horror theme
+
+# Combine filters
+where genres = (5) & platforms = (167) & themes = (19);
+
+# Sorting
+sort total_rating_count desc;  # Popular games
+sort first_release_date desc;  # Recent games (use for Sports)
+
+# Filter out obscure games
+where total_rating_count > 5;
+```
+
+### IGDB ID Mappings
+
+**Genre IDs:**
+| Genre | ID |
+|-------|-----|
+| Shooter | 5 |
+| Adventure | 31 |
+| RPG | 12 |
+| Sports | 14 |
+| Platformer | 8 |
+| Indie | 32 |
+| Puzzle | 9 |
+| Strategy | 15 |
+| Racing | 10 |
+| Fighting | 4 |
+| Simulator | 13 |
+| Arcade | 33 |
+
+**Theme IDs (NOT genres!):**
+| Theme | ID |
+|-------|-----|
+| Horror | 19 |
+| Sci-Fi | 18 |
+| Fantasy | 17 |
+| Survival | 21 |
+| Stealth | 23 |
+| Historical | 22 |
+| Action | 1 |
+
+**Platform IDs:**
+| Platform | ID |
+|----------|-----|
+| PS5 | 167 |
+| PS4 | 48 |
+| Xbox Series X|S | 169 |
+| Xbox One | 49 |
+| Nintendo Switch | 130 |
+| PC (Steam/Windows) | 6 |
+| iOS | 39 |
+| Android | 34 |
+
+### Sorting Strategy
+- **Default:** `sort total_rating_count desc` (shows popular games with ratings)
+- **Sports genre:** `sort first_release_date desc` (recent games matter more)
+- **Add filter:** `total_rating_count > 5` to exclude obscure unrated games
+
+### Endpoints Used
+| IGDB Endpoint | Purpose |
+|---------------|---------|
+| `/games` | Search, browse, get by ID |
+| `/popularity_primitives` | Trending games (same as IGDB homepage) |
+
+---
+
+## Deployment
+
+### Vercel Configuration
+- **Project:** sweaty-v1
+- **Production URL:** https://sweaty-v1.vercel.app
+- **Root Directory:** `web` (configured in Vercel dashboard)
+- **Framework:** Next.js (auto-detected)
+- **Build Command:** `npm run build`
+- **Output Directory:** `.next`
+
+### Environment Variables (Vercel)
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+TWITCH_CLIENT_ID=xxx
+TWITCH_CLIENT_SECRET=xxx
+```
+
+### Git Workflow
+- **Main branch:** `main` - Production deployment
+- **Feature branches:** `claude/xxx` - Development
+- Push to `main` triggers automatic Vercel deployment
+
+### Mobile App Configuration
+API URL configured in `mobile/src/constants/index.ts`:
+```typescript
+export const API_CONFIG = {
+  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://sweaty-v1.vercel.app',
+}
+```
+
+---
+
+## Mobile App Structure (Detailed)
+
+### Screens
+| Screen | File | Description |
+|--------|------|-------------|
+| Dashboard | `DashboardScreen.tsx` | Home with stats, trending, friends activity |
+| Search | `SearchScreen.tsx` | Game/user search with browse filters |
+| Filter Results | `FilterResultsScreen.tsx` | Browse by genre/platform/year |
+| Game Detail | `GameDetailScreen.tsx` | Game info, trailers, log button |
+| Profile | `ProfileScreen.tsx` | Own profile with game library |
+| User Profile | `UserProfileScreen.tsx` | Other user's profile |
+| Activity | `ActivityScreen.tsx` | Activity feed |
+| Settings | `SettingsScreen.tsx` | Account settings |
+| Login/Signup | Auth screens |
+
+### Key Components
+| Component | Purpose |
+|-----------|---------|
+| `HorizontalGameList` | Scrollable game row with covers |
+| `LogGameModal` | Log/edit game with status, rating, review |
+| `FilterModal` | Genre/platform/year filter selection |
+| `TrailerSection` | YouTube video player for game trailers |
+| `StackedAvatars` | Overlapping friend avatars |
+| `Skeleton` | Loading skeleton base component |
+| `StatCard` | Dashboard stat display |
+
+### Navigation
+Using React Navigation with stack navigator:
+- `MainStack`: Dashboard, Search, GameDetail, Profile, Settings, etc.
+- `AuthStack`: Login, Signup (when not authenticated)
+
+---
+
+## Known Issues & TODOs
+
+### Current Issues
+- None critical after IGDB fixes
+
+### Future Enhancements
+- [ ] Offline support with better caching
+- [ ] Push notifications for follows/activity
+- [ ] Game lists/collections feature
+- [ ] Achievement/trophy tracking
+- [ ] Import from other platforms (Steam, PSN, Xbox)
+
+---
+
+## Quick Start for New Sessions
+
+1. **Check branch:** Should be on `main` for production work
+2. **Test API:** `curl https://sweaty-v1.vercel.app/api/popular-games?limit=5`
+3. **Mobile dev:** `cd mobile && npx expo start`
+4. **Web dev:** `cd web && npm run dev`
+
+### Common Debugging
+
+**IGDB returns 0 results?**
+- Check for `category = 0` (deprecated, remove it)
+- Use parentheses for array fields: `genres = (5)` not `genres = 5`
+- Verify IDs are correct (Horror is theme 19, not a genre)
+
+**Mobile app API errors?**
+- Check `API_CONFIG.baseUrl` in `mobile/src/constants/index.ts`
+- Verify Vercel deployment is up to date with `main` branch
+
+**TypeScript Set errors?**
+- Use explicit generic: `new Set<number>(...)` not `new Set(...)`
