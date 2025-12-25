@@ -514,8 +514,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     </View>
                   )}
                   {log.rating && (
-                    <View style={styles.ratingContainer}>
-                      <StarRating rating={log.rating} size={10} />
+                    <View style={styles.ratingBelow}>
+                      <StarRating rating={log.rating} size={12} filledOnly />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
-  ratingContainer: {
+  ratingBelow: {
     marginTop: Spacing.xs,
     alignItems: 'center',
   },

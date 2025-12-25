@@ -283,7 +283,11 @@ export default function ProfileScreen() {
                   ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
                   : null
                 return (
-                  <View key={game.id} style={styles.favoriteSlot}>
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.favoriteSlot}
+                    onPress={() => navigation.navigate('GameDetail', { gameId: game.id })}
+                  >
                     {coverUrl ? (
                       <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
                     ) : (
@@ -291,7 +295,7 @@ export default function ProfileScreen() {
                         <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 )
               }
               return (
@@ -366,8 +370,8 @@ export default function ProfileScreen() {
                     </View>
                   )}
                   {log.rating && (
-                    <View style={styles.ratingContainer}>
-                      <StarRating rating={log.rating} size={10} />
+                    <View style={styles.ratingBelow}>
+                      <StarRating rating={log.rating} size={12} filledOnly />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -645,7 +649,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
-  ratingContainer: {
+  ratingBelow: {
     marginTop: Spacing.xs,
     alignItems: 'center',
   },
