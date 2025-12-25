@@ -18,6 +18,7 @@ type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs } from '../hooks/useSupabase'
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 import HorizontalGameList from '../components/HorizontalGameList'
@@ -271,8 +272,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   logo: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xxl,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   welcomeSection: {
@@ -294,13 +295,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent,
   },
   headerAvatarInitial: {
+    fontFamily: Fonts.bodyBold,
     color: Colors.background,
     fontSize: 26,
-    fontWeight: '700',
   },
   welcomeText: {
+    fontFamily: Fonts.display,
     fontSize: 26,
-    fontWeight: '700',
     color: Colors.text,
     flex: 1,
   },
@@ -308,8 +309,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
   },
   discoverySectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: 18,
-    fontWeight: '600',
     color: Colors.text,
     marginLeft: Spacing.lg,
     marginBottom: 12,
