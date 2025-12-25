@@ -526,7 +526,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xs,
   },
   replyingTo: {
     flexDirection: 'row',

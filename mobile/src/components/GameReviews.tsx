@@ -302,7 +302,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   reviewCard: {
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
