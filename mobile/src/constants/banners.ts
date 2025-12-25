@@ -1,178 +1,112 @@
 // Pre-made banner library for premium users
-// Using IGDB screenshots (more widely available than artworks)
+// Using SteamGridDB hero images (1920x620)
 
 export interface BannerOption {
   id: string
   name: string
   url: string
-  gameId?: number
 }
 
-// IGDB screenshot URLs - format: https://images.igdb.com/igdb/image/upload/t_screenshot_big/{image_id}.jpg
-// These are verified working screenshot IDs from popular games
-
 export const BANNER_OPTIONS: BannerOption[] = [
-  // Elden Ring
   {
-    id: 'elden-ring-1',
+    id: 'elden-ring',
     name: 'Elden Ring',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfhj5.jpg',
-    gameId: 119133,
+    url: 'https://cdn2.steamgriddb.com/hero/5b359e020d0c4726dd6876f6e6500648.png',
   },
   {
-    id: 'elden-ring-2',
-    name: 'Elden Ring - Tree',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfhj7.jpg',
-    gameId: 119133,
-  },
-  // God of War Ragnarok
-  {
-    id: 'gow-ragnarok-1',
-    name: 'God of War Ragnarök',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfr1i.jpg',
-    gameId: 199113,
+    id: 'god-of-war-ragnarok',
+    name: 'God of War Ragnarok',
+    url: 'https://cdn2.steamgriddb.com/hero/6c73e29b5c799f2bd212a97678a3a197.jpg',
   },
   {
-    id: 'gow-ragnarok-2',
-    name: 'God of War - Battle',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfr1j.jpg',
-    gameId: 199113,
-  },
-  // Ghost of Tsushima
-  {
-    id: 'ghost-tsushima-1',
+    id: 'ghost-of-tsushima',
     name: 'Ghost of Tsushima',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc8m7g.jpg',
-    gameId: 26758,
+    url: 'https://cdn2.steamgriddb.com/hero/97fbc7ee9bcb73fe7c08efe8e5d701f0.png',
   },
   {
-    id: 'ghost-tsushima-2',
-    name: 'Ghost of Tsushima - Duel',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc8m7f.jpg',
-    gameId: 26758,
-  },
-  // Red Dead Redemption 2
-  {
-    id: 'rdr2-1',
+    id: 'red-dead-redemption-2',
     name: 'Red Dead Redemption 2',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/rkog2k.jpg',
-    gameId: 25076,
+    url: 'https://cdn2.steamgriddb.com/hero/964e7520947a0d3ac39504daea604d83.png',
   },
   {
-    id: 'rdr2-2',
-    name: 'Red Dead - Sunset',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/rkog2l.jpg',
-    gameId: 25076,
-  },
-  // The Witcher 3
-  {
-    id: 'witcher3-1',
+    id: 'the-witcher-3',
     name: 'The Witcher 3',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/em1y2ugcwy2myuhvb9db.jpg',
-    gameId: 1942,
+    url: 'https://cdn2.steamgriddb.com/hero/4d19b37a2c399deace9082d464930022.png',
   },
   {
-    id: 'witcher3-2',
-    name: 'Witcher 3 - Geralt',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/mnljdjtrh44x4snmierh.jpg',
-    gameId: 1942,
-  },
-  // Cyberpunk 2077
-  {
-    id: 'cyberpunk-1',
+    id: 'cyberpunk-2077',
     name: 'Cyberpunk 2077',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scab2z.jpg',
-    gameId: 1877,
+    url: 'https://cdn2.steamgriddb.com/hero/09a824a09b7734ea1cfd2f9a34dedbfd.jpg',
   },
   {
-    id: 'cyberpunk-2',
-    name: 'Cyberpunk - Night City',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scab2w.jpg',
-    gameId: 1877,
-  },
-  // Horizon Forbidden West
-  {
-    id: 'horizon-fw-1',
+    id: 'horizon-forbidden-west',
     name: 'Horizon Forbidden West',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scdu75.jpg',
-    gameId: 126459,
+    url: 'https://cdn2.steamgriddb.com/hero/4ef10445b952a8b3c93a9379d581146a.jpg',
   },
-  // Dark Souls 3
   {
-    id: 'darksouls3-1',
+    id: 'dark-souls-iii',
     name: 'Dark Souls III',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/nwgs6t3kxzfmpkwgcdmt.jpg',
-    gameId: 11133,
+    url: 'https://cdn2.steamgriddb.com/hero/7da5911f451a4d399d9739416bec1535.jpg',
   },
-  // Bloodborne
   {
-    id: 'bloodborne-1',
+    id: 'bloodborne',
     name: 'Bloodborne',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/bfmfwkucxvlchppu5xnk.jpg',
-    gameId: 7334,
+    url: 'https://cdn2.steamgriddb.com/hero/7500f543d4d00b34abc82287370d1b5d.jpg',
   },
-  // Sekiro
   {
-    id: 'sekiro-1',
-    name: 'Sekiro',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5rsk.jpg',
-    gameId: 112917,
+    id: 'sekiro-shadows-die-twice',
+    name: 'Sekiro Shadows Die Twice',
+    url: 'https://cdn2.steamgriddb.com/hero/2ee2b71a912ddc28699435eca8bd6486.png',
   },
-  // Zelda BOTW
   {
-    id: 'zelda-botw-1',
-    name: 'Zelda: Breath of the Wild',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc9bjt.jpg',
-    gameId: 7346,
+    id: 'zelda-breath-of-the-wild',
+    name: 'Zelda Breath of the Wild',
+    url: 'https://cdn2.steamgriddb.com/hero/71d1c0c06e1ab5049644acb5cc69a090.png',
   },
-  // Hollow Knight
   {
-    id: 'hollowknight-1',
+    id: 'hollow-knight',
     name: 'Hollow Knight',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5l2z.jpg',
-    gameId: 9767,
+    url: 'https://cdn2.steamgriddb.com/hero/222c44c26a02c54e3a9fd0d895b12df4.png',
   },
-  // Hades
   {
-    id: 'hades-1',
+    id: 'hades',
     name: 'Hades',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc8hym.jpg',
-    gameId: 109462,
+    url: 'https://cdn2.steamgriddb.com/hero/d9ac1fc532da6646901e9b30ba8964dd.png',
   },
-  // Final Fantasy VII Remake
   {
-    id: 'ff7remake-1',
+    id: 'final-fantasy-vii-remake',
     name: 'Final Fantasy VII Remake',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc86ip.jpg',
-    gameId: 24268,
+    url: 'https://cdn2.steamgriddb.com/hero/680a8d55cea7984805c47e807c854f84.png',
   },
-  // Spider-Man
   {
-    id: 'spiderman-1',
-    name: "Marvel's Spider-Man",
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5wxw.jpg',
-    gameId: 24268,
-  },
-  // Death Stranding
-  {
-    id: 'deathstranding-1',
-    name: 'Death Stranding',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5w2p.jpg',
-    gameId: 36962,
-  },
-  // Last of Us Part II
-  {
-    id: 'tlou2-1',
-    name: 'The Last of Us Part II',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc86j7.jpg',
-    gameId: 26950,
-  },
-  // Persona 5
-  {
-    id: 'persona5-1',
+    id: 'persona-5',
     name: 'Persona 5',
-    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc6560.jpg',
-    gameId: 24249,
+    url: 'https://cdn2.steamgriddb.com/hero/d346c2bc24a74cc35bc7c84444da4925.jpg',
+  },
+  {
+    id: 'death-stranding',
+    name: 'Death Stranding',
+    url: 'https://cdn2.steamgriddb.com/hero/384babc3e7faa44cf1ca671b74499c3b.png',
+  },
+  {
+    id: 'the-last-of-us-part-ii',
+    name: 'The Last of Us Part II',
+    url: 'https://cdn2.steamgriddb.com/hero/43b2dd1c93748297cfbbea4d31247641.png',
+  },
+  {
+    id: 'spider-man-ps5',
+    name: 'Spider-Man PS5',
+    url: 'https://cdn2.steamgriddb.com/hero/57696f4c6d8a92b1eb18308677a59ca2.png',
+  },
+  {
+    id: 'baldurs-gate-3',
+    name: 'Baldurs Gate 3',
+    url: 'https://cdn2.steamgriddb.com/hero/282583c8cb71f1be30f6448db7fca6e9.png',
+  },
+  {
+    id: 'starfield',
+    name: 'Starfield',
+    url: 'https://cdn2.steamgriddb.com/hero/89c62b07ff8cf6421f954d92e43160b1.png',
   },
 ]
 
