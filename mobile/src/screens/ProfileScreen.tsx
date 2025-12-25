@@ -273,7 +273,7 @@ export default function ProfileScreen() {
 
           <View style={styles.nameRow}>
             <Text style={styles.displayName}>{displayName}</Text>
-            {isPremium && <PremiumBadge size="small" />}
+            {isPremium && <PremiumBadge size="small" variant={username === 'abdulla' ? 'developer' : 'premium'} />}
             <StreakBadge streak={profile?.current_streak || 0} size="medium" />
           </View>
           <Text style={styles.username}>@{username}</Text>

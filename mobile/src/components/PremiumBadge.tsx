@@ -12,9 +12,29 @@ import { FontSize } from '../constants/colors'
 
 interface PremiumBadgeProps {
   size?: 'small' | 'medium' | 'large'
+  variant?: 'premium' | 'developer'
 }
 
-export default function PremiumBadge({ size = 'medium' }: PremiumBadgeProps) {
+// Color schemes for different badge variants
+const BADGE_VARIANTS = {
+  premium: {
+    colors: ['#FFD700', '#FFA500', '#FF8C00'] as const,
+    shadowColor: '#FFD700',
+    textColor: '#1a1a1a',
+    iconColor: '#1a1a1a',
+    label: 'PREMIUM',
+  },
+  developer: {
+    colors: ['#22c55e', '#16a34a', '#15803d'] as const,
+    shadowColor: '#22c55e',
+    textColor: '#ffffff',
+    iconColor: '#ffffff',
+    label: 'DEVELOPER',
+  },
+}
+
+export default function PremiumBadge({ size = 'medium', variant = 'premium' }: PremiumBadgeProps) {
+  const badgeStyle = BADGE_VARIANTS[variant]
   const shimmerAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
@@ -71,9 +91,9 @@ export default function PremiumBadge({ size = 'medium' }: PremiumBadgeProps) {
   const currentSize = sizeStyles[size]
 
   return (
-    <View style={[styles.container, { borderRadius: currentSize.borderRadius }]}>
+    <View style={[styles.container, { borderRadius: currentSize.borderRadius, shadowColor: badgeStyle.shadowColor }]}>
       <LinearGradient
-        colors={['#22c55e', '#16a34a', '#15803d']}
+        colors={badgeStyle.colors as unknown as string[]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[
@@ -107,10 +127,10 @@ export default function PremiumBadge({ size = 'medium' }: PremiumBadgeProps) {
           <Ionicons
             name="diamond"
             size={currentSize.iconSize}
-            color="#ffffff"
+            color={badgeStyle.iconColor}
           />
-          <Text style={[styles.text, { fontSize: currentSize.fontSize }]}>
-            PREMIUM
+          <Text style={[styles.text, { fontSize: currentSize.fontSize, color: badgeStyle.textColor }]}>
+            {badgeStyle.label}
           </Text>
         </View>
       </LinearGradient>
@@ -122,7 +142,6 @@ const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
     // Subtle shadow for depth
-    shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -151,7 +170,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: Fonts.bodyBold,
-    color: '#ffffff',
     letterSpacing: 1,
   },
 })

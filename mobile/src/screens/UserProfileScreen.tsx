@@ -407,7 +407,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               {profile.display_name || profile.username}
             </Text>
             {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
-              <PremiumBadge size="small" />
+              <PremiumBadge size="small" variant={profile.username === 'abdulla' ? 'developer' : 'premium'} />
             )}
             <StreakBadge streak={profile.current_streak || 0} size="medium" />
           </View>
