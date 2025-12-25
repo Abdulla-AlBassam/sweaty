@@ -272,9 +272,12 @@ export default function ProfileScreen() {
           )}
 
           <View style={styles.nameRow}>
+            <View style={styles.nameRowSpacer} />
             <Text style={styles.displayName}>{displayName}</Text>
-            {isPremium && <PremiumBadge size="small" />}
-            <StreakBadge streak={profile?.current_streak || 0} size="medium" />
+            <View style={styles.badgesRow}>
+              {isPremium && <PremiumBadge size="small" />}
+              <StreakBadge streak={profile?.current_streak || 0} size="medium" />
+            </View>
           </View>
           <Text style={styles.username}>@{username}</Text>
 
@@ -598,7 +601,17 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameRowSpacer: {
+    flex: 1,
+  },
+  badgesRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
+    marginLeft: Spacing.sm,
   },
   avatar: {
     width: 100,

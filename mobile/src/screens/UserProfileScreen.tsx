@@ -403,13 +403,16 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           )}
 
           <View style={styles.nameRow}>
+            <View style={styles.nameRowSpacer} />
             <Text style={styles.displayName}>
               {profile.display_name || profile.username}
             </Text>
-            {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
-              <PremiumBadge size="small" />
-            )}
-            <StreakBadge streak={profile.current_streak || 0} size="medium" />
+            <View style={styles.badgesRow}>
+              {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
+                <PremiumBadge size="small" />
+              )}
+              <StreakBadge streak={profile.current_streak || 0} size="medium" />
+            </View>
           </View>
           <Text style={styles.username}>@{profile.username}</Text>
 
@@ -709,7 +712,17 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameRowSpacer: {
+    flex: 1,
+  },
+  badgesRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: Spacing.sm,
+    marginLeft: Spacing.sm,
   },
   avatar: {
     width: 100,

@@ -20,17 +20,9 @@ export default function StreakBadge({ streak, size = 'medium' }: StreakBadgeProp
 
   const config = sizeConfig[size]
 
-  // Color based on streak length
-  const getFireColor = () => {
-    if (streak >= 100) return '#FF4500' // Red-orange for 100+
-    if (streak >= 30) return '#FF6B35'  // Orange for 30+
-    if (streak >= 7) return '#FFA500'   // Yellow-orange for 7+
-    return '#FFD700' // Gold for starting streaks
-  }
-
   return (
     <View style={[styles.container, { gap: config.gap }]}>
-      <AntDesign name="fire" size={config.iconSize} color={getFireColor()} />
+      <AntDesign name="fire" size={config.iconSize} color="#FF8C00" />
       <Text style={[styles.text, { fontSize: config.fontSize }]}>{streak}</Text>
     </View>
   )
