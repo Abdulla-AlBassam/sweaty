@@ -73,7 +73,7 @@ export default function CuratedListDetailScreen() {
     )
   }
 
-  const renderGame = ({ item }: { item: GameItem }) => (
+  const renderGame = ({ item, index }: { item: GameItem; index: number }) => (
     <TouchableOpacity
       style={styles.gameCard}
       onPress={() => handleGamePress(item.id)}
@@ -81,7 +81,7 @@ export default function CuratedListDetailScreen() {
     >
       {item.cover_url ? (
         <Image
-          source={{ uri: getIGDBImageUrl(item.cover_url, 'cover_big') }}
+          source={{ uri: getIGDBImageUrl(item.cover_url, 'coverBig') }}
           style={styles.cover}
         />
       ) : (
@@ -117,7 +117,7 @@ export default function CuratedListDetailScreen() {
         <FlatList
           data={games}
           renderItem={renderGame}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           numColumns={3}
           contentContainerStyle={styles.gridContent}
           columnWrapperStyle={styles.row}
