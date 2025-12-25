@@ -556,9 +556,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   inputAvatar: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   input: {
     flex: 1,
@@ -572,9 +572,9 @@ const styles = StyleSheet.create({
     maxHeight: 80,
   },
   sendButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
