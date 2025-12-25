@@ -43,6 +43,7 @@ export interface Game {
   platforms: string[]
   rating: number | null
   artworkUrls?: string[] // Optional array of artwork URLs for poster selection
+  screenshotUrls?: string[] // Optional array of screenshot URLs for banners
   videos?: GameVideo[]   // YouTube trailers
 }
 
@@ -148,14 +149,25 @@ function getArtworkUrls(artworks?: IGDBGame['artworks'], minWidth: number = 500)
     .map(art => getArtworkUrl(art.image_id, 't_720p'))
 }
 
+// Get screenshot URLs from IGDB screenshots array (for banners)
+// Uses t_screenshot_big size (889x500) which works well for profile banners
+function getScreenshotUrls(screenshots?: IGDBGame['screenshots']): string[] {
+  if (!screenshots || screenshots.length === 0) return []
+
+  return screenshots
+    .filter(s => s.image_id)
+    .map(s => `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${s.image_id}.jpg`)
+}
+
 // Transform IGDB response to our cleaner Game format
 interface TransformOptions {
   includeArtworks?: boolean
+  includeScreenshots?: boolean
   includeVideos?: boolean
 }
 
 function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
-  const { includeArtworks = false, includeVideos = false } = options
+  const { includeArtworks = false, includeScreenshots = false, includeVideos = false } = options
 
   const result: Game = {
     id: game.id,
@@ -171,6 +183,10 @@ function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
 
   if (includeArtworks && game.artworks) {
     result.artworkUrls = getArtworkUrls(game.artworks)
+  }
+
+  if (includeScreenshots && game.screenshots) {
+    result.screenshotUrls = getScreenshotUrls(game.screenshots)
   }
 
   if (includeVideos && game.videos) {
@@ -234,6 +250,7 @@ export async function getGameById(id: number): Promise<Game | null> {
     fields name, slug, summary, cover.image_id, first_release_date,
            genres.name, platforms.name, total_rating, rating, rating_count,
            artworks.url, artworks.width, artworks.height, artworks.image_id,
+           screenshots.url, screenshots.width, screenshots.height, screenshots.image_id,
            videos.video_id, videos.name;
     where id = ${id};
   `
@@ -241,7 +258,7 @@ export async function getGameById(id: number): Promise<Game | null> {
   const games = await igdbFetch('games', body) as IGDBGame[]
 
   if (games.length === 0) return null
-  return transformGame(games[0], { includeArtworks: true, includeVideos: true })
+  return transformGame(games[0], { includeArtworks: true, includeScreenshots: true, includeVideos: true })
 }
 
 // Get multiple games by IDs (useful for batch fetching)

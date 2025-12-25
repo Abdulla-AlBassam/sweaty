@@ -3,6 +3,7 @@ import { getGameById } from '@/lib/igdb'
 
 // GET /api/games/123
 // Returns details for a specific game by IGDB ID
+// Response includes: game details, artworkUrls, screenshotUrls, videos
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -28,7 +29,12 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ game })
+    // Return game with screenshotUrls for banner selection
+    return NextResponse.json({
+      game,
+      screenshotUrls: game.screenshotUrls || [],
+      artworkUrls: game.artworkUrls || [],
+    })
   } catch (error) {
     console.error('IGDB fetch error:', error)
     return NextResponse.json(

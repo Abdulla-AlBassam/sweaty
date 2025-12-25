@@ -1,41 +1,35 @@
-// Script to fetch real IGDB artwork URLs for banner library
+// Script to fetch real IGDB screenshot URLs for banner library
 // Run with: API_URL=https://sweaty-v1.vercel.app node scripts/fetch-banner-artworks.js
 
 const API_URL = process.env.API_URL || 'https://sweaty-v1.vercel.app'
 
+// Popular games to fetch screenshots for (sorted by popularity)
 const GAMES_TO_FETCH = [
   { id: 119133, name: 'Elden Ring' },
-  { id: 119388, name: 'Zelda: Tears of the Kingdom' },
   { id: 199113, name: 'God of War Ragnarök' },
   { id: 26758, name: 'Ghost of Tsushima' },
-  { id: 126459, name: 'Horizon Forbidden West' },
   { id: 25076, name: 'Red Dead Redemption 2' },
-  { id: 11133, name: 'Dark Souls III' },
-  { id: 112917, name: 'Sekiro: Shadows Die Twice' },
-  { id: 7334, name: 'Bloodborne' },
-  { id: 1877, name: 'Cyberpunk 2077' },
-  { id: 131913, name: 'Mass Effect Legendary' },
-  { id: 96437, name: 'Starfield' },
-  { id: 119161, name: 'Halo Infinite' },
   { id: 1942, name: 'The Witcher 3' },
-  { id: 119171, name: "Baldur's Gate 3" },
-  { id: 205827, name: 'Final Fantasy XVI' },
-  { id: 24249, name: 'Persona 5 Royal' },
-  { id: 233231, name: 'Resident Evil 4 Remake' },
-  { id: 135525, name: 'Alan Wake 2' },
+  { id: 1877, name: 'Cyberpunk 2077' },
+  { id: 126459, name: 'Horizon Forbidden West' },
+  { id: 11133, name: 'Dark Souls III' },
+  { id: 7334, name: 'Bloodborne' },
+  { id: 112917, name: 'Sekiro' },
+  { id: 7346, name: 'Zelda: Breath of the Wild' },
   { id: 9767, name: 'Hollow Knight' },
   { id: 109462, name: 'Hades' },
-  { id: 26192, name: 'Celeste' },
-  { id: 114795, name: 'Apex Legends' },
-  { id: 138585, name: 'Valorant' },
-  { id: 26726, name: 'Super Mario Odyssey' },
-  { id: 135480, name: 'Metroid Dread' },
-  { id: 109462, name: 'Animal Crossing: New Horizons' },
-  { id: 17000, name: 'Stardew Valley' },
+  { id: 24268, name: 'Final Fantasy VII Remake' },
+  { id: 24249, name: 'Persona 5' },
+  { id: 36962, name: 'Death Stranding' },
+  { id: 26950, name: 'The Last of Us Part II' },
+  { id: 1020, name: "Marvel's Spider-Man" },
+  { id: 119171, name: "Baldur's Gate 3" },
+  { id: 96437, name: 'Starfield' },
 ]
 
-async function fetchGameArtworks() {
-  console.log('Fetching real artwork URLs from IGDB via API...\n')
+async function fetchGameScreenshots() {
+  console.log('Fetching real screenshot URLs from IGDB via API...\n')
+  console.log(`API URL: ${API_URL}\n`)
 
   const results = []
 
@@ -49,18 +43,27 @@ async function fetchGameArtworks() {
 
       const data = await response.json()
 
-      if (data.artworkUrls && data.artworkUrls.length > 0) {
-        // Get the first artwork URL (best quality)
-        const artworkUrl = data.artworkUrls[0]
-        results.push({
-          id: game.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-'),
-          name: game.name,
-          url: artworkUrl,
-          gameId: game.id,
+      // Check for screenshots (preferred) or artworks (fallback)
+      const screenshots = data.screenshotUrls || []
+      const artworks = data.artworkUrls || []
+      const images = screenshots.length > 0 ? screenshots : artworks
+      const imageType = screenshots.length > 0 ? 'screenshot' : 'artwork'
+
+      if (images.length > 0) {
+        // Get up to 2 screenshots per game
+        const gameBanners = images.slice(0, 2).map((url, index) => {
+          const suffix = index === 0 ? '' : `-${index + 1}`
+          return {
+            id: game.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + suffix,
+            name: game.name + (index > 0 ? ` (${index + 1})` : ''),
+            url: url,
+            gameId: game.id,
+          }
         })
-        console.log(`✓ ${game.name} - Found artwork`)
+        results.push(...gameBanners)
+        console.log(`✓ ${game.name} - Found ${images.length} ${imageType}s`)
       } else {
-        console.log(`✗ ${game.name} - No artworks available`)
+        console.log(`✗ ${game.name} - No screenshots or artworks available`)
       }
 
       // Rate limit: wait 200ms between requests
@@ -71,7 +74,7 @@ async function fetchGameArtworks() {
   }
 
   console.log('\n--- RESULTS ---')
-  console.log(`Found ${results.length} valid artwork URLs\n`)
+  console.log(`Found ${results.length} valid banner URLs\n`)
 
   // Output as TypeScript constant
   console.log('// Copy this to mobile/src/constants/banners.ts:\n')
@@ -87,4 +90,4 @@ async function fetchGameArtworks() {
   console.log(']')
 }
 
-fetchGameArtworks()
+fetchGameScreenshots()
