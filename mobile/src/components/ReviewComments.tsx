@@ -202,10 +202,16 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
         }
       })
 
-      // Attach replies to their parent comments
-      topLevelComments.forEach((comment) => {
-        comment.replies = repliesMap[comment.id] || []
-      })
+      // Recursively attach replies to comments at any depth
+      const attachReplies = (comments: ReviewComment[]) => {
+        comments.forEach((comment) => {
+          comment.replies = repliesMap[comment.id] || []
+          if (comment.replies.length > 0) {
+            attachReplies(comment.replies)
+          }
+        })
+      }
+      attachReplies(topLevelComments)
 
       setComments(topLevelComments)
       setCommentCount(typedData?.length || 0)
@@ -525,7 +531,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.xs,
   },
   replyingTo: {
     flexDirection: 'row',
