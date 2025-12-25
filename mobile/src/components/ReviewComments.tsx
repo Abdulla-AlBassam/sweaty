@@ -325,7 +325,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isExpanded && styles.containerExpanded]}>
       {/* Comment toggle button */}
       <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7}>
         <Ionicons
@@ -420,6 +420,9 @@ const styles = StyleSheet.create({
   container: {
     flexShrink: 0,
   },
+  containerExpanded: {
+    width: '100%',
+  },
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -456,14 +459,14 @@ const styles = StyleSheet.create({
   },
   avatarContainer: {},
   avatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
   },
   replyAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   avatarPlaceholder: {
     backgroundColor: Colors.surfaceLight,
@@ -474,9 +477,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commentBubble: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
+    padding: Spacing.md,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -567,7 +570,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.background,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,

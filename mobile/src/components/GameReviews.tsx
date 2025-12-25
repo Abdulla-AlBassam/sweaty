@@ -245,18 +245,16 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
 
           {/* Likes and Comments */}
           <View style={styles.socialSection}>
-            <View style={styles.socialActions}>
-              <ReviewLikeButton
-                gameLogId={review.id}
-                initialLikeCount={review.likeCount || 0}
-                initialIsLiked={review.isLiked || false}
-                size="small"
-              />
-              <ReviewComments
-                gameLogId={review.id}
-                initialCommentCount={review.commentCount || 0}
-              />
-            </View>
+            <ReviewLikeButton
+              gameLogId={review.id}
+              initialLikeCount={review.likeCount || 0}
+              initialIsLiked={review.isLiked || false}
+              size="small"
+            />
+            <ReviewComments
+              gameLogId={review.id}
+              initialCommentCount={review.commentCount || 0}
+            />
           </View>
         </View>
       ))}
@@ -369,10 +367,9 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-  },
-  socialActions: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
     gap: Spacing.lg,
   },
   showAllButton: {
