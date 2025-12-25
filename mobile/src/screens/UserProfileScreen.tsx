@@ -348,43 +348,15 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         {/* Profile Info - Horizontal Layout */}
         <View style={styles.profileSection}>
           <View style={styles.profileHeader}>
-            {profile.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <Ionicons name="person" size={32} color={Colors.textDim} />
-              </View>
-            )}
-            <View style={styles.profileDetails}>
-              <Text style={styles.displayName}>
-                {profile.display_name || profile.username}
-              </Text>
-              <View style={styles.usernameRow}>
-                <Text style={styles.username}>@{profile.username}</Text>
-                <View style={styles.followCounts}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setFollowersModalType('followers')
-                      setFollowersModalVisible(true)
-                    }}
-                  >
-                    <Text style={styles.followText}>
-                      <Text style={styles.followNumber}>{followerCount}</Text> followers
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setFollowersModalType('following')
-                      setFollowersModalVisible(true)
-                    }}
-                  >
-                    <Text style={styles.followText}>
-                      <Text style={styles.followNumber}>{followingCount}</Text> following
-                    </Text>
-                  </TouchableOpacity>
+            <View style={styles.avatarColumn}>
+              {profile.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                  <Ionicons name="person" size={32} color={Colors.textDim} />
                 </View>
-              </View>
-              {/* Follow Button (only show for other users) */}
+              )}
+              {/* Follow Button below avatar */}
               {!isOwnProfile && user && (
                 <TouchableOpacity
                   style={[styles.followButton, isFollowing && styles.followingButton]}
@@ -400,6 +372,34 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                   )}
                 </TouchableOpacity>
               )}
+            </View>
+            <View style={styles.profileDetails}>
+              <Text style={styles.displayName}>
+                {profile.display_name || profile.username}
+              </Text>
+              <Text style={styles.username}>@{profile.username}</Text>
+              <View style={styles.followCounts}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setFollowersModalType('followers')
+                    setFollowersModalVisible(true)
+                  }}
+                >
+                  <Text style={styles.followText}>
+                    <Text style={styles.followNumber}>{followerCount}</Text> followers
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    setFollowersModalType('following')
+                    setFollowersModalVisible(true)
+                  }}
+                >
+                  <Text style={styles.followText}>
+                    <Text style={styles.followNumber}>{followingCount}</Text> following
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
           {profile.bio && (
@@ -603,7 +603,10 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  avatarColumn: {
+    alignItems: 'center',
   },
   avatar: {
     width: 80,
@@ -617,19 +620,18 @@ const styles = StyleSheet.create({
   },
   profileDetails: {
     flex: 1,
-    marginLeft: Spacing.md,
+    marginLeft: Spacing.lg,
+    justifyContent: 'center',
   },
   displayName: {
     fontSize: FontSize.xl,
     fontWeight: 'bold',
     color: Colors.text,
   },
-  usernameRow: {
-    marginTop: Spacing.xs,
-  },
   username: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
+    marginTop: Spacing.xs,
   },
   followCounts: {
     flexDirection: 'row',
@@ -651,12 +653,12 @@ const styles = StyleSheet.create({
   },
   followButton: {
     backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
-    alignSelf: 'flex-start',
     marginTop: Spacing.sm,
+    minWidth: 80,
   },
   followingButton: {
     backgroundColor: 'transparent',
