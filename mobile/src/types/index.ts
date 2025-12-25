@@ -125,3 +125,34 @@ export interface CuratedListWithGames extends CuratedList {
     cover_url: string | null
   }>
 }
+
+// Review likes & comments types
+export interface ReviewLike {
+  id: string
+  user_id: string
+  game_log_id: string
+  created_at: string
+  user?: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+}
+
+export interface ReviewComment {
+  id: string
+  user_id: string
+  game_log_id: string
+  parent_id: string | null
+  content: string
+  created_at: string
+  updated_at: string
+  user?: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+  replies?: ReviewComment[]
+}
