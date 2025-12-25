@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
 import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import XPProgressBar from '../components/XPProgressBar'
@@ -525,8 +526,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xxl,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   settingsButton: {
@@ -553,16 +554,17 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarText: {
+    fontFamily: Fonts.bodyBold,
     fontSize: 40,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   displayName: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xl,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   username: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
@@ -573,14 +575,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   followText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   followNumber: {
-    fontWeight: '600',
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.text,
   },
   bio: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
@@ -606,11 +610,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   statValue: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.lg,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   statLabel: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
@@ -620,8 +625,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
   },
@@ -639,9 +644,9 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   editButtonText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
     color: Colors.accentLight,
-    fontWeight: '600',
   },
   favoritesRow: {
     flexDirection: 'row',
@@ -718,12 +723,13 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   filterTabText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   filterTabTextSelected: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
-    fontWeight: '600',
   },
   filterTabTextDimmed: {
     color: Colors.textDim,
@@ -764,11 +770,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.md,
   },
   emptySubtext: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,

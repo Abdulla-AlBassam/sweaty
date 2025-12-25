@@ -1,12 +1,20 @@
+import { useCallback, useEffect, useState } from 'react'
+import { View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import Toast, { BaseToast, ToastConfig } from 'react-native-toast-message'
+import * as Font from 'expo-font'
+import * as SplashScreen from 'expo-splash-screen'
 import { AuthProvider } from './src/contexts/AuthContext'
 import { QuickLogProvider, useQuickLog } from './src/contexts/QuickLogContext'
 import { Colors } from './src/constants/colors'
+import { FontAssets, Fonts } from './src/constants/fonts'
 import Navigation from './src/navigation'
 import QuickLogModal from './src/components/QuickLogModal'
+
+// Keep splash screen visible while loading fonts
+SplashScreen.preventAutoHideAsync()
 
 // Custom toast configuration
 const toastConfig: ToastConfig = {
@@ -21,11 +29,12 @@ const toastConfig: ToastConfig = {
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 15,
-        fontWeight: '600',
+        fontFamily: Fonts.bodySemiBold,
         color: Colors.accent,
       }}
       text2Style={{
         fontSize: 13,
+        fontFamily: Fonts.body,
         color: Colors.text,
       }}
     />
@@ -41,11 +50,12 @@ const toastConfig: ToastConfig = {
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 16,
-        fontWeight: 'bold',
+        fontFamily: Fonts.bodyBold,
         color: Colors.accent,
       }}
       text2Style={{
         fontSize: 13,
+        fontFamily: Fonts.body,
         color: Colors.textMuted,
       }}
     />
@@ -62,12 +72,12 @@ const toastConfig: ToastConfig = {
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 16,
-        fontWeight: 'bold',
+        fontFamily: Fonts.bodyBold,
         color: '#FFD700',
       }}
       text2Style={{
         fontSize: 14,
-        fontWeight: '600',
+        fontFamily: Fonts.bodySemiBold,
         color: Colors.text,
       }}
     />
@@ -103,14 +113,41 @@ function AppContent() {
 }
 
 export default function App() {
+  const [fontsLoaded, setFontsLoaded] = useState(false)
+
+  useEffect(() => {
+    async function loadFonts() {
+      try {
+        await Font.loadAsync(FontAssets)
+      } catch (e) {
+        console.warn('Error loading fonts:', e)
+      } finally {
+        setFontsLoaded(true)
+      }
+    }
+    loadFonts()
+  }, [])
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync()
+    }
+  }, [fontsLoaded])
+
+  if (!fontsLoaded) {
+    return null
+  }
+
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <QuickLogProvider>
-          <AppContent />
-        </QuickLogProvider>
-      </AuthProvider>
-      <Toast config={toastConfig} topOffset={60} />
-    </SafeAreaProvider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <QuickLogProvider>
+            <AppContent />
+          </QuickLogProvider>
+        </AuthProvider>
+        <Toast config={toastConfig} topOffset={60} />
+      </SafeAreaProvider>
+    </View>
   )
 }

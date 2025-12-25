@@ -19,6 +19,7 @@ import { MainStackParamList } from '../navigation'
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
 
@@ -207,8 +208,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   logo: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xxl,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   welcomeSection: {
@@ -230,13 +231,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent,
   },
   headerAvatarInitial: {
+    fontFamily: Fonts.bodyBold,
     color: Colors.background,
     fontSize: 26,
-    fontWeight: '700',
   },
   welcomeText: {
+    fontFamily: Fonts.display,
     fontSize: 26,
-    fontWeight: '700',
     color: Colors.text,
     flex: 1,
   },
@@ -256,8 +257,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   pulsingDot: {
