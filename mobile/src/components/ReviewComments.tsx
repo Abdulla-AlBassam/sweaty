@@ -528,10 +528,7 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
   inputSection: {
-    marginTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.xs,
+    marginTop: Spacing.md,
   },
   replyingTo: {
     flexDirection: 'row',
@@ -556,6 +553,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: 24,
+    paddingVertical: Spacing.xs,
+    paddingLeft: Spacing.xs,
+    paddingRight: Spacing.xs,
   },
   inputAvatar: {
     width: 32,
@@ -567,10 +569,8 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
-    backgroundColor: Colors.background,
-    borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
     maxHeight: 80,
   },
   sendButton: {
