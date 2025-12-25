@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -15,14 +16,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { MainStackParamList } from '../navigation'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
-import { useGameLogs } from '../hooks/useSupabase'
-import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
+import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
-import { getIGDBImageUrl, API_CONFIG } from '../constants'
-import { supabase } from '../lib/supabase'
-import HorizontalGameList from '../components/HorizontalGameList'
-import StackedAvatars from '../components/StackedAvatars'
-import Skeleton from '../components/Skeleton'
+import { getIGDBImageUrl } from '../constants'
+import CuratedListRow from '../components/CuratedListRow'
 
 // Gaming-themed welcome messages (same as web)
 const WELCOME_MESSAGES = [
@@ -41,77 +38,23 @@ function getRandomWelcomeMessage() {
   return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]
 }
 
-interface DiscoveryGame {
-  id: number
-  name: string
-  coverUrl?: string | null
-  cover_url?: string | null
-}
-
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user, profile } = useAuth()
   const { logs, isLoading: logsLoading, refetch: refetchLogs } = useGameLogs(user?.id)
-  const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
+  const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
 
   const [refreshing, setRefreshing] = useState(false)
   const [welcomeMessage] = useState(getRandomWelcomeMessage)
-  const [trendingGames, setTrendingGames] = useState<DiscoveryGame[]>([])
-  const [isLoadingTrending, setIsLoadingTrending] = useState(true)
-  const [communityGames, setCommunityGames] = useState<DiscoveryGame[]>([])
-  const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
-
-  // Load discovery sections on mount
-  useEffect(() => {
-    loadTrendingGames()
-    loadCommunityGames()
-  }, [])
-
-  // Load trending games from IGDB (global trending)
-  const loadTrendingGames = async () => {
-    try {
-      setIsLoadingTrending(true)
-      const response = await fetch(`${API_CONFIG.baseUrl}/api/popular-games?limit=15`)
-      if (!response.ok) throw new Error('Failed to fetch trending games')
-      const data = await response.json()
-      setTrendingGames(data.games || [])
-    } catch (err) {
-      console.error('Failed to load trending games:', err)
-    } finally {
-      setIsLoadingTrending(false)
-    }
-  }
-
-  // Load community popular games from local database (what Sweaty users like)
-  const loadCommunityGames = async () => {
-    try {
-      setIsLoadingCommunity(true)
-      const { data, error } = await supabase
-        .from('games_cache')
-        .select('id, name, cover_url')
-        .not('cover_url', 'is', null)
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(15)
-
-      if (error) throw error
-      setCommunityGames(data || [])
-    } catch (err) {
-      console.error('Failed to load community games:', err)
-    } finally {
-      setIsLoadingCommunity(false)
-    }
-  }
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     await Promise.all([
       refetchLogs(),
-      loadTrendingGames(),
-      loadCommunityGames(),
-      refetchFriendsPlaying(),
+      refetchLists(),
     ])
     setRefreshing(false)
-  }, [refetchLogs, refetchFriendsPlaying])
+  }, [refetchLogs, refetchLists])
 
 
   // Currently playing games
@@ -199,52 +142,16 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* Trending Games from IGDB (global trending) */}
-        <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
-          <HorizontalGameList
-            games={trendingGames}
-            onGamePress={(game) => handleGamePress(game.id)}
-            isLoading={isLoadingTrending}
-          />
-        </View>
-
-        {/* Community Popular Games (what Sweaty users like) */}
-        <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>Popular in Community</Text>
-          <HorizontalGameList
-            games={communityGames}
-            onGamePress={(game) => handleGamePress(game.id)}
-            isLoading={isLoadingCommunity}
-          />
-        </View>
-
-        {/* What Your Friends Are Playing */}
-        {friendsPlaying.length > 0 && (
-          <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>What Your Friends Are Playing</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {friendsPlaying.map((game) => (
-                <TouchableOpacity
-                  key={game.id}
-                  style={styles.friendsGameCard}
-                  onPress={() => handleGamePress(game.id)}
-                  activeOpacity={0.8}
-                >
-                  <Image
-                    source={{ uri: getIGDBImageUrl(game.cover_url) }}
-                    style={styles.friendsGameCover}
-                  />
-                  <StackedAvatars users={game.friends} />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+        {/* Curated Lists */}
+        {listsLoading ? (
+          <View style={styles.listsLoading}>
+            <ActivityIndicator size="large" color={Colors.accent} />
           </View>
-        )}
+        ) : curatedLists.length > 0 ? (
+          curatedLists.map((list) => (
+            <CuratedListRow key={list.id} list={list} />
+          ))
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   )
@@ -335,14 +242,8 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     color: Colors.textDim,
   },
-  friendsGameCard: {
-    position: 'relative',
-    width: 100,
-  },
-  friendsGameCover: {
-    width: 100,
-    height: 133,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
+  listsLoading: {
+    paddingVertical: Spacing.xxl,
+    alignItems: 'center',
   },
 })
