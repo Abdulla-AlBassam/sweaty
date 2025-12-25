@@ -7,24 +7,40 @@ import {
   Dimensions,
 } from 'react-native'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuickLog } from '../contexts/QuickLogContext'
-
-type IconName = keyof typeof Ionicons.glyphMap
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 const TAB_COUNT = 5
 const TAB_WIDTH = SCREEN_WIDTH / TAB_COUNT
 
-// Icon mapping for each tab
-const iconMap: Record<string, { outline: IconName; filled: IconName }> = {
-  Home: { outline: 'home-outline', filled: 'home' },
-  Search: { outline: 'search-outline', filled: 'search' },
-  Add: { outline: 'add', filled: 'add' },
-  Activity: { outline: 'notifications-outline', filled: 'notifications' },
-  Profile: { outline: 'person-outline', filled: 'person' },
+// Icon configuration for each tab
+type IconConfig = {
+  library: 'Feather' | 'FontAwesome5' | 'Ionicons'
+  name: string
+}
+
+const iconMap: Record<string, IconConfig> = {
+  Home: { library: 'Feather', name: 'home' },
+  Search: { library: 'FontAwesome5', name: 'search' },
+  Add: { library: 'Ionicons', name: 'add-circle' },
+  Activity: { library: 'Feather', name: 'activity' },
+  Profile: { library: 'Ionicons', name: 'person' },
+}
+
+// Render icon based on library
+const renderIcon = (config: IconConfig, size: number, color: string) => {
+  switch (config.library) {
+    case 'Feather':
+      return <Feather name={config.name as keyof typeof Feather.glyphMap} size={size} color={color} />
+    case 'FontAwesome5':
+      return <FontAwesome5 name={config.name as keyof typeof FontAwesome5.glyphMap} size={size} color={color} />
+    case 'Ionicons':
+    default:
+      return <Ionicons name={config.name as keyof typeof Ionicons.glyphMap} size={size} color={color} />
+  }
 }
 
 export default function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -95,7 +111,7 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
           const isFocused = state.index === index
           const isAddTab = route.name === 'Add'
 
-          const icons = iconMap[route.name]
+          const iconConfig = iconMap[route.name]
 
           return (
             <TouchableOpacity
@@ -111,16 +127,12 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
               {isAddTab ? (
                 // Special Add button with green circle
                 <View style={styles.addButton}>
-                  <Ionicons name="add" size={28} color={Colors.background} />
+                  <Ionicons name="add" size={22} color={Colors.background} />
                 </View>
               ) : (
                 // Regular tab icon
                 <Animated.View style={styles.iconContainer}>
-                  <Ionicons
-                    name={isFocused && icons ? icons.filled : icons?.outline || 'help-outline'}
-                    size={24}
-                    color={isFocused ? Colors.text : Colors.textDim}
-                  />
+                  {iconConfig && renderIcon(iconConfig, 22, isFocused ? Colors.text : Colors.textDim)}
                 </Animated.View>
               )}
             </TouchableOpacity>
@@ -168,17 +180,17 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: Colors.accent,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -12,
+    marginTop: -6,
     // Subtle shadow for elevation
     shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 6,
+    elevation: 6,
   },
 })
