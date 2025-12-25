@@ -15,7 +15,7 @@ export const Fonts = {
 
 // Font files to load (must match filenames in assets/fonts/)
 export const FontAssets = {
-  'BBHBogle': require('../../assets/fonts/BBHBogle.otf'),
+  'BBHBogle': require('../../assets/fonts/BBHBogle-Regular.ttf'),
   'Geist-Regular': require('../../assets/fonts/Geist-Regular.otf'),
   'Geist-Medium': require('../../assets/fonts/Geist-Medium.otf'),
   'Geist-SemiBold': require('../../assets/fonts/Geist-SemiBold.otf'),
