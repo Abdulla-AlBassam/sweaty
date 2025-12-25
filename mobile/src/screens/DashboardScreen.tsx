@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Animated,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -46,6 +47,28 @@ export default function DashboardScreen() {
 
   const [refreshing, setRefreshing] = useState(false)
   const [welcomeMessage] = useState(getRandomWelcomeMessage)
+
+  // Pulsing animation for "Currently Playing" indicator
+  const pulseAnim = useRef(new Animated.Value(1)).current
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.4,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ])
+    )
+    pulse.start()
+    return () => pulse.stop()
+  }, [pulseAnim])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -109,8 +132,13 @@ export default function DashboardScreen() {
 
         {/* Currently Playing */}
         {currentlyPlaying.length > 0 && (
-          <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>Currently Playing</Text>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
+                <Text style={styles.sectionTitle}>Currently Playing</Text>
+              </View>
+            </View>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -127,6 +155,7 @@ export default function DashboardScreen() {
                     key={log.id}
                     style={styles.gameCard}
                     onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.7}
                   >
                     {coverUrl ? (
                       <Image source={{ uri: coverUrl }} style={styles.gameCover} />
@@ -211,27 +240,44 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
   },
-  discoverySection: {
-    paddingTop: Spacing.lg,
+  section: {
+    marginBottom: Spacing.xl,
   },
-  discoverySectionTitle: {
-    fontSize: 18,
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: FontSize.lg,
     fontWeight: '600',
     color: Colors.text,
-    marginLeft: Spacing.lg,
-    marginBottom: 12,
+  },
+  pulsingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.accent,
   },
   horizontalScroll: {
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   gameCard: {
-    width: 100,
+    width: 105,
   },
   gameCover: {
-    width: 100,
-    height: 133,
+    width: 105,
+    height: 140,
     borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
   },
   gameCoverPlaceholder: {
     backgroundColor: Colors.surface,
