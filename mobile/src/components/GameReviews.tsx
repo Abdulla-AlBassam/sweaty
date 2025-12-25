@@ -32,19 +32,33 @@ interface GameReviewsProps {
   refreshKey?: number
 }
 
+const INITIAL_LIMIT = 10
+
 export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
   const { user } = useAuth()
   const navigation = useNavigation()
   const [reviews, setReviews] = useState<Review[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     fetchReviews()
-  }, [gameId, refreshKey])
+  }, [gameId, refreshKey, showAll])
 
   const fetchReviews = async () => {
     try {
-      const { data, error } = await supabase
+      // First get total count
+      const { count } = await supabase
+        .from('game_logs')
+        .select('id', { count: 'exact', head: true })
+        .eq('game_id', gameId)
+        .not('review', 'is', null)
+
+      setTotalCount(count || 0)
+
+      // Then fetch reviews (limited or all)
+      let query = supabase
         .from('game_logs')
         .select(`
           id,
@@ -56,7 +70,12 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
         .eq('game_id', gameId)
         .not('review', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(10)
+
+      if (!showAll) {
+        query = query.limit(INITIAL_LIMIT)
+      }
+
+      const { data, error } = await query
 
       if (error) throw error
 
@@ -90,11 +109,14 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
 
   const handleUserPress = (username: string, userId: string) => {
     if (user && userId === user.id) {
-      // Navigate to own profile tab
       navigation.navigate('MainTabs' as never, { screen: 'Profile' } as never)
     } else {
       navigation.navigate('UserProfile' as never, { username, userId } as never)
     }
+  }
+
+  const handleShowAll = () => {
+    setShowAll(true)
   }
 
   if (isLoading) {
@@ -114,16 +136,18 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
         <Text style={styles.sectionTitle}>Reviews</Text>
         <View style={styles.emptyContainer}>
           <Ionicons name="chatbubble-outline" size={32} color={Colors.textDim} />
-          <Text style={styles.emptyText}>no reviews yet</Text>
-          <Text style={styles.emptySubtext}>be the first to share your thoughts!</Text>
+          <Text style={styles.emptyText}>No reviews yet</Text>
+          <Text style={styles.emptySubtext}>Be the first to share your thoughts!</Text>
         </View>
       </View>
     )
   }
 
+  const hasMore = totalCount > INITIAL_LIMIT && !showAll
+
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Reviews ({reviews.length})</Text>
+      <Text style={styles.sectionTitle}>Reviews ({totalCount})</Text>
       {reviews.map((review) => (
         <View key={review.id} style={styles.reviewCard}>
           <TouchableOpacity
@@ -157,6 +181,11 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
           <Text style={styles.reviewText}>{review.review}</Text>
         </View>
       ))}
+      {hasMore && (
+        <TouchableOpacity style={styles.showAllButton} onPress={handleShowAll}>
+          <Text style={styles.showAllText}>Show all {totalCount} reviews</Text>
+        </TouchableOpacity>
+      )}
     </View>
   )
 }
@@ -241,11 +270,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
-  ratingText: {
-    fontSize: FontSize.xs,
-    color: Colors.accentLight,
-    fontWeight: '600',
-  },
   timeText: {
     fontSize: FontSize.xs,
     color: Colors.textDim,
@@ -255,5 +279,16 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 20,
+  },
+  showAllButton: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  showAllText: {
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+    fontWeight: '600',
   },
 })
