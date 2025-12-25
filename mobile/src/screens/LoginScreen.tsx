@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
@@ -150,7 +151,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                 <ActivityIndicator color={Colors.text} />
               ) : (
                 <>
-                  <Text style={styles.googleIcon}>G</Text>
+                  <Image
+                    source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                    style={styles.googleLogo}
+                  />
                   <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
                 </>
               )}
@@ -284,10 +288,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     gap: Spacing.sm,
   },
-  googleIcon: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.lg,
-    color: '#4285F4',
+  googleLogo: {
+    width: 20,
+    height: 20,
   },
   googleButtonText: {
     fontFamily: Fonts.bodySemiBold,

@@ -3,6 +3,7 @@ import { Linking } from 'react-native'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
+import * as ExpoLinking from 'expo-linking'
 
 interface AuthContextType {
   session: Session | null
@@ -72,7 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Handle deep link for OAuth callback
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url
-      if (url.startsWith('sweaty://auth/callback')) {
+      console.log('Deep link received:', url)
+
+      // Check if this is an auth callback (works for both Expo Go and standalone)
+      if (url.includes('auth/callback')) {
         // Extract tokens from URL hash
         const hashIndex = url.indexOf('#')
         if (hashIndex !== -1) {
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const refreshToken = params.get('refresh_token')
 
           if (accessToken) {
+            console.log('Setting session from deep link')
             await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || '',
@@ -131,8 +136,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
     try {
-      // Create redirect URL for the app
-      const redirectUrl = 'sweaty://auth/callback'
+      // Create redirect URL that works in both Expo Go and standalone builds
+      const redirectUrl = ExpoLinking.createURL('auth/callback')
+      console.log('OAuth redirect URL:', redirectUrl)
 
       // Start OAuth flow
       const { data, error } = await supabase.auth.signInWithOAuth({
