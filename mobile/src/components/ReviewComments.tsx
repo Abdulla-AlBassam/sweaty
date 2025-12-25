@@ -447,6 +447,7 @@ const styles = StyleSheet.create({
   },
   commentItem: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: Spacing.sm,
   },
   replyItem: {
@@ -506,7 +507,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 4,
+    marginTop: 2,
     marginLeft: Spacing.sm,
   },
   actionText: {
@@ -526,10 +527,11 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
   inputSection: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
   },
   replyingTo: {
     flexDirection: 'row',
