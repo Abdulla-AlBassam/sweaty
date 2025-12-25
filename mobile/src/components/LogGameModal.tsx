@@ -411,7 +411,7 @@ export default function LogGameModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              {existingLog ? 'Edit Log' : 'Log Game'}
+              {existingLog ? 'edit log' : 'log game'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.text} />
@@ -610,8 +610,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.lg,
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
     color: Colors.text,
   },
   closeButton: {
@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   pickerTitle: {
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
     color: Colors.text,
   },
