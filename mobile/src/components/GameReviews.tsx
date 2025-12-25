@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   },
   reviewCard: {
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
