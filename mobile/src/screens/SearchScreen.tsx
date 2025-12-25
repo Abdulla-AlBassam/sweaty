@@ -497,11 +497,13 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
   },
   errorText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.error,
   },
@@ -579,6 +581,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   clearText: {
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.sm,
   },
@@ -604,6 +607,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceLight,
   },
   recentChipText: {
+    fontFamily: Fonts.body,
     color: Colors.text,
     fontSize: FontSize.sm,
     maxWidth: 120,
@@ -622,8 +626,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   discoveryRowTitle: {
+    fontFamily: Fonts.display,
     fontSize: 16,
-    fontWeight: '600',
     color: Colors.text,
     marginLeft: Spacing.lg,
     marginBottom: 12,
