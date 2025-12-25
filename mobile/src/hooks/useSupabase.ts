@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Game, GameLog, Profile, ActivityItem } from '../types'
+import { Game, GameLog, Profile, ActivityItem, CuratedListWithGames } from '../types'
 
 export function useGameLogs(userId: string | undefined) {
   const [logs, setLogs] = useState<GameLog[]>([])
@@ -212,4 +212,75 @@ export function useGameSearch(query: string) {
   }, [query])
 
   return { games, isLoading, error }
+}
+
+export function useCuratedLists() {
+  const [lists, setLists] = useState<CuratedListWithGames[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchLists = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        // Fetch active curated lists ordered by display_order
+        const { data: curatedLists, error: listsError } = await supabase
+          .from('curated_lists')
+          .select('id, slug, title, description, game_ids, display_order, is_active')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+
+        if (listsError) throw listsError
+
+        if (!curatedLists || curatedLists.length === 0) {
+          setLists([])
+          setIsLoading(false)
+          return
+        }
+
+        // Collect all unique game IDs from all lists
+        const allGameIds = new Set<number>()
+        curatedLists.forEach((list: any) => {
+          (list.game_ids || []).forEach((id: number) => allGameIds.add(id))
+        })
+
+        // Fetch all games in one query
+        let gamesMap = new Map<number, { id: number; name: string; cover_url: string | null }>()
+
+        if (allGameIds.size > 0) {
+          const { data: games, error: gamesError } = await supabase
+            .from('games_cache')
+            .select('id, name, cover_url')
+            .in('id', Array.from(allGameIds))
+
+          if (gamesError) throw gamesError
+
+          games?.forEach((game: any) => {
+            gamesMap.set(game.id, game)
+          })
+        }
+
+        // Map games to each list, preserving order from game_ids array
+        const listsWithGames: CuratedListWithGames[] = curatedLists.map((list: any) => ({
+          ...list,
+          games: (list.game_ids || [])
+            .map((id: number) => gamesMap.get(id))
+            .filter(Boolean) as Array<{ id: number; name: string; cover_url: string | null }>
+        }))
+
+        setLists(listsWithGames)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
+        console.error('Curated lists fetch error:', err)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchLists()
+  }, [])
+
+  return { lists, isLoading, error }
 }
