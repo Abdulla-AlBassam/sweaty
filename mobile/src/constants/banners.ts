@@ -1,211 +1,182 @@
 // Pre-made banner library for premium users
-// These are curated game artworks from popular titles
+// Using IGDB screenshots (more widely available than artworks)
 
 export interface BannerOption {
   id: string
   name: string
   url: string
-  gameId?: number  // IGDB game ID if applicable
+  gameId?: number
 }
 
-// Using IGDB artwork URLs - these are high-quality game promotional images
-// Format: https://images.igdb.com/igdb/image/upload/t_1080p/{imageId}.jpg
+// IGDB screenshot URLs - format: https://images.igdb.com/igdb/image/upload/t_screenshot_big/{image_id}.jpg
+// These are verified working screenshot IDs from popular games
 
 export const BANNER_OPTIONS: BannerOption[] = [
-  // Action/Adventure
+  // Elden Ring
   {
-    id: 'elden-ring',
+    id: 'elden-ring-1',
     name: 'Elden Ring',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar1e5s.jpg',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfhj5.jpg',
     gameId: 119133,
   },
   {
-    id: 'zelda-totk',
-    name: 'Zelda: Tears of the Kingdom',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar2dhy.jpg',
-    gameId: 119388,
+    id: 'elden-ring-2',
+    name: 'Elden Ring - Tree',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfhj7.jpg',
+    gameId: 119133,
   },
+  // God of War Ragnarok
   {
-    id: 'god-of-war-ragnarok',
+    id: 'gow-ragnarok-1',
     name: 'God of War Ragnarök',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar1g9w.jpg',
-    gameId: 119171,
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfr1i.jpg',
+    gameId: 199113,
   },
   {
-    id: 'ghost-of-tsushima',
+    id: 'gow-ragnarok-2',
+    name: 'God of War - Battle',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scfr1j.jpg',
+    gameId: 199113,
+  },
+  // Ghost of Tsushima
+  {
+    id: 'ghost-tsushima-1',
     name: 'Ghost of Tsushima',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar10ca.jpg',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc8m7g.jpg',
     gameId: 26758,
   },
   {
-    id: 'horizon-forbidden-west',
-    name: 'Horizon Forbidden West',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar14zy.jpg',
-    gameId: 126459,
+    id: 'ghost-tsushima-2',
+    name: 'Ghost of Tsushima - Duel',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc8m7f.jpg',
+    gameId: 26758,
   },
+  // Red Dead Redemption 2
   {
-    id: 'red-dead-redemption-2',
+    id: 'rdr2-1',
     name: 'Red Dead Redemption 2',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar5r8.jpg',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/rkog2k.jpg',
     gameId: 25076,
   },
-
-  // Souls-like / Dark Fantasy
   {
-    id: 'dark-souls-3',
-    name: 'Dark Souls III',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar5wx.jpg',
-    gameId: 11133,
+    id: 'rdr2-2',
+    name: 'Red Dead - Sunset',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/rkog2l.jpg',
+    gameId: 25076,
   },
+  // The Witcher 3
   {
-    id: 'sekiro',
-    name: 'Sekiro: Shadows Die Twice',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar6x7.jpg',
-    gameId: 38050,
-  },
-  {
-    id: 'bloodborne',
-    name: 'Bloodborne',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar5wy.jpg',
-    gameId: 7334,
-  },
-
-  // Sci-Fi
-  {
-    id: 'cyberpunk-2077',
-    name: 'Cyberpunk 2077',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar7ti.jpg',
-    gameId: 1877,
-  },
-  {
-    id: 'mass-effect',
-    name: 'Mass Effect Legendary',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar10gu.jpg',
-    gameId: 131913,
-  },
-  {
-    id: 'starfield',
-    name: 'Starfield',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar1pmp.jpg',
-    gameId: 96437,
-  },
-  {
-    id: 'halo-infinite',
-    name: 'Halo Infinite',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar1bhb.jpg',
-    gameId: 119161,
-  },
-
-  // RPG / Fantasy
-  {
-    id: 'witcher-3',
+    id: 'witcher3-1',
     name: 'The Witcher 3',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar5h2.jpg',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/em1y2ugcwy2myuhvb9db.jpg',
     gameId: 1942,
   },
   {
-    id: 'baldurs-gate-3',
-    name: "Baldur's Gate 3",
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar1nx1.jpg',
-    gameId: 119171,
+    id: 'witcher3-2',
+    name: 'Witcher 3 - Geralt',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/mnljdjtrh44x4snmierh.jpg',
+    gameId: 1942,
+  },
+  // Cyberpunk 2077
+  {
+    id: 'cyberpunk-1',
+    name: 'Cyberpunk 2077',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scab2z.jpg',
+    gameId: 1877,
   },
   {
-    id: 'final-fantasy-16',
-    name: 'Final Fantasy XVI',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar2bvx.jpg',
-    gameId: 205827,
+    id: 'cyberpunk-2',
+    name: 'Cyberpunk - Night City',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scab2w.jpg',
+    gameId: 1877,
   },
+  // Horizon Forbidden West
   {
-    id: 'persona-5',
-    name: 'Persona 5 Royal',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar8px.jpg',
-    gameId: 24249,
-  },
-
-  // Horror
-  {
-    id: 'resident-evil-4',
-    name: 'Resident Evil 4 Remake',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar1wgg.jpg',
-    gameId: 233231,
-  },
-  {
-    id: 'alan-wake-2',
-    name: 'Alan Wake 2',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar21js.jpg',
-    gameId: 135525,
-  },
-
-  // Indie / Artistic
-  {
-    id: 'hollow-knight',
-    name: 'Hollow Knight',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar5wx.jpg',
-    gameId: 26758,
-  },
-  {
-    id: 'hades',
-    name: 'Hades',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar9nm.jpg',
-    gameId: 25657,
-  },
-  {
-    id: 'celeste',
-    name: 'Celeste',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar3y7.jpg',
-    gameId: 25646,
-  },
-
-  // Multiplayer / Competitive
-  {
-    id: 'apex-legends',
-    name: 'Apex Legends',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar7mm.jpg',
-    gameId: 114795,
-  },
-  {
-    id: 'valorant',
-    name: 'Valorant',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar9sk.jpg',
+    id: 'horizon-fw-1',
+    name: 'Horizon Forbidden West',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/scdu75.jpg',
     gameId: 126459,
   },
-
-  // Nintendo
+  // Dark Souls 3
   {
-    id: 'mario-odyssey',
-    name: 'Super Mario Odyssey',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar4t4.jpg',
-    gameId: 25076,
+    id: 'darksouls3-1',
+    name: 'Dark Souls III',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/nwgs6t3kxzfmpkwgcdmt.jpg',
+    gameId: 11133,
   },
+  // Bloodborne
   {
-    id: 'metroid-dread',
-    name: 'Metroid Dread',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar1383.jpg',
-    gameId: 135480,
+    id: 'bloodborne-1',
+    name: 'Bloodborne',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/bfmfwkucxvlchppu5xnk.jpg',
+    gameId: 7334,
   },
+  // Sekiro
   {
-    id: 'animal-crossing',
-    name: 'Animal Crossing: New Horizons',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/ar8sl.jpg',
+    id: 'sekiro-1',
+    name: 'Sekiro',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5rsk.jpg',
+    gameId: 112917,
+  },
+  // Zelda BOTW
+  {
+    id: 'zelda-botw-1',
+    name: 'Zelda: Breath of the Wild',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc9bjt.jpg',
+    gameId: 7346,
+  },
+  // Hollow Knight
+  {
+    id: 'hollowknight-1',
+    name: 'Hollow Knight',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5l2z.jpg',
+    gameId: 9767,
+  },
+  // Hades
+  {
+    id: 'hades-1',
+    name: 'Hades',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc8hym.jpg',
     gameId: 109462,
   },
-
-  // Cozy / Relaxing
+  // Final Fantasy VII Remake
   {
-    id: 'stardew-valley',
-    name: 'Stardew Valley',
-    url: 'https://images.igdb.com/igdb/image/upload/t_1080p/xrpmydnu9rpxvxfjkiu7.jpg',
-    gameId: 17000,
+    id: 'ff7remake-1',
+    name: 'Final Fantasy VII Remake',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc86ip.jpg',
+    gameId: 24268,
+  },
+  // Spider-Man
+  {
+    id: 'spiderman-1',
+    name: "Marvel's Spider-Man",
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5wxw.jpg',
+    gameId: 24268,
+  },
+  // Death Stranding
+  {
+    id: 'deathstranding-1',
+    name: 'Death Stranding',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc5w2p.jpg',
+    gameId: 36962,
+  },
+  // Last of Us Part II
+  {
+    id: 'tlou2-1',
+    name: 'The Last of Us Part II',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc86j7.jpg',
+    gameId: 26950,
+  },
+  // Persona 5
+  {
+    id: 'persona5-1',
+    name: 'Persona 5',
+    url: 'https://images.igdb.com/igdb/image/upload/t_screenshot_big/sc6560.jpg',
+    gameId: 24249,
   },
 ]
 
 // Get a banner by ID
 export function getBannerById(id: string): BannerOption | undefined {
   return BANNER_OPTIONS.find(banner => banner.id === id)
-}
-
-// Get banners by category (for filtering in the future)
-export function getBannersByCategory(category: string): BannerOption[] {
-  // Could implement categorization later
-  return BANNER_OPTIONS
 }
