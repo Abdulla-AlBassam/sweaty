@@ -152,7 +152,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               ) : (
                 <>
                   <Image
-                    source={{ uri: 'https://developers.google.com/identity/images/g-logo.png' }}
+                    source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.svg.png' }}
                     style={styles.googleLogo}
                   />
                   <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
