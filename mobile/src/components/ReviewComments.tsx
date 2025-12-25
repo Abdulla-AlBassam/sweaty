@@ -82,18 +82,19 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
       </TouchableOpacity>
 
       <View style={styles.commentBody}>
-        <View style={styles.commentBubble}>
-          <View style={styles.commentHeader}>
-            <TouchableOpacity onPress={handleProfilePress}>
-              <Text style={styles.username}>
-                {comment.user?.display_name || comment.user?.username || 'User'}
-              </Text>
-            </TouchableOpacity>
-            <Text style={styles.dot}>·</Text>
-            <Text style={styles.timestamp}>{formatRelativeTime(comment.created_at)}</Text>
-          </View>
-          <Text style={styles.commentText}>{comment.content}</Text>
+        {/* Header outside bubble - aligns with avatar top */}
+        <View style={styles.commentHeader}>
+          <TouchableOpacity onPress={handleProfilePress}>
+            <Text style={styles.username}>
+              {comment.user?.display_name || comment.user?.username || 'User'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.dot}>·</Text>
+          <Text style={styles.timestamp}>{formatRelativeTime(comment.created_at)}</Text>
         </View>
+
+        {/* Comment text */}
+        <Text style={styles.commentText}>{comment.content}</Text>
 
         <View style={styles.commentActions}>
           <TouchableOpacity onPress={() => onReply(comment)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -472,16 +473,10 @@ const styles = StyleSheet.create({
   commentBody: {
     flex: 1,
   },
-  commentBubble: {
-    backgroundColor: Colors.background,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-  },
   commentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginBottom: 2,
   },
   username: {
     fontFamily: Fonts.bodySemiBold,
@@ -502,13 +497,13 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 18,
+    marginTop: 2,
   },
   commentActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    marginTop: 2,
-    marginLeft: Spacing.sm,
+    marginTop: 4,
   },
   actionText: {
     fontFamily: Fonts.body,
