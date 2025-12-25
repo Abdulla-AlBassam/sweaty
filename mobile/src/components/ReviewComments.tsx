@@ -7,6 +7,8 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  TextInput,
+  Keyboard,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
@@ -15,7 +17,6 @@ import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { ReviewComment } from '../types'
-import CommentInput from './CommentInput'
 
 interface ReviewCommentsProps {
   gameLogId: string
@@ -70,37 +71,41 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
 
   return (
     <View style={[styles.commentItem, isReply && styles.replyItem]}>
-      <TouchableOpacity onPress={handleProfilePress}>
+      <TouchableOpacity onPress={handleProfilePress} style={styles.avatarContainer}>
         {comment.user?.avatar_url ? (
-          <Image source={{ uri: comment.user.avatar_url }} style={styles.avatar} />
+          <Image source={{ uri: comment.user.avatar_url }} style={[styles.avatar, isReply && styles.replyAvatar]} />
         ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <Ionicons name="person" size={isReply ? 12 : 14} color={Colors.textDim} />
+          <View style={[styles.avatar, styles.avatarPlaceholder, isReply && styles.replyAvatar]}>
+            <Ionicons name="person" size={isReply ? 10 : 12} color={Colors.textDim} />
           </View>
         )}
       </TouchableOpacity>
 
-      <View style={styles.commentContent}>
-        <View style={styles.commentHeader}>
-          <TouchableOpacity onPress={handleProfilePress}>
-            <Text style={styles.username}>
-              {comment.user?.display_name || comment.user?.username || 'User'}
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.timestamp}>{formatRelativeTime(comment.created_at)}</Text>
+      <View style={styles.commentBody}>
+        <View style={styles.commentBubble}>
+          <View style={styles.commentHeader}>
+            <TouchableOpacity onPress={handleProfilePress}>
+              <Text style={styles.username}>
+                {comment.user?.display_name || comment.user?.username || 'User'}
+              </Text>
+            </TouchableOpacity>
+            <Text style={styles.dot}>·</Text>
+            <Text style={styles.timestamp}>{formatRelativeTime(comment.created_at)}</Text>
+          </View>
+          <Text style={styles.commentText}>{comment.content}</Text>
         </View>
 
-        <Text style={styles.commentText}>{comment.content}</Text>
-
         <View style={styles.commentActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={() => onReply(comment)}>
+          <TouchableOpacity onPress={() => onReply(comment)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Text style={styles.actionText}>Reply</Text>
           </TouchableOpacity>
-
           {isOwnComment && (
-            <TouchableOpacity style={styles.actionButton} onPress={handleDelete}>
-              <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
-            </TouchableOpacity>
+            <>
+              <Text style={styles.actionDot}>·</Text>
+              <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
 
@@ -125,12 +130,14 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
 }
 
 export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: ReviewCommentsProps) {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [comments, setComments] = useState<ReviewComment[]>([])
   const [commentCount, setCommentCount] = useState(initialCommentCount)
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [replyingTo, setReplyingTo] = useState<ReviewComment | null>(null)
+  const [inputText, setInputText] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Fetch comments when expanded
   const fetchComments = useCallback(async () => {
@@ -162,7 +169,6 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
       const topLevelComments: ReviewComment[] = []
       const repliesMap: Record<string, ReviewComment[]> = {}
 
-      // Type assertion for the data
       const typedData = data as unknown as Array<{
         id: string
         user_id: string
@@ -215,62 +221,68 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
     }
   }, [isExpanded, fetchComments])
 
-  const handleAddComment = async (content: string) => {
-    if (!user) return
+  const handleSubmit = async () => {
+    if (!user || !inputText.trim() || isSubmitting) return
 
-    const newComment = {
-      user_id: user.id,
-      game_log_id: gameLogId,
-      parent_id: replyingTo?.id || null,
-      content,
-    }
+    setIsSubmitting(true)
+    try {
+      const newComment = {
+        user_id: user.id,
+        game_log_id: gameLogId,
+        parent_id: replyingTo?.id || null,
+        content: inputText.trim(),
+      }
 
-    const { data, error } = await supabase
-      .from('review_comments')
-      .insert(newComment)
-      .select(`
-        id,
-        user_id,
-        game_log_id,
-        parent_id,
-        content,
-        created_at,
-        updated_at
-      `)
-      .single()
+      const { data, error } = await supabase
+        .from('review_comments')
+        .insert(newComment)
+        .select(`
+          id,
+          user_id,
+          game_log_id,
+          parent_id,
+          content,
+          created_at,
+          updated_at
+        `)
+        .single()
 
-    if (error) throw error
+      if (error) throw error
 
-    // Add the new comment to the list with user info
-    const fullComment: ReviewComment = {
-      ...(data as ReviewComment),
-      user: {
-        id: user.id,
-        username: user.user_metadata?.username || 'You',
-        display_name: user.user_metadata?.display_name || null,
-        avatar_url: user.user_metadata?.avatar_url || null,
-      },
-      replies: [],
-    }
+      const fullComment: ReviewComment = {
+        ...(data as ReviewComment),
+        user: {
+          id: user.id,
+          username: profile?.username || 'You',
+          display_name: profile?.display_name || null,
+          avatar_url: profile?.avatar_url || null,
+        },
+        replies: [],
+      }
 
-    if (replyingTo) {
-      // Add as a reply
-      setComments(prev => prev.map(comment => {
-        if (comment.id === replyingTo.id) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), fullComment],
+      if (replyingTo) {
+        setComments(prev => prev.map(comment => {
+          if (comment.id === replyingTo.id) {
+            return {
+              ...comment,
+              replies: [...(comment.replies || []), fullComment],
+            }
           }
-        }
-        return comment
-      }))
-    } else {
-      // Add as top-level comment
-      setComments(prev => [...prev, fullComment])
-    }
+          return comment
+        }))
+      } else {
+        setComments(prev => [...prev, fullComment])
+      }
 
-    setCommentCount(prev => prev + 1)
-    setReplyingTo(null)
+      setCommentCount(prev => prev + 1)
+      setReplyingTo(null)
+      setInputText('')
+      Keyboard.dismiss()
+    } catch (error) {
+      console.error('Failed to add comment:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleDeleteComment = async (commentId: string) => {
@@ -284,16 +296,13 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
       return
     }
 
-    // Remove from state
     setComments(prev => {
-      // Check if it's a top-level comment
       const filtered = prev.filter(c => c.id !== commentId)
       if (filtered.length !== prev.length) {
         setCommentCount(count => count - 1)
         return filtered
       }
 
-      // Check if it's a reply
       return prev.map(comment => ({
         ...comment,
         replies: comment.replies?.filter(r => {
@@ -317,21 +326,16 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
 
   return (
     <View style={styles.container}>
-      {/* Toggle button */}
-      <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded}>
+      {/* Comment toggle button */}
+      <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7}>
         <Ionicons
-          name={isExpanded ? 'chatbubble' : 'chatbubble-outline'}
-          size={18}
-          color={Colors.textMuted}
-        />
-        <Text style={styles.toggleText}>
-          {commentCount > 0 ? `${commentCount} ${commentCount === 1 ? 'comment' : 'comments'}` : 'Comment'}
-        </Text>
-        <Ionicons
-          name={isExpanded ? 'chevron-up' : 'chevron-down'}
+          name="chatbubble-outline"
           size={16}
           color={Colors.textMuted}
         />
+        {commentCount > 0 && (
+          <Text style={styles.countText}>{commentCount}</Text>
+        )}
       </TouchableOpacity>
 
       {/* Expanded comments section */}
@@ -341,29 +345,70 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" color={Colors.accent} />
             </View>
-          ) : comments.length > 0 ? (
-            <View style={styles.commentsList}>
-              {comments.map((comment) => (
-                <CommentItem
-                  key={comment.id}
-                  comment={comment}
-                  onReply={handleReply}
-                  onDelete={handleDeleteComment}
-                  currentUserId={user?.id}
-                />
-              ))}
-            </View>
           ) : (
-            <Text style={styles.noComments}>No comments yet. Be the first!</Text>
-          )}
+            <>
+              {/* Comments list */}
+              {comments.length > 0 ? (
+                <View style={styles.commentsList}>
+                  {comments.map((comment) => (
+                    <CommentItem
+                      key={comment.id}
+                      comment={comment}
+                      onReply={handleReply}
+                      onDelete={handleDeleteComment}
+                      currentUserId={user?.id}
+                    />
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.noComments}>No comments yet</Text>
+              )}
 
-          {/* Comment input */}
-          {user && (
-            <CommentInput
-              onSubmit={handleAddComment}
-              replyingTo={replyingTo?.user?.username}
-              onCancelReply={() => setReplyingTo(null)}
-            />
+              {/* Comment input */}
+              {user && (
+                <View style={styles.inputSection}>
+                  {replyingTo && (
+                    <View style={styles.replyingTo}>
+                      <Text style={styles.replyingToText}>
+                        Replying to <Text style={styles.replyingToName}>@{replyingTo.user?.username}</Text>
+                      </Text>
+                      <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                        <Ionicons name="close" size={14} color={Colors.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <View style={styles.inputRow}>
+                    {profile?.avatar_url ? (
+                      <Image source={{ uri: profile.avatar_url }} style={styles.inputAvatar} />
+                    ) : (
+                      <View style={[styles.inputAvatar, styles.avatarPlaceholder]}>
+                        <Ionicons name="person" size={10} color={Colors.textDim} />
+                      </View>
+                    )}
+                    <TextInput
+                      style={styles.input}
+                      placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
+                      placeholderTextColor={Colors.textDim}
+                      value={inputText}
+                      onChangeText={(text) => setInputText(text.slice(0, 500))}
+                      multiline
+                      maxLength={500}
+                    />
+                    <TouchableOpacity
+                      style={[styles.sendButton, (!inputText.trim() || isSubmitting) && styles.sendButtonDisabled]}
+                      onPress={handleSubmit}
+                      disabled={!inputText.trim() || isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <ActivityIndicator size="small" color={Colors.text} />
+                      ) : (
+                        <Ionicons name="arrow-up" size={16} color={inputText.trim() ? Colors.background : Colors.textDim} />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+            </>
           )}
         </View>
       )}
@@ -373,72 +418,80 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: Spacing.sm,
+    flexShrink: 0,
   },
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.xs,
+    gap: 4,
   },
-  toggleText: {
+  countText: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
   },
   expandedSection: {
-    marginTop: Spacing.sm,
-    backgroundColor: Colors.background,
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
+    marginTop: Spacing.md,
   },
   loadingContainer: {
-    padding: Spacing.lg,
+    padding: Spacing.md,
     alignItems: 'center',
   },
   commentsList: {
-    padding: Spacing.md,
+    gap: Spacing.md,
   },
   noComments: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
     textAlign: 'center',
-    padding: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
   commentItem: {
     flexDirection: 'row',
-    marginBottom: Spacing.md,
+    gap: Spacing.sm,
   },
   replyItem: {
-    marginLeft: Spacing.md,
     marginTop: Spacing.sm,
-    marginBottom: Spacing.sm,
   },
+  avatarContainer: {},
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: Spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+  },
+  replyAvatar: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
   },
   avatarPlaceholder: {
     backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  commentContent: {
+  commentBody: {
     flex: 1,
+  },
+  commentBubble: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
   },
   commentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.xs,
+    gap: 4,
+    marginBottom: 2,
   },
   username: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.text,
+  },
+  dot: {
+    color: Colors.textDim,
+    fontSize: FontSize.xs,
   },
   timestamp: {
     fontFamily: Fonts.body,
@@ -449,28 +502,86 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   commentActions: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.xs,
-  },
-  actionButton: {
-    paddingVertical: Spacing.xs,
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+    marginLeft: Spacing.sm,
   },
   actionText: {
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: Colors.textMuted,
+    color: Colors.textDim,
+  },
+  actionDot: {
+    color: Colors.textDim,
+    fontSize: FontSize.xs,
   },
   deleteText: {
     color: Colors.error,
   },
   repliesContainer: {
-    marginTop: Spacing.sm,
-    borderLeftWidth: 2,
-    borderLeftColor: Colors.border,
-    paddingLeft: Spacing.sm,
+    marginTop: Spacing.xs,
+    marginLeft: Spacing.sm,
+  },
+  inputSection: {
+    marginTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: Spacing.md,
+  },
+  replyingTo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.sm,
+  },
+  replyingToText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+  },
+  replyingToName: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.accent,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  inputAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  input: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    maxHeight: 80,
+  },
+  sendButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: Colors.surfaceLight,
   },
 })
