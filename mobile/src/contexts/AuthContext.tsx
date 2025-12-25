@@ -137,19 +137,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
     try {
-      // Build redirect URL based on environment
-      // In Expo Go, we need to use exp:// scheme
-      // In standalone/dev builds, we use the custom scheme
-      const hostUri = Constants.expoConfig?.hostUri
-      let redirectUrl: string
+      // Check if running in Expo Go (development)
+      const isExpoGo = Constants.appOwnership === 'expo'
 
-      if (hostUri) {
-        // Running in Expo Go - use exp:// scheme
-        redirectUrl = `exp://${hostUri}/--/auth/callback`
-      } else {
-        // Running as standalone app - use custom scheme
-        redirectUrl = 'sweaty://auth/callback'
+      if (isExpoGo) {
+        // Google Sign-In doesn't work reliably in Expo Go
+        // It will work in production/dev builds
+        return { error: new Error('Google Sign-In is only available in production builds. Please use email/password for testing.') }
       }
+
+      // Production/dev build - use custom scheme
+      const redirectUrl = 'sweaty://auth/callback'
 
       console.log('OAuth redirect URL:', redirectUrl)
 
