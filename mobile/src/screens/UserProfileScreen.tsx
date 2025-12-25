@@ -27,6 +27,7 @@ import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
 import XPProgressBar from '../components/XPProgressBar'
 import PremiumBadge from '../components/PremiumBadge'
+import StreakBadge from '../components/StreakBadge'
 import { ProfileSkeleton } from '../components/skeletons'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -44,6 +45,9 @@ interface Profile {
   favorite_games?: number[] | null
   subscription_tier?: string | null
   subscription_expires_at?: string | null
+  current_streak?: number
+  longest_streak?: number
+  last_activity_at?: string | null
 }
 
 interface FavoriteGame {
@@ -405,6 +409,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
               <PremiumBadge size="small" />
             )}
+            <StreakBadge streak={profile.current_streak || 0} size="medium" />
           </View>
           <Text style={styles.username}>@{profile.username}</Text>
 

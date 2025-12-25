@@ -27,6 +27,7 @@ import EditFavoritesModal from '../components/EditFavoritesModal'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
+import StreakBadge from '../components/StreakBadge'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = 150
@@ -273,6 +274,7 @@ export default function ProfileScreen() {
           <View style={styles.nameRow}>
             <Text style={styles.displayName}>{displayName}</Text>
             {isPremium && <PremiumBadge size="small" />}
+            <StreakBadge streak={profile?.current_streak || 0} size="medium" />
           </View>
           <Text style={styles.username}>@{username}</Text>
 

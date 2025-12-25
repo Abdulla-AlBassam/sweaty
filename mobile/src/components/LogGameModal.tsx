@@ -20,6 +20,7 @@ import { getIGDBImageUrl } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getGamerLevel, getSocialLevel } from '../lib/xp'
+import { useStreak } from '../hooks/useStreak'
 
 // XP values for different statuses
 const GAMER_XP_VALUES: Record<string, number> = {
@@ -104,6 +105,7 @@ export default function LogGameModal({
   onSaveSuccess,
 }: LogGameModalProps) {
   const { user } = useAuth()
+  const { recordActivity } = useStreak()
   const [status, setStatus] = useState<string | null>(null)
   const [rating, setRating] = useState<number | null>(null)
   const [platform, setPlatform] = useState<string | null>(null)
@@ -228,6 +230,9 @@ export default function LogGameModal({
 
         if (insertError) throw insertError
       }
+
+      // Record activity for streak tracking
+      await recordActivity()
 
       // Calculate XP earned from this action
       const oldGamerXP = existingLog ? GAMER_XP_VALUES[existingLog.status] || 0 : 0

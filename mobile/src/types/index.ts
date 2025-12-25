@@ -28,6 +28,9 @@ export interface Profile {
   subscription_tier: SubscriptionTier
   subscription_expires_at: string | null
   trial_started_at: string | null
+  current_streak: number
+  longest_streak: number
+  last_activity_at: string | null
   created_at: string
   updated_at: string
 }
