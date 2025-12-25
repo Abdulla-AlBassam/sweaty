@@ -4,6 +4,11 @@ import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
 import Constants from 'expo-constants'
+import * as WebBrowser from 'expo-web-browser'
+import { makeRedirectUri } from 'expo-auth-session'
+
+// Needed for expo-auth-session to work properly
+WebBrowser.maybeCompleteAuthSession()
 
 interface AuthContextType {
   session: Session | null
@@ -137,19 +142,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
     try {
-      // Create redirect URL that works in both Expo Go and standalone builds
-      // In Expo Go: exp://192.168.x.x:8081/--/auth/callback
-      // In standalone: sweaty://auth/callback
-      let redirectUrl: string
-
-      const hostUri = Constants.expoConfig?.hostUri // e.g., "192.168.1.x:8081"
-      if (hostUri) {
-        // Running in Expo Go - use exp:// scheme
-        redirectUrl = `exp://${hostUri}/--/auth/callback`
-      } else {
-        // Standalone build - use app scheme
-        redirectUrl = 'sweaty://auth/callback'
-      }
+      // Create redirect URL using expo-auth-session
+      const redirectUrl = makeRedirectUri({
+        scheme: 'sweaty',
+        path: 'auth/callback',
+      })
 
       console.log('OAuth redirect URL:', redirectUrl)
 
@@ -170,10 +167,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: new Error('No OAuth URL returned') }
       }
 
-      // Open browser for Google login
-      await Linking.openURL(data.url)
+      // Open auth session - this handles the redirect properly
+      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
 
-      // Return pending - the deep link handler will complete the auth
+      if (result.type === 'success' && result.url) {
+        // Extract tokens from the redirect URL
+        const url = result.url
+        const hashIndex = url.indexOf('#')
+        if (hashIndex !== -1) {
+          const params = new URLSearchParams(url.substring(hashIndex + 1))
+          const accessToken = params.get('access_token')
+          const refreshToken = params.get('refresh_token')
+
+          if (accessToken) {
+            console.log('Setting session from OAuth result')
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            })
+          }
+        }
+      } else if (result.type === 'cancel') {
+        return { error: new Error('Login cancelled') }
+      }
+
       return { error: null }
     } catch (err) {
       return { error: err as Error }
