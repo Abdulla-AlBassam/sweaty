@@ -345,63 +345,61 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           />
         }
       >
-        {/* Profile Info - Horizontal Layout */}
+        {/* Profile Info - Vertical Layout */}
         <View style={styles.profileSection}>
-          <View style={styles.profileHeader}>
-            <View style={styles.avatarColumn}>
-              {profile.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Ionicons name="person" size={32} color={Colors.textDim} />
-                </View>
-              )}
-              {/* Follow Button below avatar */}
-              {!isOwnProfile && user && (
-                <TouchableOpacity
-                  style={[styles.followButton, isFollowing && styles.followingButton]}
-                  onPress={handleFollow}
-                  disabled={isFollowLoading}
-                >
-                  {isFollowLoading ? (
-                    <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
-                  ) : (
-                    <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                      {isFollowing ? 'following' : 'follow'}
-                    </Text>
-                  )}
-                </TouchableOpacity>
-              )}
+          {profile.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="person" size={40} color={Colors.textDim} />
             </View>
-            <View style={styles.profileDetails}>
-              <Text style={styles.displayName}>
-                {profile.display_name || profile.username}
+          )}
+
+          <Text style={styles.displayName}>
+            {profile.display_name || profile.username}
+          </Text>
+          <Text style={styles.username}>@{profile.username}</Text>
+
+          <View style={styles.followCounts}>
+            <TouchableOpacity
+              onPress={() => {
+                setFollowersModalType('followers')
+                setFollowersModalVisible(true)
+              }}
+            >
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{followerCount}</Text> followers
               </Text>
-              <Text style={styles.username}>@{profile.username}</Text>
-              <View style={styles.followCounts}>
-                <TouchableOpacity
-                  onPress={() => {
-                    setFollowersModalType('followers')
-                    setFollowersModalVisible(true)
-                  }}
-                >
-                  <Text style={styles.followText}>
-                    <Text style={styles.followNumber}>{followerCount}</Text> followers
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => {
-                    setFollowersModalType('following')
-                    setFollowersModalVisible(true)
-                  }}
-                >
-                  <Text style={styles.followText}>
-                    <Text style={styles.followNumber}>{followingCount}</Text> following
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setFollowersModalType('following')
+                setFollowersModalVisible(true)
+              }}
+            >
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{followingCount}</Text> following
+              </Text>
+            </TouchableOpacity>
           </View>
+
+          {/* Follow Button */}
+          {!isOwnProfile && user && (
+            <TouchableOpacity
+              style={[styles.followButton, isFollowing && styles.followingButton]}
+              onPress={handleFollow}
+              disabled={isFollowLoading}
+            >
+              {isFollowLoading ? (
+                <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
+              ) : (
+                <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+                  {isFollowing ? 'following' : 'follow'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          )}
+
           {profile.bio && (
             <Text style={styles.bio}>{profile.bio}</Text>
           )}
@@ -598,29 +596,19 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   profileSection: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  avatarColumn: {
-    alignItems: 'center',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: Spacing.md,
   },
   avatarPlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileDetails: {
-    flex: 1,
-    marginLeft: Spacing.lg,
     justifyContent: 'center',
   },
   displayName: {
@@ -629,14 +617,14 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   username: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
   followCounts: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.xs,
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
   },
   followText: {
     fontSize: FontSize.sm,
@@ -649,16 +637,17 @@ const styles = StyleSheet.create({
   bio: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
+    textAlign: 'center',
     marginTop: Spacing.md,
   },
   followButton: {
     backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
-    marginTop: Spacing.sm,
-    minWidth: 80,
+    marginTop: Spacing.md,
+    minWidth: 120,
   },
   followingButton: {
     backgroundColor: 'transparent',
@@ -667,7 +656,7 @@ const styles = StyleSheet.create({
   },
   followButtonText: {
     color: Colors.background,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     fontWeight: '600',
   },
   followingButtonText: {
