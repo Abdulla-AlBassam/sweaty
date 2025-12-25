@@ -3,7 +3,7 @@ import { Linking } from 'react-native'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
-import * as ExpoLinking from 'expo-linking'
+import Constants from 'expo-constants'
 
 interface AuthContextType {
   session: Session | null
@@ -137,7 +137,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
     try {
       // Create redirect URL that works in both Expo Go and standalone builds
-      const redirectUrl = ExpoLinking.createURL('auth/callback')
+      // In Expo Go: exp://192.168.x.x:8081/--/auth/callback
+      // In standalone: sweaty://auth/callback
+      let redirectUrl: string
+
+      const hostUri = Constants.expoConfig?.hostUri // e.g., "192.168.1.x:8081"
+      if (hostUri) {
+        // Running in Expo Go - use exp:// scheme
+        redirectUrl = `exp://${hostUri}/--/auth/callback`
+      } else {
+        // Standalone build - use app scheme
+        redirectUrl = 'sweaty://auth/callback'
+      }
+
       console.log('OAuth redirect URL:', redirectUrl)
 
       // Start OAuth flow
