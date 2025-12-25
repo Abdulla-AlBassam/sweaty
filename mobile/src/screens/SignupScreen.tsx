@@ -105,7 +105,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
         <View style={styles.content}>
           {/* Logo */}
           <Text style={styles.logo}>sweaty</Text>
-          <Text style={styles.tagline}>create your account</Text>
+          <Text style={styles.tagline}>Create your account</Text>
 
           {/* Error Message */}
           {error && (
@@ -118,7 +118,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="email"
+              placeholder="Email"
               placeholderTextColor={Colors.textDim}
               value={email}
               onChangeText={setEmail}
@@ -129,7 +129,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="username"
+              placeholder="Username"
               placeholderTextColor={Colors.textDim}
               value={username}
               onChangeText={setUsername}
@@ -139,7 +139,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="password"
+              placeholder="Password"
               placeholderTextColor={Colors.textDim}
               value={password}
               onChangeText={setPassword}
@@ -149,7 +149,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="confirm password"
+              placeholder="Confirm password"
               placeholderTextColor={Colors.textDim}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -165,16 +165,16 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
               {isLoading ? (
                 <ActivityIndicator color={Colors.background} />
               ) : (
-                <Text style={styles.buttonText}>create account</Text>
+                <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Login Link */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>already have an account? </Text>
+            <Text style={styles.footerText}>Already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>log in</Text>
+              <Text style={styles.footerLink}>Log in</Text>
             </TouchableOpacity>
           </View>
         </View>

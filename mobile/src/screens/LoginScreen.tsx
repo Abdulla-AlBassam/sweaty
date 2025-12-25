@@ -89,7 +89,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         <View style={styles.content}>
           {/* Logo */}
           <Text style={styles.logo}>sweaty</Text>
-          <Text style={styles.tagline}>track your gaming journey</Text>
+          <Text style={styles.tagline}>Track your gaming journey</Text>
 
           {/* Error Message */}
           {error && (
@@ -102,7 +102,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="email"
+              placeholder="Email"
               placeholderTextColor={Colors.textDim}
               value={email}
               onChangeText={setEmail}
@@ -113,7 +113,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="password"
+              placeholder="Password"
               placeholderTextColor={Colors.textDim}
               value={password}
               onChangeText={setPassword}
@@ -129,14 +129,14 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               {isLoading ? (
                 <ActivityIndicator color={Colors.background} />
               ) : (
-                <Text style={styles.buttonText}>log in</Text>
+                <Text style={styles.buttonText}>LOG IN</Text>
               )}
             </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>Or</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -151,7 +151,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               ) : (
                 <>
                   <Text style={styles.googleIcon}>G</Text>
-                  <Text style={styles.googleButtonText}>continue with google</Text>
+                  <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -159,9 +159,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
           {/* Sign Up Link */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>don't have an account? </Text>
+            <Text style={styles.footerText}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.footerLink}>sign up</Text>
+              <Text style={styles.footerLink}>Sign up</Text>
             </TouchableOpacity>
           </View>
         </View>

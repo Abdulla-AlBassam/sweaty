@@ -249,7 +249,7 @@ export default function SettingsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>settings</Text>
+        <Text style={styles.headerTitle}>SETTINGS</Text>
         <TouchableOpacity
           onPress={handleSave}
           disabled={!hasChanges || isSaving || !!usernameError}
@@ -259,7 +259,7 @@ export default function SettingsScreen() {
             <ActivityIndicator size="small" color={Colors.accent} />
           ) : (
             <Text style={[styles.saveText, (!hasChanges || !!usernameError) && styles.saveTextDisabled]}>
-              save
+              SAVE
             </Text>
           )}
         </TouchableOpacity>
@@ -288,7 +288,7 @@ export default function SettingsScreen() {
                 <Ionicons name="camera" size={16} color={Colors.text} />
               </View>
             </TouchableOpacity>
-            <Text style={styles.changeAvatarText}>change avatar</Text>
+            <Text style={styles.changeAvatarText}>Change avatar</Text>
           </View>
 
           {/* Banner Section */}
@@ -343,7 +343,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>profile</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>display name</Text>
+              <Text style={styles.inputLabel}>Display name</Text>
               <TextInput
                 style={styles.input}
                 value={displayName}
@@ -355,7 +355,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>username</Text>
+              <Text style={styles.inputLabel}>Username</Text>
               <View style={styles.usernameInputContainer}>
                 <Text style={styles.usernamePrefix}>@</Text>
                 <TextInput
@@ -375,7 +375,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>bio</Text>
+              <Text style={styles.inputLabel}>Bio</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={bio}
@@ -395,7 +395,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>account</Text>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>email</Text>
+              <Text style={styles.infoLabel}>Email</Text>
               <Text style={styles.infoValue}>{user?.email}</Text>
             </View>
           </View>
@@ -404,14 +404,14 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-              <Text style={styles.signOutText}>sign out</Text>
+              <Text style={styles.signOutText}>SIGN OUT</Text>
             </TouchableOpacity>
           </View>
 
           {/* App Info */}
           <View style={styles.appInfo}>
             <Text style={styles.appName}>sweaty</Text>
-            <Text style={styles.appVersion}>version 1.0.0</Text>
+            <Text style={styles.appVersion}>Version 1.0.0</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
