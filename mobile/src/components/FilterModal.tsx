@@ -69,9 +69,9 @@ const FILTER_OPTIONS: Record<string, string[]> = {
 }
 
 const FILTER_TITLES: Record<string, string> = {
-  genre: 'select genre',
-  year: 'select year',
-  platform: 'select platform',
+  genre: 'Select Genre',
+  year: 'Select Year',
+  platform: 'Select Platform',
 }
 
 export default function FilterModal({
@@ -174,14 +174,20 @@ export default function FilterModal({
                   style={styles.clearButton}
                   onPress={handleClear}
                 >
-                  <Text style={styles.clearButtonText}>clear</Text>
+                  <Text style={styles.clearButtonText}>Clear</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.applyButton}
+                  style={[
+                    styles.applyButton,
+                    localSelected.length > 0 && styles.applyButtonActive,
+                  ]}
                   onPress={handleApply}
                 >
-                  <Text style={styles.applyButtonText}>
-                    apply{localSelected.length > 0 ? ` (${localSelected.length})` : ''}
+                  <Text style={[
+                    styles.applyButtonText,
+                    localSelected.length > 0 && styles.applyButtonTextActive,
+                  ]}>
+                    Apply{localSelected.length > 0 ? ` (${localSelected.length})` : ''}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -253,7 +259,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   optionTextSelected: {
-    color: Colors.accentLight,
+    color: Colors.text,
     fontWeight: '600',
   },
   footer: {
@@ -280,12 +286,18 @@ const styles = StyleSheet.create({
     flex: 2,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
+  },
+  applyButtonActive: {
+    backgroundColor: Colors.surfaceLight,
   },
   applyButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.background,
+    color: Colors.textMuted,
+  },
+  applyButtonTextActive: {
+    color: Colors.text,
   },
 })

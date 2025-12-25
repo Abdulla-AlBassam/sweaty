@@ -473,7 +473,7 @@ export default function SearchScreen() {
                     onPress={() => removeFilter('genre', genre)}
                   >
                     <Text style={styles.activeFilterPillText}>{genre}</Text>
-                    <Ionicons name="close" size={14} color={Colors.background} />
+                    <Ionicons name="close" size={14} color={Colors.textMuted} />
                   </TouchableOpacity>
                 ))}
                 {selectedYears.map((year) => (
@@ -483,7 +483,7 @@ export default function SearchScreen() {
                     onPress={() => removeFilter('year', year)}
                   >
                     <Text style={styles.activeFilterPillText}>{year}</Text>
-                    <Ionicons name="close" size={14} color={Colors.background} />
+                    <Ionicons name="close" size={14} color={Colors.textMuted} />
                   </TouchableOpacity>
                 ))}
                 {selectedPlatforms.map((platform) => (
@@ -493,7 +493,7 @@ export default function SearchScreen() {
                     onPress={() => removeFilter('platform', platform)}
                   >
                     <Text style={styles.activeFilterPillText}>{platform}</Text>
-                    <Ionicons name="close" size={14} color={Colors.background} />
+                    <Ionicons name="close" size={14} color={Colors.textMuted} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -501,7 +501,7 @@ export default function SearchScreen() {
               {/* View Results Button */}
               <TouchableOpacity style={styles.viewResultsButton} onPress={viewFilterResults}>
                 <Text style={styles.viewResultsButtonText}>View Results</Text>
-                <Ionicons name="arrow-forward" size={18} color={Colors.background} />
+                <Ionicons name="arrow-forward" size={18} color={Colors.text} />
               </TouchableOpacity>
             </View>
           )}
@@ -698,7 +698,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterCountBadge: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.textMuted,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -730,7 +730,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   clearAllText: {
-    color: Colors.accentLight,
+    color: Colors.textMuted,
     fontSize: FontSize.sm,
     fontWeight: '500',
   },
@@ -740,23 +740,25 @@ const styles = StyleSheet.create({
   activeFilterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    backgroundColor: Colors.accent,
-    borderRadius: 16,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   activeFilterPillText: {
     fontSize: FontSize.sm,
-    color: Colors.background,
-    fontWeight: '600',
+    color: Colors.text,
+    fontWeight: '500',
   },
   viewResultsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surfaceLight,
     paddingVertical: 14,
     borderRadius: BorderRadius.md,
     marginTop: 16,
@@ -764,7 +766,7 @@ const styles = StyleSheet.create({
   viewResultsButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: Colors.background,
+    color: Colors.text,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
