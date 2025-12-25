@@ -682,11 +682,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   recentlyLoggedCard: {
-    width: 80,
+    width: 105,
   },
   recentlyLoggedCover: {
-    width: 80,
-    height: 107,
+    width: 105,
+    aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
   },
