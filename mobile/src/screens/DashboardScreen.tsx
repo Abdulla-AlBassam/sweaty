@@ -135,8 +135,8 @@ export default function DashboardScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
-                <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
                 <Text style={styles.sectionTitle}>Currently Playing</Text>
+                <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
               </View>
             </View>
             <ScrollView
