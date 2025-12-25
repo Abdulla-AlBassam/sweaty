@@ -16,10 +16,10 @@ export const Fonts = {
 // Font files to load (must match filenames in assets/fonts/)
 export const FontAssets = {
   'BBHBogle': require('../../assets/fonts/BBHBogle-Regular.ttf'),
-  'Geist-Regular': require('../../assets/fonts/Geist-Regular.otf'),
-  'Geist-Medium': require('../../assets/fonts/Geist-Medium.otf'),
-  'Geist-SemiBold': require('../../assets/fonts/Geist-SemiBold.otf'),
-  'Geist-Bold': require('../../assets/fonts/Geist-Bold.otf'),
+  'Geist-Regular': require('../../assets/fonts/Geist-Regular.ttf'),
+  'Geist-Medium': require('../../assets/fonts/Geist-Medium.ttf'),
+  'Geist-SemiBold': require('../../assets/fonts/Geist-SemiBold.ttf'),
+  'Geist-Bold': require('../../assets/fonts/Geist-Bold.ttf'),
 }
 
 // Typography presets for consistent styling
