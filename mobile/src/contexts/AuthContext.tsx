@@ -75,8 +75,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const url = event.url
       console.log('Deep link received:', url)
 
-      // Check if this is an auth callback (works for both Expo Go and standalone)
-      if (url.includes('auth/callback')) {
+      // Check if this is an auth callback - look for auth/callback path OR access_token in URL
+      // (sometimes the path gets stripped but tokens are still in the hash)
+      if (url.includes('auth/callback') || url.includes('access_token')) {
         // Extract tokens from URL hash
         const hashIndex = url.indexOf('#')
         if (hashIndex !== -1) {
