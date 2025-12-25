@@ -273,7 +273,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statSeparator} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{avgRating === '—' ? '—' : `★ ${avgRating}`}</Text>
+            <Text style={styles.statValue}>{avgRating}</Text>
             <Text style={styles.statLabel}>avg rating</Text>
           </View>
         </View>

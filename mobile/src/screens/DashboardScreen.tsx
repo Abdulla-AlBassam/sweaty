@@ -167,7 +167,7 @@ export default function DashboardScreen() {
         {/* Currently Playing */}
         {currentlyPlaying.length > 0 && (
           <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>currently playing</Text>
+            <Text style={styles.discoverySectionTitle}>Currently Playing</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -201,7 +201,7 @@ export default function DashboardScreen() {
 
         {/* Trending Games from IGDB (global trending) */}
         <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>trending right now</Text>
+          <Text style={styles.discoverySectionTitle}>Trending Right Now</Text>
           <HorizontalGameList
             games={trendingGames}
             onGamePress={(game) => handleGamePress(game.id)}
@@ -211,7 +211,7 @@ export default function DashboardScreen() {
 
         {/* Community Popular Games (what Sweaty users like) */}
         <View style={styles.discoverySection}>
-          <Text style={styles.discoverySectionTitle}>popular in community</Text>
+          <Text style={styles.discoverySectionTitle}>Popular in Community</Text>
           <HorizontalGameList
             games={communityGames}
             onGamePress={(game) => handleGamePress(game.id)}
@@ -222,7 +222,7 @@ export default function DashboardScreen() {
         {/* What Your Friends Are Playing */}
         {friendsPlaying.length > 0 && (
           <View style={styles.discoverySection}>
-            <Text style={styles.discoverySectionTitle}>what your friends are playing</Text>
+            <Text style={styles.discoverySectionTitle}>What Your Friends Are Playing</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}

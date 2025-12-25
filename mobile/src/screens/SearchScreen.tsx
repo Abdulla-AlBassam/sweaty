@@ -320,7 +320,7 @@ export default function SearchScreen() {
           {/* Users Section */}
           {userResults.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>users</Text>
+              <Text style={styles.sectionTitle}>Users</Text>
               {userResults.map((userProfile) => (
                 <TouchableOpacity
                   key={userProfile.id}
@@ -351,7 +351,7 @@ export default function SearchScreen() {
           {/* Games Section */}
           {gameResults.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>games</Text>
+              <Text style={styles.sectionTitle}>Games</Text>
               <View style={styles.gamesGrid}>
                 {gameResults.map((game) => (
                   <View key={game.id} style={styles.gridItem}>
@@ -364,7 +364,7 @@ export default function SearchScreen() {
         </ScrollView>
       ) : query.length >= 2 ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>no results found</Text>
+          <Text style={styles.emptyText}>No results found</Text>
         </View>
       ) : (
         <ScrollView
@@ -376,9 +376,9 @@ export default function SearchScreen() {
           {recentSearches.length > 0 && (
             <View style={styles.recentSection}>
               <View style={styles.sectionHeaderRow}>
-                <Text style={styles.recentSectionTitle}>recent searches</Text>
+                <Text style={styles.recentSectionTitle}>Recent Searches</Text>
                 <TouchableOpacity onPress={clearRecentSearches}>
-                  <Text style={styles.clearText}>clear</Text>
+                  <Text style={styles.clearText}>Clear</Text>
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -409,10 +409,10 @@ export default function SearchScreen() {
 
           {/* Browse by Section */}
           <View style={styles.browseSection}>
-            <Text style={styles.browseSectionTitle}>browse by</Text>
+            <Text style={styles.browseSectionTitle}>Browse By</Text>
 
             <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('genre')}>
-              <Text style={styles.browseRowText}>genre</Text>
+              <Text style={styles.browseRowText}>Genre</Text>
               <View style={styles.browseRowRight}>
                 {getFilterCount('genre') > 0 && (
                   <View style={styles.filterCountBadge}>
@@ -426,7 +426,7 @@ export default function SearchScreen() {
             <View style={styles.browseRowDivider} />
 
             <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('year')}>
-              <Text style={styles.browseRowText}>release date</Text>
+              <Text style={styles.browseRowText}>Release Date</Text>
               <View style={styles.browseRowRight}>
                 {getFilterCount('year') > 0 && (
                   <View style={styles.filterCountBadge}>
@@ -440,7 +440,7 @@ export default function SearchScreen() {
             <View style={styles.browseRowDivider} />
 
             <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('platform')}>
-              <Text style={styles.browseRowText}>platform</Text>
+              <Text style={styles.browseRowText}>Platform</Text>
               <View style={styles.browseRowRight}>
                 {getFilterCount('platform') > 0 && (
                   <View style={styles.filterCountBadge}>
@@ -456,9 +456,9 @@ export default function SearchScreen() {
           {hasActiveFilters && (
             <View style={styles.activeFiltersSection}>
               <View style={styles.activeFiltersHeader}>
-                <Text style={styles.activeFiltersTitle}>active filters</Text>
+                <Text style={styles.activeFiltersTitle}>Active Filters</Text>
                 <TouchableOpacity onPress={clearAllFilters}>
-                  <Text style={styles.clearAllText}>clear all</Text>
+                  <Text style={styles.clearAllText}>Clear All</Text>
                 </TouchableOpacity>
               </View>
               <ScrollView
@@ -500,7 +500,7 @@ export default function SearchScreen() {
 
               {/* View Results Button */}
               <TouchableOpacity style={styles.viewResultsButton} onPress={viewFilterResults}>
-                <Text style={styles.viewResultsButtonText}>view results</Text>
+                <Text style={styles.viewResultsButtonText}>View Results</Text>
                 <Ionicons name="arrow-forward" size={18} color={Colors.background} />
               </TouchableOpacity>
             </View>

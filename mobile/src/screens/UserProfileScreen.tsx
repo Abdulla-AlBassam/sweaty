@@ -423,7 +423,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           </View>
           <View style={styles.statSeparator} />
           <View style={styles.stat}>
-            <Text style={styles.statValue}>{stats.averageRating ? `★ ${stats.averageRating}` : '—'}</Text>
+            <Text style={styles.statValue}>{stats.averageRating ? stats.averageRating : '—'}</Text>
             <Text style={styles.statLabel}>avg rating</Text>
           </View>
         </View>
