@@ -186,6 +186,8 @@ sweaty/
 │   │   │   │   │   └── [id]/route.ts    # GET /api/games/123
 │   │   │   │   ├── users/
 │   │   │   │   │   └── search/route.ts  # GET /api/users/search?q=john
+│   │   │   │   ├── admin/
+│   │   │   │   │   └── cache-curated-games/route.ts  # POST - bulk cache curated list games
 │   │   │   │   └── auth/
 │   │   │   │       └── lookup-email/route.ts  # POST - get email from username
 │   │   │   ├── dashboard/page.tsx       # Protected dashboard with stats
@@ -240,8 +242,8 @@ sweaty/
 ├── mobile/                          # React Native/Expo mobile app
 │   ├── src/
 │   │   ├── screens/                 # Screen components
-│   │   │   ├── HomeScreen.tsx       # Dashboard/home
-│   │   │   ├── SearchScreen.tsx     # Search + curated lists discover
+│   │   │   ├── DashboardScreen.tsx  # Home screen with curated lists
+│   │   │   ├── SearchScreen.tsx     # Search + dynamic discovery lists
 │   │   │   ├── ProfileScreen.tsx    # User's own profile
 │   │   │   ├── UserProfileScreen.tsx # Other users' profiles
 │   │   │   ├── GameDetailScreen.tsx # Game detail page
@@ -725,3 +727,51 @@ npx expo start
 - **Curated lists** require games to exist in `games_cache` first - the population script handles this
 - **IGDB rate limiting** - the population script includes 200ms delays between requests
 - **Some games may not be found** if they have different names in IGDB or don't exist yet
+
+### Session 8 (Dec 25, 2024)
+**Curated Lists Bug Fixes:**
+- Fixed duplicate key React errors in CuratedListRow and CuratedListDetailScreen
+  - Changed key from `game.id` to `${game.id}-${index}` (some lists had duplicate game IDs)
+- Fixed game cover images not loading
+  - Changed `'cover_big'` to `'coverBig'` (camelCase to match IGDB_IMAGE_SIZES constant)
+
+**Admin API for Bulk Caching:**
+- Created `/api/admin/cache-curated-games/route.ts` endpoint
+- Fetches all game IDs from curated_lists table
+- Batch fetches missing games from IGDB API
+- Inserts games into games_cache table
+- Requires `SUPABASE_SERVICE_ROLE_KEY` environment variable (bypasses RLS)
+- Successfully cached 368 games for curated lists
+
+**Swapped Discovery Lists Between Screens:**
+- Moved 10 curated lists FROM SearchScreen TO DashboardScreen (Home)
+- Moved 3 dynamic lists FROM DashboardScreen TO SearchScreen:
+  - Trending Right Now (from IGDB popular-games API)
+  - Popular in Community (top-rated games in games_cache)
+  - What Your Friends Are Playing (from useFriendsPlaying hook)
+- Added pull-to-refresh on SearchScreen for discovery lists
+- DashboardScreen now shows: Welcome → Currently Playing → Curated Lists
+- SearchScreen now shows: Search → Recent Searches → Discover (3 dynamic lists)
+
+**UI Polish - Currently Playing Section:**
+- Added animated pulsing green dot after "Currently Playing" title
+  - Uses `Animated.loop` with opacity animation (0.4 to 1.0, 800ms)
+  - Small 8px green circle using app accent color
+- Fixed text alignment to match CuratedListRow styling:
+  - Section header uses `paddingHorizontal: Spacing.lg`
+  - Title uses `FontSize.lg` (18px)
+  - Margin bottom uses `Spacing.md` (16px)
+- Updated game card sizes to 105x140 (matching curated lists)
+- Updated gap spacing to `Spacing.sm` (8px, matching curated lists)
+
+**Files Modified:**
+- `mobile/src/screens/DashboardScreen.tsx` - Curated lists + pulsing animation
+- `mobile/src/screens/SearchScreen.tsx` - Dynamic discovery lists
+- `mobile/src/components/CuratedListRow.tsx` - Fixed keys and image URLs
+- `mobile/src/screens/CuratedListDetailScreen.tsx` - Fixed keys and image URLs
+
+**New Files:**
+- `web/src/app/api/admin/cache-curated-games/route.ts` - Admin bulk cache endpoint
+
+**New Environment Variables:**
+- `SUPABASE_SERVICE_ROLE_KEY` - Required for admin API (add to Vercel)

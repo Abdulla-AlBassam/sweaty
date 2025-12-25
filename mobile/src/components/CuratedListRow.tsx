@@ -56,16 +56,16 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {list.games.slice(0, 15).map((game) => (
+        {list.games.slice(0, 15).map((game, index) => (
           <TouchableOpacity
-            key={game.id}
+            key={`${game.id}-${index}`}
             style={styles.gameCard}
             onPress={() => handleGamePress(game.id)}
             activeOpacity={0.7}
           >
             {game.cover_url ? (
               <Image
-                source={{ uri: getIGDBImageUrl(game.cover_url, 'cover_big') }}
+                source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') }}
                 style={styles.cover}
               />
             ) : (
