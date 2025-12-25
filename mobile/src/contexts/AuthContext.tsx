@@ -1,12 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { Linking } from 'react-native'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
-import * as AuthSession from 'expo-auth-session'
-import * as WebBrowser from 'expo-web-browser'
-
-// Required for web browser auth flow
-WebBrowser.maybeCompleteAuthSession()
 
 interface AuthContextType {
   session: Session | null
@@ -73,7 +69,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    // Handle deep link for OAuth callback
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url
+      if (url.startsWith('sweaty://auth/callback')) {
+        // Extract tokens from URL hash
+        const hashIndex = url.indexOf('#')
+        if (hashIndex !== -1) {
+          const params = new URLSearchParams(url.substring(hashIndex + 1))
+          const accessToken = params.get('access_token')
+          const refreshToken = params.get('refresh_token')
+
+          if (accessToken) {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            })
+          }
+        }
+      }
+    }
+
+    // Check if app was opened via deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url })
+    })
+
+    // Listen for deep links while app is open
+    const linkingSubscription = Linking.addEventListener('url', handleDeepLink)
+
+    return () => {
+      subscription.unsubscribe()
+      linkingSubscription.remove()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
@@ -104,10 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
     try {
       // Create redirect URL for the app
-      const redirectUrl = AuthSession.makeRedirectUri({
-        scheme: 'sweaty',
-        path: 'auth/callback',
-      })
+      const redirectUrl = 'sweaty://auth/callback'
 
       // Start OAuth flow
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -127,53 +152,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Open browser for Google login
-      const result = await WebBrowser.openAuthSessionAsync(
-        data.url,
-        redirectUrl,
-        { showInRecents: true }
-      )
+      await Linking.openURL(data.url)
 
-      if (result.type === 'success' && result.url) {
-        // Extract tokens from URL
-        const url = new URL(result.url)
-        const params = new URLSearchParams(url.hash.substring(1))
-        const accessToken = params.get('access_token')
-        const refreshToken = params.get('refresh_token')
-
-        if (accessToken) {
-          // Set the session
-          const { error: sessionError } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken || '',
-          })
-
-          if (sessionError) {
-            return { error: sessionError as Error }
-          }
-
-          // Check if profile exists (new Google user may need to set username)
-          const { data: { user: currentUser } } = await supabase.auth.getUser()
-          if (currentUser) {
-            const { data: existingProfile } = await supabase
-              .from('profiles')
-              .select('username')
-              .eq('id', currentUser.id)
-              .single()
-
-            if (!existingProfile?.username) {
-              return { error: null, needsUsername: true }
-            }
-          }
-
-          return { error: null }
-        }
-      }
-
-      if (result.type === 'cancel') {
-        return { error: new Error('Login cancelled') }
-      }
-
-      return { error: new Error('Authentication failed') }
+      // Return pending - the deep link handler will complete the auth
+      return { error: null }
     } catch (err) {
       return { error: err as Error }
     }
