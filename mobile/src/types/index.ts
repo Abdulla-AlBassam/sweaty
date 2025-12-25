@@ -106,3 +106,22 @@ export interface SearchResult {
   games: Game[]
   users: Profile[]
 }
+
+// Curated list types
+export interface CuratedList {
+  id: string
+  slug: string
+  title: string
+  description: string | null
+  game_ids: number[]
+  display_order: number
+  is_active: boolean
+}
+
+export interface CuratedListWithGames extends CuratedList {
+  games: Array<{
+    id: number
+    name: string
+    cover_url: string | null
+  }>
+}

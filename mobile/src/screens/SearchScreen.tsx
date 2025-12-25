@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Keyboard,
   Image,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -17,8 +18,9 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
+import { useCuratedLists } from '../hooks/useSupabase'
 import GameCard from '../components/GameCard'
-import FilterModal from '../components/FilterModal'
+import CuratedListRow from '../components/CuratedListRow'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 
@@ -39,28 +41,16 @@ interface SearchUser {
 const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
-type FilterType = 'genre' | 'year' | 'platform'
-
 export default function SearchScreen() {
   const navigation = useNavigation()
   const { user } = useAuth()
+  const { lists: curatedLists, isLoading: listsLoading } = useCuratedLists()
   const [query, setQuery] = useState('')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])
   const [userResults, setUserResults] = useState<SearchUser[]>([])
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Filter modal state
-  const [filterModalVisible, setFilterModalVisible] = useState(false)
-  const [activeFilterType, setActiveFilterType] = useState<FilterType>('genre')
-
-  // Selected filters state
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([])
-  const [selectedYears, setSelectedYears] = useState<string[]>([])
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([])
-
-  const hasActiveFilters = selectedGenres.length > 0 || selectedYears.length > 0 || selectedPlatforms.length > 0
 
   // Load recent searches on mount
   useEffect(() => {
@@ -189,78 +179,6 @@ export default function SearchScreen() {
   const clearRecentSearches = async () => {
     setRecentSearches([])
     await AsyncStorage.removeItem(RECENT_SEARCHES_KEY)
-  }
-
-  // Filter modal handlers
-  const openFilterModal = (filterType: FilterType) => {
-    setActiveFilterType(filterType)
-    setFilterModalVisible(true)
-  }
-
-  const handleFilterApply = (values: string[]) => {
-    switch (activeFilterType) {
-      case 'genre':
-        setSelectedGenres(values)
-        break
-      case 'year':
-        setSelectedYears(values)
-        break
-      case 'platform':
-        setSelectedPlatforms(values)
-        break
-    }
-  }
-
-  const getSelectedValuesForType = (filterType: FilterType): string[] => {
-    switch (filterType) {
-      case 'genre':
-        return selectedGenres
-      case 'year':
-        return selectedYears
-      case 'platform':
-        return selectedPlatforms
-    }
-  }
-
-  // Remove individual filter
-  const removeFilter = (type: FilterType, value: string) => {
-    switch (type) {
-      case 'genre':
-        setSelectedGenres(prev => prev.filter(v => v !== value))
-        break
-      case 'year':
-        setSelectedYears(prev => prev.filter(v => v !== value))
-        break
-      case 'platform':
-        setSelectedPlatforms(prev => prev.filter(v => v !== value))
-        break
-    }
-  }
-
-  // Clear all filters
-  const clearAllFilters = () => {
-    setSelectedGenres([])
-    setSelectedYears([])
-    setSelectedPlatforms([])
-  }
-
-  // Navigate to filter results
-  const viewFilterResults = () => {
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'FilterResults',
-        params: {
-          genres: selectedGenres,
-          years: selectedYears,
-          platforms: selectedPlatforms,
-        },
-      })
-    )
-  }
-
-  // Get count for filter type (to show in browse row)
-  const getFilterCount = (type: FilterType): number => {
-    return getSelectedValuesForType(type).length
   }
 
   const hasResults = userResults.length > 0 || gameResults.length > 0
@@ -407,115 +325,24 @@ export default function SearchScreen() {
             </View>
           )}
 
-          {/* Browse by Section */}
-          <View style={styles.browseSection}>
-            <Text style={styles.browseSectionTitle}>Browse By</Text>
+          {/* Discover Section - Curated Lists */}
+          <View style={styles.discoverSection}>
+            <Text style={styles.discoverSectionTitle}>Discover</Text>
 
-            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('genre')}>
-              <Text style={styles.browseRowText}>Genre</Text>
-              <View style={styles.browseRowRight}>
-                {getFilterCount('genre') > 0 && (
-                  <View style={styles.filterCountBadge}>
-                    <Text style={styles.filterCountText}>{getFilterCount('genre')}</Text>
-                  </View>
-                )}
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+            {listsLoading ? (
+              <View style={styles.listsLoading}>
+                <ActivityIndicator size="small" color={Colors.accent} />
               </View>
-            </TouchableOpacity>
-
-            <View style={styles.browseRowDivider} />
-
-            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('year')}>
-              <Text style={styles.browseRowText}>Release Date</Text>
-              <View style={styles.browseRowRight}>
-                {getFilterCount('year') > 0 && (
-                  <View style={styles.filterCountBadge}>
-                    <Text style={styles.filterCountText}>{getFilterCount('year')}</Text>
-                  </View>
-                )}
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.browseRowDivider} />
-
-            <TouchableOpacity style={styles.browseRow} onPress={() => openFilterModal('platform')}>
-              <Text style={styles.browseRowText}>Platform</Text>
-              <View style={styles.browseRowRight}>
-                {getFilterCount('platform') > 0 && (
-                  <View style={styles.filterCountBadge}>
-                    <Text style={styles.filterCountText}>{getFilterCount('platform')}</Text>
-                  </View>
-                )}
-                <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
-              </View>
-            </TouchableOpacity>
+            ) : curatedLists.length > 0 ? (
+              curatedLists.map((list) => (
+                <CuratedListRow key={list.id} list={list} />
+              ))
+            ) : (
+              <Text style={styles.emptyListsText}>No curated lists available</Text>
+            )}
           </View>
-
-          {/* Active Filters Display */}
-          {hasActiveFilters && (
-            <View style={styles.activeFiltersSection}>
-              <View style={styles.activeFiltersHeader}>
-                <Text style={styles.activeFiltersTitle}>Active Filters</Text>
-                <TouchableOpacity onPress={clearAllFilters}>
-                  <Text style={styles.clearAllText}>Clear All</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.activeFiltersList}
-              >
-                {selectedGenres.map((genre) => (
-                  <TouchableOpacity
-                    key={`genre-${genre}`}
-                    style={styles.activeFilterPill}
-                    onPress={() => removeFilter('genre', genre)}
-                  >
-                    <Text style={styles.activeFilterPillText}>{genre}</Text>
-                    <Ionicons name="close" size={14} color={Colors.textMuted} />
-                  </TouchableOpacity>
-                ))}
-                {selectedYears.map((year) => (
-                  <TouchableOpacity
-                    key={`year-${year}`}
-                    style={styles.activeFilterPill}
-                    onPress={() => removeFilter('year', year)}
-                  >
-                    <Text style={styles.activeFilterPillText}>{year}</Text>
-                    <Ionicons name="close" size={14} color={Colors.textMuted} />
-                  </TouchableOpacity>
-                ))}
-                {selectedPlatforms.map((platform) => (
-                  <TouchableOpacity
-                    key={`platform-${platform}`}
-                    style={styles.activeFilterPill}
-                    onPress={() => removeFilter('platform', platform)}
-                  >
-                    <Text style={styles.activeFilterPillText}>{platform}</Text>
-                    <Ionicons name="close" size={14} color={Colors.textMuted} />
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-
-              {/* View Results Button */}
-              <TouchableOpacity style={styles.viewResultsButton} onPress={viewFilterResults}>
-                <Text style={styles.viewResultsButtonText}>View Results</Text>
-                <Ionicons name="arrow-forward" size={18} color={Colors.text} />
-              </TouchableOpacity>
-            </View>
-          )}
         </ScrollView>
       )}
-
-      {/* Filter Modal */}
-      <FilterModal
-        visible={filterModalVisible}
-        onClose={() => setFilterModalVisible(false)}
-        filterType={activeFilterType}
-        selectedValues={getSelectedValuesForType(activeFilterType)}
-        onApply={handleFilterApply}
-      />
     </SafeAreaView>
   )
 }
@@ -554,7 +381,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   browseContent: {
-    paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xxl,
   },
   centered: {
@@ -631,6 +457,7 @@ const styles = StyleSheet.create({
   },
   recentSection: {
     paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -673,100 +500,25 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     maxWidth: 120,
   },
-  browseSection: {
-    marginTop: 24,
+  discoverSection: {
+    marginTop: Spacing.xl,
   },
-  browseSectionTitle: {
+  discoverSectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: Colors.text,
-    marginBottom: 16,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
-  browseRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  listsLoading: {
+    paddingVertical: Spacing.xl,
     alignItems: 'center',
-    paddingVertical: 14,
   },
-  browseRowText: {
-    fontSize: 16,
-    color: Colors.text,
-  },
-  browseRowRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  filterCountBadge: {
-    backgroundColor: Colors.textMuted,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  filterCountText: {
-    color: Colors.background,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  browseRowDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  activeFiltersSection: {
-    marginTop: 24,
-  },
-  activeFiltersHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  activeFiltersTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  clearAllText: {
+  emptyListsText: {
     color: Colors.textMuted,
     fontSize: FontSize.sm,
-    fontWeight: '500',
-  },
-  activeFiltersList: {
-    gap: Spacing.sm,
-  },
-  activeFilterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  activeFilterPillText: {
-    fontSize: FontSize.sm,
-    color: Colors.text,
-    fontWeight: '500',
-  },
-  viewResultsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.surfaceLight,
-    paddingVertical: 14,
-    borderRadius: BorderRadius.md,
-    marginTop: 16,
-  },
-  viewResultsButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.text,
+    textAlign: 'center',
+    paddingVertical: Spacing.lg,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
