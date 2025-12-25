@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Image, Text, StyleSheet } from 'react-native'
 import { Colors } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 
 interface User {
   id: string
@@ -124,8 +125,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeholderText: {
+    fontFamily: Fonts.bodyBold,
     color: Colors.accentLight,
-    fontWeight: 'bold',
   },
   extraBadge: {
     backgroundColor: Colors.surfaceLight,
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   extraText: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.text,
-    fontWeight: '600',
   },
 })
