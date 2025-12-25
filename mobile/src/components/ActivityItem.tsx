@@ -11,6 +11,15 @@ interface ActivityItemProps {
   onGamePress?: (gameId: number) => void
 }
 
+function getActionText(activity: ActivityItemType): string {
+  // If there's a review, prioritize showing "reviewed"
+  if (activity.review && activity.review.trim().length > 0) {
+    return 'reviewed'
+  }
+  // Otherwise show the status verb
+  return getStatusVerb(activity.status)
+}
+
 function getRelativeTime(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
@@ -66,7 +75,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
           >
             {displayName}
           </Text>
-          {' '}{getStatusVerb(status)}{' '}
+          {' '}{getActionText(activity)}{' '}
           <Text
             style={styles.gameName}
             onPress={() => onGamePress?.(game.id)}

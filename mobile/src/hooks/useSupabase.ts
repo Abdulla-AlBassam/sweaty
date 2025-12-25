@@ -131,6 +131,7 @@ export function useActivityFeed(userId: string | undefined) {
           id,
           status,
           rating,
+          review,
           created_at,
           user_id,
           game_id,
@@ -158,6 +159,7 @@ export function useActivityFeed(userId: string | undefined) {
         },
         status: log.status,
         rating: log.rating,
+        review: log.review,
         created_at: log.created_at,
       }))
 

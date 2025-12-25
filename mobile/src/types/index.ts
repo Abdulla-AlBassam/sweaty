@@ -83,6 +83,7 @@ export interface ActivityItem {
   }
   status: GameStatus
   rating: number | null
+  review: string | null
   created_at: string
 }
 

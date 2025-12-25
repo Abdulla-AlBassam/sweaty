@@ -80,9 +80,24 @@ export default function ProfileScreen() {
   }
 
   // Filter game logs based on selected filter
-  const filteredGameLogs = selectedFilter === 'all'
-    ? gameLogs
-    : gameLogs.filter(log => log.status === selectedFilter)
+  // For "All" tab, sort by rating (highest to lowest, unrated last)
+  const filteredGameLogs = (() => {
+    if (selectedFilter === 'all') {
+      return [...gameLogs].sort((a, b) => {
+        // Both have ratings - sort highest first
+        if (a.rating !== null && b.rating !== null) {
+          return b.rating - a.rating
+        }
+        // Only a has rating - a comes first
+        if (a.rating !== null) return -1
+        // Only b has rating - b comes first
+        if (b.rating !== null) return 1
+        // Neither has rating - keep original order
+        return 0
+      })
+    }
+    return gameLogs.filter(log => log.status === selectedFilter)
+  })()
   const username = profile?.username || ''
 
   // Calculate stats
@@ -330,9 +345,41 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Game Library */}
+        {/* Recently Logged */}
+        {gameLogs.length > 0 && (
+          <View style={styles.recentlyLoggedSection}>
+            <Text style={styles.sectionTitle}>Recently Logged</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.recentlyLoggedScroll}
+              contentContainerStyle={styles.recentlyLoggedContent}
+            >
+              {gameLogs.slice(0, 10).map((log) => (
+                <TouchableOpacity
+                  key={log.id}
+                  style={styles.recentlyLoggedCard}
+                  onPress={() => handleGamePress(log)}
+                >
+                  {log.game?.cover_url ? (
+                    <Image
+                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
+                      style={styles.recentlyLoggedCover}
+                    />
+                  ) : (
+                    <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
+                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Library */}
         <View style={styles.librarySection}>
-          <Text style={styles.sectionTitle}>Game Library</Text>
+          <Text style={styles.sectionTitle}>Library</Text>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -622,6 +669,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  recentlyLoggedSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  recentlyLoggedScroll: {
+    marginHorizontal: -Spacing.lg,
+  },
+  recentlyLoggedContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  recentlyLoggedCard: {
+    width: 80,
+  },
+  recentlyLoggedCover: {
+    width: 80,
+    height: 107,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surface,
   },
   librarySection: {
     paddingHorizontal: Spacing.lg,
