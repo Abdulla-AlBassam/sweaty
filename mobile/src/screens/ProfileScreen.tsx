@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
-import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
+import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
@@ -95,10 +95,8 @@ export default function ProfileScreen() {
     : '—'
 
   // Calculate XP
-  const gamerXP = calculateGamerXP(logs)
-  const gamerLevel = getGamerLevel(gamerXP)
-  const socialXP = calculateSocialXP(logs, followers)
-  const socialLevel = getSocialLevel(socialXP)
+  const totalXP = calculateXP(logs, followers)
+  const levelInfo = getLevel(totalXP)
 
   // Fetch game logs with game details
   const fetchGameLogs = useCallback(async () => {
@@ -278,11 +276,9 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Ranks */}
+        {/* Rank */}
         <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>Ranks</Text>
-          <XPProgressBar type="gamer" levelInfo={gamerLevel} />
-          <XPProgressBar type="social" levelInfo={socialLevel} />
+          <XPProgressBar levelInfo={levelInfo} />
         </View>
 
         {/* Favorites */}

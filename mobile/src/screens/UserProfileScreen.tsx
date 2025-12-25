@@ -18,7 +18,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
-import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
+import { calculateXP, getLevel } from '../lib/xp'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
 import XPProgressBar from '../components/XPProgressBar'
@@ -428,11 +428,9 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        {/* Ranks */}
+        {/* Rank */}
         <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>Ranks</Text>
-          <XPProgressBar type="gamer" levelInfo={getGamerLevel(calculateGamerXP(gameLogs))} />
-          <XPProgressBar type="social" levelInfo={getSocialLevel(calculateSocialXP(gameLogs, followerCount))} />
+          <XPProgressBar levelInfo={getLevel(calculateXP(gameLogs, followerCount))} />
         </View>
 
         {/* Favorites */}
