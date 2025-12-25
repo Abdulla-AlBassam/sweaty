@@ -216,45 +216,42 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Profile Info - Horizontal Layout */}
+        {/* Profile Info - Vertical Layout */}
         <View style={styles.profileSection}>
-          <View style={styles.profileHeader}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
-              </View>
-            )}
-            <View style={styles.profileDetails}>
-              <Text style={styles.displayName}>{displayName}</Text>
-              <View style={styles.usernameRow}>
-                <Text style={styles.username}>@{username}</Text>
-                <View style={styles.followCounts}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setFollowersModalType('followers')
-                      setFollowersModalVisible(true)
-                    }}
-                  >
-                    <Text style={styles.followText}>
-                      <Text style={styles.followNumber}>{followers}</Text> followers
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setFollowersModalType('following')
-                      setFollowersModalVisible(true)
-                    }}
-                  >
-                    <Text style={styles.followText}>
-                      <Text style={styles.followNumber}>{following}</Text> following
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
             </View>
+          )}
+
+          <Text style={styles.displayName}>{displayName}</Text>
+          <Text style={styles.username}>@{username}</Text>
+
+          <View style={styles.followCounts}>
+            <TouchableOpacity
+              onPress={() => {
+                setFollowersModalType('followers')
+                setFollowersModalVisible(true)
+              }}
+            >
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{followers}</Text> followers
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setFollowersModalType('following')
+                setFollowersModalVisible(true)
+              }}
+            >
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{following}</Text> following
+              </Text>
+            </TouchableOpacity>
           </View>
+
           {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
         </View>
 
@@ -489,52 +486,44 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   profileSection: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: Spacing.md,
   },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: Spacing.md,
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: 'bold',
     color: Colors.accentLight,
   },
-  profileDetails: {
-    flex: 1,
-    marginLeft: Spacing.md,
-    justifyContent: 'center',
-  },
   displayName: {
     fontSize: FontSize.xl,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: Colors.text,
   },
-  usernameRow: {
-    marginTop: Spacing.xs,
-  },
   username: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     color: Colors.textMuted,
+    marginTop: Spacing.xs,
   },
   followCounts: {
     flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.xs,
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
   },
   followText: {
     fontSize: FontSize.sm,
@@ -547,6 +536,7 @@ const styles = StyleSheet.create({
   bio: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
+    textAlign: 'center',
     marginTop: Spacing.md,
   },
   statsRow: {

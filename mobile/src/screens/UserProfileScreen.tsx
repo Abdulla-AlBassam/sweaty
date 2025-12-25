@@ -383,6 +383,10 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </TouchableOpacity>
           </View>
 
+          {profile.bio && (
+            <Text style={styles.bio}>{profile.bio}</Text>
+          )}
+
           {/* Follow Button */}
           {!isOwnProfile && user && (
             <TouchableOpacity
@@ -398,10 +402,6 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                 </Text>
               )}
             </TouchableOpacity>
-          )}
-
-          {profile.bio && (
-            <Text style={styles.bio}>{profile.bio}</Text>
           )}
         </View>
 
