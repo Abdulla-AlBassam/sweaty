@@ -90,52 +90,61 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
         user: Array.isArray(item.user) ? item.user[0] : item.user,
       })).filter((item: any) => item.user && item.review) as Review[]
 
-      // Fetch like counts and user's likes for all reviews
+      // Fetch like counts and user's likes for all reviews (wrapped in try-catch in case tables don't exist yet)
       const reviewIds = formattedReviews.map(r => r.id)
 
       if (reviewIds.length > 0) {
-        // Get like counts for each review
-        const { data: likeCounts } = await supabase
-          .from('review_likes')
-          .select('game_log_id')
-          .in('game_log_id', reviewIds)
-
-        // Get user's likes if logged in
-        let userLikes: string[] = []
-        if (user) {
-          const { data: userLikesData } = await supabase
+        try {
+          // Get like counts for each review
+          const { data: likeCounts, error: likesError } = await supabase
             .from('review_likes')
             .select('game_log_id')
-            .eq('user_id', user.id)
             .in('game_log_id', reviewIds)
 
-          userLikes = (userLikesData || []).map((l: any) => l.game_log_id)
+          // Get user's likes if logged in
+          let userLikes: string[] = []
+          if (user && !likesError) {
+            const { data: userLikesData } = await supabase
+              .from('review_likes')
+              .select('game_log_id')
+              .eq('user_id', user.id)
+              .in('game_log_id', reviewIds)
+
+            userLikes = (userLikesData || []).map((l: any) => l.game_log_id)
+          }
+
+          // Get comment counts for each review
+          const { data: commentCounts, error: commentsError } = await supabase
+            .from('review_comments')
+            .select('game_log_id')
+            .in('game_log_id', reviewIds)
+
+          // Create count maps (only if no errors)
+          const likeCountMap: Record<string, number> = {}
+          const commentCountMap: Record<string, number> = {}
+
+          if (!likesError && likeCounts) {
+            likeCounts.forEach((like: any) => {
+              likeCountMap[like.game_log_id] = (likeCountMap[like.game_log_id] || 0) + 1
+            })
+          }
+
+          if (!commentsError && commentCounts) {
+            commentCounts.forEach((comment: any) => {
+              commentCountMap[comment.game_log_id] = (commentCountMap[comment.game_log_id] || 0) + 1
+            })
+          }
+
+          // Attach counts to reviews
+          formattedReviews.forEach(review => {
+            review.likeCount = likeCountMap[review.id] || 0
+            review.commentCount = commentCountMap[review.id] || 0
+            review.isLiked = userLikes.includes(review.id)
+          })
+        } catch (socialError) {
+          // Tables might not exist yet - that's ok, just show reviews without likes/comments
+          console.log('Social features not available yet:', socialError)
         }
-
-        // Get comment counts for each review
-        const { data: commentCounts } = await supabase
-          .from('review_comments')
-          .select('game_log_id')
-          .in('game_log_id', reviewIds)
-
-        // Create count maps
-        const likeCountMap: Record<string, number> = {}
-        const commentCountMap: Record<string, number> = {}
-
-        (likeCounts || []).forEach((like: any) => {
-          likeCountMap[like.game_log_id] = (likeCountMap[like.game_log_id] || 0) + 1
-        })
-
-        (commentCounts || []).forEach((comment: any) => {
-          commentCountMap[comment.game_log_id] = (commentCountMap[comment.game_log_id] || 0) + 1
-        })
-
-        // Attach counts to reviews
-        formattedReviews.forEach(review => {
-          review.likeCount = likeCountMap[review.id] || 0
-          review.commentCount = commentCountMap[review.id] || 0
-          review.isLiked = userLikes.includes(review.id)
-        })
       }
 
       setReviews(formattedReviews)
