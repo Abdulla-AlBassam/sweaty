@@ -8,6 +8,7 @@ interface StarRatingProps {
   size?: number
   color?: string
   showEmpty?: boolean
+  filledOnly?: boolean // Only show filled/half stars, no empty stars
 }
 
 // Render a single star icon based on rating value
@@ -38,13 +39,35 @@ export default function StarRating({
   rating,
   size = 16,
   color = Colors.accentLight,
-  showEmpty = false
+  showEmpty = false,
+  filledOnly = false
 }: StarRatingProps) {
   if (!rating && !showEmpty) {
     return null
   }
 
   const displayRating = rating || 0
+
+  // If filledOnly, only render stars up to the rating
+  if (filledOnly && rating) {
+    const fullStars = Math.floor(rating)
+    const hasHalf = rating % 1 >= 0.5
+    const starsToShow = hasHalf ? fullStars + 1 : fullStars
+
+    return (
+      <View style={styles.container}>
+        {Array.from({ length: starsToShow }, (_, i) => i + 1).map((starNumber) => (
+          <StarIcon
+            key={starNumber}
+            starNumber={starNumber}
+            rating={displayRating}
+            size={size}
+            color={color}
+          />
+        ))}
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>
