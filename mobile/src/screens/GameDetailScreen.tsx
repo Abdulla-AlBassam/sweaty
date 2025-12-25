@@ -288,7 +288,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         {/* About */}
         {game.summary && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>about</Text>
+            <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.summaryText}>{game.summary}</Text>
           </View>
         )}
@@ -301,7 +301,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         {/* Platforms */}
         {game.platforms && game.platforms.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>platforms</Text>
+            <Text style={styles.sectionTitle}>Platforms</Text>
             <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
           </View>
         )}

@@ -42,7 +42,7 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>trailers</Text>
+      <Text style={styles.sectionTitle}>Trailers</Text>
 
       {/* YouTube Player */}
       <View style={styles.playerContainer}>
