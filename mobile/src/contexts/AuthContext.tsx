@@ -1,14 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { Linking } from 'react-native'
+import { Linking, Platform } from 'react-native'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
 import Constants from 'expo-constants'
-import * as WebBrowser from 'expo-web-browser'
-import { makeRedirectUri } from 'expo-auth-session'
-
-// Needed for expo-auth-session to work properly
-WebBrowser.maybeCompleteAuthSession()
 
 interface AuthContextType {
   session: Session | null
@@ -142,11 +137,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
     try {
-      // Create redirect URL using expo-auth-session
-      const redirectUrl = makeRedirectUri({
-        scheme: 'sweaty',
-        path: 'auth/callback',
-      })
+      // Build redirect URL based on environment
+      // In Expo Go, we need to use exp:// scheme
+      // In standalone/dev builds, we use the custom scheme
+      const hostUri = Constants.expoConfig?.hostUri
+      let redirectUrl: string
+
+      if (hostUri) {
+        // Running in Expo Go - use exp:// scheme
+        redirectUrl = `exp://${hostUri}/--/auth/callback`
+      } else {
+        // Running as standalone app - use custom scheme
+        redirectUrl = 'sweaty://auth/callback'
+      }
 
       console.log('OAuth redirect URL:', redirectUrl)
 
@@ -167,29 +170,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: new Error('No OAuth URL returned') }
       }
 
-      // Open auth session - this handles the redirect properly
-      const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl)
-
-      if (result.type === 'success' && result.url) {
-        // Extract tokens from the redirect URL
-        const url = result.url
-        const hashIndex = url.indexOf('#')
-        if (hashIndex !== -1) {
-          const params = new URLSearchParams(url.substring(hashIndex + 1))
-          const accessToken = params.get('access_token')
-          const refreshToken = params.get('refresh_token')
-
-          if (accessToken) {
-            console.log('Setting session from OAuth result')
-            await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken || '',
-            })
-          }
-        }
-      } else if (result.type === 'cancel') {
-        return { error: new Error('Login cancelled') }
-      }
+      // Open the OAuth URL in the device browser
+      // The deep link handler will catch the callback
+      await Linking.openURL(data.url)
 
       return { error: null }
     } catch (err) {
