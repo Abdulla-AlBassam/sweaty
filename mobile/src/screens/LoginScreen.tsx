@@ -21,10 +21,11 @@ type LoginScreenProps = {
 }
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const { signIn } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async () => {
@@ -51,6 +52,28 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       setError('an error occurred. please try again.')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true)
+    setError(null)
+
+    try {
+      const { error: googleError, needsUsername } = await signInWithGoogle()
+
+      if (googleError) {
+        if (googleError.message !== 'Login cancelled') {
+          setError('google sign-in failed. please try again.')
+        }
+      } else if (needsUsername) {
+        // User signed in but needs to set up profile
+        // Navigation will handle this via auth state
+      }
+    } catch (err) {
+      setError('an error occurred. please try again.')
+    } finally {
+      setIsGoogleLoading(false)
     }
   }
 
@@ -107,6 +130,29 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                 <ActivityIndicator color={Colors.background} />
               ) : (
                 <Text style={styles.buttonText}>log in</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Google Sign In */}
+            <TouchableOpacity
+              style={[styles.googleButton, isGoogleLoading && styles.buttonDisabled]}
+              onPress={handleGoogleLogin}
+              disabled={isGoogleLoading}
+            >
+              {isGoogleLoading ? (
+                <ActivityIndicator color={Colors.text} />
+              ) : (
+                <>
+                  <Text style={styles.googleIcon}>G</Text>
+                  <Text style={styles.googleButtonText}>continue with google</Text>
+                </>
               )}
             </TouchableOpacity>
           </View>
@@ -210,5 +256,42 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     color: Colors.accentLight,
     fontSize: FontSize.sm,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    fontFamily: Fonts.body,
+    color: Colors.textDim,
+    fontSize: FontSize.sm,
+    paddingHorizontal: Spacing.md,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  googleIcon: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.lg,
+    color: '#4285F4',
+  },
+  googleButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.text,
+    fontSize: FontSize.md,
   },
 })

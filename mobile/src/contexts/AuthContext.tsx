@@ -2,6 +2,11 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
+import * as AuthSession from 'expo-auth-session'
+import * as WebBrowser from 'expo-web-browser'
+
+// Required for web browser auth flow
+WebBrowser.maybeCompleteAuthSession()
 
 interface AuthContextType {
   session: Session | null
@@ -10,6 +15,7 @@ interface AuthContextType {
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, username: string, displayName: string) => Promise<{ error: Error | null }>
+  signInWithGoogle: () => Promise<{ error: Error | null; needsUsername?: boolean }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -95,8 +101,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null)
   }
 
+  const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
+    try {
+      // Create redirect URL for the app
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: 'sweaty',
+        path: 'auth/callback',
+      })
+
+      // Start OAuth flow
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      })
+
+      if (error) {
+        return { error: error as Error }
+      }
+
+      if (!data.url) {
+        return { error: new Error('No OAuth URL returned') }
+      }
+
+      // Open browser for Google login
+      const result = await WebBrowser.openAuthSessionAsync(
+        data.url,
+        redirectUrl,
+        { showInRecents: true }
+      )
+
+      if (result.type === 'success' && result.url) {
+        // Extract tokens from URL
+        const url = new URL(result.url)
+        const params = new URLSearchParams(url.hash.substring(1))
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+
+        if (accessToken) {
+          // Set the session
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken || '',
+          })
+
+          if (sessionError) {
+            return { error: sessionError as Error }
+          }
+
+          // Check if profile exists (new Google user may need to set username)
+          const { data: { user: currentUser } } = await supabase.auth.getUser()
+          if (currentUser) {
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('username')
+              .eq('id', currentUser.id)
+              .single()
+
+            if (!existingProfile?.username) {
+              return { error: null, needsUsername: true }
+            }
+          }
+
+          return { error: null }
+        }
+      }
+
+      if (result.type === 'cancel') {
+        return { error: new Error('Login cancelled') }
+      }
+
+      return { error: new Error('Authentication failed') }
+    } catch (err) {
+      return { error: err as Error }
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signInWithGoogle, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )
