@@ -235,7 +235,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Quick Log</Text>
+            <Text style={styles.headerTitle}>quick log</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.textMuted} />
             </TouchableOpacity>
@@ -349,8 +349,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.lg,
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
     color: Colors.text,
   },
   closeButton: {
