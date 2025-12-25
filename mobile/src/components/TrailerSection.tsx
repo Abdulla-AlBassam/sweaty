@@ -59,7 +59,7 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
       </View>
 
       {/* Video title */}
-      <Text style={styles.videoTitle}>{currentVideo.name || 'Trailer'}</Text>
+      <Text style={styles.videoTitle}>{currentVideo.name || 'trailer'}</Text>
 
       {/* Video selector if multiple trailers */}
       {videos.length > 1 && (
@@ -93,7 +93,7 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
                 ]}
                 numberOfLines={1}
               >
-                {video.name || `Trailer ${index + 1}`}
+                {video.name || `trailer ${index + 1}`}
               </Text>
             </TouchableOpacity>
           ))}

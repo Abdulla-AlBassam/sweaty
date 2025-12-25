@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { Game, GameLog, Profile, ActivityItem } from '../types'
+import { Game, GameLog, Profile, ActivityItem, CuratedList, CuratedListWithGames } from '../types'
 
 export function useGameLogs(userId: string | undefined) {
   const [logs, setLogs] = useState<GameLog[]>([])
@@ -131,6 +131,7 @@ export function useActivityFeed(userId: string | undefined) {
           id,
           status,
           rating,
+          review,
           created_at,
           user_id,
           game_id,
@@ -158,6 +159,7 @@ export function useActivityFeed(userId: string | undefined) {
         },
         status: log.status,
         rating: log.rating,
+        review: log.review,
         created_at: log.created_at,
       }))
 
@@ -212,4 +214,66 @@ export function useGameSearch(query: string) {
   }, [query])
 
   return { games, isLoading, error }
+}
+
+export function useCuratedLists() {
+  const [lists, setLists] = useState<CuratedListWithGames[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchLists = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        // Fetch curated lists
+        const { data: listsData, error: listsError } = await supabase
+          .from('curated_lists')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+
+        if (listsError) throw listsError
+
+        // Collect all game IDs from all lists
+        const allGameIds = new Set<number>()
+        ;(listsData as CuratedList[]).forEach((list) => {
+          list.game_ids.forEach((id) => allGameIds.add(id))
+        })
+
+        // Batch fetch all games
+        const { data: gamesData, error: gamesError } = await supabase
+          .from('games_cache')
+          .select('id, name, cover_url')
+          .in('id', Array.from(allGameIds))
+
+        if (gamesError) throw gamesError
+
+        // Create a map of game ID to game data
+        const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null }>()
+        ;(gamesData || []).forEach((game: any) => {
+          gamesMap.set(game.id, game)
+        })
+
+        // Build the lists with games (preserving order from game_ids)
+        const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => ({
+          ...list,
+          games: list.game_ids
+            .map((id) => gamesMap.get(id))
+            .filter((game): game is { id: number; name: string; cover_url: string | null } => game !== undefined),
+        }))
+
+        setLists(listsWithGames)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchLists()
+  }, [])
+
+  return { lists, isLoading, error }
 }

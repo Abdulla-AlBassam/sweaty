@@ -11,7 +11,7 @@ import MainTabs from './MainTabs'
 import GameDetailScreen from '../screens/GameDetailScreen'
 import UserProfileScreen from '../screens/UserProfileScreen'
 import SettingsScreen from '../screens/SettingsScreen'
-import FilterResultsScreen from '../screens/FilterResultsScreen'
+import CuratedListDetailScreen from '../screens/CuratedListDetailScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -24,7 +24,7 @@ export type MainStackParamList = {
   GameDetail: { gameId: number }
   UserProfile: { username: string; userId?: string }
   Settings: undefined
-  FilterResults: { genres?: string[]; years?: string[]; platforms?: string[] }
+  CuratedListDetail: { listSlug: string; listTitle: string; gameIds: number[] }
 }
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -75,8 +75,8 @@ function MainNavigator() {
         }}
       />
       <MainStack.Screen
-        name="FilterResults"
-        component={FilterResultsScreen}
+        name="CuratedListDetail"
+        component={CuratedListDetailScreen}
         options={{
           animation: 'slide_from_right',
         }}

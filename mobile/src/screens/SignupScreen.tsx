@@ -40,27 +40,27 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 
     // Validation
     if (!email.trim() || !username.trim() || !password.trim() || !confirmPassword.trim()) {
-      setError('Please fill in all fields')
+      setError('please fill in all fields')
       return
     }
 
     if (!email.includes('@')) {
-      setError('Please enter a valid email address')
+      setError('please enter a valid email address')
       return
     }
 
     if (!validateUsername(username)) {
-      setError('Username must be 3-20 characters (letters, numbers, underscore)')
+      setError('username must be 3-20 characters (letters, numbers, underscore)')
       return
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters')
+      setError('password must be at least 6 characters')
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError('passwords do not match')
       return
     }
 
@@ -77,16 +77,16 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
       if (signUpError) {
         // Handle specific errors
         if (signUpError.message.includes('already registered')) {
-          setError('An account with this email already exists')
+          setError('an account with this email already exists')
         } else if (signUpError.message.includes('username')) {
-          setError('Username is already taken')
+          setError('username is already taken')
         } else {
-          setError(signUpError.message || 'Failed to create account')
+          setError(signUpError.message || 'failed to create account')
         }
       }
       // If successful, AuthContext will update and navigation will switch to MainStack
     } catch (err) {
-      setError('An error occurred. Please try again.')
+      setError('an error occurred. please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -104,7 +104,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
         <View style={styles.content}>
           {/* Logo */}
           <Text style={styles.logo}>sweaty</Text>
-          <Text style={styles.tagline}>Create your account</Text>
+          <Text style={styles.tagline}>create your account</Text>
 
           {/* Error Message */}
           {error && (
@@ -117,7 +117,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder="email"
               placeholderTextColor={Colors.textDim}
               value={email}
               onChangeText={setEmail}
@@ -128,7 +128,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="Username"
+              placeholder="username"
               placeholderTextColor={Colors.textDim}
               value={username}
               onChangeText={setUsername}
@@ -138,7 +138,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder="password"
               placeholderTextColor={Colors.textDim}
               value={password}
               onChangeText={setPassword}
@@ -148,7 +148,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 
             <TextInput
               style={styles.input}
-              placeholder="Confirm password"
+              placeholder="confirm password"
               placeholderTextColor={Colors.textDim}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -164,16 +164,16 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
               {isLoading ? (
                 <ActivityIndicator color={Colors.background} />
               ) : (
-                <Text style={styles.buttonText}>Create account</Text>
+                <Text style={styles.buttonText}>create account</Text>
               )}
             </TouchableOpacity>
           </View>
 
           {/* Login Link */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
+            <Text style={styles.footerText}>already have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>Log in</Text>
+              <Text style={styles.footerLink}>log in</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
     textAlign: 'center',
     marginBottom: Spacing.xs,
   },
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
   },
   footerLink: {
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontSize: FontSize.sm,
     fontWeight: '600',
   },

@@ -4,32 +4,35 @@ import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { LevelInfo } from '../types'
 
 interface XPProgressBarProps {
-  type: 'gamer' | 'social'
   levelInfo: LevelInfo
 }
 
-export default function XPProgressBar({ type, levelInfo }: XPProgressBarProps) {
+export default function XPProgressBar({ levelInfo }: XPProgressBarProps) {
   const { level, rank, currentXP, xpForNextLevel, progress } = levelInfo
-  const isMaxLevel = level === 10
+  const isMaxLevel = level === 11
 
   return (
     <View style={styles.container}>
+      {/* Level | Rank */}
       <View style={styles.header}>
-        <View style={styles.labelRow}>
-          <Text style={styles.type}>{type === 'gamer' ? 'Gamer' : 'Social'}</Text>
-          <Text style={styles.level}>Lv. {level}</Text>
-        </View>
+        <Text style={styles.level}>Level {level}</Text>
+        <View style={styles.separator} />
         <Text style={styles.rank}>{rank}</Text>
       </View>
 
+      {/* Progress Bar */}
       <View style={styles.progressContainer}>
-        <View style={styles.progressBackground}>
+        <View style={styles.startDot} />
+        <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${progress}%` }]} />
         </View>
-        <Text style={styles.xpText}>
-          {isMaxLevel ? 'MAX' : `${currentXP} / ${xpForNextLevel} XP`}
-        </Text>
+        <View style={[styles.endDot, isMaxLevel && styles.endDotFilled]} />
       </View>
+
+      {/* XP Counter */}
+      <Text style={styles.xpText}>
+        {isMaxLevel ? `${currentXP} xp` : `${currentXP} / ${xpForNextLevel} xp`}
+      </Text>
     </View>
   )
 }
@@ -39,50 +42,59 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     padding: Spacing.md,
-    marginBottom: Spacing.sm,
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  type: {
-    fontSize: FontSize.sm,
+  level: {
+    fontSize: FontSize.md,
     fontWeight: '600',
     color: Colors.text,
   },
-  level: {
-    fontSize: FontSize.sm,
-    fontWeight: 'bold',
-    color: Colors.accent,
+  separator: {
+    width: 1,
+    height: 14,
+    backgroundColor: Colors.textDim,
+    marginHorizontal: Spacing.sm,
   },
   rank: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     color: Colors.textMuted,
   },
   progressContainer: {
-    gap: Spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
   },
-  progressBackground: {
+  startDot: {
+    width: 8,
     height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.accent,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 3,
     backgroundColor: Colors.surfaceLight,
-    borderRadius: BorderRadius.full,
-    overflow: 'hidden',
+    marginHorizontal: 2,
   },
   progressFill: {
     height: '100%',
     backgroundColor: Colors.accent,
-    borderRadius: BorderRadius.full,
+  },
+  endDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.surfaceLight,
+  },
+  endDotFilled: {
+    backgroundColor: Colors.accent,
   },
   xpText: {
     fontSize: FontSize.xs,
     color: Colors.textDim,
-    textAlign: 'right',
   },
 })

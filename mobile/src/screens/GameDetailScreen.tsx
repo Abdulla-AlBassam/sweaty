@@ -185,7 +185,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading...</Text>
+          <Text style={styles.headerTitle}>loading...</Text>
         </View>
         <ScrollView style={styles.scrollView}>
           <GameDetailSkeleton />
@@ -201,11 +201,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Not Found</Text>
+          <Text style={styles.headerTitle}>not found</Text>
         </View>
         <View style={styles.centered}>
           <Ionicons name="game-controller-outline" size={64} color={Colors.textDim} />
-          <Text style={styles.errorText}>Game not found</Text>
+          <Text style={styles.errorText}>game not found</Text>
         </View>
       </SafeAreaView>
     )
@@ -285,6 +285,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           />
         </TouchableOpacity>
 
+        {/* Reviews */}
+        <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
+
         {/* About */}
         {game.summary && (
           <View style={styles.section}>
@@ -305,9 +308,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
           </View>
         )}
-
-        {/* Reviews */}
-        <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
       </ScrollView>
 
       {/* Log Game Modal */}
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '500',
   },
   statusRating: {

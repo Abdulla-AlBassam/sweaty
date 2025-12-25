@@ -223,7 +223,7 @@ export default function FollowersModal({
                   isFollowing && styles.followingButtonText,
                 ]}
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? 'following' : 'follow'}
               </Text>
             )}
           </TouchableOpacity>
@@ -243,7 +243,7 @@ export default function FollowersModal({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>
-            {type === 'followers' ? 'Followers' : 'Following'}
+            {type === 'followers' ? 'followers' : 'following'}
           </Text>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={Colors.text} />
@@ -259,7 +259,7 @@ export default function FollowersModal({
           <View style={styles.centered}>
             <Ionicons name="people-outline" size={64} color={Colors.textDim} />
             <Text style={styles.emptyText}>
-              {type === 'followers' ? 'No followers yet' : 'Not following anyone'}
+              {type === 'followers' ? 'no followers yet' : 'not following anyone'}
             </Text>
           </View>
         ) : (
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: FontSize.md,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   userInfo: {
     flex: 1,

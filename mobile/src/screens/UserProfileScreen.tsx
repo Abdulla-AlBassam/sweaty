@@ -18,8 +18,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
+import { calculateXP, getLevel } from '../lib/xp'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
+import XPProgressBar from '../components/XPProgressBar'
 import { ProfileSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
@@ -98,9 +100,24 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   }
 
   // Filter game logs based on selected filter
-  const filteredGameLogs = selectedFilter === 'all'
-    ? gameLogs
-    : gameLogs.filter(log => log.status === selectedFilter)
+  // For "All" tab, sort by rating (highest to lowest, unrated last)
+  const filteredGameLogs = (() => {
+    if (selectedFilter === 'all') {
+      return [...gameLogs].sort((a, b) => {
+        // Both have ratings - sort highest first
+        if (a.rating !== null && b.rating !== null) {
+          return b.rating - a.rating
+        }
+        // Only a has rating - a comes first
+        if (a.rating !== null) return -1
+        // Only b has rating - b comes first
+        if (b.rating !== null) return 1
+        // Neither has rating - keep original order
+        return 0
+      })
+    }
+    return gameLogs.filter(log => log.status === selectedFilter)
+  })()
 
   useEffect(() => {
     console.log('=== USER PROFILE SCREEN MOUNTED === username:', username)
@@ -295,7 +312,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading...</Text>
+          <Text style={styles.headerTitle}>loading...</Text>
         </View>
         <ScrollView style={styles.scrollView}>
           <ProfileSkeleton />
@@ -311,11 +328,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Not Found</Text>
+          <Text style={styles.headerTitle}>not found</Text>
         </View>
         <View style={styles.centered}>
           <Ionicons name="person-outline" size={64} color={Colors.textDim} />
-          <Text style={styles.errorText}>User not found</Text>
+          <Text style={styles.errorText}>user not found</Text>
         </View>
       </SafeAreaView>
     )
@@ -343,7 +360,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           />
         }
       >
-        {/* Profile Info */}
+        {/* Profile Info - Vertical Layout */}
         <View style={styles.profileSection}>
           {profile.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
@@ -358,35 +375,34 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           </Text>
           <Text style={styles.username}>@{profile.username}</Text>
 
-          {profile.bio && (
-            <Text style={styles.bio}>{profile.bio}</Text>
-          )}
-
-          {/* Follow Stats */}
-          <View style={styles.followStats}>
+          <View style={styles.followCounts}>
             <TouchableOpacity
-              style={styles.followStat}
               onPress={() => {
                 setFollowersModalType('followers')
                 setFollowersModalVisible(true)
               }}
             >
-              <Text style={styles.followCount}>{followerCount}</Text>
-              <Text style={styles.followLabel}>Followers</Text>
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{followerCount}</Text> followers
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.followStat}
               onPress={() => {
                 setFollowersModalType('following')
                 setFollowersModalVisible(true)
               }}
             >
-              <Text style={styles.followCount}>{followingCount}</Text>
-              <Text style={styles.followLabel}>Following</Text>
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{followingCount}</Text> following
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Follow Button (only show for other users) */}
+          {profile.bio && (
+            <Text style={styles.bio}>{profile.bio}</Text>
+          )}
+
+          {/* Follow Button */}
           {!isOwnProfile && user && (
             <TouchableOpacity
               style={[styles.followButton, isFollowing && styles.followingButton]}
@@ -397,31 +413,39 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                 <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
               ) : (
                 <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {isFollowing ? 'following' : 'follow'}
                 </Text>
               )}
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsSection}>
-          <View style={styles.statCard}>
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.totalGames}</Text>
-            <Text style={styles.statLabel}>Games</Text>
+            <Text style={styles.statLabel}>games</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.completed}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statLabel}>completed</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.playing}</Text>
-            <Text style={styles.statLabel}>Playing</Text>
+            <Text style={styles.statLabel}>playing</Text>
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.averageRating ?? '-'}</Text>
-            <Text style={styles.statLabel}>Avg Rating</Text>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{stats.averageRating ? stats.averageRating : '—'}</Text>
+            <Text style={styles.statLabel}>avg rating</Text>
           </View>
+        </View>
+
+        {/* Rank */}
+        <View style={styles.ranksSection}>
+          <XPProgressBar levelInfo={getLevel(calculateXP(gameLogs, followerCount))} />
         </View>
 
         {/* Favorites */}
@@ -457,9 +481,41 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* Game Library */}
+        {/* Recently Logged */}
+        {gameLogs.length > 0 && (
+          <View style={styles.recentlyLoggedSection}>
+            <Text style={styles.sectionTitle}>Recently Logged</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.recentlyLoggedScroll}
+              contentContainerStyle={styles.recentlyLoggedContent}
+            >
+              {gameLogs.slice(0, 10).map((log) => (
+                <TouchableOpacity
+                  key={log.id}
+                  style={styles.recentlyLoggedCard}
+                  onPress={() => handleGamePress(log.game_id)}
+                >
+                  {log.game?.cover_url ? (
+                    <Image
+                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
+                      style={styles.recentlyLoggedCover}
+                    />
+                  ) : (
+                    <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
+                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Library */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Game Library</Text>
+          <Text style={styles.sectionTitle}>Library</Text>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -514,8 +570,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     </View>
                   )}
                   {log.rating && (
-                    <View style={styles.ratingBadge}>
-                      <StarRating rating={log.rating} size={10} />
+                    <View style={styles.ratingBelow}>
+                      <StarRating rating={log.rating} size={12} filledOnly />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -582,11 +638,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
   profileSection: {
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
   avatar: {
     width: 100,
@@ -603,44 +660,39 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xl,
     fontWeight: 'bold',
     color: Colors.text,
-    marginBottom: Spacing.xs,
   },
   username: {
     fontSize: FontSize.md,
     color: Colors.textMuted,
-    marginBottom: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  followCounts: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
+  },
+  followText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  followNumber: {
+    fontWeight: '600',
+    color: Colors.text,
   },
   bio: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
-    marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-  },
-  followStats: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-    marginBottom: Spacing.md,
-  },
-  followStat: {
-    alignItems: 'center',
-  },
-  followCount: {
-    fontSize: FontSize.lg,
-    fontWeight: 'bold',
-    color: Colors.text,
-  },
-  followLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    marginTop: Spacing.md,
   },
   followButton: {
     backgroundColor: Colors.accent,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
-    minWidth: 120,
     alignItems: 'center',
+    marginTop: Spacing.md,
+    minWidth: 120,
   },
   followingButton: {
     backgroundColor: 'transparent',
@@ -655,18 +707,24 @@ const styles = StyleSheet.create({
   followingButtonText: {
     color: Colors.text,
   },
-  statsSection: {
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xl,
+    justifyContent: 'space-around',
+    paddingVertical: Spacing.lg,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: Colors.border,
+    marginHorizontal: Spacing.lg,
   },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+  stat: {
     alignItems: 'center',
-    marginHorizontal: Spacing.xs,
+    flex: 1,
+  },
+  statSeparator: {
+    width: 1,
+    height: '60%',
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
   },
   statValue: {
     fontSize: FontSize.lg,
@@ -678,7 +736,33 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
+  ranksSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  recentlyLoggedSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  recentlyLoggedScroll: {
+    marginHorizontal: -Spacing.lg,
+  },
+  recentlyLoggedContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  recentlyLoggedCard: {
+    width: 105,
+  },
+  recentlyLoggedCover: {
+    width: 105,
+    aspectRatio: 3 / 4,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surface,
+  },
   section: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
@@ -746,14 +830,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
-  ratingBadge: {
-    position: 'absolute',
-    top: Spacing.xs,
-    right: Spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
+  ratingBelow: {
+    marginTop: Spacing.xs,
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',

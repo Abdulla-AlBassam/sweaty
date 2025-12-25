@@ -147,6 +147,32 @@ Tracks user follow relationships.
 **Constraints:** UNIQUE(follower_id, following_id), no self-follows
 **Indexes:** follower_id, following_id
 
+### curated_lists
+Stores curated game lists for the discover/search screen.
+| Column | Type | Description |
+|--------|------|-------------|
+| id | uuid | Primary key |
+| slug | text | Unique URL-friendly identifier |
+| title | text | Display title (e.g., "2025 Essentials") |
+| description | text | Optional description |
+| game_ids | bigint[] | Ordered array of IGDB game IDs |
+| display_order | int | Order in which lists appear |
+| is_active | boolean | Whether list is visible |
+| created_at | timestamp | Auto-generated |
+| updated_at | timestamp | Auto-updated |
+
+**The 10 Curated Lists:**
+1. 2025 Essentials (`2025-essentials`)
+2. PlayStation Exclusives (`playstation-exclusives`)
+3. PC Exclusive (`pc-exclusive`)
+4. GOATed Remakes (`goated-remakes`)
+5. Co-Op Must-Haves (`co-op-must-haves`)
+6. Short & Sweet (`short-and-sweet`)
+7. New Releases (`new-releases`)
+8. Coming Soon (`coming-soon`)
+9. Timeless Classics (`timeless-classics`)
+10. Story-Driven (`story-driven`)
+
 ## Project Structure (Monorepo)
 
 ```
@@ -213,18 +239,36 @@ sweaty/
 │
 ├── mobile/                          # React Native/Expo mobile app
 │   ├── src/
-│   │   ├── app/                     # Screen components (future)
-│   │   ├── components/              # Reusable UI components (future)
+│   │   ├── screens/                 # Screen components
+│   │   │   ├── HomeScreen.tsx       # Dashboard/home
+│   │   │   ├── SearchScreen.tsx     # Search + curated lists discover
+│   │   │   ├── ProfileScreen.tsx    # User's own profile
+│   │   │   ├── UserProfileScreen.tsx # Other users' profiles
+│   │   │   ├── GameDetailScreen.tsx # Game detail page
+│   │   │   ├── SettingsScreen.tsx   # Settings page
+│   │   │   ├── LoginScreen.tsx      # Login
+│   │   │   ├── SignupScreen.tsx     # Signup
+│   │   │   └── CuratedListDetailScreen.tsx # "See All" for curated lists
+│   │   ├── components/
+│   │   │   ├── GameCard.tsx         # Game cover card
+│   │   │   ├── CuratedListRow.tsx   # Horizontal scroll curated list
+│   │   │   ├── ActivityItem.tsx     # Activity feed item
+│   │   │   ├── Skeleton.tsx         # Loading skeletons
+│   │   │   └── skeletons/           # Specialized skeleton components
 │   │   ├── contexts/
 │   │   │   └── AuthContext.tsx      # Auth state management
 │   │   ├── hooks/
-│   │   │   └── useSupabase.ts       # Data fetching hooks
+│   │   │   ├── useSupabase.ts       # Data fetching hooks (includes useCuratedLists)
+│   │   │   └── index.ts             # Hook exports
+│   │   ├── navigation/
+│   │   │   ├── index.tsx            # Main navigation setup
+│   │   │   └── MainTabs.tsx         # Bottom tab navigator
 │   │   ├── lib/
-│   │   │   ├── supabase.ts          # Supabase client (AsyncStorage)
+│   │   │   ├── supabase.ts          # Supabase client (SecureStore)
 │   │   │   └── xp.ts                # XP/Level system (shared logic)
 │   │   ├── constants/
 │   │   │   ├── colors.ts            # Theme colors (matches web)
-│   │   │   └── index.ts             # Status labels, platforms
+│   │   │   └── index.ts             # Status labels, platforms, API config
 │   │   └── types/
 │   │       └── index.ts             # Shared TypeScript types
 │   ├── assets/                      # App icons and images
@@ -232,6 +276,12 @@ sweaty/
 │   ├── app.json                     # Expo configuration
 │   ├── .env.example                 # Environment variables template
 │   └── package.json                 # Mobile app dependencies
+│
+├── scripts/                         # Utility scripts
+│   └── populate-curated-lists.js    # Script to populate curated lists from IGDB
+│
+├── database/                        # SQL schema files
+│   └── curated_lists.sql            # Curated lists table schema
 │
 ├── CLAUDE.md                        # This file (project documentation)
 ├── README.md                        # Getting started guide
@@ -568,3 +618,110 @@ Lurker → Newcomer → Contributor → Reviewer → Critic → Voice → Influe
 - `mobile/src/hooks/useSupabase.ts` - Data fetching hooks
 - `mobile/.env` - Supabase credentials (gitignored)
 - `mobile/.env.example` - Environment template
+
+### Session 7 (Dec 25, 2024)
+**Profile Page Enhancements:**
+- Added "Recently Logged" section (horizontal scroll, after Favorites, before Library)
+- Renamed "Game Library" to "Library"
+- Sorted Library "All" tab by rating (highest to lowest, unrated games last)
+- Added review support to Activity tab (shows "reviewed" action)
+- Made Recently Logged posters same size as Library posters (105px width)
+
+**Search Page UI Redesign:**
+- Moved from green buttons/pills to gray minimal aesthetic
+- Capitalized text throughout (Browse Games, Clear All, filter titles)
+- Changed active filter pills to gray with border
+- Changed count badges to gray
+- Changed View Results button to gray
+- Only green checkmarks remain as accent color
+
+**Curated Lists Feature (Major):**
+- Replaced old "Browse By" filter system (Genre/Year/Platform) with curated discovery rows
+- Created `curated_lists` table in Supabase (see Database Schema section)
+- Each list shows horizontal scroll of game covers with "See All" link
+- 10 curated lists with 800+ total games across all categories
+
+**New Components:**
+- `CuratedListRow.tsx` - Horizontal scroll game row with title + "See All"
+- `CuratedListDetailScreen.tsx` - Full grid view for "See All" functionality
+
+**New Hooks:**
+- `useCuratedLists()` - Fetches curated lists with game data from Supabase
+
+**Removed Files:**
+- `FilterModal.tsx` - Old genre/year/platform filter modal
+- `FilterResultsScreen.tsx` - Old filter results screen
+
+**New Types:**
+- `CuratedList` - Base curated list type
+- `CuratedListWithGames` - Curated list with populated game data
+
+**Population Script:**
+- Created `scripts/populate-curated-lists.js`
+- Contains all 800+ games across 10 lists
+- Calls search API to cache games to `games_cache`
+- Outputs SQL UPDATE statements for Supabase
+- Run with: `API_URL=https://sweaty-v1.vercel.app node scripts/populate-curated-lists.js`
+
+**Navigation Updates:**
+- Replaced `FilterResults` screen with `CuratedListDetail`
+- Updated `MainStackParamList` with new route params
+
+**New Files:**
+- `scripts/populate-curated-lists.js` - Curated lists population script
+- `database/curated_lists.sql` - SQL schema for curated_lists table
+- `mobile/src/components/CuratedListRow.tsx` - Curated list row component
+- `mobile/src/screens/CuratedListDetailScreen.tsx` - See All screen
+
+## Deployment & Configuration
+
+### Vercel
+- **URL:** https://sweaty-v1.vercel.app
+- **Project:** sweaty-v1
+- **Root Directory:** `/web` (set in Vercel dashboard)
+- **Branch:** Deploys from `main`
+
+### GitHub
+- **Repo:** https://github.com/Abdulla-AlBassam/sweaty
+- **Main Branch:** `main`
+- **Working Branch:** `claude/ui-polish-no-animations-qg346` (current development)
+
+### Environment Variables
+**Web (.env.local):**
+```
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+TWITCH_CLIENT_ID=your-twitch-client-id
+TWITCH_CLIENT_SECRET=your-twitch-client-secret
+```
+
+**Mobile (.env):**
+```
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+EXPO_PUBLIC_API_URL=https://sweaty-v1.vercel.app
+```
+
+### Running the Mobile App
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+### Populating Curated Lists
+1. Run the SQL schema in Supabase SQL Editor (from `database/curated_lists.sql`)
+2. Run the population script:
+   ```bash
+   cd /path/to/sweaty
+   API_URL=https://sweaty-v1.vercel.app node scripts/populate-curated-lists.js
+   ```
+3. Copy the SQL UPDATE statements from output
+4. Paste and run in Supabase SQL Editor
+
+## Known Issues & Notes
+
+- **Branch `claude/review-project-setup-qg346`** had rendering issues - use `claude/ui-polish-no-animations-qg346` instead
+- **Curated lists** require games to exist in `games_cache` first - the population script handles this
+- **IGDB rate limiting** - the population script includes 200ms delays between requests
+- **Some games may not be found** if they have different names in IGDB or don't exist yet

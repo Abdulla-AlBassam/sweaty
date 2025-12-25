@@ -20,7 +20,6 @@ import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
-import StatCard from '../components/StatCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import StackedAvatars from '../components/StackedAvatars'
 import Skeleton from '../components/Skeleton'
@@ -114,17 +113,6 @@ export default function DashboardScreen() {
     setRefreshing(false)
   }, [refetchLogs, refetchFriendsPlaying])
 
-  // Calculate stats
-  const stats = useMemo(() => {
-    const total = logs.length
-    const completed = logs.filter((l) => l.status === 'completed').length
-    const playing = logs.filter((l) => l.status === 'playing').length
-    const ratings = logs.filter((l) => l.rating).map((l) => l.rating as number)
-    const avgRating = ratings.length > 0
-      ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
-      : '—'
-    return { total, completed, playing, avgRating }
-  }, [logs])
 
   // Currently playing games
   const currentlyPlaying = useMemo(() => {
@@ -175,27 +163,6 @@ export default function DashboardScreen() {
           </Text>
         </View>
 
-        {/* Stats Cards */}
-        <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>Your Stats</Text>
-          {logsLoading ? (
-            <View style={styles.statsGrid}>
-              {[1, 2, 3, 4].map((i) => (
-                <View key={i} style={styles.statCardSkeleton}>
-                  <Skeleton width={40} height={24} borderRadius={4} />
-                  <Skeleton width={60} height={12} borderRadius={4} style={{ marginTop: 8 }} />
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.statsGrid}>
-              <StatCard label="Games Logged" value={stats.total} />
-              <StatCard label="Completed" value={stats.completed} />
-              <StatCard label="Playing" value={stats.playing} />
-              <StatCard label="Avg Rating" value={stats.avgRating} icon="★" />
-            </View>
-          )}
-        </View>
 
         {/* Currently Playing */}
         {currentlyPlaying.length > 0 && (
@@ -306,7 +273,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: FontSize.xxl,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   welcomeSection: {
     flexDirection: 'row',
@@ -336,27 +303,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.text,
     flex: 1,
-  },
-  statsSection: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  statCardSkeleton: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    alignItems: 'center',
   },
   discoverySection: {
     paddingTop: Spacing.lg,

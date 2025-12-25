@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
-import { calculateGamerXP, getGamerLevel, calculateSocialXP, getSocialLevel } from '../lib/xp'
+import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
@@ -80,20 +80,38 @@ export default function ProfileScreen() {
   }
 
   // Filter game logs based on selected filter
-  const filteredGameLogs = selectedFilter === 'all'
-    ? gameLogs
-    : gameLogs.filter(log => log.status === selectedFilter)
+  // For "All" tab, sort by rating (highest to lowest, unrated last)
+  const filteredGameLogs = (() => {
+    if (selectedFilter === 'all') {
+      return [...gameLogs].sort((a, b) => {
+        // Both have ratings - sort highest first
+        if (a.rating !== null && b.rating !== null) {
+          return b.rating - a.rating
+        }
+        // Only a has rating - a comes first
+        if (a.rating !== null) return -1
+        // Only b has rating - b comes first
+        if (b.rating !== null) return 1
+        // Neither has rating - keep original order
+        return 0
+      })
+    }
+    return gameLogs.filter(log => log.status === selectedFilter)
+  })()
   const username = profile?.username || ''
 
   // Calculate stats
   const totalGames = logs.length
   const completed = logs.filter((l) => l.status === 'completed').length
+  const playing = logs.filter((l) => l.status === 'playing').length
+  const ratings = logs.filter((l) => l.rating).map((l) => l.rating as number)
+  const avgRating = ratings.length > 0
+    ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
+    : '—'
 
   // Calculate XP
-  const gamerXP = calculateGamerXP(logs)
-  const gamerLevel = getGamerLevel(gamerXP)
-  const socialXP = calculateSocialXP(logs, followers)
-  const socialLevel = getSocialLevel(socialXP)
+  const totalXP = calculateXP(logs, followers)
+  const levelInfo = getLevel(totalXP)
 
   // Fetch game logs with game details
   const fetchGameLogs = useCallback(async () => {
@@ -202,7 +220,7 @@ export default function ProfileScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
+          <Text style={styles.headerTitle}>profile</Text>
           <TouchableOpacity
             onPress={() => navigation.navigate('Settings' as never)}
             style={styles.settingsButton}
@@ -211,7 +229,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Profile Info */}
+        {/* Profile Info - Vertical Layout */}
         <View style={styles.profileSection}>
           {profile?.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
@@ -220,8 +238,33 @@ export default function ProfileScreen() {
               <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
             </View>
           )}
+
           <Text style={styles.displayName}>{displayName}</Text>
           <Text style={styles.username}>@{username}</Text>
+
+          <View style={styles.followCounts}>
+            <TouchableOpacity
+              onPress={() => {
+                setFollowersModalType('followers')
+                setFollowersModalVisible(true)
+              }}
+            >
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{followers}</Text> followers
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setFollowersModalType('following')
+                setFollowersModalVisible(true)
+              }}
+            >
+              <Text style={styles.followText}>
+                <Text style={styles.followNumber}>{following}</Text> following
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
         </View>
 
@@ -229,39 +272,28 @@ export default function ProfileScreen() {
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{totalGames}</Text>
-            <Text style={styles.statLabel}>Games</Text>
+            <Text style={styles.statLabel}>games</Text>
           </View>
+          <View style={styles.statSeparator} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{completed}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={styles.statLabel}>completed</Text>
           </View>
-          <TouchableOpacity
-            style={styles.stat}
-            onPress={() => {
-              setFollowersModalType('followers')
-              setFollowersModalVisible(true)
-            }}
-          >
-            <Text style={styles.statValue}>{followers}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.stat}
-            onPress={() => {
-              setFollowersModalType('following')
-              setFollowersModalVisible(true)
-            }}
-          >
-            <Text style={styles.statValue}>{following}</Text>
-            <Text style={styles.statLabel}>Following</Text>
-          </TouchableOpacity>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{playing}</Text>
+            <Text style={styles.statLabel}>playing</Text>
+          </View>
+          <View style={styles.statSeparator} />
+          <View style={styles.stat}>
+            <Text style={styles.statValue}>{avgRating}</Text>
+            <Text style={styles.statLabel}>avg rating</Text>
+          </View>
         </View>
 
-        {/* Ranks */}
+        {/* Rank */}
         <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>Ranks</Text>
-          <XPProgressBar type="gamer" levelInfo={gamerLevel} />
-          <XPProgressBar type="social" levelInfo={socialLevel} />
+          <XPProgressBar levelInfo={levelInfo} />
         </View>
 
         {/* Favorites */}
@@ -283,7 +315,11 @@ export default function ProfileScreen() {
                   ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
                   : null
                 return (
-                  <View key={game.id} style={styles.favoriteSlot}>
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.favoriteSlot}
+                    onPress={() => navigation.navigate('GameDetail', { gameId: game.id })}
+                  >
                     {coverUrl ? (
                       <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
                     ) : (
@@ -291,7 +327,7 @@ export default function ProfileScreen() {
                         <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
                 )
               }
               return (
@@ -309,9 +345,41 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Game Library */}
+        {/* Recently Logged */}
+        {gameLogs.length > 0 && (
+          <View style={styles.recentlyLoggedSection}>
+            <Text style={styles.sectionTitle}>Recently Logged</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.recentlyLoggedScroll}
+              contentContainerStyle={styles.recentlyLoggedContent}
+            >
+              {gameLogs.slice(0, 10).map((log) => (
+                <TouchableOpacity
+                  key={log.id}
+                  style={styles.recentlyLoggedCard}
+                  onPress={() => handleGamePress(log)}
+                >
+                  {log.game?.cover_url ? (
+                    <Image
+                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
+                      style={styles.recentlyLoggedCover}
+                    />
+                  ) : (
+                    <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
+                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Library */}
         <View style={styles.librarySection}>
-          <Text style={styles.sectionTitle}>Game Library</Text>
+          <Text style={styles.sectionTitle}>Library</Text>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -366,8 +434,8 @@ export default function ProfileScreen() {
                     </View>
                   )}
                   {log.rating && (
-                    <View style={styles.ratingBadge}>
-                      <StarRating rating={log.rating} size={10} />
+                    <View style={styles.ratingBelow}>
+                      <StarRating rating={log.rating} size={12} filledOnly />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -467,43 +535,56 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: Spacing.md,
   },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
   },
   avatarText: {
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   displayName: {
     fontSize: FontSize.xl,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: Colors.text,
   },
   username: {
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
+  },
+  followCounts: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
+  },
+  followText: {
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  followNumber: {
+    fontWeight: '600',
+    color: Colors.text,
   },
   bio: {
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
-    marginTop: Spacing.sm,
-    paddingHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
   },
   statsRow: {
     flexDirection: 'row',
@@ -516,9 +597,16 @@ const styles = StyleSheet.create({
   },
   stat: {
     alignItems: 'center',
+    flex: 1,
+  },
+  statSeparator: {
+    width: 1,
+    height: '60%',
+    backgroundColor: Colors.border,
+    alignSelf: 'center',
   },
   statValue: {
-    fontSize: FontSize.xl,
+    fontSize: FontSize.lg,
     fontWeight: 'bold',
     color: Colors.text,
   },
@@ -552,7 +640,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '600',
   },
   favoritesRow: {
@@ -581,6 +669,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  recentlyLoggedSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  recentlyLoggedScroll: {
+    marginHorizontal: -Spacing.lg,
+  },
+  recentlyLoggedContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  recentlyLoggedCard: {
+    width: 105,
+  },
+  recentlyLoggedCover: {
+    width: 105,
+    aspectRatio: 3 / 4,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surface,
   },
   librarySection: {
     paddingHorizontal: Spacing.lg,
@@ -645,14 +753,9 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
-  ratingBadge: {
-    position: 'absolute',
-    top: Spacing.xs,
-    right: Spacing.xs,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
+  ratingBelow: {
+    marginTop: Spacing.xs,
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',

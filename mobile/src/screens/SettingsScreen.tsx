@@ -58,15 +58,15 @@ export default function SettingsScreen() {
 
   const validateUsername = (value: string): boolean => {
     if (value.length < 3) {
-      setUsernameError('Username must be at least 3 characters')
+      setUsernameError('username must be at least 3 characters')
       return false
     }
     if (value.length > 20) {
-      setUsernameError('Username must be 20 characters or less')
+      setUsernameError('username must be 20 characters or less')
       return false
     }
     if (!/^[a-z0-9_]+$/.test(value)) {
-      setUsernameError('Only lowercase letters, numbers, and underscores')
+      setUsernameError('only lowercase letters, numbers, and underscores')
       return false
     }
     setUsernameError(null)
@@ -161,7 +161,7 @@ export default function SettingsScreen() {
         .single()
 
       if (existing) {
-        setUsernameError('Username is already taken')
+        setUsernameError('username is already taken')
         return
       }
     }
@@ -192,11 +192,11 @@ export default function SettingsScreen() {
 
   const handleSignOut = () => {
     Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
+      'sign out',
+      'are you sure you want to sign out?',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Sign Out', style: 'destructive', onPress: signOut },
+        { text: 'cancel', style: 'cancel' },
+        { text: 'sign out', style: 'destructive', onPress: signOut },
       ]
     )
   }
@@ -208,7 +208,7 @@ export default function SettingsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={styles.headerTitle}>settings</Text>
         <TouchableOpacity
           onPress={handleSave}
           disabled={!hasChanges || isSaving || !!usernameError}
@@ -218,7 +218,7 @@ export default function SettingsScreen() {
             <ActivityIndicator size="small" color={Colors.accent} />
           ) : (
             <Text style={[styles.saveText, (!hasChanges || !!usernameError) && styles.saveTextDisabled]}>
-              Save
+              save
             </Text>
           )}
         </TouchableOpacity>
@@ -247,15 +247,15 @@ export default function SettingsScreen() {
                 <Ionicons name="camera" size={16} color={Colors.text} />
               </View>
             </TouchableOpacity>
-            <Text style={styles.changeAvatarText}>Change Avatar</Text>
+            <Text style={styles.changeAvatarText}>change avatar</Text>
           </View>
 
           {/* Profile Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Profile</Text>
+            <Text style={styles.sectionTitle}>profile</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Display Name</Text>
+              <Text style={styles.inputLabel}>display name</Text>
               <TextInput
                 style={styles.input}
                 value={displayName}
@@ -267,7 +267,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Username</Text>
+              <Text style={styles.inputLabel}>username</Text>
               <View style={styles.usernameInputContainer}>
                 <Text style={styles.usernamePrefix}>@</Text>
                 <TextInput
@@ -287,7 +287,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Bio</Text>
+              <Text style={styles.inputLabel}>bio</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={bio}
@@ -304,10 +304,10 @@ export default function SettingsScreen() {
 
           {/* Account Info */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account</Text>
+            <Text style={styles.sectionTitle}>account</Text>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoLabel}>email</Text>
               <Text style={styles.infoValue}>{user?.email}</Text>
             </View>
           </View>
@@ -316,14 +316,14 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-              <Text style={styles.signOutText}>Sign Out</Text>
+              <Text style={styles.signOutText}>sign out</Text>
             </TouchableOpacity>
           </View>
 
           {/* App Info */}
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>Sweaty</Text>
-            <Text style={styles.appVersion}>Version 1.0.0</Text>
+            <Text style={styles.appName}>sweaty</Text>
+            <Text style={styles.appVersion}>version 1.0.0</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   saveText: {
     fontSize: FontSize.md,
     fontWeight: '600',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   saveTextDisabled: {
     color: Colors.textDim,
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   },
   changeAvatarText: {
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: Colors.accentLight,
     marginTop: Spacing.sm,
   },
   section: {
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: FontSize.lg,
     fontWeight: 'bold',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   appVersion: {
     fontSize: FontSize.sm,

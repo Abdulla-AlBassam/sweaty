@@ -11,6 +11,15 @@ interface ActivityItemProps {
   onGamePress?: (gameId: number) => void
 }
 
+function getActionText(activity: ActivityItemType): string {
+  // If there's a review, prioritize showing "reviewed"
+  if (activity.review && activity.review.trim().length > 0) {
+    return 'reviewed'
+  }
+  // Otherwise show the status verb
+  return getStatusVerb(activity.status)
+}
+
 function getRelativeTime(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
@@ -66,7 +75,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
           >
             {displayName}
           </Text>
-          {' '}{getStatusVerb(status)}{' '}
+          {' '}{getActionText(activity)}{' '}
           <Text
             style={styles.gameName}
             onPress={() => onGamePress?.(game.id)}
@@ -98,22 +107,23 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.surfaceLight,
   },
   avatarContainer: {
     marginRight: Spacing.sm,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -138,7 +148,7 @@ const styles = StyleSheet.create({
   },
   gameName: {
     fontWeight: '600',
-    color: Colors.accent,
+    color: Colors.accentLight,
   },
   meta: {
     flexDirection: 'row',
@@ -155,8 +165,8 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   cover: {
-    width: 45,
-    height: 60,
-    borderRadius: BorderRadius.sm,
+    width: 48,
+    height: 64,
+    borderRadius: BorderRadius.md,
   },
 })

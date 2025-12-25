@@ -431,7 +431,7 @@ export default function LogGameModal({
             </View>
 
             {/* Status Dropdown */}
-            <Text style={styles.sectionLabel}>Log game as...</Text>
+            <Text style={styles.sectionLabel}>Log Game As...</Text>
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setStatusPickerVisible(true)}
@@ -447,7 +447,7 @@ export default function LogGameModal({
                     <Text style={styles.dropdownText}>{currentStatusOption.label}</Text>
                   </>
                 ) : (
-                  <Text style={styles.dropdownPlaceholder}>Select status</Text>
+                  <Text style={styles.dropdownPlaceholder}>Select Status</Text>
                 )}
               </View>
               <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
@@ -465,7 +465,7 @@ export default function LogGameModal({
                     {platform ? (
                       <Text style={styles.dropdownText}>{platform}</Text>
                     ) : (
-                      <Text style={styles.dropdownPlaceholder}>Select platform</Text>
+                      <Text style={styles.dropdownPlaceholder}>Select Platform</Text>
                     )}
                   </View>
                   <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
@@ -565,7 +565,7 @@ export default function LogGameModal({
       <PickerModal
         visible={statusPickerVisible}
         onClose={() => setStatusPickerVisible(false)}
-        title="Log game as..."
+        title="Log Game As..."
         options={STATUS_OPTIONS}
         selectedValue={status}
         onSelect={setStatus}
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   pickerItemTextSelected: {
-    color: Colors.accent,
+    color: Colors.accentLight,
     fontWeight: '600',
   },
   // Rating styles
