@@ -64,13 +64,13 @@ export default function ProfileScreen() {
 
   // Filter tabs configuration
   const filterTabs = [
-    { key: 'all', label: 'all' },
-    { key: 'playing', label: 'playing' },
-    { key: 'completed', label: 'completed' },
-    { key: 'played', label: 'played' },
-    { key: 'want_to_play', label: 'want to play' },
-    { key: 'on_hold', label: 'on hold' },
-    { key: 'dropped', label: 'dropped' },
+    { key: 'all', label: 'All' },
+    { key: 'playing', label: 'Playing' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'played', label: 'Played' },
+    { key: 'want_to_play', label: 'Want to Play' },
+    { key: 'on_hold', label: 'On Hold' },
+    { key: 'dropped', label: 'Dropped' },
   ]
 
   // Get count for each status
@@ -280,7 +280,7 @@ export default function ProfileScreen() {
 
         {/* Ranks */}
         <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>ranks</Text>
+          <Text style={styles.sectionTitle}>Ranks</Text>
           <XPProgressBar type="gamer" levelInfo={gamerLevel} />
           <XPProgressBar type="social" levelInfo={socialLevel} />
         </View>
@@ -288,12 +288,12 @@ export default function ProfileScreen() {
         {/* Favorites */}
         <View style={styles.favoritesSection}>
           <View style={styles.favoritesTitleRow}>
-            <Text style={styles.sectionTitle}>favorites</Text>
+            <Text style={styles.sectionTitle}>Favorites</Text>
             <TouchableOpacity
               onPress={() => setIsFavoritesModalVisible(true)}
               style={styles.editButton}
             >
-              <Text style={styles.editButtonText}>edit</Text>
+              <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.favoritesRow}>
@@ -332,7 +332,7 @@ export default function ProfileScreen() {
 
         {/* Game Library */}
         <View style={styles.librarySection}>
-          <Text style={styles.sectionTitle}>game library</Text>
+          <Text style={styles.sectionTitle}>Game Library</Text>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -398,10 +398,10 @@ export default function ProfileScreen() {
             <View style={styles.emptyState}>
               <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
               <Text style={styles.emptyText}>
-                {gameLogs.length === 0 ? 'no games logged yet' : 'no games in this category'}
+                {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
               </Text>
               {gameLogs.length === 0 && (
-                <Text style={styles.emptySubtext}>search for games to start tracking!</Text>
+                <Text style={styles.emptySubtext}>Search for games to start tracking!</Text>
               )}
             </View>
           )}

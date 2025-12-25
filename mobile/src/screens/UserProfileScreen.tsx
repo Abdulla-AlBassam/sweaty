@@ -84,13 +84,13 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
   // Filter tabs configuration
   const filterTabs = [
-    { key: 'all', label: 'all' },
-    { key: 'playing', label: 'playing' },
-    { key: 'completed', label: 'completed' },
-    { key: 'played', label: 'played' },
-    { key: 'want_to_play', label: 'want to play' },
-    { key: 'on_hold', label: 'on hold' },
-    { key: 'dropped', label: 'dropped' },
+    { key: 'all', label: 'All' },
+    { key: 'playing', label: 'Playing' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'played', label: 'Played' },
+    { key: 'want_to_play', label: 'Want to Play' },
+    { key: 'on_hold', label: 'On Hold' },
+    { key: 'dropped', label: 'Dropped' },
   ]
 
   // Get count for each status
@@ -430,14 +430,14 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
         {/* Ranks */}
         <View style={styles.ranksSection}>
-          <Text style={styles.sectionTitle}>ranks</Text>
+          <Text style={styles.sectionTitle}>Ranks</Text>
           <XPProgressBar type="gamer" levelInfo={getGamerLevel(calculateGamerXP(gameLogs))} />
           <XPProgressBar type="social" levelInfo={getSocialLevel(calculateSocialXP(gameLogs, followerCount))} />
         </View>
 
         {/* Favorites */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>favorites</Text>
+          <Text style={styles.sectionTitle}>Favorites</Text>
           {favorites.length > 0 ? (
             <View style={styles.favoritesRow}>
               {favorites.map((game) => {
@@ -463,14 +463,14 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </View>
           ) : (
             <View style={styles.emptyFavorites}>
-              <Text style={styles.emptyFavoritesText}>no favorites yet</Text>
+              <Text style={styles.emptyFavoritesText}>No favorites yet</Text>
             </View>
           )}
         </View>
 
         {/* Game Library */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>game library</Text>
+          <Text style={styles.sectionTitle}>Game Library</Text>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -536,7 +536,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <View style={styles.emptyState}>
               <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
               <Text style={styles.emptyText}>
-                {gameLogs.length === 0 ? 'no games logged yet' : 'no games in this category'}
+                {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
               </Text>
             </View>
           )}
