@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -44,12 +44,17 @@ export default function EditFavoritesModal({
   const [searchResults, setSearchResults] = useState<Game[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isSearchMode, setIsSearchMode] = useState(false)
+  const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null)
+  const searchInputRef = useRef<TextInput>(null)
 
   useEffect(() => {
     if (visible) {
       setFavorites(currentFavorites)
       setQuery('')
       setSearchResults([])
+      setIsSearchMode(false)
+      setActiveSlotIndex(null)
     }
   }, [visible, currentFavorites])
 
@@ -88,6 +93,24 @@ export default function EditFavoritesModal({
     return () => clearTimeout(timeoutId)
   }
 
+  const openSearchForSlot = (slotIndex: number) => {
+    setActiveSlotIndex(slotIndex)
+    setIsSearchMode(true)
+    setQuery('')
+    setSearchResults([])
+    setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 100)
+  }
+
+  const closeSearch = () => {
+    setIsSearchMode(false)
+    setActiveSlotIndex(null)
+    setQuery('')
+    setSearchResults([])
+    Keyboard.dismiss()
+  }
+
   const addFavorite = (game: Game) => {
     if (favorites.length >= 3) return
 
@@ -98,8 +121,7 @@ export default function EditFavoritesModal({
     }
 
     setFavorites([...favorites, newGame])
-    setSearchResults(searchResults.filter(g => g.id !== game.id))
-    Keyboard.dismiss()
+    closeSearch()
   }
 
   const removeFavorite = (gameId: number) => {
@@ -149,13 +171,11 @@ export default function EditFavoritesModal({
 
   const renderSearchResult = ({ item }: { item: Game }) => {
     const coverUrl = getCoverUrl(item)
-    const isDisabled = favorites.length >= 3
 
     return (
       <TouchableOpacity
-        style={[styles.searchResultItem, isDisabled && styles.searchResultDisabled]}
+        style={styles.searchResultItem}
         onPress={() => addFavorite(item)}
-        disabled={isDisabled}
       >
         {coverUrl ? (
           <Image source={{ uri: coverUrl }} style={styles.resultCover} />
@@ -168,7 +188,7 @@ export default function EditFavoritesModal({
         <Ionicons
           name="add-circle"
           size={24}
-          color={isDisabled ? Colors.textDim : Colors.accent}
+          color={Colors.accent}
         />
       </TouchableOpacity>
     )
@@ -185,114 +205,139 @@ export default function EditFavoritesModal({
         <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>edit favorites</Text>
+            {isSearchMode ? (
+              <>
+                <TouchableOpacity onPress={closeSearch} style={styles.backButton}>
+                  <Ionicons name="arrow-back" size={24} color={Colors.text} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Add Game</Text>
+              </>
+            ) : (
+              <Text style={styles.headerTitle}>Edit Favorites</Text>
+            )}
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
 
-          {/* Current Favorites */}
-          <View style={styles.currentFavorites}>
-            <Text style={styles.sectionLabel}>
-              your favorites ({favorites.length}/3)
-            </Text>
-            <View style={styles.favoritesRow}>
-              {[0, 1, 2].map((index) => {
-                const game = favorites[index]
-                if (game) {
-                  const coverUrl = getCoverUrl(game)
-                  return (
-                    <View key={game.id} style={styles.favoriteSlot}>
-                      {coverUrl ? (
-                        <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
-                      ) : (
-                        <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                          <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
-                        </View>
-                      )}
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => removeFavorite(game.id)}
-                      >
-                        <Ionicons name="close-circle" size={22} color={Colors.error} />
-                      </TouchableOpacity>
-                      <Text style={styles.favoriteName} numberOfLines={1}>{game.name}</Text>
-                    </View>
-                  )
-                }
-                return (
-                  <View key={`empty-${index}`} style={styles.favoriteSlot}>
-                    <View style={[styles.favoriteCover, styles.emptySlot]}>
-                      <Ionicons name="add" size={24} color={Colors.textDim} />
-                    </View>
-                    <Text style={styles.emptySlotText}>empty</Text>
+          {isSearchMode ? (
+            /* Search Mode View */
+            <>
+              {/* Search Input */}
+              <View style={styles.searchSection}>
+                <View style={styles.searchContainer}>
+                  <Ionicons name="search" size={20} color={Colors.textDim} style={styles.searchIcon} />
+                  <TextInput
+                    ref={searchInputRef}
+                    style={styles.searchInput}
+                    placeholder="Search for a game..."
+                    placeholderTextColor={Colors.textDim}
+                    value={query}
+                    onChangeText={handleSearchChange}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  {query.length > 0 && (
+                    <TouchableOpacity onPress={() => { setQuery(''); setSearchResults([]) }}>
+                      <Ionicons name="close-circle" size={20} color={Colors.textDim} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Search Results */}
+              <View style={styles.resultsContainer}>
+                {isSearching ? (
+                  <View style={styles.centered}>
+                    <ActivityIndicator size="small" color={Colors.accent} />
                   </View>
-                )
-              })}
-            </View>
-          </View>
+                ) : searchResults.length > 0 ? (
+                  <FlatList
+                    data={searchResults}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={renderSearchResult}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  />
+                ) : query.length >= 2 ? (
+                  <View style={styles.centered}>
+                    <Text style={styles.noResults}>No games found</Text>
+                  </View>
+                ) : (
+                  <View style={styles.centered}>
+                    <Ionicons name="search" size={48} color={Colors.textDim} />
+                    <Text style={styles.noResults}>Search for a game to add</Text>
+                  </View>
+                )}
+              </View>
+            </>
+          ) : (
+            /* Normal View - Favorites Grid */
+            <>
+              {/* Current Favorites */}
+              <View style={styles.currentFavorites}>
+                <Text style={styles.sectionLabel}>
+                  Your Favorites ({favorites.length}/3)
+                </Text>
+                <View style={styles.favoritesRow}>
+                  {[0, 1, 2].map((index) => {
+                    const game = favorites[index]
+                    if (game) {
+                      const coverUrl = getCoverUrl(game)
+                      return (
+                        <View key={game.id} style={styles.favoriteSlot}>
+                          {coverUrl ? (
+                            <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                          ) : (
+                            <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                              <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                            </View>
+                          )}
+                          <TouchableOpacity
+                            style={styles.removeButton}
+                            onPress={() => removeFavorite(game.id)}
+                          >
+                            <Ionicons name="close-circle" size={22} color={Colors.error} />
+                          </TouchableOpacity>
+                          <Text style={styles.favoriteName} numberOfLines={1}>{game.name}</Text>
+                        </View>
+                      )
+                    }
+                    return (
+                      <TouchableOpacity
+                        key={`empty-${index}`}
+                        style={styles.favoriteSlot}
+                        onPress={() => openSearchForSlot(index)}
+                      >
+                        <View style={[styles.favoriteCover, styles.emptySlot]}>
+                          <Ionicons name="add" size={28} color={Colors.textDim} />
+                        </View>
+                        <Text style={styles.emptySlotText}>Tap to add</Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
 
-          {/* Search */}
-          <View style={styles.searchSection}>
-            <Text style={styles.sectionLabel}>add a game</Text>
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={Colors.textDim} style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="search for a game..."
-                placeholderTextColor={Colors.textDim}
-                value={query}
-                onChangeText={handleSearchChange}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              {query.length > 0 && (
-                <TouchableOpacity onPress={() => { setQuery(''); setSearchResults([]) }}>
-                  <Ionicons name="close-circle" size={20} color={Colors.textDim} />
+              {/* Spacer */}
+              <View style={styles.spacer} />
+
+              {/* Save Button */}
+              <View style={styles.footer}>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <ActivityIndicator size="small" color={Colors.background} />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Save Favorites</Text>
+                  )}
                 </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
-          {/* Search Results */}
-          <View style={styles.resultsContainer}>
-            {isSearching ? (
-              <View style={styles.centered}>
-                <ActivityIndicator size="small" color={Colors.accent} />
               </View>
-            ) : searchResults.length > 0 ? (
-              <FlatList
-                data={searchResults}
-                keyExtractor={(item) => item.id.toString()}
-                renderItem={renderSearchResult}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              />
-            ) : query.length >= 2 ? (
-              <View style={styles.centered}>
-                <Text style={styles.noResults}>no games found</Text>
-              </View>
-            ) : (
-              <View style={styles.centered}>
-                <Text style={styles.noResults}>search for games to add</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Save Button */}
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator size="small" color={Colors.background} />
-              ) : (
-                <Text style={styles.saveButtonText}>save favorites</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+            </>
+          )}
         </Pressable>
       </Pressable>
     </Modal>
@@ -309,8 +354,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
-    maxHeight: '90%',
-    minHeight: '70%',
+    maxHeight: '85%',
+    minHeight: '50%',
   },
   header: {
     flexDirection: 'row',
@@ -324,14 +369,17 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     fontWeight: '600',
     color: Colors.text,
+    flex: 1,
+  },
+  backButton: {
+    padding: Spacing.xs,
+    marginRight: Spacing.sm,
   },
   closeButton: {
     padding: Spacing.xs,
   },
   currentFavorites: {
     padding: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   sectionLabel: {
     fontSize: FontSize.sm,
@@ -414,6 +462,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.xl,
+    gap: Spacing.md,
   },
   noResults: {
     fontSize: FontSize.sm,
@@ -426,9 +475,6 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.sm,
-  },
-  searchResultDisabled: {
-    opacity: 0.5,
   },
   resultCover: {
     width: 40,
@@ -445,6 +491,9 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
     marginHorizontal: Spacing.md,
+  },
+  spacer: {
+    flex: 1,
   },
   footer: {
     padding: Spacing.lg,
