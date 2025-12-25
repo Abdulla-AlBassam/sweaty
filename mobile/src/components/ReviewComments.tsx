@@ -325,8 +325,8 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
   }
 
   return (
-    <View style={[styles.container, isExpanded && styles.containerExpanded]}>
-      {/* Comment toggle button */}
+    <>
+      {/* Comment toggle button - stays inline with like button */}
       <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7}>
         <Ionicons
           name="chatbubble-outline"
@@ -338,7 +338,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
         )}
       </TouchableOpacity>
 
-      {/* Expanded comments section */}
+      {/* Expanded comments section - full width below */}
       {isExpanded && (
         <View style={styles.expandedSection}>
           {isLoading ? (
@@ -412,17 +412,11 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
           )}
         </View>
       )}
-    </View>
+    </>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexShrink: 0,
-  },
-  containerExpanded: {
-    width: '100%',
-  },
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -434,6 +428,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   expandedSection: {
+    width: '100%',
     marginTop: Spacing.md,
   },
   loadingContainer: {
