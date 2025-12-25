@@ -73,7 +73,7 @@ export default function PremiumBadge({ size = 'medium' }: PremiumBadgeProps) {
   return (
     <View style={[styles.container, { borderRadius: currentSize.borderRadius }]}>
       <LinearGradient
-        colors={['#FFD700', '#FFA500', '#FF8C00']}
+        colors={['#22c55e', '#16a34a', '#15803d']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[
@@ -107,7 +107,7 @@ export default function PremiumBadge({ size = 'medium' }: PremiumBadgeProps) {
           <Ionicons
             name="diamond"
             size={currentSize.iconSize}
-            color="#1a1a1a"
+            color="#ffffff"
           />
           <Text style={[styles.text, { fontSize: currentSize.fontSize }]}>
             PREMIUM
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
     // Subtle shadow for depth
-    shadowColor: '#FFD700',
+    shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: Fonts.bodyBold,
-    color: '#1a1a1a',
+    color: '#ffffff',
     letterSpacing: 1,
   },
 })
