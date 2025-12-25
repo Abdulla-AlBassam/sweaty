@@ -7,12 +7,15 @@ import {
   Image,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
+import { usePremium } from '../hooks/usePremium'
 import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -23,6 +26,10 @@ import LogGameModal from '../components/LogGameModal'
 import EditFavoritesModal from '../components/EditFavoritesModal'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
+import PremiumBadge from '../components/PremiumBadge'
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const BANNER_HEIGHT = 150
 
 interface FavoriteGame {
   id: number
@@ -62,6 +69,12 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false)
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
+
+  // Premium status
+  const { isPremium } = usePremium(
+    profile?.subscription_tier,
+    profile?.subscription_expires_at
+  )
 
   // Filter tabs configuration
   const filterTabs = [
@@ -219,7 +232,24 @@ export default function ProfileScreen() {
           />
         }
       >
-        {/* Header */}
+        {/* Banner */}
+        {profile?.banner_url ? (
+          <View style={styles.bannerContainer}>
+            <Image
+              source={{ uri: profile.banner_url }}
+              style={styles.banner}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', Colors.background]}
+              style={styles.bannerGradient}
+            />
+          </View>
+        ) : (
+          <View style={styles.bannerPlaceholder} />
+        )}
+
+        {/* Header - overlaid on banner */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>profile</Text>
           <TouchableOpacity
@@ -231,7 +261,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Profile Info - Vertical Layout */}
-        <View style={styles.profileSection}>
+        <View style={[styles.profileSection, profile?.banner_url && styles.profileSectionWithBanner]}>
           {profile?.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           ) : (
@@ -240,7 +270,10 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          <Text style={styles.displayName}>{displayName}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.displayName}>{displayName}</Text>
+            {isPremium && <PremiumBadge size="small" />}
+          </View>
           <Text style={styles.username}>@{username}</Text>
 
           <View style={styles.followCounts}>
@@ -516,6 +549,25 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Spacing.xxl,
   },
+  bannerContainer: {
+    width: SCREEN_WIDTH,
+    height: BANNER_HEIGHT,
+    position: 'relative',
+  },
+  banner: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  bannerPlaceholder: {
+    height: 0,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -537,6 +589,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,
+  },
+  profileSectionWithBanner: {
+    marginTop: -40,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   avatar: {
     width: 100,

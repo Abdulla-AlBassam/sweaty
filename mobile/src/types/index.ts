@@ -15,13 +15,19 @@ export interface Game {
 }
 
 // User types
+export type SubscriptionTier = 'free' | 'trial' | 'monthly' | 'yearly' | 'lifetime'
+
 export interface Profile {
   id: string
   username: string
   display_name: string | null
   avatar_url: string | null
+  banner_url: string | null
   bio: string | null
   favorite_games: number[] | null
+  subscription_tier: SubscriptionTier
+  subscription_expires_at: string | null
+  trial_started_at: string | null
   created_at: string
   updated_at: string
 }

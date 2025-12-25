@@ -8,10 +8,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
@@ -20,10 +22,15 @@ import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { calculateXP, getLevel } from '../lib/xp'
+import { checkIsPremium } from '../hooks/usePremium'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
 import XPProgressBar from '../components/XPProgressBar'
+import PremiumBadge from '../components/PremiumBadge'
 import { ProfileSkeleton } from '../components/skeletons'
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const BANNER_HEIGHT = 150
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -32,8 +39,11 @@ interface Profile {
   username: string
   display_name: string | null
   avatar_url: string | null
+  banner_url: string | null
   bio: string | null
   favorite_games?: number[] | null
+  subscription_tier?: string | null
+  subscription_expires_at?: string | null
 }
 
 interface FavoriteGame {
@@ -361,8 +371,25 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           />
         }
       >
+        {/* Banner */}
+        {profile.banner_url ? (
+          <View style={styles.bannerContainer}>
+            <Image
+              source={{ uri: profile.banner_url }}
+              style={styles.banner}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', Colors.background]}
+              style={styles.bannerGradient}
+            />
+          </View>
+        ) : (
+          <View style={styles.bannerPlaceholder} />
+        )}
+
         {/* Profile Info - Vertical Layout */}
-        <View style={styles.profileSection}>
+        <View style={[styles.profileSection, profile.banner_url && styles.profileSectionWithBanner]}>
           {profile.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           ) : (
@@ -371,9 +398,14 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </View>
           )}
 
-          <Text style={styles.displayName}>
-            {profile.display_name || profile.username}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.displayName}>
+              {profile.display_name || profile.username}
+            </Text>
+            {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
+              <PremiumBadge size="small" />
+            )}
+          </View>
           <Text style={styles.username}>@{profile.username}</Text>
 
           <View style={styles.followCounts}>
@@ -646,6 +678,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,
+  },
+  bannerContainer: {
+    width: SCREEN_WIDTH,
+    height: BANNER_HEIGHT,
+    position: 'relative',
+  },
+  banner: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  bannerPlaceholder: {
+    height: 0,
+  },
+  profileSectionWithBanner: {
+    marginTop: -40,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   avatar: {
     width: 100,
