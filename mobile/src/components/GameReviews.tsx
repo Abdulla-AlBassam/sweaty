@@ -100,7 +100,7 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
   if (isLoading) {
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>reviews</Text>
+        <Text style={styles.sectionTitle}>Reviews</Text>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color={Colors.accent} />
         </View>
@@ -111,7 +111,7 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
   if (reviews.length === 0) {
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>reviews</Text>
+        <Text style={styles.sectionTitle}>Reviews</Text>
         <View style={styles.emptyContainer}>
           <Ionicons name="chatbubble-outline" size={32} color={Colors.textDim} />
           <Text style={styles.emptyText}>no reviews yet</Text>
@@ -123,7 +123,7 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>reviews ({reviews.length})</Text>
+      <Text style={styles.sectionTitle}>Reviews ({reviews.length})</Text>
       {reviews.map((review) => (
         <View key={review.id} style={styles.reviewCard}>
           <TouchableOpacity

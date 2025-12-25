@@ -285,6 +285,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           />
         </TouchableOpacity>
 
+        {/* Reviews */}
+        <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
+
         {/* About */}
         {game.summary && (
           <View style={styles.section}>
@@ -305,9 +308,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
           </View>
         )}
-
-        {/* Reviews */}
-        <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
       </ScrollView>
 
       {/* Log Game Modal */}
