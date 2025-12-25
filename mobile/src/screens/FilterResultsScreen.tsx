@@ -151,7 +151,7 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
   const renderPill = (label: string, onRemove: () => void) => (
     <TouchableOpacity key={label} style={styles.filterPill} onPress={onRemove}>
       <Text style={styles.filterPillText}>{label}</Text>
-      <Ionicons name="close" size={14} color={Colors.text} />
+      <Ionicons name="close" size={14} color={Colors.textMuted} />
     </TouchableOpacity>
   )
 
@@ -191,10 +191,10 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>browse games</Text>
+        <Text style={styles.headerTitle}>Browse Games</Text>
         {hasFilters && (
           <TouchableOpacity onPress={clearAll} style={styles.clearAllButton}>
-            <Text style={styles.clearAllText}>clear all</Text>
+            <Text style={styles.clearAllText}>Clear All</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -221,8 +221,8 @@ export default function FilterResultsScreen({ navigation, route }: Props) {
       ) : games.length === 0 ? (
         <View style={styles.centered}>
           <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
-          <Text style={styles.emptyText}>no games found</Text>
-          <Text style={styles.emptySubtext}>try adjusting your filters</Text>
+          <Text style={styles.emptyText}>No Games Found</Text>
+          <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
         </View>
       ) : (
         <FlatList
@@ -278,16 +278,17 @@ const styles = StyleSheet.create({
   },
   clearAllText: {
     fontSize: FontSize.sm,
-    color: Colors.accentLight,
+    color: Colors.textMuted,
     fontWeight: '500',
   },
   filtersBar: {
-    maxHeight: 50,
+    maxHeight: 56,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   filtersContent: {
     flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
@@ -295,16 +296,18 @@ const styles = StyleSheet.create({
   filterPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    backgroundColor: Colors.accent,
-    borderRadius: 16,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   filterPillText: {
-    fontSize: FontSize.xs,
-    color: Colors.background,
-    fontWeight: '600',
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    fontWeight: '500',
   },
   centered: {
     flex: 1,
