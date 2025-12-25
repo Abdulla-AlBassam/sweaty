@@ -13,6 +13,7 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { AuthStackParamList } from '../navigation'
 
 type SignupScreenProps = {
@@ -197,13 +198,14 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxl,
   },
   logo: {
+    fontFamily: Fonts.display,
     fontSize: 48,
-    fontWeight: 'bold',
     color: Colors.accentLight,
     textAlign: 'center',
     marginBottom: Spacing.xs,
   },
   tagline: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     textAlign: 'center',
@@ -218,6 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   errorText: {
+    fontFamily: Fonts.body,
     color: Colors.error,
     fontSize: FontSize.sm,
     textAlign: 'center',
@@ -226,6 +229,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   input: {
+    fontFamily: Fonts.body,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -247,9 +251,9 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
-    fontWeight: '600',
   },
   footer: {
     flexDirection: 'row',
@@ -257,12 +261,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xxl,
   },
   footerText: {
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.sm,
   },
   footerLink: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.accentLight,
     fontSize: FontSize.sm,
-    fontWeight: '600',
   },
 })

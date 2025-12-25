@@ -95,11 +95,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   title: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   seeAll: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
@@ -122,6 +123,7 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   placeholderText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textAlign: 'center',

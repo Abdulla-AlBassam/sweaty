@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { ActivityItem as ActivityItemType, GameStatus } from '../types'
 import { STATUS_LABELS, getIGDBImageUrl } from '../constants'
 import StarRating from './StarRating'
@@ -129,8 +130,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.text,
   },
   content: {
@@ -138,16 +139,17 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   text: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     lineHeight: 20,
   },
   username: {
-    fontWeight: '600',
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.text,
   },
   gameName: {
-    fontWeight: '600',
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.accentLight,
   },
   meta: {
@@ -161,6 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   time: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },

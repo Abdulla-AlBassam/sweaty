@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
 import { useActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { MainStackParamList } from '../navigation'
 import ActivityItem from '../components/ActivityItem'
 import { ActivitySkeletonList } from '../components/skeletons'
@@ -96,8 +97,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   title: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xxl,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   scrollView: {
@@ -116,12 +117,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   emptyTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.sm,
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',

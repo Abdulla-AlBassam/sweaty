@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
@@ -349,8 +350,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
     marginLeft: Spacing.sm,
   },
@@ -360,8 +361,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.accentLight,
   },
   saveTextDisabled: {
@@ -404,6 +405,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.background,
   },
   changeAvatarText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.accentLight,
     marginTop: Spacing.sm,
@@ -412,8 +414,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
     textTransform: 'uppercase',
@@ -422,11 +424,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   inputLabel: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
   input: {
+    fontFamily: Fonts.body,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
@@ -444,11 +448,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   usernamePrefix: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     paddingLeft: Spacing.md,
   },
   usernameInput: {
+    fontFamily: Fonts.body,
     flex: 1,
     padding: Spacing.md,
     paddingLeft: Spacing.xs,
@@ -456,6 +462,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   errorText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.error,
     marginTop: Spacing.xs,
@@ -465,6 +472,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
   },
   charCount: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textAlign: 'right',
@@ -480,10 +488,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   infoLabel: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
   },
   infoValue: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
   },
@@ -499,8 +509,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
   },
   signOutText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.error,
   },
   appInfo: {
@@ -509,11 +519,12 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   appName: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   appVersion: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,

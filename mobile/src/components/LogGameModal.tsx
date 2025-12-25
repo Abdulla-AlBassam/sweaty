@@ -15,6 +15,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -609,8 +610,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   closeButton: {
@@ -640,13 +641,13 @@ const styles = StyleSheet.create({
   gameTitle: {
     flex: 1,
     marginLeft: Spacing.md,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.text,
   },
   sectionLabel: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.sm,
   },
@@ -669,10 +670,12 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dropdownText: {
+    fontFamily: Fonts.body,
     color: Colors.text,
     fontSize: 16,
   },
   dropdownPlaceholder: {
+    fontFamily: Fonts.body,
     color: Colors.textDim,
     fontSize: 16,
   },
@@ -697,8 +700,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   pickerTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   pickerCloseButton: {
@@ -720,12 +723,13 @@ const styles = StyleSheet.create({
   },
   pickerItemText: {
     flex: 1,
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
   },
   pickerItemTextSelected: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.accentLight,
-    fontWeight: '600',
   },
   // Rating styles
   ratingContainer: {
@@ -755,6 +759,7 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   clearRatingText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
@@ -763,6 +768,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   reviewInput: {
+    fontFamily: Fonts.body,
     backgroundColor: Colors.background,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
@@ -773,6 +779,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   reviewCharCount: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textAlign: 'right',
@@ -785,6 +792,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   errorText: {
+    fontFamily: Fonts.body,
     color: Colors.error,
     fontSize: FontSize.sm,
     textAlign: 'center',
@@ -820,8 +828,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.textDim,
   },
   saveButtonText: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
-    fontWeight: '600',
   },
 })

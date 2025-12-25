@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import StarRating from './StarRating'
@@ -195,8 +196,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
   },
@@ -211,11 +212,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: Spacing.sm,
   },
   emptySubtext: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: Spacing.xs,
@@ -245,8 +248,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.sm,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   userInfo: {
@@ -254,11 +257,12 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
   displayName: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     color: Colors.text,
   },
   username: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },
@@ -271,11 +275,13 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   timeText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: 2,
   },
   reviewText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 20,
@@ -287,8 +293,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   showAllText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
     color: Colors.accent,
-    fontWeight: '600',
   },
 })

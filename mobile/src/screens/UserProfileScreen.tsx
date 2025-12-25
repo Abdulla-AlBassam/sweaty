@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -620,8 +621,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   centered: {
@@ -630,6 +631,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.md,
     marginTop: Spacing.md,
@@ -657,11 +659,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   displayName: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xl,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   username: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
@@ -672,14 +675,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   followText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   followNumber: {
-    fontWeight: '600',
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.text,
   },
   bio: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
@@ -700,9 +705,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.textMuted,
   },
   followButtonText: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
-    fontWeight: '600',
   },
   followingButtonText: {
     color: Colors.text,
@@ -727,11 +732,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   statValue: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.lg,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   statLabel: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
@@ -766,8 +772,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
   },
@@ -795,12 +801,13 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   filterTabText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   filterTabTextSelected: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
-    fontWeight: '600',
   },
   filterTabTextDimmed: {
     color: Colors.textDim,
@@ -825,6 +832,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   gameTitle: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.text,
     marginTop: Spacing.xs,
@@ -839,6 +847,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: Spacing.md,
@@ -870,6 +879,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyFavoritesText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },

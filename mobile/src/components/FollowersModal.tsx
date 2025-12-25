@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 
@@ -291,8 +292,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   closeButton: {
@@ -306,6 +307,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.md,
@@ -332,8 +334,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.md,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   userInfo: {
@@ -341,11 +343,12 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   displayName: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.text,
   },
   username: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: 2,
@@ -364,8 +367,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.textMuted,
   },
   followButtonText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     color: Colors.background,
   },
   followingButtonText: {
