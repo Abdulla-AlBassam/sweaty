@@ -12,7 +12,10 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
+import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -51,7 +54,7 @@ const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
 export default function SearchScreen() {
-  const navigation = useNavigation()
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
   const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
   const [query, setQuery] = useState('')
@@ -361,6 +364,31 @@ export default function SearchScreen() {
             />
           }
         >
+          {/* Ask Sweaty AI Card */}
+          <TouchableOpacity
+            style={styles.aiCard}
+            onPress={() => navigation.navigate('AIRecommend')}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={[Colors.accent + '25', Colors.accent + '10']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.aiCardGradient}
+            >
+              <View style={styles.aiCardContent}>
+                <View style={styles.aiCardIconContainer}>
+                  <Ionicons name="sparkles" size={24} color={Colors.accent} />
+                </View>
+                <View style={styles.aiCardTextContainer}>
+                  <Text style={styles.aiCardTitle}>Ask Sweaty AI...</Text>
+                  <Text style={styles.aiCardSubtitle}>Get personalized game recommendations</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.accent} />
+              </View>
+            </LinearGradient>
+          </TouchableOpacity>
+
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
             <View style={styles.recentSection}>
@@ -664,5 +692,45 @@ const styles = StyleSheet.create({
   userInfoSkeleton: {
     flex: 1,
     marginLeft: Spacing.md,
+  },
+  // AI Card styles
+  aiCard: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.accent + '30',
+  },
+  aiCardGradient: {
+    padding: Spacing.lg,
+  },
+  aiCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aiCardIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.accent + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  aiCardTextContainer: {
+    flex: 1,
+  },
+  aiCardTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  aiCardSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
   },
 })

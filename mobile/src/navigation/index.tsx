@@ -12,6 +12,7 @@ import GameDetailScreen from '../screens/GameDetailScreen'
 import UserProfileScreen from '../screens/UserProfileScreen'
 import SettingsScreen from '../screens/SettingsScreen'
 import CuratedListDetailScreen from '../screens/CuratedListDetailScreen'
+import AIRecommendScreen from '../screens/AIRecommendScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -25,6 +26,7 @@ export type MainStackParamList = {
   UserProfile: { username: string; userId?: string }
   Settings: undefined
   CuratedListDetail: { listSlug: string; listTitle: string; gameIds: number[] }
+  AIRecommend: undefined
 }
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -79,6 +81,14 @@ function MainNavigator() {
         component={CuratedListDetailScreen}
         options={{
           animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="AIRecommend"
+        component={AIRecommendScreen}
+        options={{
+          animation: 'slide_from_bottom',
+          presentation: 'modal',
         }}
       />
     </MainStack.Navigator>
