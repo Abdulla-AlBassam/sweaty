@@ -276,6 +276,31 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
   return games.map(game => transformGame(game))
 }
 
+// Get recent games released within the last N months
+// Useful for AI recommendations when user asks for "new" or "recent" games
+export async function getRecentGames(limit: number = 50, monthsBack: number = 24): Promise<Game[]> {
+  // Calculate timestamp for N months ago
+  const now = new Date()
+  const pastDate = new Date(now.setMonth(now.getMonth() - monthsBack))
+  const unixTimestamp = Math.floor(pastDate.getTime() / 1000)
+
+  const body = `
+    fields name, slug, summary, cover.image_id, first_release_date,
+           genres.name, platforms.name, total_rating, category;
+    where first_release_date > ${unixTimestamp}
+      & category = (0, 8, 9, 10)
+      & total_rating != null
+      & cover != null;
+    sort total_rating desc;
+    limit ${limit};
+  `
+
+  console.log('IGDB Recent Games Query:', body)
+
+  const games = await igdbFetch('games', body) as IGDBGame[]
+  return games.map(game => transformGame(game))
+}
+
 // Get popular game IDs from IGDB's popularity_primitives endpoint
 // This is the same data source as IGDB's homepage "Popular Right Now"
 async function getPopularGameIds(limit: number = 15): Promise<number[]> {
