@@ -9,11 +9,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ImageBackground,
 } from 'react-native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { AuthStackParamList } from '../navigation'
+
+// Hero background image - Metal Gear Solid 3 artwork
+const heroBackground = require('../../assets/images/login-hero.png')
 
 type LoginScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>
@@ -54,79 +58,94 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <ImageBackground
+      source={heroBackground}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+      {/* Dark overlay for text readability */}
+      <View style={styles.overlay} />
+
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          {/* Logo */}
-          <Text style={styles.logo}>sweaty</Text>
-          <Text style={styles.tagline}>track your gaming journey</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Logo */}
+            <Text style={styles.logo}>sweaty</Text>
+            <Text style={styles.tagline}>track your gaming journey</Text>
 
-          {/* Error Message */}
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+            {/* Error Message */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            {/* Form */}
+            <View style={styles.form}>
+              <TextInput
+                style={styles.input}
+                placeholder="email"
+                placeholderTextColor={Colors.textDim}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="password"
+                placeholderTextColor={Colors.textDim}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <TouchableOpacity
+                style={[styles.button, isLoading && styles.buttonDisabled]}
+                onPress={handleLogin}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={Colors.background} />
+                ) : (
+                  <Text style={styles.buttonText}>log in</Text>
+                )}
+              </TouchableOpacity>
             </View>
-          )}
 
-          {/* Form */}
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="email"
-              placeholderTextColor={Colors.textDim}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="password"
-              placeholderTextColor={Colors.textDim}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={Colors.background} />
-              ) : (
-                <Text style={styles.buttonText}>log in</Text>
-              )}
-            </TouchableOpacity>
+            {/* Sign Up Link */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>don't have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+                <Text style={styles.footerLink}>sign up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* Sign Up Link */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>don't have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-              <Text style={styles.footerLink}>sign up</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   )
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -143,15 +162,21 @@ const styles = StyleSheet.create({
     color: Colors.accentLight,
     textAlign: 'center',
     marginBottom: Spacing.xs,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   tagline: {
     fontSize: FontSize.md,
     color: Colors.textMuted,
     textAlign: 'center',
     marginBottom: Spacing.xxl,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
     borderWidth: 1,
     borderColor: Colors.error,
     borderRadius: BorderRadius.md,
@@ -167,7 +192,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   input: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(26, 26, 26, 0.9)',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
@@ -200,10 +225,16 @@ const styles = StyleSheet.create({
   footerText: {
     color: Colors.textMuted,
     fontSize: FontSize.sm,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   footerLink: {
     color: Colors.accentLight,
     fontSize: FontSize.sm,
     fontWeight: '600',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 })
