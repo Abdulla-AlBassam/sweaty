@@ -9,12 +9,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ImageBackground,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { AuthStackParamList } from '../navigation'
+
+// Hero background image - Resident Evil artwork
+const heroBackground = require('../../assets/images/signup-hero.png')
 
 type SignupScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Signup'>
@@ -94,99 +99,164 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <ImageBackground
+      source={heroBackground}
+      style={styles.backgroundImage}
+      resizeMode="cover"
     >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+      {/* Dark overlay for text readability */}
+      <View style={styles.overlay} />
+
+      {/* Edge gradients for smooth blending */}
+      <LinearGradient
+        colors={['rgba(15, 15, 15, 0.9)', 'transparent']}
+        style={styles.edgeGradientTop}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(15, 15, 15, 0.95)']}
+        style={styles.edgeGradientBottom}
+      />
+      <LinearGradient
+        colors={['rgba(15, 15, 15, 0.7)', 'transparent']}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.edgeGradientLeft}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(15, 15, 15, 0.7)']}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.edgeGradientRight}
+      />
+
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.content}>
-          {/* Logo */}
-          <Text style={styles.logo}>sweaty</Text>
-          <Text style={styles.tagline}>Create your account</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.content}>
+            {/* Logo */}
+            <Text style={styles.logo}>SWEATY</Text>
+            <Text style={styles.tagline}>Create your account</Text>
 
-          {/* Error Message */}
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
+            {/* Error Message */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
+
+            {/* Form */}
+            <View style={styles.form}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={Colors.textDim}
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Username"
+                placeholderTextColor={Colors.textDim}
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={Colors.textDim}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm password"
+                placeholderTextColor={Colors.textDim}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <TouchableOpacity
+                style={[styles.button, isLoading && styles.buttonDisabled]}
+                onPress={handleSignup}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color={Colors.background} />
+                ) : (
+                  <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
+                )}
+              </TouchableOpacity>
             </View>
-          )}
 
-          {/* Form */}
-          <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={Colors.textDim}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="email-address"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Username"
-              placeholderTextColor={Colors.textDim}
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={Colors.textDim}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm password"
-              placeholderTextColor={Colors.textDim}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-
-            <TouchableOpacity
-              style={[styles.button, isLoading && styles.buttonDisabled]}
-              onPress={handleSignup}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={Colors.background} />
-              ) : (
-                <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
-              )}
-            </TouchableOpacity>
+            {/* Login Link */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+                <Text style={styles.footerLink}>Log in</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {/* Login Link */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-              <Text style={styles.footerLink}>Log in</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   )
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  },
+  edgeGradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+  },
+  edgeGradientBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+  },
+  edgeGradientLeft: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 80,
+  },
+  edgeGradientRight: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: 80,
+  },
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -203,6 +273,9 @@ const styles = StyleSheet.create({
     color: Colors.accentLight,
     textAlign: 'center',
     marginBottom: Spacing.xs,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   tagline: {
     fontFamily: Fonts.body,
@@ -210,9 +283,12 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     marginBottom: Spacing.xxl,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
     borderWidth: 1,
     borderColor: Colors.error,
     borderRadius: BorderRadius.md,
@@ -230,7 +306,7 @@ const styles = StyleSheet.create({
   },
   input: {
     fontFamily: Fonts.body,
-    backgroundColor: Colors.surface,
+    backgroundColor: 'rgba(26, 26, 26, 0.9)',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
@@ -264,10 +340,16 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.sm,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   footerLink: {
     fontFamily: Fonts.bodySemiBold,
     color: Colors.accentLight,
     fontSize: FontSize.sm,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
 })
