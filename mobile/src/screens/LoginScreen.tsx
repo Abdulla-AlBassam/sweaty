@@ -12,6 +12,7 @@ import {
   ImageBackground,
   Image,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
@@ -90,6 +91,28 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     >
       {/* Dark overlay for text readability */}
       <View style={styles.overlay} />
+
+      {/* Edge gradients for smooth blending */}
+      <LinearGradient
+        colors={['rgba(15, 15, 15, 0.9)', 'transparent']}
+        style={styles.edgeGradientTop}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(15, 15, 15, 0.95)']}
+        style={styles.edgeGradientBottom}
+      />
+      <LinearGradient
+        colors={['rgba(15, 15, 15, 0.7)', 'transparent']}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.edgeGradientLeft}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(15, 15, 15, 0.7)']}
+        start={{ x: 0, y: 0.5 }}
+        end={{ x: 1, y: 0.5 }}
+        style={styles.edgeGradientRight}
+      />
 
       <KeyboardAvoidingView
         style={styles.container}
@@ -193,7 +216,35 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  },
+  edgeGradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 150,
+  },
+  edgeGradientBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+  },
+  edgeGradientLeft: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 80,
+  },
+  edgeGradientRight: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: 80,
   },
   container: {
     flex: 1,
