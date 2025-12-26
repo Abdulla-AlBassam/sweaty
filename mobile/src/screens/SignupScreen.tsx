@@ -102,6 +102,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
     <ImageBackground
       source={heroBackground}
       style={styles.backgroundImage}
+      imageStyle={styles.backgroundImageStyle}
       resizeMode="cover"
     >
       {/* Dark overlay for text readability */}
@@ -222,6 +223,13 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
+  },
+  backgroundImageStyle: {
+    // Center the image horizontally when it's wider than the screen
+    resizeMode: 'cover',
+    // Shift the image to center the subject (adjust as needed)
+    left: '-20%',
+    width: '140%',
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
