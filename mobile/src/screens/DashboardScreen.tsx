@@ -116,15 +116,17 @@ export default function DashboardScreen() {
 
         {/* Welcome Section with Avatar */}
         <View style={styles.welcomeSection}>
-          {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
-          ) : (
-            <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
-              <Text style={styles.headerAvatarInitial}>
-                {displayName.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
+            ) : (
+              <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
+                <Text style={styles.headerAvatarInitial}>
+                  {displayName.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <Text style={styles.welcomeText}>
             {welcomeMessage.text}, {displayName}{welcomeMessage.isQuestion ? '?' : '!'}
           </Text>
