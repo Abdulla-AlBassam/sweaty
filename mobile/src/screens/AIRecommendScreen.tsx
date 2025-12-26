@@ -41,7 +41,7 @@ interface ChatMessage {
 
 // Example prompts to help users get started
 const EXAMPLE_PROMPTS = [
-  "Cozy games for relaxing",
+  "2025 releases similar to God of War",
   "Games like Zelda but shorter",
   "Couch co-op for beginners",
   "Challenging roguelikes",
@@ -165,9 +165,6 @@ export default function AIRecommendScreen() {
                         <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
                       </View>
                     )}
-                    <Text style={styles.gameTitle} numberOfLines={2}>
-                      {game.name}
-                    </Text>
                   </TouchableOpacity>
                 )
               })}
@@ -179,7 +176,7 @@ export default function AIRecommendScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -469,13 +466,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gameTitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-    marginTop: Spacing.xs,
-    textAlign: 'center',
-  },
   // Loading
   loadingContainer: {
     marginBottom: Spacing.md,
@@ -522,7 +512,8 @@ const styles = StyleSheet.create({
   // Input
   inputContainer: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     backgroundColor: Colors.background,

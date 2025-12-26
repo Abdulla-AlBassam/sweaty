@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Keyboard,
   Image,
   RefreshControl,
+  Animated,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -70,6 +71,70 @@ export default function SearchScreen() {
   const [isLoadingTrending, setIsLoadingTrending] = useState(true)
   const [communityGames, setCommunityGames] = useState<DiscoveryGame[]>([])
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
+
+  // AI Card animations
+  const sparkleScale = useRef(new Animated.Value(1)).current
+  const sparkleRotate = useRef(new Animated.Value(0)).current
+  const glowOpacity = useRef(new Animated.Value(0.3)).current
+
+  // Start AI card animations
+  useEffect(() => {
+    // Pulsing scale animation for sparkle
+    const pulseAnim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(sparkleScale, {
+          toValue: 1.2,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sparkleScale, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    )
+
+    // Rotating animation for sparkle
+    const rotateAnim = Animated.loop(
+      Animated.timing(sparkleRotate, {
+        toValue: 1,
+        duration: 3000,
+        useNativeDriver: true,
+      })
+    )
+
+    // Glowing animation
+    const glowAnim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowOpacity, {
+          toValue: 0.6,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowOpacity, {
+          toValue: 0.3,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    )
+
+    pulseAnim.start()
+    rotateAnim.start()
+    glowAnim.start()
+
+    return () => {
+      pulseAnim.stop()
+      rotateAnim.stop()
+      glowAnim.stop()
+    }
+  }, [sparkleScale, sparkleRotate, glowOpacity])
+
+  const sparkleRotation = sparkleRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  })
 
   // Load discovery sections and recent searches on mount
   useEffect(() => {
@@ -378,11 +443,28 @@ export default function SearchScreen() {
             >
               <View style={styles.aiCardContent}>
                 <View style={styles.aiCardIconContainer}>
-                  <Ionicons name="sparkles" size={24} color={Colors.accent} />
+                  {/* Animated glow behind sparkle */}
+                  <Animated.View
+                    style={[
+                      styles.aiCardGlow,
+                      { opacity: glowOpacity }
+                    ]}
+                  />
+                  {/* Animated sparkle icon */}
+                  <Animated.View
+                    style={{
+                      transform: [
+                        { scale: sparkleScale },
+                        { rotate: sparkleRotation },
+                      ],
+                    }}
+                  >
+                    <Ionicons name="sparkles" size={24} color={Colors.accent} />
+                  </Animated.View>
                 </View>
                 <View style={styles.aiCardTextContainer}>
-                  <Text style={styles.aiCardTitle}>Ask Sweaty AI...</Text>
-                  <Text style={styles.aiCardSubtitle}>Get personalized game recommendations</Text>
+                  <Text style={styles.aiCardTitle}>Ask Sweaty AI</Text>
+                  <Text style={styles.aiCardSubtitle}>Personalized game recommendations</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.accent} />
               </View>
@@ -718,6 +800,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
+  },
+  aiCardGlow: {
+    position: 'absolute',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.accent,
   },
   aiCardTextContainer: {
     flex: 1,

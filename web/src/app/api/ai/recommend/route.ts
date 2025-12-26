@@ -39,7 +39,7 @@ IMPORTANT RULES:
   "games": ["Game Name 1", "Game Name 2", "Game Name 3", ...]
 }
 
-2. Recommend 5-8 games that best match what the user is looking for
+2. Always recommend exactly 9 games that best match what the user is looking for
 3. Use EXACT official game names (e.g., "The Legend of Zelda: Breath of the Wild" not "Zelda BOTW")
 4. Be conversational and helpful in your message - explain WHY these games match their request
 5. If the user asks for something impossible or unclear, still provide your best recommendations with an explanation
@@ -70,7 +70,7 @@ IMPORTANT RULES:
   "games": ["Game Name 1", "Game Name 2", "Game Name 3", ...]
 }
 
-2. Recommend 5-8 games from the list above that best match what the user is looking for
+2. Always recommend exactly 9 games from the list above that best match what the user is looking for
 3. Use EXACT game names as shown in the list (copy them exactly)
 4. Be conversational and helpful in your message - explain WHY these games match their request
 5. Only recommend games from the provided list since the user wants recent games
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     if (recentGamesCache.length > 0) {
       // Match games from cache by name
-      for (const gameName of parsedResponse.games.slice(0, 8)) {
+      for (const gameName of parsedResponse.games.slice(0, 9)) {
         const cachedGame = recentGamesCache.find(
           g => g.name.toLowerCase() === gameName.toLowerCase()
         )
@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
         name => !games.find(g => g.name.toLowerCase() === name.toLowerCase())
       )
 
-      const gamePromises = missingGames.slice(0, 8 - games.length).map(async (gameName: string) => {
+      const gamePromises = missingGames.slice(0, 9 - games.length).map(async (gameName: string) => {
         try {
           const results = await searchGames(gameName, 1)
           return results[0] || null
