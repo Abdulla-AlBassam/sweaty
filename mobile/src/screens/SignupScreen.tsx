@@ -102,8 +102,11 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
     <ImageBackground
       source={heroBackground}
       style={styles.backgroundImage}
+      imageStyle={styles.backgroundImageStyle}
       resizeMode="cover"
     >
+      {/* Green tint overlay for brand consistency */}
+      <View style={styles.greenTint} />
       {/* Dark overlay for text readability */}
       <View style={styles.overlay} />
 
@@ -222,10 +225,20 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
+    backgroundColor: Colors.background,
+  },
+  backgroundImageStyle: {
+    // Scale down and center the image to show the full face
+    resizeMode: 'contain',
+    top: '5%',
+  },
+  greenTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)', // Soft green tint (#22c55e at 15% opacity)
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
   },
   edgeGradientTop: {
     position: 'absolute',
