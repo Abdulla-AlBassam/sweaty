@@ -14,6 +14,9 @@ import {
   FlatList,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { MainStackParamList } from '../navigation'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
@@ -104,8 +107,14 @@ export default function LogGameModal({
   existingLog,
   onSaveSuccess,
 }: LogGameModalProps) {
+  const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
   const { recordActivity } = useStreak()
+
+  const handleGamePress = () => {
+    onClose()
+    navigation.navigate('GameDetail', { gameId: game.id })
+  }
   const [status, setStatus] = useState<string | null>(null)
   const [rating, setRating] = useState<number | null>(null)
   const [platform, setPlatform] = useState<string | null>(null)
@@ -424,8 +433,8 @@ export default function LogGameModal({
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Game Info */}
-            <View style={styles.gameInfo}>
+            {/* Game Info - Tappable to view game details */}
+            <TouchableOpacity style={styles.gameInfo} onPress={handleGamePress} activeOpacity={0.7}>
               {imageUrl ? (
                 <Image source={{ uri: imageUrl }} style={styles.gameCover} />
               ) : (
@@ -434,7 +443,8 @@ export default function LogGameModal({
                 </View>
               )}
               <Text style={styles.gameTitle} numberOfLines={2}>{game.name}</Text>
-            </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+            </TouchableOpacity>
 
             {/* Status Dropdown */}
             <Text style={styles.sectionLabel}>Log Game As...</Text>
