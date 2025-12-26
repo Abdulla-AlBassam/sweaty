@@ -104,8 +104,6 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      {/* Green tint overlay for brand consistency */}
-      <View style={styles.greenTint} />
       {/* Dark overlay for text readability */}
       <View style={styles.overlay} />
 
@@ -224,10 +222,6 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-  },
-  greenTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(34, 197, 94, 0.15)', // Soft green tint (#22c55e at 15% opacity)
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
