@@ -102,7 +102,6 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
     <ImageBackground
       source={heroBackground}
       style={styles.backgroundImage}
-      imageStyle={styles.backgroundImageStyle}
       resizeMode="cover"
     >
       {/* Green tint overlay for brand consistency */}
@@ -225,12 +224,6 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
 const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
-    backgroundColor: Colors.background,
-  },
-  backgroundImageStyle: {
-    // Scale down and center the image to show the full face
-    resizeMode: 'contain',
-    top: '5%',
   },
   greenTint: {
     ...StyleSheet.absoluteFillObject,
