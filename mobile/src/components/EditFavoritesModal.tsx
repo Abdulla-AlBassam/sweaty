@@ -14,6 +14,7 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 
@@ -366,8 +367,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
     flex: 1,
   },
@@ -382,8 +383,8 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   sectionLabel: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
   },
@@ -416,6 +417,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   emptySlotText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: Spacing.xs,
@@ -428,6 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   favoriteName: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.text,
     marginTop: Spacing.xs,
@@ -450,6 +453,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: Spacing.md,
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
   },
@@ -465,6 +469,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   noResults: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
@@ -488,6 +493,7 @@ const styles = StyleSheet.create({
   },
   resultName: {
     flex: 1,
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
     marginHorizontal: Spacing.md,
@@ -508,8 +514,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonText: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
-    fontWeight: '600',
   },
 })

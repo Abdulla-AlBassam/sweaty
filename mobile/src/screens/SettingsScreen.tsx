@@ -11,31 +11,46 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Dimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { usePremium } from '../hooks/usePremium'
+import BannerSelector from '../components/BannerSelector'
+import PremiumBadge from '../components/PremiumBadge'
+import { BannerOption } from '../constants/banners'
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const BANNER_PREVIEW_HEIGHT = 80
 
 export default function SettingsScreen() {
   const navigation = useNavigation()
   const { user, profile, signOut, refreshProfile } = useAuth()
+  const { isPremium } = usePremium(profile?.subscription_tier, profile?.subscription_expires_at)
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null)
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+  const [isSavingBanner, setIsSavingBanner] = useState(false)
+  const [bannerSelectorVisible, setBannerSelectorVisible] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [usernameError, setUsernameError] = useState<string | null>(null)
 
   useEffect(() => {
     if (profile) {
       setAvatarUrl(profile.avatar_url || null)
+      setBannerUrl(profile.banner_url || null)
       setDisplayName(profile.display_name || '')
       setUsername(profile.username || '')
       setBio(profile.bio || '')
@@ -201,6 +216,32 @@ export default function SettingsScreen() {
     )
   }
 
+  const handleBannerSelect = async (banner: BannerOption) => {
+    if (!user) return
+
+    setIsSavingBanner(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          banner_url: banner.url,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      setBannerUrl(banner.url)
+      setBannerSelectorVisible(false)
+      await refreshProfile()
+      Alert.alert('Success', 'Banner updated successfully')
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update banner')
+    } finally {
+      setIsSavingBanner(false)
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -208,7 +249,7 @@ export default function SettingsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>settings</Text>
+        <Text style={styles.headerTitle}>SETTINGS</Text>
         <TouchableOpacity
           onPress={handleSave}
           disabled={!hasChanges || isSaving || !!usernameError}
@@ -218,7 +259,7 @@ export default function SettingsScreen() {
             <ActivityIndicator size="small" color={Colors.accent} />
           ) : (
             <Text style={[styles.saveText, (!hasChanges || !!usernameError) && styles.saveTextDisabled]}>
-              save
+              SAVE
             </Text>
           )}
         </TouchableOpacity>
@@ -247,7 +288,54 @@ export default function SettingsScreen() {
                 <Ionicons name="camera" size={16} color={Colors.text} />
               </View>
             </TouchableOpacity>
-            <Text style={styles.changeAvatarText}>change avatar</Text>
+            <Text style={styles.changeAvatarText}>Change avatar</Text>
+          </View>
+
+          {/* Banner Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.sectionTitle}>profile banner</Text>
+              <PremiumBadge size="small" />
+            </View>
+
+            {isPremium ? (
+              <TouchableOpacity
+                style={styles.bannerPreviewContainer}
+                onPress={() => setBannerSelectorVisible(true)}
+              >
+                {bannerUrl ? (
+                  <View style={styles.bannerPreviewWrapper}>
+                    <Image
+                      source={{ uri: bannerUrl }}
+                      style={styles.bannerPreview}
+                      resizeMode="cover"
+                    />
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.6)']}
+                      style={styles.bannerPreviewGradient}
+                    />
+                    <View style={styles.bannerEditOverlay}>
+                      <Ionicons name="create-outline" size={20} color={Colors.text} />
+                      <Text style={styles.bannerEditText}>Change Banner</Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.bannerPlaceholder}>
+                    <Ionicons name="image-outline" size={24} color={Colors.textMuted} />
+                    <Text style={styles.bannerPlaceholderText}>Tap to select a banner</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.bannerLockedContainer}>
+                <View style={styles.bannerLockedContent}>
+                  <Ionicons name="lock-closed" size={24} color={Colors.textDim} />
+                  <Text style={styles.bannerLockedText}>
+                    Upgrade to Premium to customize your profile banner
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Profile Section */}
@@ -255,7 +343,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>profile</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>display name</Text>
+              <Text style={styles.inputLabel}>Display name</Text>
               <TextInput
                 style={styles.input}
                 value={displayName}
@@ -267,7 +355,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>username</Text>
+              <Text style={styles.inputLabel}>Username</Text>
               <View style={styles.usernameInputContainer}>
                 <Text style={styles.usernamePrefix}>@</Text>
                 <TextInput
@@ -287,7 +375,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>bio</Text>
+              <Text style={styles.inputLabel}>Bio</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={bio}
@@ -307,7 +395,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>account</Text>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>email</Text>
+              <Text style={styles.infoLabel}>Email</Text>
               <Text style={styles.infoValue}>{user?.email}</Text>
             </View>
           </View>
@@ -316,17 +404,26 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-              <Text style={styles.signOutText}>sign out</Text>
+              <Text style={styles.signOutText}>SIGN OUT</Text>
             </TouchableOpacity>
           </View>
 
           {/* App Info */}
           <View style={styles.appInfo}>
             <Text style={styles.appName}>sweaty</Text>
-            <Text style={styles.appVersion}>version 1.0.0</Text>
+            <Text style={styles.appVersion}>Version 1.0.0</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Banner Selector Modal */}
+      <BannerSelector
+        visible={bannerSelectorVisible}
+        onClose={() => setBannerSelectorVisible(false)}
+        onSelect={handleBannerSelect}
+        currentBannerUrl={bannerUrl}
+        isLoading={isSavingBanner}
+      />
     </SafeAreaView>
   )
 }
@@ -349,8 +446,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
     marginLeft: Spacing.sm,
   },
@@ -360,8 +457,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.accentLight,
   },
   saveTextDisabled: {
@@ -404,6 +501,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.background,
   },
   changeAvatarText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.accentLight,
     marginTop: Spacing.sm,
@@ -412,21 +510,107 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
     textTransform: 'uppercase',
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
+  },
+  bannerPreviewContainer: {
+    width: '100%',
+    height: BANNER_PREVIEW_HEIGHT,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+  },
+  bannerPreviewWrapper: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  bannerPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerPreviewGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  bannerEditOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+  },
+  bannerEditText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  bannerPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    gap: Spacing.xs,
+  },
+  bannerPlaceholderText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  bannerLockedContainer: {
+    width: '100%',
+    height: BANNER_PREVIEW_HEIGHT,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    overflow: 'hidden',
+  },
+  bannerLockedContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+  },
+  bannerLockedText: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    textAlign: 'center',
   },
   inputGroup: {
     marginBottom: Spacing.md,
   },
   inputLabel: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
   input: {
+    fontFamily: Fonts.body,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
@@ -444,11 +628,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   usernamePrefix: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     paddingLeft: Spacing.md,
   },
   usernameInput: {
+    fontFamily: Fonts.body,
     flex: 1,
     padding: Spacing.md,
     paddingLeft: Spacing.xs,
@@ -456,6 +642,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   errorText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.error,
     marginTop: Spacing.xs,
@@ -465,6 +652,7 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
   },
   charCount: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textAlign: 'right',
@@ -480,10 +668,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   infoLabel: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
   },
   infoValue: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
   },
@@ -499,8 +689,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.error,
   },
   signOutText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.error,
   },
   appInfo: {
@@ -509,11 +699,12 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   appName: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   appVersion: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,

@@ -10,10 +10,12 @@ import {
   Platform,
   ScrollView,
   ImageBackground,
+  Image,
 } from 'react-native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { AuthStackParamList } from '../navigation'
 
 // Hero background image - Metal Gear Solid 3 artwork
@@ -24,10 +26,11 @@ type LoginScreenProps = {
 }
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const { signIn } = useAuth()
+  const { signIn, signInWithGoogle } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async () => {
@@ -57,6 +60,28 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     }
   }
 
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true)
+    setError(null)
+
+    try {
+      const { error: googleError, needsUsername } = await signInWithGoogle()
+
+      if (googleError) {
+        if (googleError.message !== 'Login cancelled') {
+          setError('google sign-in failed. please try again.')
+        }
+      } else if (needsUsername) {
+        // User signed in but needs to set up profile
+        // Navigation will handle this via auth state
+      }
+    } catch (err) {
+      setError('an error occurred. please try again.')
+    } finally {
+      setIsGoogleLoading(false)
+    }
+  }
+
   return (
     <ImageBackground
       source={heroBackground}
@@ -76,8 +101,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         >
           <View style={styles.content}>
             {/* Logo */}
-            <Text style={styles.logo}>sweaty</Text>
-            <Text style={styles.tagline}>track your gaming journey</Text>
+            <Text style={styles.logo}>SWEATY</Text>
+            <Text style={styles.tagline}>Track your gaming journey</Text>
 
             {/* Error Message */}
             {error && (
@@ -90,7 +115,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             <View style={styles.form}>
               <TextInput
                 style={styles.input}
-                placeholder="email"
+                placeholder="Email"
                 placeholderTextColor={Colors.textDim}
                 value={email}
                 onChangeText={setEmail}
@@ -101,7 +126,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
               <TextInput
                 style={styles.input}
-                placeholder="password"
+                placeholder="Password"
                 placeholderTextColor={Colors.textDim}
                 value={password}
                 onChangeText={setPassword}
@@ -117,16 +142,42 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                 {isLoading ? (
                   <ActivityIndicator color={Colors.background} />
                 ) : (
-                  <Text style={styles.buttonText}>log in</Text>
+                  <Text style={styles.buttonText}>LOG IN</Text>
+                )}
+              </TouchableOpacity>
+
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>Or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Google Sign In */}
+              <TouchableOpacity
+                style={[styles.googleButton, isGoogleLoading && styles.buttonDisabled]}
+                onPress={handleGoogleLogin}
+                disabled={isGoogleLoading}
+              >
+                {isGoogleLoading ? (
+                  <ActivityIndicator color={Colors.text} />
+                ) : (
+                  <>
+                    <Image
+                      source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/120px-Google_%22G%22_logo.svg.png' }}
+                      style={styles.googleLogo}
+                    />
+                    <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+                  </>
                 )}
               </TouchableOpacity>
             </View>
 
             {/* Sign Up Link */}
             <View style={styles.footer}>
-              <Text style={styles.footerText}>don't have an account? </Text>
+              <Text style={styles.footerText}>Don't have an account? </Text>
               <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-                <Text style={styles.footerLink}>sign up</Text>
+                <Text style={styles.footerLink}>Sign up</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -157,8 +208,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxl,
   },
   logo: {
+    fontFamily: Fonts.display,
     fontSize: 48,
-    fontWeight: 'bold',
     color: Colors.accentLight,
     textAlign: 'center',
     marginBottom: Spacing.xs,
@@ -167,6 +218,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   tagline: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     textAlign: 'center',
@@ -184,6 +236,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   errorText: {
+    fontFamily: Fonts.body,
     color: Colors.error,
     fontSize: FontSize.sm,
     textAlign: 'center',
@@ -192,6 +245,7 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
   },
   input: {
+    fontFamily: Fonts.body,
     backgroundColor: 'rgba(26, 26, 26, 0.9)',
     borderWidth: 1,
     borderColor: Colors.border,
@@ -213,9 +267,48 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
-    fontWeight: '600',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.md,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  dividerText: {
+    fontFamily: Fonts.body,
+    color: Colors.textDim,
+    fontSize: FontSize.sm,
+    paddingHorizontal: Spacing.md,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(26, 26, 26, 0.9)',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  googleLogo: {
+    width: 20,
+    height: 20,
+  },
+  googleButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.text,
+    fontSize: FontSize.md,
   },
   footer: {
     flexDirection: 'row',
@@ -223,6 +316,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xxl,
   },
   footerText: {
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.sm,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
@@ -230,9 +324,9 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   footerLink: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.accentLight,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,

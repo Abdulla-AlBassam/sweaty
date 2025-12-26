@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { LevelInfo } from '../types'
 
 interface XPProgressBarProps {
@@ -49,8 +50,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   level: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.text,
   },
   separator: {
@@ -60,6 +61,7 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.sm,
   },
   rank: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
   },
@@ -94,6 +96,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent,
   },
   xpText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },

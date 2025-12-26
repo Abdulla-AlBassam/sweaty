@@ -15,6 +15,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
@@ -475,6 +476,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    fontFamily: Fonts.body,
     color: Colors.text,
     fontSize: FontSize.md,
     paddingVertical: Spacing.md,
@@ -495,11 +497,13 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
   },
   errorText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.error,
   },
@@ -507,8 +511,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
@@ -532,8 +536,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   userAvatarText: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.md,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   userInfo: {
@@ -541,11 +545,12 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   userDisplayName: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.text,
   },
   userUsername: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: 2,
@@ -571,11 +576,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   recentSectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: 18,
-    fontWeight: '600',
     color: Colors.text,
   },
   clearText: {
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.sm,
   },
@@ -601,6 +607,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceLight,
   },
   recentChipText: {
+    fontFamily: Fonts.body,
     color: Colors.text,
     fontSize: FontSize.sm,
     maxWidth: 120,
@@ -609,8 +616,8 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
   },
   discoverSectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: 18,
-    fontWeight: '600',
     color: Colors.text,
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
@@ -619,8 +626,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   discoveryRowTitle: {
+    fontFamily: Fonts.display,
     fontSize: 16,
-    fontWeight: '600',
     color: Colors.text,
     marginLeft: Spacing.lg,
     marginBottom: 12,

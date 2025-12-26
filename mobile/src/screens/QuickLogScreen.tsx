@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import LogGameModal from '../components/LogGameModal'
@@ -204,8 +205,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xxl,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   searchContainer: {
@@ -222,6 +223,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: Spacing.md,
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
   },
@@ -231,11 +233,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.md,
   },
   emptySubtext: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,
@@ -266,16 +270,18 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   gameTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.xs,
   },
   gameYear: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   gamePlatforms: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: Spacing.xs,

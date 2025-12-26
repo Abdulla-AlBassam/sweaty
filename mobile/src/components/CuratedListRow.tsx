@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import { CuratedListWithGames } from '../types'
 
@@ -58,7 +59,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
       >
         {list.games.slice(0, 15).map((game, index) => (
           <TouchableOpacity
-            key={`${game.id}-${index}`}
+            key={`${list.slug}-${game.id}-${index}`}
             style={styles.gameCard}
             onPress={() => handleGamePress(game.id)}
             activeOpacity={0.7}
@@ -94,11 +95,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   title: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   seeAll: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
@@ -121,6 +123,7 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   placeholderText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textAlign: 'center',

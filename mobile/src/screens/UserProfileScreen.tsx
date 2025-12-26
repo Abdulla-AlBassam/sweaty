@@ -8,21 +8,30 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { calculateXP, getLevel } from '../lib/xp'
+import { checkIsPremium } from '../hooks/usePremium'
 import FollowersModal from '../components/FollowersModal'
 import StarRating from '../components/StarRating'
 import XPProgressBar from '../components/XPProgressBar'
+import PremiumBadge from '../components/PremiumBadge'
+import StreakBadge from '../components/StreakBadge'
 import { ProfileSkeleton } from '../components/skeletons'
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const BANNER_HEIGHT = 150
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -31,8 +40,14 @@ interface Profile {
   username: string
   display_name: string | null
   avatar_url: string | null
+  banner_url: string | null
   bio: string | null
   favorite_games?: number[] | null
+  subscription_tier?: string | null
+  subscription_expires_at?: string | null
+  current_streak?: number
+  longest_streak?: number
+  last_activity_at?: string | null
 }
 
 interface FavoriteGame {
@@ -360,8 +375,25 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           />
         }
       >
+        {/* Banner */}
+        {profile.banner_url ? (
+          <View style={styles.bannerContainer}>
+            <Image
+              source={{ uri: profile.banner_url }}
+              style={styles.banner}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', Colors.background]}
+              style={styles.bannerGradient}
+            />
+          </View>
+        ) : (
+          <View style={styles.bannerPlaceholder} />
+        )}
+
         {/* Profile Info - Vertical Layout */}
-        <View style={styles.profileSection}>
+        <View style={[styles.profileSection, profile.banner_url && styles.profileSectionWithBanner]}>
           {profile.avatar_url ? (
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
           ) : (
@@ -370,9 +402,15 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </View>
           )}
 
-          <Text style={styles.displayName}>
-            {profile.display_name || profile.username}
-          </Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.displayName}>
+              {profile.display_name || profile.username}
+            </Text>
+            {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
+              <PremiumBadge size="small" variant={profile.username === 'abdulla' ? 'developer' : 'premium'} />
+            )}
+            <StreakBadge streak={profile.current_streak || 0} size="medium" />
+          </View>
           <Text style={styles.username}>@{profile.username}</Text>
 
           <View style={styles.followCounts}>
@@ -620,8 +658,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   centered: {
@@ -630,6 +668,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.md,
     marginTop: Spacing.md,
@@ -645,6 +684,33 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
     paddingHorizontal: Spacing.lg,
   },
+  bannerContainer: {
+    width: SCREEN_WIDTH,
+    height: BANNER_HEIGHT,
+    position: 'relative',
+  },
+  banner: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+  },
+  bannerPlaceholder: {
+    height: 0,
+  },
+  profileSectionWithBanner: {
+    marginTop: -40,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
   avatar: {
     width: 100,
     height: 100,
@@ -657,11 +723,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   displayName: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xl,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   username: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
@@ -672,14 +739,16 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   followText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   followNumber: {
-    fontWeight: '600',
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.text,
   },
   bio: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     textAlign: 'center',
@@ -700,9 +769,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.textMuted,
   },
   followButtonText: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
-    fontWeight: '600',
   },
   followingButtonText: {
     color: Colors.text,
@@ -727,11 +796,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   statValue: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.lg,
-    fontWeight: 'bold',
     color: Colors.text,
   },
   statLabel: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
@@ -766,8 +836,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.md,
   },
@@ -795,12 +865,13 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   filterTabText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   filterTabTextSelected: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
-    fontWeight: '600',
   },
   filterTabTextDimmed: {
     color: Colors.textDim,
@@ -825,6 +896,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   gameTitle: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.text,
     marginTop: Spacing.xs,
@@ -839,6 +911,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xl,
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: Spacing.md,
@@ -870,6 +943,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyFavoritesText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },

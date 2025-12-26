@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from
 import YoutubePlayer from 'react-native-youtube-iframe'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 
 interface Video {
   videoId: string
@@ -108,8 +109,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.sm,
   },
@@ -119,6 +120,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   videoTitle: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: Spacing.sm,
@@ -147,12 +149,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.accent,
   },
   selectorText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     maxWidth: 100,
   },
   selectorTextActive: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
-    fontWeight: '600',
   },
 })

@@ -18,6 +18,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import LogGameModal from './LogGameModal'
 
@@ -234,7 +235,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
 
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Quick Log</Text>
+            <Text style={styles.headerTitle}>quick log</Text>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.textMuted} />
             </TouchableOpacity>
@@ -348,8 +349,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerTitle: {
-    fontSize: FontSize.lg,
-    fontWeight: '600',
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
     color: Colors.text,
   },
   closeButton: {
@@ -377,6 +378,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: Spacing.md,
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
   },
@@ -392,11 +394,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.md,
   },
   emptySubtext: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,
@@ -428,16 +432,18 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.md,
   },
   gameTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.text,
     marginBottom: Spacing.xs,
   },
   gameYear: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   gamePlatforms: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: Spacing.xs,

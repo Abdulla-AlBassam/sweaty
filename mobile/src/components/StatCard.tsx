@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 
 interface StatCardProps {
   label: string
@@ -30,13 +31,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   value: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.lg,
-    fontWeight: 'bold',
     color: Colors.accentLight,
     marginBottom: 2,
     textAlign: 'center',
   },
   label: {
+    fontFamily: Fonts.body,
     fontSize: 10,
     color: Colors.textMuted,
     textAlign: 'center',

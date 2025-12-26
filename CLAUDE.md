@@ -2,8 +2,25 @@
 
 A video game tracking app — like Letterboxd, but for games. Track what you're playing, rate games, write reviews, and share your gaming journey.
 
+## Current Development Focus
+
+> **⚠️ IMPORTANT:** We are now focused exclusively on building the **mobile app** (React Native/Expo). The web app (`/web`) is maintained only for:
+> - Vercel deployment (provides API endpoints at https://sweaty-v1.vercel.app)
+> - IGDB API proxy routes
+> - Admin endpoints for bulk operations
+>
+> All new feature development happens in `/mobile`.
+
 ## Tech Stack
 
+**Mobile App (Active Development):**
+- **Framework:** React Native with Expo SDK 54
+- **Language:** TypeScript
+- **Navigation:** React Navigation (bottom tabs + stack)
+- **Database & Auth:** Supabase (PostgreSQL)
+- **Game Data:** IGDB API (via web app proxy)
+
+**Web App (API/Deployment Only):**
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
@@ -98,8 +115,14 @@ Extends Supabase auth.users with app-specific data.
 | username | text | Unique username |
 | display_name | text | Display name |
 | avatar_url | text | Profile picture URL |
+| banner_url | text | Profile banner URL |
 | bio | text | User bio |
 | favorite_games | bigint[] | Array of up to 3 favorite game IDs |
+| subscription_tier | text | free, trial, monthly, yearly, lifetime |
+| subscription_expires_at | timestamp | When subscription expires |
+| current_streak | integer | Current consecutive day streak (default 0) |
+| longest_streak | integer | All-time longest streak (default 0) |
+| last_activity_at | timestamp | Last activity timestamp for streak calculation |
 | created_at | timestamp | Auto-generated |
 | updated_at | timestamp | Auto-updated |
 
@@ -239,7 +262,7 @@ sweaty/
 │   ├── package.json                 # Web app dependencies
 │   └── tsconfig.json                # TypeScript config
 │
-├── mobile/                          # React Native/Expo mobile app
+├── mobile/                          # React Native/Expo mobile app (ACTIVE DEVELOPMENT)
 │   ├── src/
 │   │   ├── screens/                 # Screen components
 │   │   │   ├── DashboardScreen.tsx  # Home screen with curated lists
@@ -248,19 +271,26 @@ sweaty/
 │   │   │   ├── UserProfileScreen.tsx # Other users' profiles
 │   │   │   ├── GameDetailScreen.tsx # Game detail page
 │   │   │   ├── SettingsScreen.tsx   # Settings page
-│   │   │   ├── LoginScreen.tsx      # Login
+│   │   │   ├── LoginScreen.tsx      # Login (email/password + Google)
 │   │   │   ├── SignupScreen.tsx     # Signup
 │   │   │   └── CuratedListDetailScreen.tsx # "See All" for curated lists
 │   │   ├── components/
+│   │   │   ├── AnimatedTabBar.tsx   # Custom bottom tab bar with animations
 │   │   │   ├── GameCard.tsx         # Game cover card
 │   │   │   ├── CuratedListRow.tsx   # Horizontal scroll curated list
 │   │   │   ├── ActivityItem.tsx     # Activity feed item
+│   │   │   ├── PremiumBadge.tsx     # Premium/Developer badge (gold/green variants)
+│   │   │   ├── StreakBadge.tsx      # Fire icon streak display
+│   │   │   ├── LogGameModal.tsx     # Game logging modal
 │   │   │   ├── Skeleton.tsx         # Loading skeletons
 │   │   │   └── skeletons/           # Specialized skeleton components
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx      # Auth state management
+│   │   │   ├── AuthContext.tsx      # Auth state management + Google OAuth
+│   │   │   └── QuickLogContext.tsx  # Quick log modal state
 │   │   ├── hooks/
 │   │   │   ├── useSupabase.ts       # Data fetching hooks (includes useCuratedLists)
+│   │   │   ├── usePremium.ts        # Premium subscription status
+│   │   │   ├── useStreak.ts         # Streak tracking logic
 │   │   │   └── index.ts             # Hook exports
 │   │   ├── navigation/
 │   │   │   ├── index.tsx            # Main navigation setup
@@ -270,12 +300,14 @@ sweaty/
 │   │   │   └── xp.ts                # XP/Level system (shared logic)
 │   │   ├── constants/
 │   │   │   ├── colors.ts            # Theme colors (matches web)
+│   │   │   ├── fonts.ts             # Font family definitions
 │   │   │   └── index.ts             # Status labels, platforms, API config
 │   │   └── types/
-│   │       └── index.ts             # Shared TypeScript types
+│   │       └── index.ts             # Shared TypeScript types (Profile, GameLog, etc.)
 │   ├── assets/                      # App icons and images
 │   ├── App.tsx                      # Root component with AuthProvider
 │   ├── app.json                     # Expo configuration
+│   ├── eas.json                     # EAS Build configuration
 │   ├── .env.example                 # Environment variables template
 │   └── package.json                 # Mobile app dependencies
 │
@@ -775,3 +807,91 @@ npx expo start
 
 **New Environment Variables:**
 - `SUPABASE_SERVICE_ROLE_KEY` - Required for admin API (add to Vercel)
+
+### Session 9 (Dec 26, 2024)
+**Google Sign-In Implementation:**
+- Added Google OAuth button to LoginScreen with Google logo
+- Implemented `signInWithGoogle()` in AuthContext
+- Uses React Native `Linking.openURL()` for OAuth flow
+- Disabled in Expo Go (shows friendly error message)
+- Will work in production builds with `sweaty://auth/callback` scheme
+- Deep link handler catches OAuth callback tokens
+- Removed expo-web-browser and expo-auth-session (require native modules)
+
+**Bottom Tab Bar Icon Updates:**
+- Updated AnimatedTabBar to support multiple icon libraries
+- Home: Feather `home` icon
+- Search: FontAwesome5 `search` icon
+- Activity: Feather `activity` icon
+- Add: Ionicons `add` (reduced button size from 48x48 to 38x38)
+- Profile: Ionicons `person` icon
+- Created `renderIcon()` helper for multi-library support
+
+**Streak Tracking Feature:**
+- Created `useStreak` hook (`src/hooks/useStreak.ts`):
+  - `recordActivity()` - Updates streak on any app activity
+  - Checks if > 24 hours since last activity → resets streak
+  - Same day activity → no change
+  - Different day within 24 hours → increment streak
+  - Updates `longest_streak` if current exceeds it
+  - Shows toast notification on streak changes
+- Created `StreakBadge` component (`src/components/StreakBadge.tsx`):
+  - AntDesign `fire` icon in orange (#FF8C00)
+  - Displays streak count next to icon
+  - Supports small/medium/large sizes
+- Added streak display to ProfileScreen and UserProfileScreen (next to username)
+- Integrated `recordActivity()` into LogGameModal after game saves
+- Added streak fields to Profile type: `current_streak`, `longest_streak`, `last_activity_at`
+
+**SQL Required for Streaks:**
+```sql
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS current_streak integer DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS longest_streak integer DEFAULT 0;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_activity_at timestamptz;
+```
+
+**Premium Badge Variants:**
+- Updated PremiumBadge component to support variants:
+  - `premium` (default): Gold gradient (#FFD700 → #FFA500 → #FF8C00), dark text, "PREMIUM" label
+  - `developer`: Green gradient (#22c55e → #16a34a → #15803d), white text, "DEVELOPER" label
+- Developer badge shows only for username 'abdulla'
+- Other premium users see gold Premium badge
+- Dynamic shadow color based on variant
+
+**Files Created:**
+- `mobile/src/hooks/useStreak.ts` - Streak tracking hook
+- `mobile/src/components/StreakBadge.tsx` - Streak display component
+
+**Files Modified:**
+- `mobile/src/components/AnimatedTabBar.tsx` - Multi-library icon support, smaller add button
+- `mobile/src/components/PremiumBadge.tsx` - Variant support (premium/developer)
+- `mobile/src/components/LogGameModal.tsx` - Added useStreak integration
+- `mobile/src/contexts/AuthContext.tsx` - Google OAuth (disabled in Expo Go)
+- `mobile/src/screens/ProfileScreen.tsx` - Added StreakBadge, badge variant logic
+- `mobile/src/screens/UserProfileScreen.tsx` - Added StreakBadge, badge variant logic
+- `mobile/src/types/index.ts` - Added streak fields to Profile
+- `mobile/src/hooks/index.ts` - Export useStreak
+- `mobile/package.json` - Removed expo-web-browser, expo-auth-session, expo-linking
+
+## Upcoming Features (Backlog)
+
+Ideas ranked by implementation difficulty:
+
+**Easy:**
+1. Review pinning to profile (2-3 pinned reviews)
+2. Markdown formatting in reviews
+
+**Medium:**
+3. Platform/subscription tracking (Steam, Xbox, PlayStation, Game Pass)
+4. Statistics page with genre/platform breakdowns
+5. Favorite character voting per game
+
+**High:**
+6. Custom covers from IGDB alternatives
+7. Ranked and unranked custom lists with entry notes
+8. Play journal with calendar view
+
+**Very High:**
+9. Chapter/DLC progress tracking
+10. "Where to play" availability display (external API integrations)
+11. Personalized game recommendations engine

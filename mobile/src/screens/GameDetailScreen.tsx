@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -341,8 +342,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   centered: {
@@ -351,6 +352,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: {
+    fontFamily: Fonts.body,
     color: Colors.textMuted,
     fontSize: FontSize.md,
     marginTop: Spacing.md,
@@ -381,17 +383,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.xl,
-    fontWeight: 'bold',
     color: Colors.text,
     marginBottom: Spacing.xs,
   },
   year: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
   genres: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
   },
@@ -406,9 +410,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   statusText: {
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     color: Colors.accentLight,
-    fontWeight: '500',
   },
   statusRating: {
     flexDirection: 'row',
@@ -426,17 +430,19 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
     marginBottom: Spacing.sm,
   },
   summaryText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 22,
   },
   platformsText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
   },

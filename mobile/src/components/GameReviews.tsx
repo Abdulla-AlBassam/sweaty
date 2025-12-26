@@ -10,9 +10,12 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import StarRating from './StarRating'
+import ReviewLikeButton from './ReviewLikeButton'
+import ReviewComments from './ReviewComments'
 
 interface Review {
   id: string
@@ -25,6 +28,9 @@ interface Review {
     display_name: string | null
     avatar_url: string | null
   }
+  likeCount?: number
+  commentCount?: number
+  isLiked?: boolean
 }
 
 interface GameReviewsProps {
@@ -83,6 +89,63 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
         ...item,
         user: Array.isArray(item.user) ? item.user[0] : item.user,
       })).filter((item: any) => item.user && item.review) as Review[]
+
+      // Fetch like counts and user's likes for all reviews (wrapped in try-catch in case tables don't exist yet)
+      const reviewIds = formattedReviews.map(r => r.id)
+
+      if (reviewIds.length > 0) {
+        try {
+          // Get like counts for each review
+          const { data: likeCounts, error: likesError } = await supabase
+            .from('review_likes')
+            .select('game_log_id')
+            .in('game_log_id', reviewIds)
+
+          // Get user's likes if logged in
+          let userLikes: string[] = []
+          if (user && !likesError) {
+            const { data: userLikesData } = await supabase
+              .from('review_likes')
+              .select('game_log_id')
+              .eq('user_id', user.id)
+              .in('game_log_id', reviewIds)
+
+            userLikes = (userLikesData || []).map((l: any) => l.game_log_id)
+          }
+
+          // Get comment counts for each review
+          const { data: commentCounts, error: commentsError } = await supabase
+            .from('review_comments')
+            .select('game_log_id')
+            .in('game_log_id', reviewIds)
+
+          // Create count maps (only if no errors)
+          const likeCountMap: Record<string, number> = {}
+          const commentCountMap: Record<string, number> = {}
+
+          if (!likesError && likeCounts) {
+            likeCounts.forEach((like: any) => {
+              likeCountMap[like.game_log_id] = (likeCountMap[like.game_log_id] || 0) + 1
+            })
+          }
+
+          if (!commentsError && commentCounts) {
+            commentCounts.forEach((comment: any) => {
+              commentCountMap[comment.game_log_id] = (commentCountMap[comment.game_log_id] || 0) + 1
+            })
+          }
+
+          // Attach counts to reviews
+          formattedReviews.forEach(review => {
+            review.likeCount = likeCountMap[review.id] || 0
+            review.commentCount = commentCountMap[review.id] || 0
+            review.isLiked = userLikes.includes(review.id)
+          })
+        } catch (socialError) {
+          // Tables might not exist yet - that's ok, just show reviews without likes/comments
+          console.log('Social features not available yet:', socialError)
+        }
+      }
 
       setReviews(formattedReviews)
     } catch (error) {
@@ -179,6 +242,20 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
             </View>
           </TouchableOpacity>
           <Text style={styles.reviewText}>{review.review}</Text>
+
+          {/* Likes and Comments */}
+          <View style={styles.socialSection}>
+            <ReviewLikeButton
+              gameLogId={review.id}
+              initialLikeCount={review.likeCount || 0}
+              initialIsLiked={review.isLiked || false}
+              size="small"
+            />
+            <ReviewComments
+              gameLogId={review.id}
+              initialCommentCount={review.commentCount || 0}
+            />
+          </View>
         </View>
       ))}
       {hasMore && (
@@ -195,36 +272,40 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
+    fontFamily: Fonts.display,
     fontSize: FontSize.md,
-    fontWeight: '600',
     color: Colors.textMuted,
-    marginBottom: Spacing.md,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   loadingContainer: {
     padding: Spacing.xl,
     alignItems: 'center',
   },
   emptyContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.xl,
+    paddingVertical: Spacing.xl,
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   emptyText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginTop: Spacing.sm,
   },
   emptySubtext: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: Spacing.xs,
   },
   reviewCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   userRow: {
     flexDirection: 'row',
@@ -240,13 +321,13 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
+    fontFamily: Fonts.bodyBold,
     fontSize: FontSize.sm,
-    fontWeight: 'bold',
     color: Colors.accentLight,
   },
   userInfo: {
@@ -254,11 +335,12 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.sm,
   },
   displayName: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    fontWeight: '600',
     color: Colors.text,
   },
   username: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },
@@ -271,24 +353,31 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   timeText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: 2,
   },
   reviewText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 20,
   },
+  socialSection: {
+    marginTop: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
+    gap: Spacing.lg,
+  },
   showAllButton: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    paddingVertical: Spacing.md,
     alignItems: 'center',
   },
   showAllText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
     color: Colors.accent,
-    fontWeight: '600',
   },
 })

@@ -15,13 +15,22 @@ export interface Game {
 }
 
 // User types
+export type SubscriptionTier = 'free' | 'trial' | 'monthly' | 'yearly' | 'lifetime'
+
 export interface Profile {
   id: string
   username: string
   display_name: string | null
   avatar_url: string | null
+  banner_url: string | null
   bio: string | null
   favorite_games: number[] | null
+  subscription_tier: SubscriptionTier
+  subscription_expires_at: string | null
+  trial_started_at: string | null
+  current_streak: number
+  longest_streak: number
+  last_activity_at: string | null
   created_at: string
   updated_at: string
 }
@@ -124,4 +133,35 @@ export interface CuratedListWithGames extends CuratedList {
     name: string
     cover_url: string | null
   }>
+}
+
+// Review likes & comments types
+export interface ReviewLike {
+  id: string
+  user_id: string
+  game_log_id: string
+  created_at: string
+  user?: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+}
+
+export interface ReviewComment {
+  id: string
+  user_id: string
+  game_log_id: string
+  parent_id: string | null
+  content: string
+  created_at: string
+  updated_at: string
+  user?: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+  replies?: ReviewComment[]
 }

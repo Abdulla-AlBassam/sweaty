@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { Linking, Platform } from 'react-native'
 import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
+import Constants from 'expo-constants'
 
 interface AuthContextType {
   session: Session | null
@@ -10,6 +12,7 @@ interface AuthContextType {
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, username: string, displayName: string) => Promise<{ error: Error | null }>
+  signInWithGoogle: () => Promise<{ error: Error | null; needsUsername?: boolean }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
 }
@@ -67,7 +70,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    // Handle deep link for OAuth callback
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url
+      console.log('Deep link received:', url)
+
+      // Check if this is an auth callback - look for auth/callback path OR access_token in URL
+      // (sometimes the path gets stripped but tokens are still in the hash)
+      if (url.includes('auth/callback') || url.includes('access_token')) {
+        // Extract tokens from URL hash
+        const hashIndex = url.indexOf('#')
+        if (hashIndex !== -1) {
+          const params = new URLSearchParams(url.substring(hashIndex + 1))
+          const accessToken = params.get('access_token')
+          const refreshToken = params.get('refresh_token')
+
+          if (accessToken) {
+            console.log('Setting session from deep link')
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            })
+          }
+        }
+      }
+    }
+
+    // Check if app was opened via deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url })
+    })
+
+    // Listen for deep links while app is open
+    const linkingSubscription = Linking.addEventListener('url', handleDeepLink)
+
+    return () => {
+      subscription.unsubscribe()
+      linkingSubscription.remove()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
@@ -95,8 +135,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null)
   }
 
+  const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
+    try {
+      // Check if running in Expo Go (development)
+      const isExpoGo = Constants.appOwnership === 'expo'
+
+      if (isExpoGo) {
+        // Google Sign-In doesn't work reliably in Expo Go
+        // It will work in production/dev builds
+        return { error: new Error('Google Sign-In is only available in production builds. Please use email/password for testing.') }
+      }
+
+      // Production/dev build - use custom scheme
+      const redirectUrl = 'sweaty://auth/callback'
+
+      console.log('OAuth redirect URL:', redirectUrl)
+
+      // Start OAuth flow
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: true,
+        },
+      })
+
+      if (error) {
+        return { error: error as Error }
+      }
+
+      if (!data.url) {
+        return { error: new Error('No OAuth URL returned') }
+      }
+
+      // Open the OAuth URL in the device browser
+      // The deep link handler will catch the callback
+      await Linking.openURL(data.url)
+
+      return { error: null }
+    } catch (err) {
+      return { error: err as Error }
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signInWithGoogle, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

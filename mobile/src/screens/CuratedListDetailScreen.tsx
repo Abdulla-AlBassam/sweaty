@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
@@ -149,8 +150,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
-    fontWeight: '600',
     color: Colors.text,
   },
   headerSpacer: {
@@ -184,6 +185,7 @@ const styles = StyleSheet.create({
     padding: Spacing.sm,
   },
   placeholderText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textAlign: 'center',
