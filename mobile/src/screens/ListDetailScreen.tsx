@@ -153,7 +153,8 @@ export default function ListDetailScreen() {
       }
     } else {
       // Add to list - pass game info for caching
-      const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover
+      // API returns coverUrl (camelCase), database has cover_url (snake_case)
+      const coverUrl = game.cover_url || (game as any).coverUrl || (game as any).cover?.url || (game as any).cover
       const { error } = await addGameToList(listId, game.id, {
         name: game.name,
         cover_url: coverUrl,
@@ -359,7 +360,8 @@ export default function ListDetailScreen() {
                       ) : searchResults.length > 0 ? (
                         searchResults.map((game) => {
                           const inList = isGameInList(game.id)
-                          const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover
+                          // API returns coverUrl (camelCase), database has cover_url (snake_case)
+                          const coverUrl = game.cover_url || (game as any).coverUrl || (game as any).cover?.url || (game as any).cover
                           return (
                             <TouchableOpacity
                               key={game.id}

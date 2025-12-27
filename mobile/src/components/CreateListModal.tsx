@@ -149,7 +149,8 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
   }
 
   const handleSearchResultPress = (game: Game) => {
-    const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover || null
+    // API returns coverUrl (camelCase), database has cover_url (snake_case)
+    const coverUrl = game.cover_url || (game as any).coverUrl || (game as any).cover?.url || (game as any).cover || null
     const libraryGame: LibraryGame = {
       id: game.id,
       name: game.name,
@@ -357,7 +358,8 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                 ) : searchResults.length > 0 ? (
                   searchResults.map((game) => {
                     const selected = isGameSelected(game.id)
-                    const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover
+                    // API returns coverUrl (camelCase), database has cover_url (snake_case)
+                    const coverUrl = game.cover_url || (game as any).coverUrl || (game as any).cover?.url || (game as any).cover
                     return (
                       <TouchableOpacity
                         key={game.id}
