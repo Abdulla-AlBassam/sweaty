@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { Animated, Easing, StyleSheet, View } from 'react-native'
+import { Animated, Easing } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
 
@@ -18,7 +18,7 @@ export default function LoadingSpinner({
     const spin = Animated.loop(
       Animated.timing(spinValue, {
         toValue: 1,
-        duration: 1000,
+        duration: 800,
         easing: Easing.linear,
         useNativeDriver: true,
       })
@@ -33,11 +33,11 @@ export default function LoadingSpinner({
     outputRange: ['0deg', '360deg'],
   })
 
-  const iconSize = size === 'small' ? 24 : 40
+  const iconSize = size === 'small' ? 22 : 36
 
   return (
     <Animated.View style={{ transform: [{ rotate }] }}>
-      <Ionicons name="disc" size={iconSize} color={color} />
+      <Ionicons name="game-controller" size={iconSize} color={color} />
     </Animated.View>
   )
 }
