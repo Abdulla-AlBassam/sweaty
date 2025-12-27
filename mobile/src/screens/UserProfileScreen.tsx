@@ -99,8 +99,18 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
   // Fetch user's public lists
   const { lists: userLists, refetch: refetchLists } = useUserLists(profile?.id)
-  // Only show public lists for other users
-  const publicLists = userLists.filter(list => list.is_public)
+  // Only show public lists that have games
+  const publicLists = userLists
+    .filter(list => list.is_public && list.preview_games && list.preview_games.length > 0)
+    .map(list => ({
+      ...list,
+      user: {
+        id: profile?.id,
+        username: profile?.username || '',
+        display_name: profile?.display_name,
+        avatar_url: profile?.avatar_url,
+      }
+    }))
 
   const isOwnProfile = user?.id === profile?.id
 
@@ -568,7 +578,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Lists - Only show if user has public lists */}
+        {/* Lists - Only show if user has public lists with games */}
         {publicLists.length > 0 && (
           <View style={styles.listsSection}>
             <Text style={styles.sectionTitle}>Lists</Text>
@@ -578,14 +588,13 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               style={styles.listsScroll}
               contentContainerStyle={styles.listsContent}
             >
-              {publicLists.slice(0, 5).map((list) => (
-                <View key={list.id} style={styles.listCardWrapper}>
-                  <ListCard
-                    list={list}
-                    onPress={() => handleListPress(list.id)}
-                    showUser={true}
-                  />
-                </View>
+              {publicLists.map((list) => (
+                <ListCard
+                  key={list.id}
+                  list={list}
+                  onPress={() => handleListPress(list.id)}
+                  showUser={true}
+                />
               ))}
             </ScrollView>
           </View>

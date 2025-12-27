@@ -432,61 +432,44 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Lists */}
-        <View style={styles.listsSection}>
-          <View style={styles.listsTitleRow}>
-            <Text style={styles.sectionTitle}>Lists</Text>
-            <TouchableOpacity
-              onPress={() => setIsCreateListModalVisible(true)}
-              style={styles.newListButton}
-            >
-              <Ionicons name="add" size={18} color={Colors.accent} />
-              <Text style={styles.newListButtonText}>New</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Lists - only show if user has lists with games */}
+        {(() => {
+          // Filter out empty lists (no games)
+          const listsWithGames = userLists.filter(
+            (list) => list.preview_games && list.preview_games.length > 0
+          )
 
-          {userLists.length > 0 ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.listsScroll}
-              contentContainerStyle={styles.listsContent}
-            >
-              {userLists.slice(0, 5).map((list) => (
-                <View key={list.id} style={styles.listCardWrapper}>
+          return listsWithGames.length > 0 ? (
+            <View style={styles.listsSection}>
+              <View style={styles.listsTitleRow}>
+                <Text style={styles.sectionTitle}>Lists</Text>
+                <TouchableOpacity
+                  onPress={() => setIsCreateListModalVisible(true)}
+                  style={styles.newListButton}
+                >
+                  <Ionicons name="add" size={18} color={Colors.accent} />
+                  <Text style={styles.newListButtonText}>New</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.listsScroll}
+                contentContainerStyle={styles.listsContent}
+              >
+                {listsWithGames.map((list) => (
                   <ListCard
+                    key={list.id}
                     list={list}
                     onPress={() => handleListPress(list.id)}
                     showUser={false}
                   />
-                </View>
-              ))}
-              {userLists.length > 5 && (
-                <TouchableOpacity
-                  style={styles.seeAllLists}
-                  onPress={() => {
-                    // TODO: Navigate to all lists screen
-                  }}
-                >
-                  <Text style={styles.seeAllListsText}>See All</Text>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.accent} />
-                </TouchableOpacity>
-              )}
-            </ScrollView>
-          ) : (
-            <TouchableOpacity
-              style={styles.emptyListsState}
-              onPress={() => setIsCreateListModalVisible(true)}
-            >
-              <Ionicons name="list-outline" size={32} color={Colors.textDim} />
-              <Text style={styles.emptyListsText}>Create lists to organize your games</Text>
-              <View style={styles.createListButton}>
-                <Ionicons name="add" size={16} color={Colors.background} />
-                <Text style={styles.createListButtonText}>Create List</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null
+        })()}
 
         {/* Library */}
         <View style={styles.librarySection}>

@@ -12,6 +12,7 @@ interface ListCardProps {
     description?: string | null
     is_public: boolean
     user?: {
+      id?: string
       username: string
       display_name: string | null
       avatar_url: string | null
@@ -27,59 +28,29 @@ interface ListCardProps {
   showUser?: boolean
 }
 
-export default function ListCard({ list, onPress, showUser = true }: ListCardProps) {
-  const previewGames = list.preview_games || []
-  const itemCount = list.item_count || 0
+// Smaller covers for overlapping display
+const COVER_WIDTH = 80
+const COVER_HEIGHT = 107
+const COVER_OVERLAP = 50 // ~60% of width visible per cover
+const MAX_COVERS = 5
 
-  // Calculate how many covers to show (up to 3)
-  const coversToShow = previewGames.slice(0, 3).reverse() // Reverse so first game is on top
+export default function ListCard({ list, onPress, showUser = false }: ListCardProps) {
+  const previewGames = list.preview_games || []
+
+  // Show up to 5 covers, reversed so first game is on top
+  const coversToShow = previewGames.slice(0, MAX_COVERS).reverse()
+
+  // Calculate container width based on number of covers
+  const containerWidth = coversToShow.length > 0
+    ? COVER_WIDTH + (COVER_OVERLAP * (coversToShow.length - 1))
+    : COVER_WIDTH
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
-      {/* Stacked game covers - same size as curated list covers */}
-      <View style={styles.coversContainer}>
-        {coversToShow.length > 0 ? (
-          coversToShow.map((game, index) => (
-            <View
-              key={game.id}
-              style={[
-                styles.coverWrapper,
-                {
-                  left: index * 28, // Overlap amount
-                  zIndex: index + 1, // Higher index = on top
-                },
-              ]}
-            >
-              <Image
-                source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') || undefined }}
-                style={styles.coverImage}
-              />
-            </View>
-          ))
-        ) : (
-          <View style={styles.emptyCover}>
-            <Ionicons name="list" size={32} color={Colors.textDim} />
-          </View>
-        )}
-      </View>
-
-      {/* List info */}
-      <View style={styles.infoContainer}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={1}>
-            {list.title}
-          </Text>
-          {!list.is_public && (
-            <Ionicons name="lock-closed" size={14} color={Colors.textMuted} style={styles.lockIcon} />
-          )}
-        </View>
-        <Text style={styles.gameCount}>
-          {itemCount} {itemCount === 1 ? 'game' : 'games'}
-        </Text>
-
-        {/* User info */}
-        {showUser && list.user && (
-          <View style={styles.userRow}>
+      {/* Header: Avatar + Username • Title OR just Title */}
+      <View style={styles.header}>
+        {showUser && list.user ? (
+          <View style={styles.userHeader}>
             {list.user.avatar_url ? (
               <Image source={{ uri: list.user.avatar_url }} style={styles.avatar} />
             ) : (
@@ -92,86 +63,64 @@ export default function ListCard({ list, onPress, showUser = true }: ListCardPro
             <Text style={styles.username} numberOfLines={1}>
               {list.user.display_name || list.user.username}
             </Text>
+            <Text style={styles.separator}>•</Text>
+            <Text style={styles.title} numberOfLines={1}>
+              {list.title}
+            </Text>
+            {!list.is_public && (
+              <Ionicons name="lock-closed" size={12} color={Colors.textDim} style={styles.lockIcon} />
+            )}
+          </View>
+        ) : (
+          <View style={styles.titleHeader}>
+            <Text style={styles.titleOnly} numberOfLines={1}>
+              {list.title}
+            </Text>
+            {!list.is_public && (
+              <Ionicons name="lock-closed" size={12} color={Colors.textDim} style={styles.lockIcon} />
+            )}
           </View>
         )}
       </View>
 
-      {/* Chevron */}
-      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+      {/* Overlapping game covers */}
+      <View style={[styles.coversContainer, { width: containerWidth }]}>
+        {coversToShow.map((game, index) => (
+          <View
+            key={`${game.id}-${index}`}
+            style={[
+              styles.coverWrapper,
+              {
+                left: index * COVER_OVERLAP,
+                zIndex: index + 1,
+              },
+            ]}
+          >
+            <Image
+              source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') || undefined }}
+              style={styles.coverImage}
+            />
+          </View>
+        ))}
+      </View>
     </TouchableOpacity>
   )
 }
 
-// Same size as curated list covers
-const COVER_WIDTH = 105
-const COVER_HEIGHT = 140
-const COVER_OVERLAP = 28 // How much each cover overlaps the previous
-
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
+    marginRight: Spacing.lg,
+  },
+  header: {
     marginBottom: Spacing.sm,
   },
-  coversContainer: {
-    width: COVER_WIDTH + (COVER_OVERLAP * 2), // Width for 3 stacked covers
-    height: COVER_HEIGHT,
-    position: 'relative',
-    marginRight: Spacing.md,
-  },
-  coverWrapper: {
-    position: 'absolute',
-    top: 0,
-    width: COVER_WIDTH,
-    height: COVER_HEIGHT,
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: Colors.surface,
-    backgroundColor: Colors.surfaceLight,
-  },
-  coverImage: {
-    width: '100%',
-    height: '100%',
-  },
-  emptyCover: {
-    width: COVER_WIDTH,
-    height: COVER_HEIGHT,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  infoContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  titleRow: {
+  userHeader: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  title: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.text,
-    flex: 1,
-  },
-  lockIcon: {
-    marginLeft: Spacing.xs,
-  },
-  gameCount: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  userRow: {
+  titleHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.sm,
   },
   avatar: {
     width: 20,
@@ -190,9 +139,52 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   username: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    maxWidth: 80,
+  },
+  separator: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginHorizontal: Spacing.xs,
+  },
+  title: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
     color: Colors.textMuted,
     flex: 1,
+    maxWidth: 100,
+  },
+  titleOnly: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  lockIcon: {
+    marginLeft: Spacing.xs,
+  },
+  coversContainer: {
+    height: COVER_HEIGHT,
+    position: 'relative',
+  },
+  coverWrapper: {
+    position: 'absolute',
+    top: 0,
+    width: COVER_WIDTH,
+    height: COVER_HEIGHT,
+    borderRadius: BorderRadius.sm,
+    overflow: 'hidden',
+    // Subtle shadow for depth
+    shadowColor: '#000',
+    shadowOffset: { width: -2, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
   },
 })

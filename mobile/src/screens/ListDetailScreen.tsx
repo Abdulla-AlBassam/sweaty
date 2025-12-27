@@ -1,25 +1,35 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import {
   View,
   Text,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Image,
   StyleSheet,
   ActivityIndicator,
   Alert,
+  TextInput,
+  Keyboard,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { getIGDBImageUrl } from '../constants'
+import { getIGDBImageUrl, API_URL } from '../constants'
 import { MainStackParamList } from '../navigation'
 import { useAuth } from '../contexts/AuthContext'
-import { useListDetail, removeGameFromList, deleteList } from '../hooks/useLists'
+import { useListDetail, removeGameFromList, deleteList, addGameToList } from '../hooks/useLists'
+import { supabase } from '../lib/supabase'
+import { Game } from '../types'
 
 type ListDetailRouteProp = RouteProp<MainStackParamList, 'ListDetail'>
+
+interface LibraryGame {
+  id: number
+  name: string
+  cover_url: string | null
+}
 
 export default function ListDetailScreen() {
   const navigation = useNavigation()
@@ -30,6 +40,16 @@ export default function ListDetailScreen() {
   const { list, isLoading, error, refetch } = useListDetail(listId)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Game[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false)
+
+  // Library state
+  const [libraryGames, setLibraryGames] = useState<LibraryGame[]>([])
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false)
+
   // Refetch when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -39,6 +59,77 @@ export default function ListDetailScreen() {
 
   const isOwner = user && list && user.id === list.user_id
 
+  // Get IDs of games already in the list
+  const gamesInList = list?.items?.map(item => item.game.id) || []
+
+  // Fetch user's library
+  const fetchLibrary = useCallback(async () => {
+    if (!user) return
+    setIsLoadingLibrary(true)
+
+    try {
+      const { data } = await supabase
+        .from('game_logs')
+        .select(`
+          game_id,
+          game:games_cache(id, name, cover_url)
+        `)
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+
+      if (data) {
+        const games = data
+          .map((log: any) => {
+            const game = Array.isArray(log.game) ? log.game[0] : log.game
+            return game ? { id: game.id, name: game.name, cover_url: game.cover_url } : null
+          })
+          .filter(Boolean) as LibraryGame[]
+        setLibraryGames(games)
+      }
+    } catch (err) {
+      console.error('Error fetching library:', err)
+    } finally {
+      setIsLoadingLibrary(false)
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (isOwner) {
+      fetchLibrary()
+    }
+  }, [isOwner, fetchLibrary])
+
+  // Search games from IGDB
+  const searchGames = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < 2) {
+      setSearchResults([])
+      setShowSearchDropdown(false)
+      return
+    }
+
+    setIsSearching(true)
+    setShowSearchDropdown(true)
+
+    try {
+      const response = await fetch(`${API_URL}/api/games/search?q=${encodeURIComponent(query)}`)
+      const data = await response.json()
+      setSearchResults(data.slice(0, 8))
+    } catch (err) {
+      console.error('Search error:', err)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }, [])
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchGames(searchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery, searchGames])
+
   const handleGamePress = (gameId: number) => {
     navigation.dispatch(
       CommonActions.navigate({
@@ -46,6 +137,34 @@ export default function ListDetailScreen() {
         params: { gameId },
       })
     )
+  }
+
+  const handleAddGame = async (game: LibraryGame | Game) => {
+    if (gamesInList.includes(game.id)) {
+      // Remove from list
+      const { error } = await removeGameFromList(listId, game.id)
+      if (error) {
+        Alert.alert('Error', error)
+      } else {
+        refetch()
+      }
+    } else {
+      // Add to list
+      const position = (list?.items?.length || 0)
+      const { error } = await addGameToList(listId, game.id, position)
+      if (error) {
+        Alert.alert('Error', error)
+      } else {
+        refetch()
+      }
+    }
+  }
+
+  const handleSearchResultPress = (game: Game) => {
+    handleAddGame(game)
+    setSearchQuery('')
+    setShowSearchDropdown(false)
+    Keyboard.dismiss()
   }
 
   const handleGameLongPress = (gameId: number, gameName: string) => {
@@ -96,76 +215,10 @@ export default function ListDetailScreen() {
     )
   }
 
-  const handleEditList = () => {
-    // TODO: Navigate to edit list screen or show edit modal
-    Alert.alert('Coming Soon', 'Edit list functionality coming soon!')
-  }
+  const isGameInList = (gameId: number) => gamesInList.includes(gameId)
 
-  const renderGame = ({ item }: { item: typeof list.items[0] }) => (
-    <TouchableOpacity
-      style={styles.gameCard}
-      onPress={() => handleGamePress(item.game.id)}
-      onLongPress={() => handleGameLongPress(item.game.id, item.game.name)}
-      activeOpacity={0.7}
-      delayLongPress={500}
-    >
-      {item.game.cover_url ? (
-        <Image
-          source={{ uri: getIGDBImageUrl(item.game.cover_url, 'coverBig') }}
-          style={styles.cover}
-        />
-      ) : (
-        <View style={[styles.cover, styles.placeholderCover]}>
-          <Text style={styles.placeholderText} numberOfLines={2}>
-            {item.game.name}
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
-  )
-
-  const renderHeader = () => {
-    if (!list) return null
-
-    return (
-      <View style={styles.listInfo}>
-        {/* Description */}
-        {list.description && (
-          <Text style={styles.description}>{list.description}</Text>
-        )}
-
-        {/* Privacy indicator */}
-        {!list.is_public && (
-          <View style={styles.privateTag}>
-            <Ionicons name="lock-closed" size={12} color={Colors.textMuted} />
-            <Text style={styles.privateText}>Private list</Text>
-          </View>
-        )}
-
-        {/* Game count */}
-        <Text style={styles.gameCount}>
-          {list.item_count} {list.item_count === 1 ? 'game' : 'games'}
-        </Text>
-
-        {/* Long press hint for owners */}
-        {isOwner && list.items.length > 0 && (
-          <Text style={styles.hint}>Long press a game to remove it</Text>
-        )}
-      </View>
-    )
-  }
-
-  const renderEmpty = () => (
-    <View style={styles.emptyContainer}>
-      <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
-      <Text style={styles.emptyText}>This list is empty</Text>
-      <Text style={styles.emptySubtext}>
-        {isOwner
-          ? 'Add games from any game detail page'
-          : 'No games have been added yet'}
-      </Text>
-    </View>
-  )
+  // Filter library to games not already in list
+  const availableLibraryGames = libraryGames.filter(g => !isGameInList(g.id))
 
   if (error) {
     return (
@@ -206,51 +259,198 @@ export default function ListDetailScreen() {
         </Text>
 
         {isOwner ? (
-          <View style={styles.headerActions}>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={handleEditList}
-            >
-              <Ionicons name="pencil" size={20} color={Colors.text} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.headerButton}
-              onPress={handleDeleteList}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <ActivityIndicator size="small" color={Colors.error} />
-              ) : (
-                <Ionicons name="trash-outline" size={20} color={Colors.error} />
-              )}
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleDeleteList}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator size="small" color={Colors.error} />
+            ) : (
+              <Ionicons name="trash-outline" size={20} color={Colors.error} />
+            )}
+          </TouchableOpacity>
         ) : (
           <View style={styles.headerSpacer} />
         )}
       </View>
 
-      {/* Content */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.accent} />
         </View>
-      ) : list?.items.length === 0 ? (
-        <>
-          {renderHeader()}
-          {renderEmpty()}
-        </>
       ) : (
-        <FlatList
-          data={list?.items || []}
-          renderItem={renderGame}
-          keyExtractor={(item) => item.id}
-          numColumns={3}
-          contentContainerStyle={styles.gridContent}
-          columnWrapperStyle={styles.row}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={renderHeader}
-        />
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* List Info */}
+          <View style={styles.listInfo}>
+            {list?.description && (
+              <Text style={styles.description}>{list.description}</Text>
+            )}
+            <Text style={styles.gameCount}>
+              {list?.item_count || 0} {(list?.item_count || 0) === 1 ? 'game' : 'games'}
+            </Text>
+          </View>
+
+          {/* Add Games Section - Only for owners */}
+          {isOwner && (
+            <View style={styles.addSection}>
+              <Text style={styles.sectionTitle}>Add Games</Text>
+
+              {/* Search Bar */}
+              <View style={styles.searchContainer}>
+                <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search for games..."
+                  placeholderTextColor={Colors.textDim}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSearchDropdown(false); }}>
+                    <Ionicons name="close-circle" size={18} color={Colors.textDim} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Search Dropdown */}
+              {showSearchDropdown && (
+                <View style={styles.searchDropdown}>
+                  {isSearching ? (
+                    <View style={styles.searchLoading}>
+                      <ActivityIndicator size="small" color={Colors.accent} />
+                    </View>
+                  ) : searchResults.length > 0 ? (
+                    searchResults.map((game) => {
+                      const inList = isGameInList(game.id)
+                      return (
+                        <TouchableOpacity
+                          key={game.id}
+                          style={[styles.searchResult, inList && styles.searchResultInList]}
+                          onPress={() => handleSearchResultPress(game)}
+                        >
+                          {game.cover_url ? (
+                            <Image
+                              source={{ uri: getIGDBImageUrl(game.cover_url, 'thumb') }}
+                              style={styles.searchResultCover}
+                            />
+                          ) : (
+                            <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
+                              <Ionicons name="game-controller" size={12} color={Colors.textDim} />
+                            </View>
+                          )}
+                          <Text style={styles.searchResultName} numberOfLines={1}>
+                            {game.name}
+                          </Text>
+                          {inList ? (
+                            <Ionicons name="checkmark-circle" size={20} color={Colors.accent} />
+                          ) : (
+                            <Ionicons name="add-circle-outline" size={20} color={Colors.textMuted} />
+                          )}
+                        </TouchableOpacity>
+                      )
+                    })
+                  ) : searchQuery.length >= 2 ? (
+                    <Text style={styles.noResults}>No games found</Text>
+                  ) : null}
+                </View>
+              )}
+
+              {/* Select from Library */}
+              <Text style={styles.libraryTitle}>Select from your library</Text>
+              {isLoadingLibrary ? (
+                <View style={styles.libraryLoading}>
+                  <ActivityIndicator size="small" color={Colors.accent} />
+                </View>
+              ) : libraryGames.length > 0 ? (
+                <View style={styles.libraryGrid}>
+                  {libraryGames.map((game) => {
+                    const inList = isGameInList(game.id)
+                    return (
+                      <TouchableOpacity
+                        key={game.id}
+                        style={styles.libraryGame}
+                        onPress={() => handleAddGame(game)}
+                      >
+                        {game.cover_url ? (
+                          <Image
+                            source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') }}
+                            style={[styles.libraryCover, inList && styles.libraryCoverInList]}
+                          />
+                        ) : (
+                          <View style={[styles.libraryCover, styles.coverPlaceholder, inList && styles.libraryCoverInList]}>
+                            <Ionicons name="game-controller" size={20} color={Colors.textDim} />
+                          </View>
+                        )}
+                        {inList && (
+                          <View style={styles.inListOverlay}>
+                            <Ionicons name="checkmark-circle" size={28} color={Colors.accent} />
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              ) : (
+                <View style={styles.emptyLibrary}>
+                  <Text style={styles.emptyLibraryText}>No games in your library</Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Games in List */}
+          <View style={styles.listSection}>
+            <Text style={styles.sectionTitle}>
+              In this list ({list?.items?.length || 0})
+            </Text>
+
+            {(list?.items?.length || 0) > 0 ? (
+              <View style={styles.gamesGrid}>
+                {list?.items?.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    style={styles.gameCard}
+                    onPress={() => handleGamePress(item.game.id)}
+                    onLongPress={() => isOwner && handleGameLongPress(item.game.id, item.game.name)}
+                    activeOpacity={0.7}
+                    delayLongPress={500}
+                  >
+                    {item.game.cover_url ? (
+                      <Image
+                        source={{ uri: getIGDBImageUrl(item.game.cover_url, 'coverBig') }}
+                        style={styles.gameCover}
+                      />
+                    ) : (
+                      <View style={[styles.gameCover, styles.coverPlaceholder]}>
+                        <Text style={styles.placeholderText} numberOfLines={2}>
+                          {item.game.name}
+                        </Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyList}>
+                <Ionicons name="game-controller-outline" size={40} color={Colors.textDim} />
+                <Text style={styles.emptyListText}>No games in this list yet</Text>
+                {isOwner && (
+                  <Text style={styles.emptyListSubtext}>Use search or tap games from your library above</Text>
+                )}
+              </View>
+            )}
+
+            {isOwner && (list?.items?.length || 0) > 0 && (
+              <Text style={styles.hint}>Long press a game to remove it</Text>
+            )}
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   )
@@ -287,15 +487,17 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   headerButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: Spacing.xxl,
   },
   loadingContainer: {
     flex: 1,
@@ -338,50 +540,154 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginBottom: Spacing.sm,
   },
-  privateTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  privateText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginLeft: Spacing.xs,
-  },
   gameCount: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
     color: Colors.text,
   },
-  hint: {
+  addSection: {
+    padding: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  sectionTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    marginBottom: Spacing.md,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.md,
+  },
+  searchIcon: {
+    marginRight: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
     fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    paddingVertical: Spacing.md,
+  },
+  searchDropdown: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    maxHeight: 300,
+  },
+  searchLoading: {
+    padding: Spacing.lg,
+    alignItems: 'center',
+  },
+  searchResult: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  searchResultInList: {
+    backgroundColor: Colors.accent + '20',
+  },
+  searchResultCover: {
+    width: 32,
+    height: 43,
+    borderRadius: BorderRadius.xs,
+    marginRight: Spacing.sm,
+  },
+  searchResultName: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  noResults: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    padding: Spacing.lg,
+  },
+  libraryTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.sm,
     marginTop: Spacing.sm,
   },
-  gridContent: {
-    padding: Spacing.lg,
-    paddingTop: 0,
+  libraryLoading: {
+    padding: Spacing.xl,
+    alignItems: 'center',
   },
-  row: {
-    justifyContent: 'flex-start',
+  libraryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  libraryGame: {
+    position: 'relative',
+  },
+  libraryCover: {
+    width: 70,
+    height: 93,
+    borderRadius: BorderRadius.sm,
+  },
+  libraryCoverInList: {
+    borderWidth: 2,
+    borderColor: Colors.accent,
+  },
+  coverPlaceholder: {
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inListOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyLibrary: {
+    backgroundColor: Colors.surface,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+  },
+  emptyLibraryText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  listSection: {
+    padding: Spacing.lg,
+  },
+  gamesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.md,
-    marginBottom: Spacing.md,
   },
   gameCard: {
     width: '30%',
   },
-  cover: {
+  gameCover: {
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
-  },
-  placeholderCover: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.sm,
   },
   placeholderText: {
     fontFamily: Fonts.body,
@@ -389,23 +695,30 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     textAlign: 'center',
   },
-  emptyContainer: {
-    flex: 1,
+  emptyList: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
   },
-  emptyText: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
+  emptyListText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
     color: Colors.text,
     marginTop: Spacing.md,
   },
-  emptySubtext: {
+  emptyListSubtext: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
-    textAlign: 'center',
     marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  hint: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textAlign: 'center',
+    marginTop: Spacing.md,
   },
 })
