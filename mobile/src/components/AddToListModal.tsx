@@ -216,7 +216,7 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
           <View style={styles.footer}>
             <TouchableOpacity style={styles.createButton} onPress={handleCreateList}>
               <Ionicons name="add" size={20} color={Colors.background} />
-              <Text style={styles.createButtonText}>Create New List</Text>
+              <Text style={styles.createButtonText}>Add to a new list</Text>
             </TouchableOpacity>
           </View>
         </View>
