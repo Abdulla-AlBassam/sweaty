@@ -260,22 +260,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        {/* User Status */}
-        {userLog && (
-          <View style={styles.statusBadge}>
-            <Ionicons name="checkmark-circle" size={16} color={Colors.accent} />
-            <Text style={styles.statusText}>
-              {STATUS_LABELS[userLog.status] || userLog.status}
-            </Text>
-            {userLog.rating && (
-              <View style={styles.statusRating}>
-                <Text style={styles.statusText}> • </Text>
-                <StarRating rating={userLog.rating} size={14} />
-              </View>
-            )}
-          </View>
-        )}
-
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
           <TouchableOpacity
@@ -298,6 +282,22 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* User Status */}
+        {userLog && (
+          <View style={styles.statusBadge}>
+            <Ionicons name="checkmark-circle" size={16} color={Colors.accent} />
+            <Text style={styles.statusText}>
+              {STATUS_LABELS[userLog.status] || userLog.status}
+            </Text>
+            {userLog.rating && (
+              <View style={styles.statusRating}>
+                <Text style={styles.statusText}> • </Text>
+                <StarRating rating={userLog.rating} size={14} />
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Reviews */}
         <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
