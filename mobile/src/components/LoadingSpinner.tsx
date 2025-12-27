@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { Animated, Easing } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
 
 interface LoadingSpinnerProps {
@@ -37,7 +37,7 @@ export default function LoadingSpinner({
 
   return (
     <Animated.View style={{ transform: [{ rotate }] }}>
-      <Ionicons name="game-controller" size={iconSize} color={color} />
+      <MaterialCommunityIcons name="controller-classic-outline" size={iconSize} color={color} />
     </Animated.View>
   )
 }
