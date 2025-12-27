@@ -8,10 +8,10 @@ import {
   TextInput,
   FlatList,
   Image,
-  ActivityIndicator,
   Pressable,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -250,7 +250,7 @@ export default function EditFavoritesModal({
               <View style={styles.resultsContainer}>
                 {isSearching ? (
                   <View style={styles.centered}>
-                    <ActivityIndicator size="small" color={Colors.accent} />
+                    <LoadingSpinner size="small" color={Colors.accent} />
                   </View>
                 ) : searchResults.length > 0 ? (
                   <FlatList
@@ -331,7 +331,7 @@ export default function EditFavoritesModal({
                   disabled={isSaving}
                 >
                   {isSaving ? (
-                    <ActivityIndicator size="small" color={Colors.background} />
+                    <LoadingSpinner size="small" color={Colors.background} />
                   ) : (
                     <Text style={styles.saveButtonText}>Save Favorites</Text>
                   )}

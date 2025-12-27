@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
@@ -60,7 +61,7 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
           />
           {imageLoading && (
             <View style={[styles.loadingOverlay, { width, height }]}>
-              <ActivityIndicator size="small" color={Colors.textDim} />
+              <LoadingSpinner size="small" color={Colors.textDim} />
             </View>
           )}
         </View>

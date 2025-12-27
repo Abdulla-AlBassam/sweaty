@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  ActivityIndicator,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -112,7 +112,7 @@ export default function CuratedListDetailScreen() {
       {/* Content */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.accent} />
+          <LoadingSpinner size="large" color={Colors.accent} />
         </View>
       ) : (
         <FlatList

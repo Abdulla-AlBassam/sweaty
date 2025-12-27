@@ -6,8 +6,8 @@ import {
   Modal,
   TouchableOpacity,
   FlatList,
-  ActivityIndicator,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -151,7 +151,7 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
         </View>
 
         {isLoadingItem ? (
-          <ActivityIndicator size="small" color={Colors.accent} />
+          <LoadingSpinner size="small" color={Colors.accent} />
         ) : isInList ? (
           <View style={styles.checkmark}>
             <Ionicons name="checkmark" size={18} color={Colors.background} />
@@ -199,7 +199,7 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
           {/* Content */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Colors.accent} />
+              <LoadingSpinner size="large" color={Colors.accent} />
             </View>
           ) : (
             <FlatList

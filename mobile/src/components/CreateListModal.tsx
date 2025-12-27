@@ -6,12 +6,12 @@ import {
   Modal,
   TouchableOpacity,
   TextInput,
-  ActivityIndicator,
   ScrollView,
   Image,
   FlatList,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -227,7 +227,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
             style={[styles.createButton, (!canCreate || isCreating) && styles.createButtonDisabled]}
           >
             {isCreating ? (
-              <ActivityIndicator size="small" color={Colors.background} />
+              <LoadingSpinner size="small" color={Colors.background} />
             ) : (
               <Text style={[styles.createButtonText, !canCreate && styles.createButtonTextDisabled]}>
                 Create
@@ -353,7 +353,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
               <View style={styles.searchDropdown}>
                 {isSearching ? (
                   <View style={styles.searchLoading}>
-                    <ActivityIndicator size="small" color={Colors.accent} />
+                    <LoadingSpinner size="small" color={Colors.accent} />
                   </View>
                 ) : searchResults.length > 0 ? (
                   searchResults.map((game) => {
@@ -397,7 +397,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
             <Text style={styles.sectionLabel}>Select from your library</Text>
             {isLoadingLibrary ? (
               <View style={styles.libraryLoading}>
-                <ActivityIndicator size="small" color={Colors.accent} />
+                <LoadingSpinner size="small" color={Colors.accent} />
               </View>
             ) : libraryGames.length > 0 ? (
               <View style={styles.libraryGrid}>

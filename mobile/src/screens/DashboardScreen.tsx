@@ -7,9 +7,9 @@ import {
   RefreshControl,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   Animated,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -177,7 +177,7 @@ export default function DashboardScreen() {
         {/* Curated Lists */}
         {listsLoading ? (
           <View style={styles.listsLoading}>
-            <ActivityIndicator size="large" color={Colors.accent} />
+            <LoadingSpinner size="large" color={Colors.accent} />
           </View>
         ) : curatedLists.length > 0 ? (
           curatedLists.map((list) => (

@@ -6,13 +6,13 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
   Dimensions,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -256,7 +256,7 @@ export default function SettingsScreen() {
           style={styles.saveButton}
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color={Colors.accent} />
+            <LoadingSpinner size="small" color={Colors.accent} />
           ) : (
             <Text style={[styles.saveText, (!hasChanges || !!usernameError) && styles.saveTextDisabled]}>
               SAVE
@@ -275,7 +275,7 @@ export default function SettingsScreen() {
             <TouchableOpacity onPress={pickImage} disabled={isUploadingAvatar}>
               {isUploadingAvatar ? (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <ActivityIndicator size="large" color={Colors.accent} />
+                  <LoadingSpinner size="large" color={Colors.accent} />
                 </View>
               ) : avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />

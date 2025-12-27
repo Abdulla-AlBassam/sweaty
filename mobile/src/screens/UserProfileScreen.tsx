@@ -6,10 +6,10 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Dimensions,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -475,7 +475,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               disabled={isFollowLoading}
             >
               {isFollowLoading ? (
-                <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
+                <LoadingSpinner size="small" color={isFollowing ? Colors.text : Colors.background} />
               ) : (
                 <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
                   {isFollowing ? 'following' : 'follow'}

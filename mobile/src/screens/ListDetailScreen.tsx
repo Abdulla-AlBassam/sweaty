@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  ActivityIndicator,
   Alert,
   TextInput,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -288,7 +288,7 @@ export default function ListDetailScreen() {
                   disabled={isDeleting}
                 >
                   {isDeleting ? (
-                    <ActivityIndicator size="small" color={Colors.error} />
+                    <LoadingSpinner size="small" color={Colors.error} />
                   ) : (
                     <Ionicons name="trash-outline" size={20} color={Colors.error} />
                   )}
@@ -303,7 +303,7 @@ export default function ListDetailScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.accent} />
+          <LoadingSpinner size="large" color={Colors.accent} />
         </View>
       ) : (
         <ScrollView
@@ -355,7 +355,7 @@ export default function ListDetailScreen() {
                     >
                       {isSearching ? (
                         <View style={styles.searchLoading}>
-                          <ActivityIndicator size="small" color={Colors.accent} />
+                          <LoadingSpinner size="small" color={Colors.accent} />
                         </View>
                       ) : searchResults.length > 0 ? (
                         searchResults.map((game) => {
@@ -401,7 +401,7 @@ export default function ListDetailScreen() {
               <Text style={styles.libraryTitle}>Select from your library</Text>
               {isLoadingLibrary ? (
                 <View style={styles.libraryLoading}>
-                  <ActivityIndicator size="small" color={Colors.accent} />
+                  <LoadingSpinner size="small" color={Colors.accent} />
                 </View>
               ) : libraryGames.length > 0 ? (
                 <View style={styles.libraryGrid}>

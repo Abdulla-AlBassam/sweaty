@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -154,7 +154,7 @@ export default function QuickLogScreen() {
       {/* Results */}
       {isLoading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.accent} />
+          <LoadingSpinner size="large" color={Colors.accent} />
         </View>
       ) : results.length > 0 ? (
         <FlatList

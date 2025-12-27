@@ -8,10 +8,10 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   Image,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -242,7 +242,7 @@ export default function AIRecommendScreen() {
           {isLoading && (
             <View style={styles.loadingContainer}>
               <View style={styles.loadingBubble}>
-                <ActivityIndicator size="small" color={Colors.accent} />
+                <LoadingSpinner size="small" color={Colors.accent} />
                 <Text style={styles.loadingText}>Finding games for you...</Text>
               </View>
             </View>

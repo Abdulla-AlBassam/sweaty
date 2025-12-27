@@ -7,12 +7,12 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  ActivityIndicator,
   Pressable,
   TextInput,
   Alert,
   FlatList,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -566,7 +566,7 @@ export default function LogGameModal({
               disabled={!status || isSaving}
             >
               {isSaving ? (
-                <ActivityIndicator size="small" color={Colors.background} />
+                <LoadingSpinner size="small" color={Colors.background} />
               ) : (
                 <Text style={styles.saveButtonText}>
                   {existingLog ? 'Update' : 'Save'}

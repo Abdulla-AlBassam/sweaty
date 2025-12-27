@@ -5,8 +5,8 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -187,7 +187,7 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Reviews</Text>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={Colors.accent} />
+          <LoadingSpinner size="small" color={Colors.accent} />
         </View>
       </View>
     )

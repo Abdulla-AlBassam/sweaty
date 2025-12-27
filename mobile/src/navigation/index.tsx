@@ -1,8 +1,9 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
-import { ActivityIndicator, View } from 'react-native'
+import { View } from 'react-native'
 import { Colors } from '../constants/colors'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 // Screens
 import LoginScreen from '../screens/LoginScreen'
@@ -110,7 +111,7 @@ export default function Navigation() {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
-        <ActivityIndicator size="large" color={Colors.accent} />
+        <LoadingSpinner size="large" color={Colors.accent} />
       </View>
     )
   }

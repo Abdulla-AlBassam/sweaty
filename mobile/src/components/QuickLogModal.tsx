@@ -8,13 +8,13 @@ import {
   TouchableWithoutFeedback,
   FlatList,
   Image,
-  ActivityIndicator,
   Keyboard,
   Animated,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -267,7 +267,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
           <View style={styles.resultsContainer}>
             {isLoading ? (
               <View style={styles.centered}>
-                <ActivityIndicator size="large" color={Colors.accent} />
+                <LoadingSpinner size="large" color={Colors.accent} />
               </View>
             ) : results.length > 0 ? (
               <FlatList

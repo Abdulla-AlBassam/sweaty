@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -213,7 +213,7 @@ export default function FollowersModal({
             disabled={isLoadingThis}
           >
             {isLoadingThis ? (
-              <ActivityIndicator
+              <LoadingSpinner
                 size="small"
                 color={isFollowing ? Colors.text : Colors.background}
               />
@@ -254,7 +254,7 @@ export default function FollowersModal({
         {/* Content */}
         {isLoading ? (
           <View style={styles.centered}>
-            <ActivityIndicator size="large" color={Colors.accent} />
+            <LoadingSpinner size="large" color={Colors.accent} />
           </View>
         ) : users.length === 0 ? (
           <View style={styles.centered}>
