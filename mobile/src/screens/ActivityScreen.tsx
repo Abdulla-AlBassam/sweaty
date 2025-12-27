@@ -94,51 +94,49 @@ export default function ActivityScreen() {
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
-          onPress={() => setActiveTab('friends')}
-        >
-          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-            Friends
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'you' && styles.activeTab]}
-          onPress={() => setActiveTab('you')}
-        >
-          <Text style={[styles.tabText, activeTab === 'you' && styles.activeTabText]}>
-            You
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Category Filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoryScroll}
-        contentContainerStyle={styles.categoryContent}
-      >
-        {CATEGORIES.map((category) => (
+        {/* Friends/You Tabs */}
+        <View style={styles.tabsRow}>
           <TouchableOpacity
-            key={category.key}
-            style={[
-              styles.categoryPill,
-              activeCategory === category.key && styles.categoryPillActive,
-            ]}
-            onPress={() => setActiveCategory(category.key)}
+            style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+            onPress={() => setActiveTab('friends')}
           >
-            <Text
-              style={[
-                styles.categoryText,
-                activeCategory === category.key && styles.categoryTextActive,
-              ]}
-            >
-              {category.label}
+            <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
+              Friends
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'you' && styles.activeTab]}
+            onPress={() => setActiveTab('you')}
+          >
+            <Text style={[styles.tabText, activeTab === 'you' && styles.activeTabText]}>
+              You
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Category Pills */}
+        <View style={styles.categoryRow}>
+          {CATEGORIES.map((category) => (
+            <TouchableOpacity
+              key={category.key}
+              style={[
+                styles.categoryPill,
+                activeCategory === category.key && styles.categoryPillActive,
+              ]}
+              onPress={() => setActiveCategory(category.key)}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  activeCategory === category.key && styles.categoryTextActive,
+                ]}
+              >
+                {category.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
 
       <ScrollView
         style={styles.scrollView}
@@ -206,8 +204,13 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
+  },
+  tabsRow: {
+    flexDirection: 'row',
     gap: Spacing.lg,
   },
   tab: {
@@ -226,12 +229,8 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: Colors.text,
   },
-  categoryScroll: {
-    flexGrow: 0,
-  },
-  categoryContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+  categoryRow: {
+    flexDirection: 'row',
     gap: Spacing.sm,
   },
   categoryPill: {
