@@ -5,13 +5,14 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
-import { useActivityFeed } from '../hooks/useSupabase'
+import { useActivityFeed, useOwnActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { MainStackParamList } from '../navigation'
@@ -19,18 +20,28 @@ import ActivityItem from '../components/ActivityItem'
 import { ActivitySkeletonList } from '../components/skeletons'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
+type TabType = 'friends' | 'you'
 
 export default function ActivityScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user } = useAuth()
-  const { activities, isLoading, refetch } = useActivityFeed(user?.id)
+  const [activeTab, setActiveTab] = useState<TabType>('friends')
+  const { activities: friendsActivities, isLoading: friendsLoading, refetch: refetchFriends } = useActivityFeed(user?.id)
+  const { activities: ownActivities, isLoading: ownLoading, refetch: refetchOwn } = useOwnActivityFeed(user?.id)
   const [refreshing, setRefreshing] = useState(false)
+
+  const activities = activeTab === 'friends' ? friendsActivities : ownActivities
+  const isLoading = activeTab === 'friends' ? friendsLoading : ownLoading
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await refetch()
+    if (activeTab === 'friends') {
+      await refetchFriends()
+    } else {
+      await refetchOwn()
+    }
     setRefreshing(false)
-  }, [refetch])
+  }, [activeTab, refetchFriends, refetchOwn])
 
   const handleUserPress = (userId: string, username: string) => {
     navigation.navigate('UserProfile', { username, userId })
@@ -44,6 +55,25 @@ export default function ActivityScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>activity</Text>
+      </View>
+
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+          onPress={() => setActiveTab('friends')}
+        >
+          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
+            Friends
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'you' && styles.activeTab]}
+          onPress={() => setActiveTab('you')}
+        >
+          <Text style={[styles.tabText, activeTab === 'you' && styles.activeTabText]}>
+            You
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -62,10 +92,19 @@ export default function ActivityScreen() {
           <ActivitySkeletonList count={6} />
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
-            <Text style={styles.emptyTitle}>no activity yet</Text>
+            <Ionicons
+              name={activeTab === 'friends' ? 'people-outline' : 'game-controller-outline'}
+              size={48}
+              color={Colors.textDim}
+              style={styles.emptyIcon}
+            />
+            <Text style={styles.emptyTitle}>
+              {activeTab === 'friends' ? 'no activity yet' : 'no activity yet'}
+            </Text>
             <Text style={styles.emptyText}>
-              follow other gamers to see what they're playing
+              {activeTab === 'friends'
+                ? 'follow other gamers to see what they\'re playing'
+                : 'start logging games to see your activity here'}
             </Text>
           </View>
         ) : (
@@ -93,12 +132,34 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   title: {
     fontFamily: Fonts.display,
     fontSize: FontSize.xxl,
+    color: Colors.text,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: Spacing.lg,
+  },
+  tab: {
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: Colors.accent,
+  },
+  tabText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
+  },
+  activeTabText: {
     color: Colors.text,
   },
   scrollView: {
