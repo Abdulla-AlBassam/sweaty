@@ -33,7 +33,7 @@ import StreakBadge from '../components/StreakBadge'
 import { ProfileSkeleton } from '../components/skeletons'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const BANNER_HEIGHT = 150
+const BANNER_HEIGHT = 180
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -411,7 +411,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['transparent', Colors.background]}
+              colors={['rgba(15, 15, 15, 0.3)', 'rgba(15, 15, 15, 0.6)', Colors.background]}
+              locations={[0, 0.5, 1]}
               style={styles.bannerGradient}
             />
           </View>
@@ -747,16 +748,16 @@ const styles = StyleSheet.create({
   },
   bannerGradient: {
     position: 'absolute',
+    top: 0,
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
   },
   bannerPlaceholder: {
     height: 0,
   },
   profileSectionWithBanner: {
-    marginTop: -40,
+    marginTop: -60,
   },
   nameRow: {
     flexDirection: 'row',
