@@ -152,9 +152,12 @@ export default function ListDetailScreen() {
         refetch()
       }
     } else {
-      // Add to list
-      const position = (list?.items?.length || 0)
-      const { error } = await addGameToList(listId, game.id, position)
+      // Add to list - pass game info for caching
+      const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover
+      const { error } = await addGameToList(listId, game.id, {
+        name: game.name,
+        cover_url: coverUrl,
+      })
       if (error) {
         Alert.alert('Error', error)
       } else {
@@ -322,66 +325,75 @@ export default function ListDetailScreen() {
             <View style={styles.addSection}>
               <Text style={styles.sectionTitle}>Add Games</Text>
 
-              {/* Search Bar */}
-              <View style={styles.searchContainer}>
-                <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search for games..."
-                  placeholderTextColor={Colors.textDim}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
-                />
-                {searchQuery.length > 0 && (
-                  <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSearchDropdown(false); }}>
-                    <Ionicons name="close-circle" size={18} color={Colors.textDim} />
-                  </TouchableOpacity>
+              {/* Search Bar with Dropdown */}
+              <View style={styles.searchWrapper}>
+                <View style={styles.searchContainer}>
+                  <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search for games..."
+                    placeholderTextColor={Colors.textDim}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSearchDropdown(false); }}>
+                      <Ionicons name="close-circle" size={18} color={Colors.textDim} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {/* Search Dropdown */}
+                {showSearchDropdown && (
+                  <View style={styles.searchDropdown}>
+                    <ScrollView
+                      style={styles.searchDropdownScroll}
+                      keyboardShouldPersistTaps="handled"
+                      nestedScrollEnabled
+                    >
+                      {isSearching ? (
+                        <View style={styles.searchLoading}>
+                          <ActivityIndicator size="small" color={Colors.accent} />
+                        </View>
+                      ) : searchResults.length > 0 ? (
+                        searchResults.map((game) => {
+                          const inList = isGameInList(game.id)
+                          const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover
+                          return (
+                            <TouchableOpacity
+                              key={game.id}
+                              style={[styles.searchResult, inList && styles.searchResultInList]}
+                              onPress={() => handleSearchResultPress(game)}
+                            >
+                              {coverUrl ? (
+                                <Image
+                                  source={{ uri: getIGDBImageUrl(coverUrl, 'thumb') }}
+                                  style={styles.searchResultCover}
+                                />
+                              ) : (
+                                <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
+                                  <Ionicons name="game-controller" size={12} color={Colors.textDim} />
+                                </View>
+                              )}
+                              <Text style={styles.searchResultName} numberOfLines={1}>
+                                {game.name}
+                              </Text>
+                              {inList ? (
+                                <Ionicons name="checkmark-circle" size={20} color={Colors.accent} />
+                              ) : (
+                                <Ionicons name="add-circle-outline" size={20} color={Colors.textMuted} />
+                              )}
+                            </TouchableOpacity>
+                          )
+                        })
+                      ) : searchQuery.length >= 2 ? (
+                        <Text style={styles.noResults}>No games found</Text>
+                      ) : null}
+                    </ScrollView>
+                  </View>
                 )}
               </View>
-
-              {/* Search Dropdown */}
-              {showSearchDropdown && (
-                <View style={styles.searchDropdown}>
-                  {isSearching ? (
-                    <View style={styles.searchLoading}>
-                      <ActivityIndicator size="small" color={Colors.accent} />
-                    </View>
-                  ) : searchResults.length > 0 ? (
-                    searchResults.map((game) => {
-                      const inList = isGameInList(game.id)
-                      return (
-                        <TouchableOpacity
-                          key={game.id}
-                          style={[styles.searchResult, inList && styles.searchResultInList]}
-                          onPress={() => handleSearchResultPress(game)}
-                        >
-                          {game.cover_url ? (
-                            <Image
-                              source={{ uri: getIGDBImageUrl(game.cover_url, 'thumb') }}
-                              style={styles.searchResultCover}
-                            />
-                          ) : (
-                            <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
-                              <Ionicons name="game-controller" size={12} color={Colors.textDim} />
-                            </View>
-                          )}
-                          <Text style={styles.searchResultName} numberOfLines={1}>
-                            {game.name}
-                          </Text>
-                          {inList ? (
-                            <Ionicons name="checkmark-circle" size={20} color={Colors.accent} />
-                          ) : (
-                            <Ionicons name="add-circle-outline" size={20} color={Colors.textMuted} />
-                          )}
-                        </TouchableOpacity>
-                      )
-                    })
-                  ) : searchQuery.length >= 2 ? (
-                    <Text style={styles.noResults}>No games found</Text>
-                  ) : null}
-                </View>
-              )}
 
               {/* Select from Library */}
               <Text style={styles.libraryTitle}>Select from your library</Text>
@@ -573,13 +585,13 @@ const styles = StyleSheet.create({
   },
   description: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     color: Colors.text,
     marginBottom: Spacing.sm,
   },
   gameCount: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
   addSection: {
@@ -593,6 +605,11 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: Spacing.md,
   },
+  searchWrapper: {
+    position: 'relative',
+    zIndex: 10,
+    marginBottom: Spacing.md,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -601,7 +618,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: Spacing.md,
   },
   searchIcon: {
     marginRight: Spacing.sm,
@@ -614,12 +630,25 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
   },
   searchDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    maxHeight: 300,
+    marginTop: Spacing.xs,
+    maxHeight: 280,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  searchDropdownScroll: {
+    maxHeight: 280,
   },
   searchLoading: {
     padding: Spacing.lg,

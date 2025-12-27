@@ -186,9 +186,37 @@ export async function createList(
 // Helper function to add a game to a list
 export async function addGameToList(
   listId: string,
-  gameId: number
+  gameId: number,
+  gameInfo?: { name: string; cover_url?: string | null }
 ): Promise<{ success: boolean; error: string | null }> {
   try {
+    // If game info is provided, ensure the game exists in games_cache
+    if (gameInfo) {
+      // Check if game exists in cache
+      const { data: existingGame } = await supabase
+        .from('games_cache')
+        .select('id')
+        .eq('id', gameId)
+        .single()
+
+      // If game doesn't exist, insert it
+      if (!existingGame) {
+        const { error: cacheError } = await supabase
+          .from('games_cache')
+          .insert({
+            id: gameId,
+            name: gameInfo.name,
+            cover_url: gameInfo.cover_url || null,
+            cached_at: new Date().toISOString(),
+          })
+
+        // Ignore duplicate key errors (game was added by another process)
+        if (cacheError && cacheError.code !== '23505') {
+          console.error('Error caching game:', cacheError)
+        }
+      }
+    }
+
     // Get current max position
     const { data: maxPosData } = await supabase
       .from('list_items')

@@ -149,10 +149,11 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
   }
 
   const handleSearchResultPress = (game: Game) => {
+    const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover || null
     const libraryGame: LibraryGame = {
       id: game.id,
       name: game.name,
-      cover_url: game.cover_url || null,
+      cover_url: coverUrl,
     }
     toggleGameSelection(libraryGame)
     setSearchQuery('')
@@ -187,7 +188,11 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     // Add selected games to the list
     if (selectedGames.length > 0) {
       for (let i = 0; i < selectedGames.length; i++) {
-        await addGameToList(newList.id, selectedGames[i].id, i)
+        const game = selectedGames[i]
+        await addGameToList(newList.id, game.id, {
+          name: game.name,
+          cover_url: game.cover_url,
+        })
       }
     }
 
@@ -352,15 +357,16 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                 ) : searchResults.length > 0 ? (
                   searchResults.map((game) => {
                     const selected = isGameSelected(game.id)
+                    const coverUrl = game.cover_url || (game as any).cover?.url || (game as any).cover
                     return (
                       <TouchableOpacity
                         key={game.id}
                         style={[styles.searchResult, selected && styles.searchResultSelected]}
                         onPress={() => handleSearchResultPress(game)}
                       >
-                        {game.cover_url ? (
+                        {coverUrl ? (
                           <Image
-                            source={{ uri: getIGDBImageUrl(game.cover_url, 'thumb') }}
+                            source={{ uri: getIGDBImageUrl(coverUrl, 'thumb') }}
                             style={styles.searchResultCover}
                           />
                         ) : (
