@@ -16,7 +16,7 @@ import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } fro
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { getIGDBImageUrl, API_URL } from '../constants'
+import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { MainStackParamList } from '../navigation'
 import { useAuth } from '../contexts/AuthContext'
 import { useListDetail, removeGameFromList, deleteList, addGameToList } from '../hooks/useLists'
@@ -39,6 +39,7 @@ export default function ListDetailScreen() {
 
   const { list, isLoading, error, refetch } = useListDetail(listId)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,7 +112,7 @@ export default function ListDetailScreen() {
     setShowSearchDropdown(true)
 
     try {
-      const response = await fetch(`${API_URL}/api/games/search?q=${encodeURIComponent(query)}`)
+      const response = await fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
       setSearchResults(data.slice(0, 8))
     } catch (err) {
@@ -259,17 +260,36 @@ export default function ListDetailScreen() {
         </Text>
 
         {isOwner ? (
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={handleDeleteList}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <ActivityIndicator size="small" color={Colors.error} />
+          <View style={styles.headerActions}>
+            {isEditMode ? (
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => setIsEditMode(false)}
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
             ) : (
-              <Ionicons name="trash-outline" size={20} color={Colors.error} />
+              <>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={() => setIsEditMode(true)}
+                >
+                  <Ionicons name="pencil" size={20} color={Colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={handleDeleteList}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? (
+                    <ActivityIndicator size="small" color={Colors.error} />
+                  ) : (
+                    <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                  )}
+                </TouchableOpacity>
+              </>
             )}
-          </TouchableOpacity>
+          </View>
         ) : (
           <View style={styles.headerSpacer} />
         )}
@@ -295,8 +315,8 @@ export default function ListDetailScreen() {
             </Text>
           </View>
 
-          {/* Add Games Section - Only for owners */}
-          {isOwner && (
+          {/* Add Games Section - Only in edit mode */}
+          {isOwner && isEditMode && (
             <View style={styles.addSection}>
               <Text style={styles.sectionTitle}>Add Games</Text>
 
@@ -406,9 +426,11 @@ export default function ListDetailScreen() {
 
           {/* Games in List */}
           <View style={styles.listSection}>
-            <Text style={styles.sectionTitle}>
-              In this list ({list?.items?.length || 0})
-            </Text>
+            {isEditMode && (
+              <Text style={styles.sectionTitle}>
+                In this list ({list?.items?.length || 0})
+              </Text>
+            )}
 
             {(list?.items?.length || 0) > 0 ? (
               <View style={styles.gamesGrid}>
@@ -417,7 +439,7 @@ export default function ListDetailScreen() {
                     key={item.id}
                     style={styles.gameCard}
                     onPress={() => handleGamePress(item.game.id)}
-                    onLongPress={() => isOwner && handleGameLongPress(item.game.id, item.game.name)}
+                    onLongPress={() => isOwner && isEditMode && handleGameLongPress(item.game.id, item.game.name)}
                     activeOpacity={0.7}
                     delayLongPress={500}
                   >
@@ -446,7 +468,7 @@ export default function ListDetailScreen() {
               </View>
             )}
 
-            {isOwner && (list?.items?.length || 0) > 0 && (
+            {isOwner && isEditMode && (list?.items?.length || 0) > 0 && (
               <Text style={styles.hint}>Long press a game to remove it</Text>
             )}
           </View>
@@ -487,11 +509,24 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   headerButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  doneButton: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  doneButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.accent,
   },
   scrollView: {
     flex: 1,

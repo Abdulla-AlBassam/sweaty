@@ -15,7 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { getIGDBImageUrl, API_URL } from '../constants'
+import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { createList, addGameToList } from '../hooks/useLists'
 import { supabase } from '../lib/supabase'
@@ -113,7 +113,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     setShowSearchDropdown(true)
 
     try {
-      const response = await fetch(`${API_URL}/api/games/search?q=${encodeURIComponent(query)}`)
+      const response = await fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
       setSearchResults(data.slice(0, 8))
     } catch (err) {
