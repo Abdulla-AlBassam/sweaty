@@ -12,6 +12,7 @@ import GameDetailScreen from '../screens/GameDetailScreen'
 import UserProfileScreen from '../screens/UserProfileScreen'
 import SettingsScreen from '../screens/SettingsScreen'
 import CuratedListDetailScreen from '../screens/CuratedListDetailScreen'
+import ListDetailScreen from '../screens/ListDetailScreen'
 import AIRecommendScreen from '../screens/AIRecommendScreen'
 
 // Types
@@ -26,6 +27,7 @@ export type MainStackParamList = {
   UserProfile: { username: string; userId?: string }
   Settings: undefined
   CuratedListDetail: { listSlug: string; listTitle: string; gameIds: number[] }
+  ListDetail: { listId: string }
   AIRecommend: undefined
 }
 
@@ -79,6 +81,13 @@ function MainNavigator() {
       <MainStack.Screen
         name="CuratedListDetail"
         component={CuratedListDetailScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="ListDetail"
+        component={ListDetailScreen}
         options={{
           animation: 'slide_from_right',
         }}
