@@ -284,12 +284,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           >
             <Ionicons
               name={userLog ? 'create-outline' : 'add'}
-              size={userLog ? 24 : 28}
+              size={22}
               color={Colors.background}
             />
-            <Text style={styles.logButtonText}>
-              {userLog ? 'Edit Log' : 'Log Game'}
-            </Text>
           </TouchableOpacity>
 
           {user && (
@@ -297,8 +294,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               style={styles.addToListButton}
               onPress={() => setIsAddToListVisible(true)}
             >
-              <Ionicons name="list-outline" size={20} color={Colors.text} />
-              <Text style={styles.addToListText}>Add to List</Text>
+              <Ionicons name="list-outline" size={22} color={Colors.text} />
             </TouchableOpacity>
           )}
         </View>
@@ -444,38 +440,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButtons: {
+    flexDirection: 'row',
     gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
   logButton: {
     backgroundColor: Colors.accent,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
+    width: 44,
+    height: 44,
     borderRadius: BorderRadius.md,
-    gap: Spacing.sm,
-  },
-  logButtonText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.background,
   },
   addToListButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
+    width: 44,
+    height: 44,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
-    gap: Spacing.sm,
-  },
-  addToListText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.sm,
-    color: Colors.text,
   },
   section: {
     marginBottom: Spacing.lg,
