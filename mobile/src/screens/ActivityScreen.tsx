@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -21,17 +21,37 @@ import { ActivitySkeletonList } from '../components/skeletons'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 type TabType = 'friends' | 'you'
+type CategoryType = 'all' | 'reviews' | 'logs'
+
+const CATEGORIES = [
+  { key: 'all' as CategoryType, label: 'All' },
+  { key: 'reviews' as CategoryType, label: 'Reviews' },
+  { key: 'logs' as CategoryType, label: 'Logs' },
+]
 
 export default function ActivityScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('friends')
+  const [activeCategory, setActiveCategory] = useState<CategoryType>('all')
   const { activities: friendsActivities, isLoading: friendsLoading, refetch: refetchFriends } = useActivityFeed(user?.id)
   const { activities: ownActivities, isLoading: ownLoading, refetch: refetchOwn } = useOwnActivityFeed(user?.id)
   const [refreshing, setRefreshing] = useState(false)
 
-  const activities = activeTab === 'friends' ? friendsActivities : ownActivities
+  const rawActivities = activeTab === 'friends' ? friendsActivities : ownActivities
   const isLoading = activeTab === 'friends' ? friendsLoading : ownLoading
+
+  // Filter activities by category
+  const activities = useMemo(() => {
+    if (activeCategory === 'all') return rawActivities
+    if (activeCategory === 'reviews') {
+      return rawActivities.filter(a => a.review && a.review.trim().length > 0)
+    }
+    if (activeCategory === 'logs') {
+      return rawActivities.filter(a => !a.review || a.review.trim().length === 0)
+    }
+    return rawActivities
+  }, [rawActivities, activeCategory])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -49,6 +69,22 @@ export default function ActivityScreen() {
 
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
+  }
+
+  const getEmptyMessage = () => {
+    if (activeCategory === 'reviews') {
+      return activeTab === 'friends'
+        ? 'no reviews from friends yet'
+        : 'you haven\'t written any reviews yet'
+    }
+    if (activeCategory === 'logs') {
+      return activeTab === 'friends'
+        ? 'no logs from friends yet'
+        : 'you haven\'t logged any games yet'
+    }
+    return activeTab === 'friends'
+      ? 'follow other gamers to see what they\'re playing'
+      : 'start logging games to see your activity here'
   }
 
   return (
@@ -76,6 +112,34 @@ export default function ActivityScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Category Filter */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryScroll}
+        contentContainerStyle={styles.categoryContent}
+      >
+        {CATEGORIES.map((category) => (
+          <TouchableOpacity
+            key={category.key}
+            style={[
+              styles.categoryPill,
+              activeCategory === category.key && styles.categoryPillActive,
+            ]}
+            onPress={() => setActiveCategory(category.key)}
+          >
+            <Text
+              style={[
+                styles.categoryText,
+                activeCategory === category.key && styles.categoryTextActive,
+              ]}
+            >
+              {category.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -93,19 +157,21 @@ export default function ActivityScreen() {
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons
-              name={activeTab === 'friends' ? 'people-outline' : 'game-controller-outline'}
+              name={
+                activeCategory === 'reviews'
+                  ? 'chatbubble-outline'
+                  : activeCategory === 'logs'
+                  ? 'game-controller-outline'
+                  : activeTab === 'friends'
+                  ? 'people-outline'
+                  : 'game-controller-outline'
+              }
               size={48}
               color={Colors.textDim}
               style={styles.emptyIcon}
             />
-            <Text style={styles.emptyTitle}>
-              {activeTab === 'friends' ? 'no activity yet' : 'no activity yet'}
-            </Text>
-            <Text style={styles.emptyText}>
-              {activeTab === 'friends'
-                ? 'follow other gamers to see what they\'re playing'
-                : 'start logging games to see your activity here'}
-            </Text>
+            <Text style={styles.emptyTitle}>no activity yet</Text>
+            <Text style={styles.emptyText}>{getEmptyMessage()}</Text>
           </View>
         ) : (
           <View style={styles.activityList}>
@@ -161,6 +227,36 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     color: Colors.text,
+  },
+  categoryScroll: {
+    flexGrow: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  categoryContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  categoryPill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  categoryPillActive: {
+    backgroundColor: Colors.text,
+    borderColor: Colors.text,
+  },
+  categoryText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  categoryTextActive: {
+    color: Colors.background,
   },
   scrollView: {
     flex: 1,
