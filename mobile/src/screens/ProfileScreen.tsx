@@ -527,9 +527,12 @@ export default function ProfileScreen() {
                       <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
                     </View>
                   )}
-                  {log.rating && (
+                  {(log.rating || log.review) && (
                     <View style={styles.ratingBelow}>
-                      <StarRating rating={log.rating} size={12} filledOnly />
+                      {log.rating && <StarRating rating={log.rating} size={12} filledOnly />}
+                      {log.review && log.review.trim().length > 0 && (
+                        <Ionicons name="chatbubble" size={12} color={Colors.accent} style={log.rating ? { marginLeft: 4 } : undefined} />
+                      )}
                     </View>
                   )}
                 </TouchableOpacity>
@@ -887,8 +890,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   ratingBelow: {
+    flexDirection: 'row',
     marginTop: Spacing.xs,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',
