@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
+import AddToListModal from '../components/AddToListModal'
 import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
 import TrailerSection from '../components/TrailerSection'
@@ -61,6 +62,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isAddToListVisible, setIsAddToListVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -274,17 +276,32 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Action Button */}
-        <TouchableOpacity
-          style={styles.logButton}
-          onPress={() => setIsModalVisible(true)}
-        >
-          <Ionicons
-            name={userLog ? 'create-outline' : 'add'}
-            size={userLog ? 24 : 28}
-            color={Colors.background}
-          />
-        </TouchableOpacity>
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity
+            style={styles.logButton}
+            onPress={() => setIsModalVisible(true)}
+          >
+            <Ionicons
+              name={userLog ? 'create-outline' : 'add'}
+              size={userLog ? 24 : 28}
+              color={Colors.background}
+            />
+            <Text style={styles.logButtonText}>
+              {userLog ? 'Edit Log' : 'Log Game'}
+            </Text>
+          </TouchableOpacity>
+
+          {user && (
+            <TouchableOpacity
+              style={styles.addToListButton}
+              onPress={() => setIsAddToListVisible(true)}
+            >
+              <Ionicons name="list-outline" size={20} color={Colors.text} />
+              <Text style={styles.addToListText}>Add to List</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Reviews */}
         <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
@@ -318,6 +335,14 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         game={game}
         existingLog={userLog}
         onSaveSuccess={handleLogSaveSuccess}
+      />
+
+      {/* Add to List Modal */}
+      <AddToListModal
+        visible={isAddToListVisible}
+        onClose={() => setIsAddToListVisible(false)}
+        gameId={gameId}
+        gameName={game.name}
       />
     </SafeAreaView>
   )
@@ -418,13 +443,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  actionButtons: {
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
   logButton: {
     backgroundColor: Colors.accent,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing.lg,
+    gap: Spacing.sm,
+  },
+  logButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.background,
+  },
+  addToListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    gap: Spacing.sm,
+  },
+  addToListText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
   },
   section: {
     marginBottom: Spacing.lg,

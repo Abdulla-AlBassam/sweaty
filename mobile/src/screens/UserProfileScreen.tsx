@@ -23,7 +23,9 @@ import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { calculateXP, getLevel } from '../lib/xp'
 import { checkIsPremium } from '../hooks/usePremium'
+import { useUserLists } from '../hooks/useLists'
 import FollowersModal from '../components/FollowersModal'
+import ListCard from '../components/ListCard'
 import StarRating from '../components/StarRating'
 import XPProgressBar from '../components/XPProgressBar'
 import PremiumBadge from '../components/PremiumBadge'
@@ -94,6 +96,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
+
+  // Fetch user's public lists
+  const { lists: userLists, refetch: refetchLists } = useUserLists(profile?.id)
+  // Only show public lists for other users
+  const publicLists = userLists.filter(list => list.is_public)
 
   const isOwnProfile = user?.id === profile?.id
 
@@ -308,6 +315,15 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     )
   }
 
+  const handleListPress = (listId: string) => {
+    nav.dispatch(
+      CommonActions.navigate({
+        name: 'ListDetail',
+        params: { listId },
+      })
+    )
+  }
+
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -316,9 +332,10 @@ export default function UserProfileScreen({ navigation, route }: Props) {
       fetchGameLogs(),
       fetchFollowCounts(),
       fetchFavorites(),
+      refetchLists(),
     ])
     setRefreshing(false)
-  }, [profile])
+  }, [profile, refetchLists])
 
   if (isLoading) {
     return (
@@ -546,6 +563,29 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     </View>
                   )}
                 </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Lists - Only show if user has public lists */}
+        {publicLists.length > 0 && (
+          <View style={styles.listsSection}>
+            <Text style={styles.sectionTitle}>Lists</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.listsScroll}
+              contentContainerStyle={styles.listsContent}
+            >
+              {publicLists.slice(0, 5).map((list) => (
+                <View key={list.id} style={styles.listCardWrapper}>
+                  <ListCard
+                    list={list}
+                    onPress={() => handleListPress(list.id)}
+                    showUser={true}
+                  />
+                </View>
               ))}
             </ScrollView>
           </View>
@@ -946,5 +986,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
+  },
+  // Lists section styles
+  listsSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  listsScroll: {
+    marginHorizontal: -Spacing.lg,
+  },
+  listsContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  listCardWrapper: {
+    width: 280,
   },
 })

@@ -11,10 +11,11 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, CommonActions } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
+import { useUserLists } from '../hooks/useLists'
 import { usePremium } from '../hooks/usePremium'
 import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -25,6 +26,8 @@ import XPProgressBar from '../components/XPProgressBar'
 import LogGameModal from '../components/LogGameModal'
 import EditFavoritesModal from '../components/EditFavoritesModal'
 import FollowersModal from '../components/FollowersModal'
+import CreateListModal from '../components/CreateListModal'
+import ListCard from '../components/ListCard'
 import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
@@ -57,6 +60,7 @@ export default function ProfileScreen() {
   const { user, profile, refreshProfile } = useAuth()
   const { logs, refetch: refreshLogs } = useGameLogs(user?.id)
   const { followers, following } = useFollowCounts(user?.id)
+  const { lists: userLists, refetch: refetchLists } = useUserLists(user?.id)
   const navigation = useNavigation()
 
   const [gameLogs, setGameLogs] = useState<GameLogWithGame[]>([])
@@ -64,6 +68,7 @@ export default function ProfileScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [favorites, setFavorites] = useState<FavoriteGame[]>([])
   const [isFavoritesModalVisible, setIsFavoritesModalVisible] = useState(false)
+  const [isCreateListModalVisible, setIsCreateListModalVisible] = useState(false)
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
@@ -201,9 +206,10 @@ export default function ProfileScreen() {
       fetchGameLogs(),
       fetchFavorites(),
       refreshLogs(),
+      refetchLists(),
     ])
     setRefreshing(false)
-  }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs])
+  }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs, refetchLists])
 
   const handleFavoritesSaveSuccess = () => {
     refreshProfile()
@@ -217,6 +223,19 @@ export default function ProfileScreen() {
   const handleLogSaveSuccess = () => {
     fetchGameLogs()
     refreshLogs()
+  }
+
+  const handleListPress = (listId: string) => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'ListDetail',
+        params: { listId },
+      })
+    )
+  }
+
+  const handleListCreated = () => {
+    refetchLists()
   }
 
   return (
@@ -413,6 +432,62 @@ export default function ProfileScreen() {
           </View>
         )}
 
+        {/* Lists */}
+        <View style={styles.listsSection}>
+          <View style={styles.listsTitleRow}>
+            <Text style={styles.sectionTitle}>Lists</Text>
+            <TouchableOpacity
+              onPress={() => setIsCreateListModalVisible(true)}
+              style={styles.newListButton}
+            >
+              <Ionicons name="add" size={18} color={Colors.accent} />
+              <Text style={styles.newListButtonText}>New</Text>
+            </TouchableOpacity>
+          </View>
+
+          {userLists.length > 0 ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.listsScroll}
+              contentContainerStyle={styles.listsContent}
+            >
+              {userLists.slice(0, 5).map((list) => (
+                <View key={list.id} style={styles.listCardWrapper}>
+                  <ListCard
+                    list={list}
+                    onPress={() => handleListPress(list.id)}
+                    showUser={false}
+                  />
+                </View>
+              ))}
+              {userLists.length > 5 && (
+                <TouchableOpacity
+                  style={styles.seeAllLists}
+                  onPress={() => {
+                    // TODO: Navigate to all lists screen
+                  }}
+                >
+                  <Text style={styles.seeAllListsText}>See All</Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.accent} />
+                </TouchableOpacity>
+              )}
+            </ScrollView>
+          ) : (
+            <TouchableOpacity
+              style={styles.emptyListsState}
+              onPress={() => setIsCreateListModalVisible(true)}
+            >
+              <Ionicons name="list-outline" size={32} color={Colors.textDim} />
+              <Text style={styles.emptyListsText}>Create lists to organize your games</Text>
+              <View style={styles.createListButton}>
+                <Ionicons name="add" size={16} color={Colors.background} />
+                <Text style={styles.createListButtonText}>Create List</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Library */}
         <View style={styles.librarySection}>
           <Text style={styles.sectionTitle}>Library</Text>
@@ -536,6 +611,13 @@ export default function ProfileScreen() {
           type={followersModalType}
         />
       )}
+
+      {/* Create List Modal */}
+      <CreateListModal
+        visible={isCreateListModalVisible}
+        onClose={() => setIsCreateListModalVisible(false)}
+        onCreated={handleListCreated}
+      />
     </SafeAreaView>
   )
 }
@@ -842,5 +924,75 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,
+  },
+  // Lists section styles
+  listsSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  listsTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  newListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+  },
+  newListButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+    marginLeft: 4,
+  },
+  listsScroll: {
+    marginHorizontal: -Spacing.lg,
+  },
+  listsContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  listCardWrapper: {
+    width: 280,
+  },
+  seeAllLists: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+  seeAllListsText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+  },
+  emptyListsState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+  },
+  emptyListsText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  createListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.accent,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  createListButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.background,
+    marginLeft: Spacing.xs,
   },
 })
