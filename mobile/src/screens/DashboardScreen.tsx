@@ -98,55 +98,50 @@ export default function DashboardScreen() {
           <Text style={styles.logo}>sweaty</Text>
         </View>
 
-        {/* Currently Playing Section with Avatar */}
-        <View style={styles.currentlyPlayingSection}>
-          <View style={styles.currentlyPlayingHeader}>
-            <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
-              {profile?.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
-              ) : (
-                <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
-                  <Text style={styles.headerAvatarInitial}>{avatarInitial}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-            <View style={styles.currentlyPlayingTitleRow}>
-              <Text style={styles.currentlyPlayingTitle}>Currently Playing</Text>
-              <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
-            </View>
+        {/* Currently Playing Section - Inline Layout */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.currentlyPlayingSection}
+          contentContainerStyle={styles.currentlyPlayingContent}
+        >
+          <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
+            ) : (
+              <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
+                <Text style={styles.headerAvatarInitial}>{avatarInitial}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <View style={styles.currentlyPlayingTitleRow}>
+            <Text style={styles.currentlyPlayingTitle}>Currently Playing</Text>
+            <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
           </View>
-          {currentlyPlaying.length > 0 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.currentlyPlayingScroll}
-            >
-              {currentlyPlaying.map((log: any) => {
-                const game = log.games_cache
-                if (!game) return null
-                const coverUrl = game.cover_url
-                  ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
-                  : null
-                return (
-                  <TouchableOpacity
-                    key={log.id}
-                    style={styles.smallGameCard}
-                    onPress={() => handleGamePress(game.id)}
-                    activeOpacity={0.7}
-                  >
-                    {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.smallGameCover} />
-                    ) : (
-                      <View style={[styles.smallGameCover, styles.gameCoverPlaceholder]}>
-                        <Text style={styles.placeholderText}>?</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                )
-              })}
-            </ScrollView>
-          )}
-        </View>
+          {currentlyPlaying.map((log: any) => {
+            const game = log.games_cache
+            if (!game) return null
+            const coverUrl = game.cover_url
+              ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
+              : null
+            return (
+              <TouchableOpacity
+                key={log.id}
+                style={styles.smallGameCard}
+                onPress={() => handleGamePress(game.id)}
+                activeOpacity={0.7}
+              >
+                {coverUrl ? (
+                  <Image source={{ uri: coverUrl }} style={styles.smallGameCover} />
+                ) : (
+                  <View style={[styles.smallGameCover, styles.gameCoverPlaceholder]}>
+                    <Text style={styles.placeholderText}>?</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )
+          })}
+        </ScrollView>
 
         {/* Curated Lists */}
         {listsLoading ? (
@@ -189,20 +184,18 @@ const styles = StyleSheet.create({
     color: Colors.accentLight,
   },
   currentlyPlayingSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.lg,
-    marginBottom: Spacing.md,
+    marginVertical: Spacing.md,
   },
-  currentlyPlayingHeader: {
+  currentlyPlayingContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    gap: 10,
   },
   headerAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.surface,
   },
   headerAvatarFallback: {
@@ -213,35 +206,32 @@ const styles = StyleSheet.create({
   headerAvatarInitial: {
     fontFamily: Fonts.bodyBold,
     color: Colors.background,
-    fontSize: 22,
+    fontSize: 18,
   },
   currentlyPlayingTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    marginRight: 4,
   },
   currentlyPlayingTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     color: Colors.text,
   },
   pulsingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: Colors.accent,
   },
-  currentlyPlayingScroll: {
-    paddingLeft: 62, // avatar width (50) + gap (12)
-    gap: Spacing.xs,
-  },
   smallGameCard: {
-    width: 60,
+    // Just for touch target
   },
   smallGameCover: {
-    width: 60,
-    height: 80,
-    borderRadius: BorderRadius.sm,
+    width: 45,
+    height: 60,
+    borderRadius: BorderRadius.xs,
     backgroundColor: Colors.surface,
   },
   gameCoverPlaceholder: {
