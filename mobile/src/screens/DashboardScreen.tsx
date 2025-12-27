@@ -23,22 +23,6 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
 
-// Gaming-themed welcome messages (same as web)
-const WELCOME_MESSAGES = [
-  { text: 'Press Start', isQuestion: false },
-  { text: 'Continue', isQuestion: true },
-  { text: 'New quest awaits', isQuestion: false },
-  { text: 'The hero returns', isQuestion: false },
-  { text: 'Quest log updated', isQuestion: false },
-  { text: "You've respawned", isQuestion: false },
-  { text: 'Ready to game', isQuestion: true },
-  { text: 'One more game', isQuestion: true },
-  { text: 'Touch grass later', isQuestion: false },
-]
-
-function getRandomWelcomeMessage() {
-  return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]
-}
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
@@ -47,7 +31,6 @@ export default function DashboardScreen() {
   const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
 
   const [refreshing, setRefreshing] = useState(false)
-  const [welcomeMessage] = useState(getRandomWelcomeMessage)
 
   // Pulsing animation for "Currently Playing" indicator
   const pulseAnim = useRef(new Animated.Value(1)).current
@@ -89,6 +72,7 @@ export default function DashboardScreen() {
   }, [logs])
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
+  const avatarInitial = displayName.charAt(0).toUpperCase()
 
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
@@ -114,38 +98,28 @@ export default function DashboardScreen() {
           <Text style={styles.logo}>sweaty</Text>
         </View>
 
-        {/* Welcome Section with Avatar */}
-        <View style={styles.welcomeSection}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
-            ) : (
-              <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
-                <Text style={styles.headerAvatarInitial}>
-                  {displayName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <Text style={styles.welcomeText}>
-            {welcomeMessage.text}, {displayName}{welcomeMessage.isQuestion ? '?' : '!'}
-          </Text>
-        </View>
-
-
-        {/* Currently Playing */}
-        {currentlyPlaying.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Currently Playing</Text>
-                <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
-              </View>
+        {/* Currently Playing Section with Avatar */}
+        <View style={styles.currentlyPlayingSection}>
+          <View style={styles.currentlyPlayingHeader}>
+            <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
+              ) : (
+                <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
+                  <Text style={styles.headerAvatarInitial}>{avatarInitial}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <View style={styles.currentlyPlayingTitleRow}>
+              <Text style={styles.currentlyPlayingTitle}>Currently Playing</Text>
+              <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
             </View>
+          </View>
+          {currentlyPlaying.length > 0 && (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
+              contentContainerStyle={styles.currentlyPlayingScroll}
             >
               {currentlyPlaying.map((log: any) => {
                 const game = log.games_cache
@@ -156,14 +130,14 @@ export default function DashboardScreen() {
                 return (
                   <TouchableOpacity
                     key={log.id}
-                    style={styles.gameCard}
+                    style={styles.smallGameCard}
                     onPress={() => handleGamePress(game.id)}
                     activeOpacity={0.7}
                   >
                     {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+                      <Image source={{ uri: coverUrl }} style={styles.smallGameCover} />
                     ) : (
-                      <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
+                      <View style={[styles.smallGameCover, styles.gameCoverPlaceholder]}>
                         <Text style={styles.placeholderText}>?</Text>
                       </View>
                     )}
@@ -171,8 +145,8 @@ export default function DashboardScreen() {
                 )
               })}
             </ScrollView>
-          </View>
-        )}
+          )}
+        </View>
 
         {/* Curated Lists */}
         {listsLoading ? (
@@ -214,17 +188,21 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     color: Colors.accentLight,
   },
-  welcomeSection: {
+  currentlyPlayingSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  currentlyPlayingHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xl,
+    marginBottom: Spacing.sm,
   },
   headerAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: Colors.surface,
   },
   headerAvatarFallback: {
@@ -235,30 +213,14 @@ const styles = StyleSheet.create({
   headerAvatarInitial: {
     fontFamily: Fonts.bodyBold,
     color: Colors.background,
-    fontSize: 26,
+    fontSize: 22,
   },
-  welcomeText: {
-    fontFamily: Fonts.display,
-    fontSize: 26,
-    color: Colors.text,
-    flex: 1,
-  },
-  section: {
-    marginBottom: Spacing.xl,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  sectionTitleRow: {
+  currentlyPlayingTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  sectionTitle: {
+  currentlyPlayingTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.lg,
     color: Colors.text,
@@ -269,17 +231,17 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Colors.accent,
   },
-  horizontalScroll: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+  currentlyPlayingScroll: {
+    paddingLeft: 62, // avatar width (50) + gap (12)
+    gap: Spacing.xs,
   },
-  gameCard: {
-    width: 105,
+  smallGameCard: {
+    width: 60,
   },
-  gameCover: {
-    width: 105,
-    height: 140,
-    borderRadius: BorderRadius.md,
+  smallGameCover: {
+    width: 60,
+    height: 80,
+    borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
   },
   gameCoverPlaceholder: {
