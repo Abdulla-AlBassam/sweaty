@@ -208,8 +208,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     gap: Spacing.lg,
   },
   tab: {
@@ -230,8 +228,6 @@ const styles = StyleSheet.create({
   },
   categoryScroll: {
     flexGrow: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   categoryContent: {
     paddingHorizontal: Spacing.lg,
