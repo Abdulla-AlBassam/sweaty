@@ -135,6 +135,51 @@ export interface CuratedListWithGames extends CuratedList {
   }>
 }
 
+// Custom list types
+export interface GameList {
+  id: string
+  user_id: string
+  title: string
+  description: string | null
+  is_public: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ListItem {
+  id: string
+  list_id: string
+  game_id: number
+  position: number
+  added_at: string
+}
+
+export interface GameListWithItems extends GameList {
+  items: Array<ListItem & {
+    game: {
+      id: number
+      name: string
+      cover_url: string | null
+    }
+  }>
+  item_count?: number
+}
+
+export interface GameListWithUser extends GameList {
+  user: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+  item_count?: number
+  preview_games?: Array<{
+    id: number
+    name: string
+    cover_url: string | null
+  }>
+}
+
 // Review likes & comments types
 export interface ReviewLike {
   id: string
