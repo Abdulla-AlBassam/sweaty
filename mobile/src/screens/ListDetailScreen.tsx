@@ -114,7 +114,9 @@ export default function ListDetailScreen() {
     try {
       const response = await fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
-      setSearchResults(data.slice(0, 8))
+      // Handle both array response and object with games property
+      const games = Array.isArray(data) ? data : (data?.games || data?.results || [])
+      setSearchResults(games.slice(0, 8))
     } catch (err) {
       console.error('Search error:', err)
       setSearchResults([])
@@ -570,15 +572,15 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   description: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-    marginBottom: Spacing.sm,
-  },
-  gameCount: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
     color: Colors.text,
+    marginBottom: Spacing.sm,
+  },
+  gameCount: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
   },
   addSection: {
     padding: Spacing.lg,

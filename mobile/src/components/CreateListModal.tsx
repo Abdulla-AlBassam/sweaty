@@ -115,7 +115,9 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     try {
       const response = await fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
-      setSearchResults(data.slice(0, 8))
+      // Handle both array response and object with games property
+      const games = Array.isArray(data) ? data : (data?.games || data?.results || [])
+      setSearchResults(games.slice(0, 8))
     } catch (err) {
       console.error('Search error:', err)
       setSearchResults([])
@@ -454,11 +456,14 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: Spacing.xs,
+    width: 80,
   },
   headerTitle: {
+    flex: 1,
     fontFamily: Fonts.display,
     fontSize: FontSize.lg,
     color: Colors.text,
+    textAlign: 'center',
   },
   createButton: {
     backgroundColor: Colors.accent,
