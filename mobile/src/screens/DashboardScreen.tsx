@@ -21,12 +21,8 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
-import Logo from '../components/Logo'
+import GlitchLogo from '../components/GlitchLogo'
 import PressableScale from '../components/PressableScale'
-
-// LOGO OPTIONS: Change this to preview different styles
-// 'minimal' | 'elegant' | 'bold' | 'accent'
-const LOGO_VARIANT = 'minimal' as const
 
 
 export default function DashboardScreen() {
@@ -100,7 +96,7 @@ export default function DashboardScreen() {
       >
         {/* Header Logo */}
         <View style={styles.header}>
-          <Logo variant={LOGO_VARIANT} />
+          <GlitchLogo />
         </View>
 
         {/* Currently Playing Section - Inline Layout */}
