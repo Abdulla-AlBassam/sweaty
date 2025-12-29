@@ -548,10 +548,10 @@ export default function LogGameModal({
               </PressableScale>
             )}
             <PressableScale
+              containerStyle={{ flex: 1 }}
               style={[
                 styles.saveButton,
                 !status && styles.saveButtonDisabled,
-                existingLog && styles.saveButtonWithDelete,
               ]}
               onPress={handleSave}
               disabled={!status || isSaving}
@@ -819,15 +819,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButton: {
-    flex: 1,
     backgroundColor: Colors.accent,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  saveButtonWithDelete: {
-    flex: 1,
+    height: 50,
   },
   saveButtonDisabled: {
     backgroundColor: Colors.textDim,

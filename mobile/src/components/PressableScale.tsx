@@ -11,6 +11,7 @@ import { haptics } from '../hooks/useHaptics'
 interface PressableScaleProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode
   style?: StyleProp<ViewStyle>
+  containerStyle?: StyleProp<ViewStyle>
   scale?: number
   haptic?: 'light' | 'medium' | 'heavy' | 'selection' | 'none'
   disabled?: boolean
@@ -23,6 +24,7 @@ interface PressableScaleProps extends Omit<PressableProps, 'style'> {
 export default function PressableScale({
   children,
   style,
+  containerStyle,
   scale = 0.96,
   haptic = 'light',
   disabled = false,
@@ -70,6 +72,7 @@ export default function PressableScale({
 
   return (
     <Pressable
+      style={containerStyle}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={onPress}

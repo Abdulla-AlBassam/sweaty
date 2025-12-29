@@ -113,13 +113,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     height: 50,
+    width: 220,
     overflow: 'hidden',
   },
   text: {
     fontFamily: Fonts.mono,
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '600',
-    letterSpacing: 8,
+    letterSpacing: 6,
     position: 'absolute',
   },
   cyanLayer: {
