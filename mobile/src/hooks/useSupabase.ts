@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { Game, GameLog, Profile, ActivityItem, CuratedList, CuratedListWithGames } from '../types'
 
@@ -286,64 +286,77 @@ export function useGameSearch(query: string) {
   return { games, isLoading, error }
 }
 
+// Fisher-Yates shuffle algorithm
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 export function useCuratedLists() {
   const [lists, setLists] = useState<CuratedListWithGames[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchLists = async () => {
-      setIsLoading(true)
-      setError(null)
+  const fetchLists = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
 
-      try {
-        // Fetch curated lists
-        const { data: listsData, error: listsError } = await supabase
-          .from('curated_lists')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true })
+    try {
+      // Fetch curated lists
+      const { data: listsData, error: listsError } = await supabase
+        .from('curated_lists')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
 
-        if (listsError) throw listsError
+      if (listsError) throw listsError
 
-        // Collect all game IDs from all lists
-        const allGameIds = new Set<number>()
-        ;(listsData as CuratedList[]).forEach((list) => {
-          list.game_ids.forEach((id) => allGameIds.add(id))
-        })
+      // Collect all game IDs from all lists
+      const allGameIds = new Set<number>()
+      ;(listsData as CuratedList[]).forEach((list) => {
+        list.game_ids.forEach((id) => allGameIds.add(id))
+      })
 
-        // Batch fetch all games
-        const { data: gamesData, error: gamesError } = await supabase
-          .from('games_cache')
-          .select('id, name, cover_url')
-          .in('id', Array.from(allGameIds))
+      // Batch fetch all games
+      const { data: gamesData, error: gamesError } = await supabase
+        .from('games_cache')
+        .select('id, name, cover_url')
+        .in('id', Array.from(allGameIds))
 
-        if (gamesError) throw gamesError
+      if (gamesError) throw gamesError
 
-        // Create a map of game ID to game data
-        const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null }>()
-        ;(gamesData || []).forEach((game: any) => {
-          gamesMap.set(game.id, game)
-        })
+      // Create a map of game ID to game data
+      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null }>()
+      ;(gamesData || []).forEach((game: any) => {
+        gamesMap.set(game.id, game)
+      })
 
-        // Build the lists with games (preserving order from game_ids)
-        const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => ({
-          ...list,
-          games: list.game_ids
+      // Build the lists with games, shuffling games within each list
+      const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => ({
+        ...list,
+        games: shuffleArray(
+          list.game_ids
             .map((id) => gamesMap.get(id))
-            .filter((game): game is { id: number; name: string; cover_url: string | null } => game !== undefined),
-        }))
+            .filter((game): game is { id: number; name: string; cover_url: string | null } => game !== undefined)
+        ),
+      }))
 
-        setLists(listsWithGames)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
-      } finally {
-        setIsLoading(false)
-      }
+      // Shuffle the order of lists themselves
+      setLists(shuffleArray(listsWithGames))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchLists()
   }, [])
 
-  return { lists, isLoading, error }
+  useEffect(() => {
+    fetchLists()
+  }, [fetchLists])
+
+  return { lists, isLoading, error, refetch: fetchLists }
 }
