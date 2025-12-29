@@ -24,7 +24,7 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
 import GlitchText, { GlitchBar } from '../components/GlitchText'
-import { HolographicTextSimple } from '../components/HolographicText'
+import HolographicText from '../components/HolographicText'
 
 
 export default function DashboardScreen() {
@@ -113,7 +113,7 @@ export default function DashboardScreen() {
               <Text style={styles.terminalTitle}>sweaty.exe</Text>
             </View>
             <View style={styles.headerContent}>
-              <HolographicTextSimple
+              <HolographicText
                 text="SWEATY"
                 style={styles.logo}
               />
