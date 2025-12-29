@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
 import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -22,14 +22,27 @@ import { usePlatformImport, ImportResult, MatchedGame } from '../hooks/usePlatfo
 import LoadingSpinner from '../components/LoadingSpinner'
 import LogGameModal from '../components/LogGameModal'
 
-type ImportState = 'idle' | 'selected' | 'importing' | 'success' | 'error'
+type ImportState = 'idle' | 'selected' | 'importing' | 'success' | 'error' | 'continue'
+
+type PlayStationImportRouteParams = {
+  continueLogging?: boolean
+  unloggedGames?: MatchedGame[]
+}
 
 export default function PlayStationImportScreen() {
   const navigation = useNavigation()
+  const route = useRoute<RouteProp<{ params: PlayStationImportRouteParams }, 'params'>>()
   const { user } = useAuth()
   const { importPlayStationCSV, isLoading } = usePlatformImport(user?.id)
 
-  const [importState, setImportState] = useState<ImportState>('idle')
+  // Check if we're continuing logging from previous import
+  const continueLogging = route.params?.continueLogging
+  const initialUnloggedGames = route.params?.unloggedGames || []
+
+  const [importState, setImportState] = useState<ImportState>(
+    continueLogging ? 'continue' : 'idle'
+  )
+  const [continueGames, setContinueGames] = useState<MatchedGame[]>(initialUnloggedGames)
   const [selectedFile, setSelectedFile] = useState<{
     uri: string
     name: string
@@ -199,6 +212,10 @@ export default function PlayStationImportScreen() {
   const handleLogSaved = () => {
     if (selectedGameForLog) {
       setLoggedGames(prev => new Set(prev).add(selectedGameForLog.id))
+      // If in continue mode, remove from continueGames for real-time update
+      if (importState === 'continue') {
+        setContinueGames(prev => prev.filter(g => g.igdb_id !== selectedGameForLog.id))
+      }
     }
     setShowLogModal(false)
     setSelectedGameForLog(null)
@@ -334,6 +351,11 @@ export default function PlayStationImportScreen() {
               ]}>Match</Text>
             </View>
           </View>
+
+          {/* Don't close app warning */}
+          <Text style={styles.dontCloseWarning}>
+            Please don't close the app — this may take a couple minutes
+          </Text>
         </View>
       </SafeAreaView>
     )
@@ -419,6 +441,82 @@ export default function PlayStationImportScreen() {
           <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
             <Text style={styles.doneButtonText}>
               {loggedCount > 0 ? `FINISH (${loggedCount} logged)` : 'SKIP FOR NOW'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Log Game Modal */}
+        {selectedGameForLog && (
+          <LogGameModal
+            visible={showLogModal}
+            onClose={handleLogModalClose}
+            game={{
+              id: selectedGameForLog.id,
+              name: selectedGameForLog.name,
+              coverUrl: selectedGameForLog.coverUrl || undefined,
+              platforms: selectedGameForLog.platform ? [selectedGameForLog.platform] : [],
+            }}
+            onSaveSuccess={handleLogSaved}
+          />
+        )}
+      </SafeAreaView>
+    )
+  }
+
+  // Continue logging state - for returning to log previously imported games
+  if (importState === 'continue') {
+    const remainingGames = continueGames
+    const loggedCount = loggedGames.size
+    const totalGames = initialUnloggedGames.length
+
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={Colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>CONTINUE LOGGING</Text>
+          <TouchableOpacity onPress={handleDone} style={styles.doneHeaderButton}>
+            <Text style={styles.doneHeaderText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Summary Banner */}
+        <View style={styles.summaryBanner}>
+          <View style={styles.summaryLeft}>
+            <Ionicons name="game-controller" size={24} color={Colors.accent} />
+            <Text style={styles.summaryText}>
+              {remainingGames.length} games remaining
+            </Text>
+          </View>
+          <Text style={styles.summaryProgress}>
+            {loggedCount} logged this session
+          </Text>
+        </View>
+
+        {remainingGames.length > 0 ? (
+          <FlatList
+            data={remainingGames}
+            renderItem={renderGameItem}
+            keyExtractor={(item) => item.igdb_id.toString()}
+            contentContainerStyle={styles.gamesList}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="checkmark-circle" size={64} color={Colors.accent} />
+            <Text style={styles.emptyText}>All done!</Text>
+            <Text style={styles.emptySubtext}>
+              You've logged all your imported games
+            </Text>
+          </View>
+        )}
+
+        {/* Bottom Done Button */}
+        <View style={styles.bottomButtonContainer}>
+          <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+            <Text style={styles.doneButtonText}>
+              {remainingGames.length === 0 ? 'FINISH' : loggedCount > 0 ? `FINISH (${loggedCount} logged)` : 'SKIP FOR NOW'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -880,6 +978,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceLight,
     marginHorizontal: Spacing.sm,
     marginBottom: Spacing.lg,
+  },
+  dontCloseWarning: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    textAlign: 'center',
+    marginTop: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
   // Success/Review state
   summaryBanner: {

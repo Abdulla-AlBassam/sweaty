@@ -16,7 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
-import { usePlatformImport, PlatformStatus } from '../hooks/usePlatformImport'
+import { usePlatformImport, PlatformStatus, MatchedGame } from '../hooks/usePlatformImport'
 import { MainStackParamList } from '../navigation'
 import LoadingSpinner from '../components/LoadingSpinner'
 
@@ -29,9 +29,11 @@ interface PlatformCardProps {
   onConnect: () => void
   onSync?: () => void
   onClear: () => void
+  onContinueLogging?: () => void
+  unloggedCount?: number
 }
 
-function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear }: PlatformCardProps) {
+function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear, onContinueLogging, unloggedCount }: PlatformCardProps) {
   const isConnected = platform === 'playstation'
     ? status?.has_imported
     : status?.connected
@@ -118,14 +120,29 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear 
         {isConnected ? (
           <>
             {platform === 'playstation' ? (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={onConnect}
-                disabled={isLoading}
-              >
-                <Ionicons name="add-circle-outline" size={18} color={Colors.accent} />
-                <Text style={styles.actionButtonText}>Import More</Text>
-              </TouchableOpacity>
+              <>
+                {/* Continue Logging button - show if there are unlogged games */}
+                {unloggedCount !== undefined && unloggedCount > 0 && onContinueLogging && (
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.actionButtonPrimary]}
+                    onPress={onContinueLogging}
+                    disabled={isLoading}
+                  >
+                    <Ionicons name="game-controller-outline" size={18} color={Colors.text} />
+                    <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
+                      Continue Logging ({unloggedCount})
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={onConnect}
+                  disabled={isLoading}
+                >
+                  <Ionicons name="add-circle-outline" size={18} color={Colors.accent} />
+                  <Text style={styles.actionButtonText}>Import More</Text>
+                </TouchableOpacity>
+              </>
             ) : onSync ? (
               <TouchableOpacity
                 style={styles.actionButton}
@@ -191,20 +208,24 @@ export default function PlatformConnectionsScreen() {
     clearSteamData,
     getPlayStationStatus,
     clearPlayStationData,
+    getUnloggedImportedGames,
   } = usePlatformImport(user?.id)
 
   const [refreshing, setRefreshing] = useState(false)
   const [steamStatus, setSteamStatus] = useState<PlatformStatus | null>(null)
   const [playstationStatus, setPlaystationStatus] = useState<PlatformStatus | null>(null)
   const [syncingPlatform, setSyncingPlatform] = useState<string | null>(null)
+  const [playstationUnloggedGames, setPlaystationUnloggedGames] = useState<MatchedGame[]>([])
 
   const loadStatuses = async () => {
-    const [steam, playstation] = await Promise.all([
+    const [steam, playstation, unloggedPS] = await Promise.all([
       getSteamStatus(),
       getPlayStationStatus(),
+      getUnloggedImportedGames('playstation'),
     ])
     setSteamStatus(steam)
     setPlaystationStatus(playstation)
+    setPlaystationUnloggedGames(unloggedPS)
   }
 
   // Load statuses when screen focuses
@@ -285,6 +306,14 @@ export default function PlatformConnectionsScreen() {
     navigation.navigate('PlayStationImport' as never)
   }
 
+  const handlePlayStationContinueLogging = () => {
+    // Navigate to PlayStation import screen with unlogged games
+    navigation.navigate('PlayStationImport' as never, {
+      continueLogging: true,
+      unloggedGames: playstationUnloggedGames,
+    } as never)
+  }
+
   const handlePlayStationClear = () => {
     Alert.alert(
       'Clear PlayStation Data',
@@ -350,6 +379,8 @@ export default function PlatformConnectionsScreen() {
           isLoading={false}
           onConnect={handlePlayStationConnect}
           onClear={handlePlayStationClear}
+          onContinueLogging={handlePlayStationContinueLogging}
+          unloggedCount={playstationUnloggedGames.length}
         />
 
         {/* Xbox - Coming Soon */}

@@ -341,6 +341,64 @@ export function usePlatformImport(userId: string | undefined) {
     }
   }, [userId])
 
+  // Get imported games that haven't been logged yet
+  const getUnloggedImportedGames = useCallback(async (platform: Platform): Promise<MatchedGame[]> => {
+    if (!userId) return []
+
+    try {
+      // Get all imported games with IGDB match
+      const { data: importedGames, error: importError } = await supabase
+        .from('platform_games')
+        .select(`
+          igdb_game_id,
+          games_cache:igdb_game_id (
+            id,
+            name,
+            cover_url
+          )
+        `)
+        .eq('user_id', userId)
+        .eq('platform', platform)
+        .not('igdb_game_id', 'is', null)
+
+      if (importError) throw importError
+      if (!importedGames || importedGames.length === 0) return []
+
+      // Get all logged game IDs for this user
+      const { data: loggedGames, error: logError } = await supabase
+        .from('game_logs')
+        .select('game_id')
+        .eq('user_id', userId)
+
+      if (logError) throw logError
+
+      // Create set of logged game IDs for fast lookup
+      const loggedGameIds = new Set(loggedGames?.map(g => g.game_id) || [])
+
+      // Filter to only unlogged games and transform to MatchedGame format
+      const unloggedGames: MatchedGame[] = []
+      for (const game of importedGames) {
+        const igdbId = game.igdb_game_id
+        if (igdbId && !loggedGameIds.has(igdbId)) {
+          const cache = game.games_cache as { id: number; name: string; cover_url: string | null } | null
+          if (cache) {
+            unloggedGames.push({
+              igdb_id: cache.id,
+              name: cache.name,
+              cover_url: cache.cover_url,
+              platform: platform === 'playstation' ? 'PlayStation' : platform,
+            })
+          }
+        }
+      }
+
+      return unloggedGames
+    } catch (err) {
+      console.error('Error getting unlogged imported games:', err)
+      return []
+    }
+  }, [userId])
+
   return {
     isLoading,
     error,
@@ -356,6 +414,7 @@ export function usePlatformImport(userId: string | undefined) {
     clearSteamData,
     // Shared
     getImportedGames,
+    getUnloggedImportedGames,
   }
 }
 
