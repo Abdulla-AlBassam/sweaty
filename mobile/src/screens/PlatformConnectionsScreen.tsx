@@ -126,7 +126,7 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
           >
             <Ionicons name="game-controller-outline" size={18} color={Colors.text} />
             <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
-              Continue Logging ({unloggedCount})
+              Continue Logging ({unloggedCount} games)
             </Text>
           </TouchableOpacity>
         )}
@@ -136,12 +136,14 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
           <>
             {platform === 'playstation' ? (
               <TouchableOpacity
-                style={styles.actionButton}
-                onPress={onConnect}
+                style={[styles.actionButton, styles.actionButtonDanger, styles.actionButtonFullWidth]}
+                onPress={onClear}
                 disabled={isLoading}
               >
-                <Ionicons name="add-circle-outline" size={18} color={Colors.accent} />
-                <Text style={styles.actionButtonText}>Import More</Text>
+                <Ionicons name="trash-outline" size={18} color={Colors.error} />
+                <Text style={[styles.actionButtonText, styles.actionButtonTextDanger]}>
+                  Clear Data
+                </Text>
               </TouchableOpacity>
             ) : onSync ? (
               <TouchableOpacity
@@ -159,16 +161,19 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
                 )}
               </TouchableOpacity>
             ) : null}
-            <TouchableOpacity
-              style={[styles.actionButton, styles.actionButtonDanger]}
-              onPress={onClear}
-              disabled={isLoading}
-            >
-              <Ionicons name="trash-outline" size={18} color={Colors.error} />
-              <Text style={[styles.actionButtonText, styles.actionButtonTextDanger]}>
-                Clear Data
-              </Text>
-            </TouchableOpacity>
+            {/* Clear Data for non-PlayStation platforms */}
+            {platform !== 'playstation' && (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.actionButtonDanger]}
+                onPress={onClear}
+                disabled={isLoading}
+              >
+                <Ionicons name="trash-outline" size={18} color={Colors.error} />
+                <Text style={[styles.actionButtonText, styles.actionButtonTextDanger]}>
+                  Clear Data
+                </Text>
+              </TouchableOpacity>
+            )}
           </>
         ) : (
           <TouchableOpacity
