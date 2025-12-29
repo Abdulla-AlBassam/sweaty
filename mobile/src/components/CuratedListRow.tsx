@@ -96,13 +96,17 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   seeAll: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textGreen,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   scrollContent: {
     paddingHorizontal: Spacing.lg,

@@ -18,7 +18,7 @@ import { MainStackParamList } from '../navigation'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
@@ -179,9 +179,12 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   logo: {
-    fontFamily: Fonts.display,
+    fontFamily: Fonts.mono,
     fontSize: FontSize.xxl,
     color: Colors.accent,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    ...Glow.text,
   },
   currentlyPlayingSection: {
     marginVertical: Spacing.md,
@@ -215,15 +218,18 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   currentlyPlayingTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.md,
-    color: Colors.text,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.sm,
+    color: Colors.textGreen,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   pulsingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: Colors.accent,
+    ...Glow.subtle,
   },
   smallGameCard: {
     // Just for touch target

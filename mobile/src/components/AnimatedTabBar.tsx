@@ -8,7 +8,7 @@ import {
 } from 'react-native'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons'
-import { Colors } from '../constants/colors'
+import { Colors, Glow } from '../constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuickLog } from '../contexts/QuickLogContext'
 
@@ -186,11 +186,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -6,
-    // Subtle shadow for elevation
-    shadowColor: Colors.accent,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
+    // Matrix glow effect
+    ...Glow.accent,
   },
 })
