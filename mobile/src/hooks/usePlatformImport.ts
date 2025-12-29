@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase'
 interface ImportResult {
   success: boolean
   total_rows?: number
+  total_games?: number
   imported?: number
   matched?: number
   unmatched?: number
@@ -13,7 +14,10 @@ interface ImportResult {
   unmatched_games?: string[]
   errors?: number
   error?: string
+  error_type?: string
   is_private?: boolean
+  psn_username?: string
+  message?: string
 }
 
 interface PlatformStatus {
@@ -114,6 +118,58 @@ export function usePlatformImport(userId: string | undefined) {
       return data
     } catch (err: any) {
       const errorMsg = err.message || 'Failed to import CSV'
+      setError(errorMsg)
+      return { success: false, error: errorMsg }
+    } finally {
+      setIsLoading(false)
+    }
+  }, [userId])
+
+  // Import PlayStation games by PSN username
+  const importPlayStationByUsername = useCallback(async (
+    psnUsername: string
+  ): Promise<ImportResult> => {
+    if (!userId) {
+      return { success: false, error: 'Not logged in' }
+    }
+
+    const cleanUsername = psnUsername.trim()
+    if (cleanUsername.length < 3 || cleanUsername.length > 16) {
+      return { success: false, error: 'PSN username must be 3-16 characters' }
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}/api/import/playstation/username`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: userId,
+            psn_username: cleanUsername,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Import failed')
+        return {
+          success: false,
+          error: data.error,
+          error_type: data.error_type,
+        }
+      }
+
+      return data
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to import PlayStation games'
       setError(errorMsg)
       return { success: false, error: errorMsg }
     } finally {
@@ -283,6 +339,7 @@ export function usePlatformImport(userId: string | undefined) {
     // PlayStation
     getPlayStationStatus,
     importPlayStationCSV,
+    importPlayStationByUsername,
     clearPlayStationData,
     // Steam
     getSteamStatus,
