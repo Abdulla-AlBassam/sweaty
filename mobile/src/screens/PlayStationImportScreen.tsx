@@ -20,7 +20,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { usePlatformImport, ImportResult, MatchedGame } from '../hooks/usePlatformImport'
 import LoadingSpinner from '../components/LoadingSpinner'
 import LogGameModal from '../components/LogGameModal'
-import { IGDB_IMAGE_SIZES } from '../constants'
 
 type ImportState = 'idle' | 'selected' | 'importing' | 'success' | 'error'
 
@@ -164,9 +163,8 @@ export default function PlayStationImportScreen() {
 
   const renderGameItem = ({ item }: { item: MatchedGame }) => {
     const isLogged = loggedGames.has(item.igdb_id)
+    // cover_url from API is already a full URL
     const coverUrl = item.cover_url
-      ? `${IGDB_IMAGE_SIZES.coverBig}${item.cover_url.split('/').pop()}`
-      : null
 
     return (
       <View style={styles.gameItem}>
