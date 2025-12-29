@@ -23,6 +23,7 @@ import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colo
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
+import GlitchText, { GlitchBar } from '../components/GlitchText'
 
 
 export default function DashboardScreen() {
@@ -94,10 +95,10 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Terminal Header */}
+        {/* Terminal Header with Glitch Effects */}
         <View style={styles.header}>
           <LinearGradient
-            colors={['#001a00', '#000d00', '#000000']}
+            colors={[Colors.surfaceLight, Colors.surface, Colors.background]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.headerGradient}
@@ -111,9 +112,14 @@ export default function DashboardScreen() {
               <Text style={styles.terminalTitle}>sweaty.exe</Text>
             </View>
             <View style={styles.headerContent}>
-              <Text style={styles.logo}>SWEATY</Text>
+              <GlitchText
+                text="SWEATY"
+                style={styles.logo}
+                intensity="medium"
+              />
               <Text style={styles.statusText}>[ONLINE]</Text>
             </View>
+            <GlitchBar style={styles.glitchBar} />
           </LinearGradient>
         </View>
 
@@ -243,13 +249,15 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     color: Colors.accent,
     letterSpacing: 6,
-    ...Glow.text,
   },
   statusText: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
     color: Colors.accent,
     letterSpacing: 1,
+  },
+  glitchBar: {
+    marginTop: Spacing.sm,
   },
   currentlyPlayingSection: {
     marginVertical: Spacing.md,

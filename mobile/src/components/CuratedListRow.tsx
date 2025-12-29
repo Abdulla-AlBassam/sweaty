@@ -12,6 +12,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import { CuratedListWithGames } from '../types'
+import GlitchText from './GlitchText'
 
 interface CuratedListRowProps {
   list: CuratedListWithGames
@@ -47,7 +48,11 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{list.title}</Text>
+        <GlitchText
+          text={list.title}
+          style={styles.title}
+          intensity="subtle"
+        />
         <TouchableOpacity onPress={handleSeeAll}>
           <Text style={styles.seeAll}>See All</Text>
         </TouchableOpacity>

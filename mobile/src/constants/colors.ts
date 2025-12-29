@@ -1,48 +1,50 @@
-// Sweaty Theme - Matrix/Cyberpunk Aesthetic
-// Inspired by The Matrix, Metal Gear Solid, and retro CRT displays
+// Sweaty Theme - Refined Terminal Aesthetic
+// Premium cyberpunk with subtle green undertones
 
 export const Colors = {
-  // Backgrounds - Deep blacks with subtle green undertones
-  background: '#050505',      // Near-black, slightly warmer
-  surface: '#0a120a',         // Dark with green tint
-  surfaceLight: '#0f1a0f',    // Slightly lighter green-black
-  surfaceBright: '#152015',   // For elevated elements
+  // Backgrounds - Deep blacks with subtle warmth
+  background: '#0a0a0a',      // Rich black
+  surface: '#111111',         // Elevated surface
+  surfaceLight: '#1a1a1a',    // Cards and containers
+  surfaceBright: '#222222',   // Highlighted elements
 
-  // Matrix Green - The signature phosphor glow
-  accent: '#00ff41',          // Primary Matrix green (phosphor)
-  accentMuted: '#00cc33',     // Slightly dimmer green
-  accentDark: '#003311',      // Dark green for backgrounds
-  accentGlow: 'rgba(0, 255, 65, 0.3)',  // For glow effects
+  // Terminal Green - Sophisticated, not neon
+  accent: '#22c55e',          // Modern green (refined)
+  accentBright: '#4ade80',    // Brighter for emphasis
+  accentMuted: '#16a34a',     // Dimmer green
+  accentDark: '#052e16',      // Dark green tint
+  accentGlow: 'rgba(34, 197, 94, 0.2)',  // Subtle glow
 
-  // Text - Greens and grays for readability
-  text: '#e0e0e0',            // Primary text (light gray)
-  textBright: '#ffffff',      // Bright white for emphasis
-  textGreen: '#00ff41',       // Green text for headers/accents
-  textMuted: '#7a9f7a',       // Muted green-gray
-  textDim: '#4a6a4a',         // Dim green-gray
+  // Text hierarchy
+  text: '#f0f0f0',            // Primary text (off-white)
+  textBright: '#ffffff',      // Pure white for emphasis
+  textGreen: '#22c55e',       // Green accent text
+  textMuted: '#888888',       // Secondary text
+  textDim: '#555555',         // Tertiary/disabled
 
-  // Border
-  border: '#1a2a1a',          // Subtle green-tinted border
-  borderBright: '#2a3a2a',    // Brighter border
-  borderGlow: '#00ff4130',    // Glowing green border
+  // Borders - Subtle definition
+  border: '#222222',          // Standard border
+  borderBright: '#333333',    // Emphasized border
+  borderGlow: 'rgba(34, 197, 94, 0.15)',  // Subtle green tint
 
-  // Status colors - Cyberpunk palette
-  error: '#ff3333',           // Bright red
-  warning: '#ffaa00',         // Amber
-  success: '#00ff41',         // Matrix green
+  // Status colors - Refined palette
+  error: '#ef4444',           // Red
+  warning: '#f59e0b',         // Amber
+  success: '#22c55e',         // Green
 
-  // Game status colors - Neon/cyberpunk variants
-  statusPlaying: '#00aaff',   // Cyan blue
-  statusCompleted: '#00ff41', // Matrix green
-  statusPlayed: '#aa66ff',    // Purple
-  statusWantToPlay: '#ffaa00',// Amber
-  statusOnHold: '#666666',    // Gray
-  statusDropped: '#ff3333',   // Red
+  // Game status colors - Cyberpunk but refined
+  statusPlaying: '#3b82f6',   // Blue
+  statusCompleted: '#22c55e', // Green
+  statusPlayed: '#8b5cf6',    // Purple
+  statusWantToPlay: '#f59e0b',// Amber
+  statusOnHold: '#6b7280',    // Gray
+  statusDropped: '#ef4444',   // Red
 
   // Special effects
-  scanLine: 'rgba(0, 0, 0, 0.1)',     // For CRT scan line effect
-  vignette: 'rgba(0, 0, 0, 0.8)',     // For edge darkening
-  glitch: '#ff0066',                   // Pink for glitch effects
+  scanLine: 'rgba(0, 0, 0, 0.03)',    // Very subtle scan lines
+  vignette: 'rgba(0, 0, 0, 0.6)',     // Softer vignette
+  glitch: '#ec4899',                   // Pink/magenta for glitch
+  glitchCyan: '#06b6d4',              // Cyan for RGB split effect
 }
 
 // Spacing values
@@ -75,28 +77,36 @@ export const FontSize = {
   xxxl: 32,
 }
 
-// Glow/Shadow presets for Matrix aesthetic
+// Glow/Shadow presets - Refined and subtle
 export const Glow = {
-  // Green glow for buttons, cards
+  // Primary green glow for interactive elements
   accent: {
-    shadowColor: '#00ff41',
+    shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  // Subtle green glow
+  // Subtle glow for cards and surfaces
   subtle: {
-    shadowColor: '#00ff41',
+    shadowColor: '#22c55e',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  // Text glow effect (use with textShadow)
+  // Text glow - very subtle
   text: {
-    textShadowColor: '#00ff41',
+    textShadowColor: 'rgba(34, 197, 94, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
+    textShadowRadius: 6,
+  },
+  // Glitch glow for special effects
+  glitch: {
+    shadowColor: '#ec4899',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 3,
   },
 }

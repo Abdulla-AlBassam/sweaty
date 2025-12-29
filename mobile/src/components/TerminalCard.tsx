@@ -22,7 +22,7 @@ export default function TerminalCard({
   return (
     <View style={[styles.container, showBorder && styles.borderGlow, style]}>
       <LinearGradient
-        colors={['#001a00', '#000d00', '#000000']}
+        colors={[Colors.surfaceLight, Colors.surface, Colors.background]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}

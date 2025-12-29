@@ -29,6 +29,7 @@ import StackedAvatars from '../components/StackedAvatars'
 import TerminalAICard from '../components/TerminalAICard'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
+import { GlitchHeader } from '../components/GlitchText'
 
 interface SearchGame {
   id: number
@@ -255,7 +256,7 @@ export default function SearchScreen() {
       {/* Terminal Search Header */}
       <View style={styles.header}>
         <LinearGradient
-          colors={['#001a00', '#000d00', '#000000']}
+          colors={[Colors.surfaceLight, Colors.surface, Colors.background]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.searchGradient}
@@ -413,7 +414,7 @@ export default function SearchScreen() {
 
           {/* Discover Section - Dynamic Lists */}
           <View style={styles.discoverSection}>
-            <Text style={styles.discoverSectionTitle}>[ DISCOVER ]</Text>
+            <GlitchHeader title="DISCOVER" style={styles.discoverHeader} />
 
             {/* Trending Games from IGDB (global trending) */}
             <View style={styles.discoveryRow}>
@@ -494,7 +495,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     color: Colors.accent,
     marginRight: Spacing.sm,
-    ...Glow.text,
   },
   input: {
     flex: 1,
@@ -645,15 +645,9 @@ const styles = StyleSheet.create({
   discoverSection: {
     marginTop: Spacing.xl,
   },
-  discoverSectionTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: 14,
-    color: Colors.accent,
+  discoverHeader: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    ...Glow.text,
   },
   discoveryRow: {
     marginBottom: Spacing.xl,

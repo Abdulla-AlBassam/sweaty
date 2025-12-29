@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Spacing, BorderRadius, Glow } from '../constants/colors'
-import { Fonts, Typography } from '../constants/fonts'
+import { Fonts } from '../constants/fonts'
 
 interface TerminalAICardProps {
   onPress: () => void
@@ -20,17 +20,21 @@ export default function TerminalAICard({ onPress }: TerminalAICardProps) {
   const cursorOpacity = useRef(new Animated.Value(1)).current
 
   // Glow pulse animation
-  const glowIntensity = useRef(new Animated.Value(0.3)).current
+  const glowIntensity = useRef(new Animated.Value(0.2)).current
 
   // Scan line position
   const scanLinePosition = useRef(new Animated.Value(0)).current
 
-  // Glitch effect state
-  const [glitchOffset, setGlitchOffset] = useState(0)
+  // Glitch effect state - now with RGB split
+  const [glitchActive, setGlitchActive] = useState(false)
+  const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
 
   // Terminal text typing effect
   const [displayText, setDisplayText] = useState('')
   const fullText = 'SWEATY.AI ONLINE'
+
+  // Chromatic aberration intensity
+  const [chromaticOffset, setChromaticOffset] = useState(0)
 
   useEffect(() => {
     // Cursor blink animation
@@ -49,18 +53,18 @@ export default function TerminalAICard({ onPress }: TerminalAICardProps) {
       ])
     )
 
-    // Glow pulse animation
+    // Glow pulse animation - more subtle
     const glowPulse = Animated.loop(
       Animated.sequence([
         Animated.timing(glowIntensity, {
-          toValue: 0.6,
-          duration: 2000,
+          toValue: 0.4,
+          duration: 2500,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(glowIntensity, {
-          toValue: 0.3,
-          duration: 2000,
+          toValue: 0.2,
+          duration: 2500,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
@@ -71,7 +75,7 @@ export default function TerminalAICard({ onPress }: TerminalAICardProps) {
     const scanLine = Animated.loop(
       Animated.timing(scanLinePosition, {
         toValue: 1,
-        duration: 3000,
+        duration: 4000,
         easing: Easing.linear,
         useNativeDriver: true,
       })
@@ -92,13 +96,24 @@ export default function TerminalAICard({ onPress }: TerminalAICardProps) {
       }
     }, 80)
 
-    // Random glitch effect
+    // Enhanced glitch effect with RGB split
     const glitchInterval = setInterval(() => {
-      if (Math.random() > 0.7) {
-        setGlitchOffset(Math.random() * 4 - 2)
-        setTimeout(() => setGlitchOffset(0), 50)
+      if (Math.random() > 0.6) {
+        setGlitchActive(true)
+        setGlitchOffset({
+          x: (Math.random() - 0.5) * 6,
+          y: (Math.random() - 0.5) * 2,
+        })
+        setChromaticOffset(Math.random() * 3 + 1)
+
+        // Quick reset
+        setTimeout(() => {
+          setGlitchActive(false)
+          setGlitchOffset({ x: 0, y: 0 })
+          setChromaticOffset(0)
+        }, 80)
       }
-    }, 200)
+    }, 300)
 
     return () => {
       cursorBlink.stop()
@@ -120,14 +135,14 @@ export default function TerminalAICard({ onPress }: TerminalAICardProps) {
       onPress={onPress}
       activeOpacity={0.9}
     >
-      {/* Outer glow effect */}
+      {/* Outer glow effect - more subtle */}
       <Animated.View style={[styles.glowOuter, { opacity: glowIntensity }]} />
 
       {/* Main card */}
       <View style={styles.card}>
-        {/* Background gradient */}
+        {/* Background gradient - refined dark tones */}
         <LinearGradient
-          colors={['#001a00', '#000d00', '#000000']}
+          colors={[Colors.surfaceLight, Colors.surface, Colors.background]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.gradient}
@@ -167,13 +182,41 @@ export default function TerminalAICard({ onPress }: TerminalAICardProps) {
                 <Text style={styles.statusText}> System initialized</Text>
               </View>
 
-              {/* Main prompt with glitch effect */}
-              <View style={[styles.promptLine, { transform: [{ translateX: glitchOffset }] }]}>
-                <Text style={styles.prompt}>{'>'}</Text>
-                <Text style={styles.commandText}>{displayText}</Text>
-                <Animated.Text style={[styles.cursor, { opacity: cursorOpacity }]}>
-                  █
-                </Animated.Text>
+              {/* Main prompt with RGB split glitch effect */}
+              <View style={styles.promptContainer}>
+                {/* Cyan ghost layer - left offset */}
+                {glitchActive && (
+                  <View style={[styles.promptLine, styles.glitchLayer, {
+                    transform: [{ translateX: -chromaticOffset }],
+                  }]}>
+                    <Text style={[styles.prompt, styles.cyanText]}>{'>'}</Text>
+                    <Text style={[styles.commandText, styles.cyanText]}>{displayText}</Text>
+                  </View>
+                )}
+
+                {/* Magenta ghost layer - right offset */}
+                {glitchActive && (
+                  <View style={[styles.promptLine, styles.glitchLayer, {
+                    transform: [{ translateX: chromaticOffset }],
+                  }]}>
+                    <Text style={[styles.prompt, styles.magentaText]}>{'>'}</Text>
+                    <Text style={[styles.commandText, styles.magentaText]}>{displayText}</Text>
+                  </View>
+                )}
+
+                {/* Main text layer */}
+                <View style={[styles.promptLine, {
+                  transform: [
+                    { translateX: glitchOffset.x },
+                    { translateY: glitchOffset.y },
+                  ],
+                }]}>
+                  <Text style={styles.prompt}>{'>'}</Text>
+                  <Text style={styles.commandText}>{displayText}</Text>
+                  <Animated.Text style={[styles.cursor, { opacity: cursorOpacity }]}>
+                    █
+                  </Animated.Text>
+                </View>
               </View>
 
               {/* Description */}
@@ -205,19 +248,19 @@ const styles = StyleSheet.create({
   },
   glowOuter: {
     position: 'absolute',
-    top: -4,
-    left: -4,
-    right: -4,
-    bottom: -4,
-    borderRadius: BorderRadius.lg + 4,
+    top: -3,
+    left: -3,
+    right: -3,
+    bottom: -3,
+    borderRadius: BorderRadius.lg + 3,
     backgroundColor: Colors.accent,
-    ...Glow.accent,
+    ...Glow.subtle,
   },
   card: {
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.accent + '60',
+    borderColor: Colors.accent + '40',
   },
   gradient: {
     padding: Spacing.md,
@@ -229,7 +272,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 2,
-    backgroundColor: Colors.accent + '15',
+    backgroundColor: Colors.accent + '10',
   },
   vignette: {
     position: 'absolute',
@@ -304,24 +347,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.textMuted,
   },
+  promptContainer: {
+    position: 'relative',
+    marginVertical: Spacing.sm,
+  },
   promptLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: Spacing.sm,
+  },
+  glitchLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  cyanText: {
+    color: Colors.glitchCyan,
+    opacity: 0.7,
+  },
+  magentaText: {
+    color: Colors.glitch,
+    opacity: 0.7,
   },
   prompt: {
     fontFamily: Fonts.mono,
     fontSize: 18,
     color: Colors.accent,
     marginRight: 8,
-    ...Glow.text,
   },
   commandText: {
     fontFamily: Fonts.mono,
     fontSize: 18,
     color: Colors.accent,
     letterSpacing: 1,
-    ...Glow.text,
   },
   cursor: {
     fontFamily: Fonts.mono,
