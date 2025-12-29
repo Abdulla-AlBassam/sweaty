@@ -73,28 +73,26 @@ export default function GlitchLogo() {
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    height: 50,
-    width: 220,
-    overflow: 'hidden',
+    height: 40,
   },
   text: {
     fontFamily: Fonts.mono,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '600',
-    letterSpacing: 6,
+    letterSpacing: 4,
     position: 'absolute',
   },
   cyanLayer: {
     color: '#00ffff',
-    opacity: 0.7,
-    transform: [{ translateX: -2 }],
+    opacity: 0.6,
+    transform: [{ translateX: -1.5 }],
   },
   magentaLayer: {
-    color: '#ff00ff',
-    opacity: 0.7,
-    transform: [{ translateX: 2 }],
+    color: '#22c55e', // Green accent instead of magenta
+    opacity: 0.6,
+    transform: [{ translateX: 1.5 }],
   },
   mainText: {
     color: '#ffffff',

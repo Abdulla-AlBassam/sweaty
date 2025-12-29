@@ -131,7 +131,6 @@ export default function DashboardScreen() {
                 return (
                   <PressableScale
                     key={log.id}
-                    style={styles.nowPlayingCard}
                     onPress={() => handleGamePress(game.id)}
                     haptic="light"
                     scale={0.95}
@@ -143,9 +142,6 @@ export default function DashboardScreen() {
                         <Text style={styles.placeholderText}>?</Text>
                       </View>
                     )}
-                    <Text style={styles.nowPlayingTitle} numberOfLines={1}>
-                      {game.name}
-                    </Text>
                   </PressableScale>
                 )
               })}
@@ -189,9 +185,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
   headerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: Colors.surface,
     borderWidth: 2,
     borderColor: Colors.accent,
@@ -235,14 +231,11 @@ const styles = StyleSheet.create({
   },
   currentlyPlayingScroll: {
     paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
-  },
-  nowPlayingCard: {
-    width: 120,
+    gap: Spacing.sm,
   },
   nowPlayingCover: {
-    width: 120,
-    height: 160,
+    width: 105,
+    height: 140,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
   },
@@ -253,13 +246,6 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: FontSize.xxl,
     color: Colors.textDim,
-  },
-  nowPlayingTitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-    marginTop: Spacing.xs,
-    textAlign: 'center',
   },
   // Loading
   listsLoading: {
