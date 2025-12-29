@@ -210,3 +210,42 @@ export interface ReviewComment {
   }
   replies?: ReviewComment[]
 }
+
+// Platform import types
+export type Platform = 'steam' | 'xbox' | 'playstation'
+
+export interface PlatformConnection {
+  id: string
+  user_id: string
+  platform: Platform
+  platform_user_id: string
+  platform_username: string | null
+  access_token?: string | null  // Sensitive - may not be exposed via API
+  refresh_token?: string | null // Sensitive - may not be exposed via API
+  token_expires_at: string | null
+  last_synced_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PlatformGame {
+  id: string
+  user_id: string
+  platform: Platform
+  platform_game_id: string
+  igdb_game_id: number | null
+  game_name: string
+  playtime_minutes: number | null
+  last_played_at: string | null
+  achievements_earned: number | null
+  achievements_total: number | null
+  imported_at: string
+}
+
+export interface PlatformGameWithMatch extends PlatformGame {
+  matched_game?: {
+    id: number
+    name: string
+    cover_url: string | null
+  } | null
+}
