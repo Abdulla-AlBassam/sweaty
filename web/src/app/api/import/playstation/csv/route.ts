@@ -317,6 +317,12 @@ export async function POST(request: NextRequest) {
       unmatched: 0,
       skipped: 0,
       unmatched_games: [] as string[],
+      matched_games: [] as Array<{
+        igdb_id: number
+        name: string
+        cover_url: string | null
+        platform: string | null
+      }>,
       errors: 0,
     }
 
@@ -422,6 +428,7 @@ export async function POST(request: NextRequest) {
               matched: igdbId !== null,
               gameName,
               psPlatform,
+              cachedGame,
             }
           } catch (error) {
             console.error(`Error processing game "${gameName}":`, error)
@@ -441,8 +448,15 @@ export async function POST(request: NextRequest) {
           // Don't count duplicates or no_name as skipped
         } else if (result.data) {
           gamesToInsert.push(result.data)
-          if (result.matched) {
+          if (result.matched && result.cachedGame) {
             results.matched++
+            // Add to matched games list for review UI
+            results.matched_games.push({
+              igdb_id: result.cachedGame.id,
+              name: result.cachedGame.name,
+              cover_url: result.cachedGame.coverUrl,
+              platform: result.psPlatform || null,
+            })
           } else {
             results.unmatched++
             if (result.gameName) {
@@ -503,6 +517,7 @@ export async function POST(request: NextRequest) {
       unmatched: results.unmatched,
       skipped: results.skipped,
       unmatched_games: results.unmatched_games.slice(0, 20),
+      matched_games: results.matched_games,
       errors: results.errors,
     })
 

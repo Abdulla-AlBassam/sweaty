@@ -3,6 +3,13 @@ import { API_CONFIG } from '../constants'
 import { Platform, PlatformConnection, PlatformGame } from '../types'
 import { supabase } from '../lib/supabase'
 
+interface MatchedGame {
+  igdb_id: number
+  name: string
+  cover_url: string | null
+  platform: string | null
+}
+
 interface ImportResult {
   success: boolean
   total_rows?: number
@@ -12,6 +19,7 @@ interface ImportResult {
   unmatched?: number
   skipped?: number
   unmatched_games?: string[]
+  matched_games?: MatchedGame[]
   errors?: number
   error?: string
   error_type?: string
@@ -351,4 +359,4 @@ export function usePlatformImport(userId: string | undefined) {
   }
 }
 
-export type { ImportResult, PlatformStatus }
+export type { ImportResult, PlatformStatus, MatchedGame }

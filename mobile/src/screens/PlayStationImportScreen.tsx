@@ -6,6 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
+  FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -15,8 +17,10 @@ import * as FileSystem from 'expo-file-system'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
-import { usePlatformImport, ImportResult } from '../hooks/usePlatformImport'
+import { usePlatformImport, ImportResult, MatchedGame } from '../hooks/usePlatformImport'
 import LoadingSpinner from '../components/LoadingSpinner'
+import LogGameModal from '../components/LogGameModal'
+import { IGDB_IMAGE_SIZES } from '../constants'
 
 type ImportState = 'idle' | 'selected' | 'importing' | 'success' | 'error'
 
@@ -34,6 +38,16 @@ export default function PlayStationImportScreen() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [processingStatus, setProcessingStatus] = useState('')
+
+  // Review & Log state
+  const [loggedGames, setLoggedGames] = useState<Set<number>>(new Set())
+  const [selectedGameForLog, setSelectedGameForLog] = useState<{
+    id: number
+    name: string
+    coverUrl: string | null
+    platform: string | null
+  } | null>(null)
+  const [showLogModal, setShowLogModal] = useState(false)
 
   const handlePickFile = async () => {
     try {
@@ -112,6 +126,7 @@ export default function PlayStationImportScreen() {
     setImportState('idle')
     setSelectedFile(null)
     setImportResult(null)
+    setLoggedGames(new Set())
   }
 
   const toggleSection = (section: string) => {
@@ -122,6 +137,69 @@ export default function PlayStationImportScreen() {
     if (bytes < 1024) return `${bytes} B`
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  const handleLogGame = (game: MatchedGame) => {
+    setSelectedGameForLog({
+      id: game.igdb_id,
+      name: game.name,
+      coverUrl: game.cover_url,
+      platform: game.platform,
+    })
+    setShowLogModal(true)
+  }
+
+  const handleLogSaved = () => {
+    if (selectedGameForLog) {
+      setLoggedGames(prev => new Set(prev).add(selectedGameForLog.id))
+    }
+    setShowLogModal(false)
+    setSelectedGameForLog(null)
+  }
+
+  const handleLogModalClose = () => {
+    setShowLogModal(false)
+    setSelectedGameForLog(null)
+  }
+
+  const renderGameItem = ({ item }: { item: MatchedGame }) => {
+    const isLogged = loggedGames.has(item.igdb_id)
+    const coverUrl = item.cover_url
+      ? `${IGDB_IMAGE_SIZES.coverBig}${item.cover_url.split('/').pop()}`
+      : null
+
+    return (
+      <View style={styles.gameItem}>
+        <View style={styles.gameItemLeft}>
+          {coverUrl ? (
+            <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+          ) : (
+            <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
+              <Ionicons name="game-controller" size={20} color={Colors.textDim} />
+            </View>
+          )}
+          <View style={styles.gameInfo}>
+            <Text style={styles.gameName} numberOfLines={2}>{item.name}</Text>
+            {item.platform && (
+              <Text style={styles.gamePlatform}>{item.platform}</Text>
+            )}
+          </View>
+        </View>
+
+        {isLogged ? (
+          <View style={styles.loggedBadge}>
+            <Ionicons name="checkmark-circle" size={24} color={Colors.accent} />
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.logButton}
+            onPress={() => handleLogGame(item)}
+          >
+            <Text style={styles.logButtonText}>LOG</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    )
   }
 
   // Importing state
@@ -142,84 +220,104 @@ export default function PlayStationImportScreen() {
     )
   }
 
-  // Success state
+  // Success state - Review & Log UI
   if (importState === 'success' && importResult) {
+    const matchedGames = importResult.matched_games || []
+    const loggedCount = loggedGames.size
+    const totalMatched = matchedGames.length
+
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <View style={styles.backButton} />
-          <Text style={styles.headerTitle}>IMPORT COMPLETE</Text>
-          <View style={styles.backButton} />
+          <Text style={styles.headerTitle}>REVIEW & LOG</Text>
+          <TouchableOpacity onPress={handleDone} style={styles.doneHeaderButton}>
+            <Text style={styles.doneHeaderText}>Done</Text>
+          </TouchableOpacity>
         </View>
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.successContainer}>
-            <View style={styles.successIcon}>
-              <Ionicons name="checkmark-circle" size={64} color={Colors.accent} />
-            </View>
-            <Text style={styles.successTitle}>
-              Imported {importResult.imported || importResult.total_games} games
-            </Text>
-            <Text style={styles.successSubtitle}>from PlayStation</Text>
-          </View>
 
-          <View style={styles.statsContainer}>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Total rows processed</Text>
-              <Text style={styles.statValue}>{importResult.total_rows || importResult.total_games}</Text>
-            </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Matched to database</Text>
-              <Text style={[styles.statValue, { color: Colors.accent }]}>
-                {importResult.matched}
+        {/* Summary Banner */}
+        <View style={styles.summaryBanner}>
+          <View style={styles.summaryLeft}>
+            <Ionicons name="checkmark-circle" size={24} color={Colors.accent} />
+            <Text style={styles.summaryText}>
+              Found {totalMatched} games
+            </Text>
+          </View>
+          <Text style={styles.summaryProgress}>
+            {loggedCount}/{totalMatched} logged
+          </Text>
+        </View>
+
+        {matchedGames.length > 0 ? (
+          <FlatList
+            data={matchedGames}
+            renderItem={renderGameItem}
+            keyExtractor={(item) => item.igdb_id.toString()}
+            contentContainerStyle={styles.gamesList}
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+          />
+        ) : (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+            <Text style={styles.emptyText}>No games matched</Text>
+            <Text style={styles.emptySubtext}>
+              Try importing a different CSV file
+            </Text>
+          </View>
+        )}
+
+        {/* Unmatched Games Accordion */}
+        {importResult.unmatched_games && importResult.unmatched_games.length > 0 && (
+          <View style={styles.unmatchedSection}>
+            <TouchableOpacity
+              style={styles.unmatchedHeader}
+              onPress={() => toggleSection('unmatched')}
+            >
+              <Text style={styles.unmatchedTitle}>
+                Couldn't match ({importResult.unmatched_games.length})
               </Text>
-            </View>
-            <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Unmatched</Text>
-              <Text style={[styles.statValue, { color: Colors.warning }]}>
-                {importResult.unmatched}
-              </Text>
-            </View>
-            {(importResult.skipped || 0) > 0 && (
-              <View style={styles.statRow}>
-                <Text style={styles.statLabel}>Skipped (DLC/themes)</Text>
-                <Text style={[styles.statValue, { color: Colors.textMuted }]}>
-                  {importResult.skipped}
-                </Text>
+              <Ionicons
+                name={expandedSection === 'unmatched' ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={Colors.textMuted}
+              />
+            </TouchableOpacity>
+            {expandedSection === 'unmatched' && (
+              <View style={styles.unmatchedList}>
+                {importResult.unmatched_games.map((game, index) => (
+                  <Text key={index} style={styles.unmatchedGame}>
+                    • {game}
+                  </Text>
+                ))}
               </View>
             )}
           </View>
+        )}
 
-          {importResult.unmatched_games && importResult.unmatched_games.length > 0 && (
-            <View style={styles.unmatchedContainer}>
-              <TouchableOpacity
-                style={styles.unmatchedHeader}
-                onPress={() => toggleSection('unmatched')}
-              >
-                <Text style={styles.unmatchedTitle}>
-                  Unmatched Games ({importResult.unmatched_games.length})
-                </Text>
-                <Ionicons
-                  name={expandedSection === 'unmatched' ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color={Colors.textMuted}
-                />
-              </TouchableOpacity>
-              {expandedSection === 'unmatched' && (
-                <View style={styles.unmatchedList}>
-                  {importResult.unmatched_games.map((game, index) => (
-                    <Text key={index} style={styles.unmatchedGame}>
-                      • {game}
-                    </Text>
-                  ))}
-                </View>
-              )}
-            </View>
-          )}
-
+        {/* Bottom Done Button */}
+        <View style={styles.bottomButtonContainer}>
           <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-            <Text style={styles.doneButtonText}>DONE</Text>
+            <Text style={styles.doneButtonText}>
+              {loggedCount > 0 ? `FINISH (${loggedCount} logged)` : 'SKIP FOR NOW'}
+            </Text>
           </TouchableOpacity>
-        </ScrollView>
+        </View>
+
+        {/* Log Game Modal */}
+        {selectedGameForLog && (
+          <LogGameModal
+            visible={showLogModal}
+            onClose={handleLogModalClose}
+            game={{
+              id: selectedGameForLog.id,
+              name: selectedGameForLog.name,
+              coverUrl: selectedGameForLog.coverUrl || undefined,
+              platforms: selectedGameForLog.platform ? [selectedGameForLog.platform] : [],
+            }}
+            onSaveSuccess={handleLogSaved}
+          />
+        )}
       </SafeAreaView>
     )
   }
@@ -366,8 +464,8 @@ export default function PlayStationImportScreen() {
 
         {/* Note */}
         <Text style={styles.noteText}>
-          This is a one-time import. Your games will be matched to our database
-          for cover art and details. You can import again anytime to add new games.
+          After importing, you'll be able to review and log each game to your library
+          with status, rating, and more.
         </Text>
       </ScrollView>
     </SafeAreaView>
@@ -399,6 +497,16 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     color: Colors.text,
     textAlign: 'center',
+  },
+  doneHeaderButton: {
+    width: 60,
+    alignItems: 'flex-end',
+    paddingRight: Spacing.xs,
+  },
+  doneHeaderText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.accent,
   },
   scrollView: {
     flex: 1,
@@ -583,52 +691,113 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: Spacing.sm,
   },
-  // Success state
-  successContainer: {
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-  },
-  successIcon: {
-    marginBottom: Spacing.md,
-  },
-  successTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.xxl,
-    color: Colors.text,
-  },
-  successSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-    marginTop: Spacing.xs,
-  },
-  statsContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  statRow: {
+  // Success/Review state
+  summaryBanner: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  statLabel: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
+  summaryLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
-  statValue: {
+  summaryText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.text,
   },
-  unmatchedContainer: {
+  summaryProgress: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  gamesList: {
+    padding: Spacing.md,
+  },
+  gameItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.xl,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+  },
+  gameItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  gameCover: {
+    width: 45,
+    height: 60,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surfaceLight,
+  },
+  gameCoverPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gameInfo: {
+    marginLeft: Spacing.md,
+    flex: 1,
+  },
+  gameName: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  gamePlatform: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  logButton: {
+    backgroundColor: Colors.accent,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  logButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.xs,
+    color: Colors.text,
+  },
+  loggedBadge: {
+    paddingHorizontal: Spacing.sm,
+  },
+  separator: {
+    height: Spacing.sm,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xl,
+  },
+  emptyText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.lg,
+    color: Colors.textMuted,
+    marginTop: Spacing.md,
+  },
+  emptySubtext: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginTop: Spacing.xs,
+  },
+  unmatchedSection: {
+    backgroundColor: Colors.surface,
+    marginHorizontal: Spacing.md,
+    marginTop: Spacing.sm,
+    borderRadius: BorderRadius.md,
     overflow: 'hidden',
   },
   unmatchedHeader: {
@@ -638,8 +807,8 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
   },
   unmatchedTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
     color: Colors.warning,
   },
   unmatchedList: {
@@ -650,9 +819,16 @@ const styles = StyleSheet.create({
   },
   unmatchedGame: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
-    paddingVertical: Spacing.xs,
+    paddingVertical: 2,
+  },
+  bottomButtonContainer: {
+    padding: Spacing.md,
+    paddingBottom: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.background,
   },
   doneButton: {
     backgroundColor: Colors.accent,
