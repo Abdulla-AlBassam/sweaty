@@ -116,33 +116,33 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
         </View>
       </View>
 
-      <View style={styles.platformActions}>
+      <View style={styles.platformActionsContainer}>
+        {/* Continue Logging button - show on its own row if there are unlogged games */}
+        {isConnected && platform === 'playstation' && unloggedCount !== undefined && unloggedCount > 0 && onContinueLogging && (
+          <TouchableOpacity
+            style={[styles.actionButton, styles.actionButtonPrimary, styles.actionButtonFullWidth]}
+            onPress={onContinueLogging}
+            disabled={isLoading}
+          >
+            <Ionicons name="game-controller-outline" size={18} color={Colors.text} />
+            <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
+              Continue Logging ({unloggedCount})
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        <View style={styles.platformActions}>
         {isConnected ? (
           <>
             {platform === 'playstation' ? (
-              <>
-                {/* Continue Logging button - show if there are unlogged games */}
-                {unloggedCount !== undefined && unloggedCount > 0 && onContinueLogging && (
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.actionButtonPrimary]}
-                    onPress={onContinueLogging}
-                    disabled={isLoading}
-                  >
-                    <Ionicons name="game-controller-outline" size={18} color={Colors.text} />
-                    <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
-                      Continue Logging ({unloggedCount})
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={onConnect}
-                  disabled={isLoading}
-                >
-                  <Ionicons name="add-circle-outline" size={18} color={Colors.accent} />
-                  <Text style={styles.actionButtonText}>Import More</Text>
-                </TouchableOpacity>
-              </>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={onConnect}
+                disabled={isLoading}
+              >
+                <Ionicons name="add-circle-outline" size={18} color={Colors.accent} />
+                <Text style={styles.actionButtonText}>Import More</Text>
+              </TouchableOpacity>
             ) : onSync ? (
               <TouchableOpacity
                 style={styles.actionButton}
@@ -192,6 +192,7 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
             )}
           </TouchableOpacity>
         )}
+        </View>
       </View>
     </View>
   )
@@ -506,9 +507,16 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },
+  platformActionsContainer: {
+    gap: Spacing.sm,
+  },
   platformActions: {
     flexDirection: 'row',
     gap: Spacing.sm,
+  },
+  actionButtonFullWidth: {
+    width: '100%',
+    justifyContent: 'center',
   },
   actionButton: {
     flexDirection: 'row',
@@ -521,8 +529,6 @@ const styles = StyleSheet.create({
   },
   actionButtonPrimary: {
     backgroundColor: Colors.accent,
-    flex: 1,
-    justifyContent: 'center',
   },
   actionButtonDanger: {
     borderWidth: 1,
