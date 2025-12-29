@@ -9,7 +9,6 @@ import {
   Image,
   Animated,
 } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -19,11 +18,11 @@ import { MainStackParamList } from '../navigation'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
-import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
-import GlitchText, { GlitchBar } from '../components/GlitchText'
+import { GlitchBar } from '../components/GlitchText'
 import HolographicText from '../components/HolographicText'
 
 
@@ -96,31 +95,13 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Terminal Header with Glitch Effects */}
+        {/* Minimal Header - Just the logo */}
         <View style={styles.header}>
-          <LinearGradient
-            colors={[Colors.surfaceLight, Colors.surface, Colors.background]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.headerGradient}
-          >
-            <View style={styles.headerTop}>
-              <View style={styles.terminalDots}>
-                <View style={[styles.dot, styles.dotRed]} />
-                <View style={[styles.dot, styles.dotYellow]} />
-                <View style={[styles.dot, styles.dotGreen]} />
-              </View>
-              <Text style={styles.terminalTitle}>sweaty.exe</Text>
-            </View>
-            <View style={styles.headerContent}>
-              <HolographicText
-                text="SWEATY"
-                style={styles.logo}
-              />
-              <Text style={styles.statusText}>[ONLINE]</Text>
-            </View>
-            <GlitchBar style={styles.glitchBar} />
-          </LinearGradient>
+          <HolographicText
+            text="SWEATY"
+            style={styles.logo}
+          />
+          <GlitchBar style={styles.glitchBar} />
         </View>
 
         {/* Currently Playing Section - Inline Layout */}
@@ -195,69 +176,21 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   header: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.accent + '40',
-    ...Glow.subtle,
-  },
-  headerGradient: {
-    padding: Spacing.md,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.accent + '20',
-  },
-  terminalDots: {
-    flexDirection: 'row',
-    gap: 6,
-    marginRight: Spacing.sm,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  dotRed: {
-    backgroundColor: '#ff5f57',
-  },
-  dotYellow: {
-    backgroundColor: '#ffbd2e',
-  },
-  dotGreen: {
-    backgroundColor: Colors.accent,
-  },
-  terminalTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: 11,
-    color: Colors.textDim,
-  },
-  headerContent: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
   logo: {
     fontFamily: Fonts.mono,
-    fontSize: FontSize.xxl,
-    color: Colors.accent,
-    letterSpacing: 6,
-  },
-  statusText: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.accent,
-    letterSpacing: 1,
+    fontSize: 28,
+    color: Colors.text,
+    letterSpacing: 8,
+    fontWeight: '300',
   },
   glitchBar: {
     marginTop: Spacing.sm,
+    width: 120,
   },
   currentlyPlayingSection: {
     marginVertical: Spacing.md,
@@ -302,7 +235,6 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: Colors.accent,
-    ...Glow.subtle,
   },
   smallGameCard: {
     // Just for touch target
