@@ -43,7 +43,7 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
       style={[styles.container, { width }]}
       onPress={handlePress}
       haptic="light"
-      scale={0.95}
+      scale={0.9}
     >
       {showPlaceholder ? (
         <View style={[styles.placeholder, { width, height }]}>

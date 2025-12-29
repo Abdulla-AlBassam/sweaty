@@ -21,9 +21,12 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
-import { GlitchBar } from '../components/GlitchText'
-import HolographicText from '../components/HolographicText'
+import Logo from '../components/Logo'
 import PressableScale from '../components/PressableScale'
+
+// LOGO OPTIONS: Change this to preview different styles
+// 'minimal' | 'elegant' | 'bold' | 'accent'
+const LOGO_VARIANT = 'minimal' as const
 
 
 export default function DashboardScreen() {
@@ -95,13 +98,9 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Minimal Header - Just the logo */}
+        {/* Header Logo */}
         <View style={styles.header}>
-          <HolographicText
-            text="SWEATY"
-            style={styles.logo}
-          />
-          <GlitchBar style={styles.glitchBar} />
+          <Logo variant={LOGO_VARIANT} />
         </View>
 
         {/* Currently Playing Section - Inline Layout */}
@@ -178,20 +177,9 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
     alignItems: 'center',
-  },
-  logo: {
-    fontFamily: Fonts.mono,
-    fontSize: 28,
-    color: Colors.text,
-    letterSpacing: 8,
-    fontWeight: '300',
-  },
-  glitchBar: {
-    marginTop: Spacing.sm,
-    width: 120,
   },
   currentlyPlayingSection: {
     marginVertical: Spacing.md,

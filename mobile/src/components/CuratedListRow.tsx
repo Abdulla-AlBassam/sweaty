@@ -68,7 +68,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
             style={styles.gameCard}
             onPress={() => handleGamePress(game.id)}
             haptic="light"
-            scale={0.95}
+            scale={0.9}
           >
             {game.cover_url ? (
               <Image

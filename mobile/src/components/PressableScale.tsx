@@ -40,12 +40,12 @@ export default function PressableScale({
         haptics[haptic]()
       }
 
-      // Scale down animation
+      // Scale down animation - more noticeable
       Animated.spring(scaleAnim, {
         toValue: scale,
         useNativeDriver: true,
-        speed: 50,
-        bounciness: 4,
+        speed: 80,
+        bounciness: 2,
       }).start()
 
       onPressIn?.(e)
@@ -55,12 +55,12 @@ export default function PressableScale({
 
   const handlePressOut = useCallback(
     (e: any) => {
-      // Scale back up with bounce
+      // Scale back up with satisfying bounce
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
-        speed: 20,
-        bounciness: 8,
+        speed: 12,
+        bounciness: 12,
       }).start()
 
       onPressOut?.(e)
