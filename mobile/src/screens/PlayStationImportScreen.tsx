@@ -5,9 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   Alert,
-  Keyboard,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -21,16 +19,13 @@ import { usePlatformImport, ImportResult } from '../hooks/usePlatformImport'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 type ImportState = 'idle' | 'selected' | 'importing' | 'success' | 'error'
-type ImportMethod = 'username' | 'csv'
 
 export default function PlayStationImportScreen() {
   const navigation = useNavigation()
   const { user } = useAuth()
-  const { importPlayStationCSV, importPlayStationByUsername, isLoading } = usePlatformImport(user?.id)
+  const { importPlayStationCSV, isLoading } = usePlatformImport(user?.id)
 
   const [importState, setImportState] = useState<ImportState>('idle')
-  const [importMethod, setImportMethod] = useState<ImportMethod>('username')
-  const [psnUsername, setPsnUsername] = useState('')
   const [selectedFile, setSelectedFile] = useState<{
     uri: string
     name: string
@@ -39,40 +34,6 @@ export default function PlayStationImportScreen() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [processingStatus, setProcessingStatus] = useState('')
-
-  const handleUsernameImport = async () => {
-    const trimmedUsername = psnUsername.trim()
-    if (!trimmedUsername) {
-      Alert.alert('Missing Username', 'Please enter your PSN username.')
-      return
-    }
-
-    if (trimmedUsername.length < 3 || trimmedUsername.length > 16) {
-      Alert.alert('Invalid Username', 'PSN username must be 3-16 characters.')
-      return
-    }
-
-    Keyboard.dismiss()
-    setImportState('importing')
-    setImportMethod('username')
-    setProcessingStatus('Looking up your profile...')
-
-    try {
-      const result = await importPlayStationByUsername(trimmedUsername)
-
-      setImportResult(result)
-
-      if (result.success) {
-        setImportState('success')
-      } else {
-        setImportState('error')
-      }
-    } catch (err: any) {
-      console.error('Username import error:', err)
-      setImportResult({ success: false, error: err.message || 'Import failed' })
-      setImportState('error')
-    }
-  }
 
   const handlePickFile = async () => {
     try {
@@ -115,7 +76,6 @@ export default function PlayStationImportScreen() {
     if (!selectedFile) return
 
     setImportState('importing')
-    setImportMethod('csv')
     setProcessingStatus('Reading file...')
 
     try {
@@ -152,7 +112,6 @@ export default function PlayStationImportScreen() {
     setImportState('idle')
     setSelectedFile(null)
     setImportResult(null)
-    setPsnUsername('')
   }
 
   const toggleSection = (section: string) => {
@@ -163,27 +122,6 @@ export default function PlayStationImportScreen() {
     if (bytes < 1024) return `${bytes} B`
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-
-  const getErrorMessage = (result: ImportResult): { title: string; message: string; hint?: string } => {
-    if (result.error_type === 'psn_not_found') {
-      return {
-        title: 'Profile Not Found',
-        message: result.error || 'Username not found',
-        hint: 'Check the spelling or make sure your profile exists on PSNProfiles.com',
-      }
-    }
-    if (result.error_type === 'profile_private') {
-      return {
-        title: 'Private Profile',
-        message: 'Your PSN profile is set to private',
-        hint: 'Change your privacy settings to Public on PlayStation, then update your PSNProfiles page.',
-      }
-    }
-    return {
-      title: 'Import Failed',
-      message: result.error || 'Something went wrong',
-    }
   }
 
   // Importing state
@@ -197,13 +135,8 @@ export default function PlayStationImportScreen() {
         </View>
         <View style={styles.centerContent}>
           <LoadingSpinner size="large" color={Colors.accent} />
-          <Text style={styles.processingTitle}>
-            {importMethod === 'username' ? 'Finding your games...' : 'Processing your games...'}
-          </Text>
+          <Text style={styles.processingTitle}>Processing your games...</Text>
           <Text style={styles.processingStatus}>{processingStatus}</Text>
-          {importMethod === 'username' && (
-            <Text style={styles.processingHint}>This may take a minute</Text>
-          )}
         </View>
       </SafeAreaView>
     )
@@ -224,17 +157,15 @@ export default function PlayStationImportScreen() {
               <Ionicons name="checkmark-circle" size={64} color={Colors.accent} />
             </View>
             <Text style={styles.successTitle}>
-              Imported {importResult.total_games || importResult.imported} games
+              Imported {importResult.imported || importResult.total_games} games
             </Text>
-            <Text style={styles.successSubtitle}>
-              {importResult.psn_username ? `from @${importResult.psn_username}` : 'from PlayStation'}
-            </Text>
+            <Text style={styles.successSubtitle}>from PlayStation</Text>
           </View>
 
           <View style={styles.statsContainer}>
             <View style={styles.statRow}>
-              <Text style={styles.statLabel}>Total games found</Text>
-              <Text style={styles.statValue}>{importResult.total_games || importResult.total_rows}</Text>
+              <Text style={styles.statLabel}>Total rows processed</Text>
+              <Text style={styles.statValue}>{importResult.total_rows || importResult.total_games}</Text>
             </View>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Matched to database</Text>
@@ -295,30 +226,21 @@ export default function PlayStationImportScreen() {
 
   // Error state
   if (importState === 'error' && importResult) {
-    const errorInfo = getErrorMessage(importResult)
-
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{errorInfo.title.toUpperCase()}</Text>
+          <Text style={styles.headerTitle}>IMPORT FAILED</Text>
           <View style={styles.backButton} />
         </View>
         <View style={styles.centerContent}>
           <View style={styles.errorIcon}>
-            <Ionicons
-              name={importResult.error_type === 'profile_private' ? 'lock-closed' : 'close-circle'}
-              size={64}
-              color={Colors.error}
-            />
+            <Ionicons name="close-circle" size={64} color={Colors.error} />
           </View>
-          <Text style={styles.errorTitle}>{errorInfo.title}</Text>
-          <Text style={styles.errorMessage}>{errorInfo.message}</Text>
-          {errorInfo.hint && (
-            <Text style={styles.errorHint}>{errorInfo.hint}</Text>
-          )}
+          <Text style={styles.errorTitle}>Import Failed</Text>
+          <Text style={styles.errorMessage}>{importResult.error || 'Something went wrong'}</Text>
           <TouchableOpacity style={styles.tryAgainButton} onPress={handleTryAgain}>
             <Text style={styles.tryAgainButtonText}>TRY AGAIN</Text>
           </TouchableOpacity>
@@ -327,7 +249,7 @@ export default function PlayStationImportScreen() {
     )
   }
 
-  // Default/idle state - Redesigned with username as primary
+  // Default/idle state - CSV import
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -344,190 +266,109 @@ export default function PlayStationImportScreen() {
           <MaterialCommunityIcons name="sony-playstation" size={48} color="#006FCD" />
         </View>
 
-        {/* Primary: Username Lookup */}
+        {/* Instructions */}
+        <Text style={styles.instructions}>
+          Export your PlayStation games and import them here to track your collection.
+        </Text>
+
+        {/* Primary: CSV Import */}
         <View style={styles.primarySection}>
-          <Text style={styles.sectionTitle}>Enter your PSN username</Text>
+          <Text style={styles.sectionTitle}>Import from file</Text>
           <Text style={styles.sectionSubtitle}>
-            We'll import your games from PSNProfiles
+            Upload a CSV export of your games
           </Text>
 
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.usernameInput}
-              placeholder="Your PSN username"
-              placeholderTextColor={Colors.textDim}
-              value={psnUsername}
-              onChangeText={setPsnUsername}
-              autoCapitalize="none"
-              autoCorrect={false}
-              maxLength={16}
-              returnKeyType="go"
-              onSubmitEditing={handleUsernameImport}
-            />
+          {/* How to Export Accordion */}
+          <View style={styles.howToAccordion}>
+            <TouchableOpacity
+              style={styles.howToAccordionHeader}
+              onPress={() => toggleSection('howto')}
+            >
+              <View style={styles.accordionHeaderContent}>
+                <Ionicons name="help-circle-outline" size={20} color={Colors.textMuted} />
+                <Text style={styles.accordionTitle}>How to export your games</Text>
+              </View>
+              <Ionicons
+                name={expandedSection === 'howto' ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={Colors.textMuted}
+              />
+            </TouchableOpacity>
+
+            {expandedSection === 'howto' && (
+              <View style={styles.howToAccordionContent}>
+                <View style={styles.optionContainer}>
+                  <Text style={styles.optionTitle}>Option 1: Browser Extension (Easiest)</Text>
+                  <Text style={styles.optionStep}>1. On your computer, install "PSN Library Exporter" for Chrome</Text>
+                  <Text style={styles.optionStep}>2. Go to store.playstation.com and sign in</Text>
+                  <Text style={styles.optionStep}>3. Click the extension icon</Text>
+                  <Text style={styles.optionStep}>4. Download the CSV file</Text>
+                </View>
+                <View style={styles.optionContainer}>
+                  <Text style={styles.optionTitle}>Option 2: PSNProfiles Export</Text>
+                  <Text style={styles.optionStep}>1. Go to psnprofiles.com on your computer</Text>
+                  <Text style={styles.optionStep}>2. Search for your PSN username</Text>
+                  <Text style={styles.optionStep}>3. Go to your profile → Games tab</Text>
+                  <Text style={styles.optionStep}>4. Click Export → Download CSV</Text>
+                </View>
+                <View style={styles.optionContainer}>
+                  <Text style={styles.optionTitle}>Option 3: Request from Sony</Text>
+                  <Text style={styles.optionStepNote}>(Takes a few days)</Text>
+                  <Text style={styles.optionStep}>1. Go to PlayStation account settings</Text>
+                  <Text style={styles.optionStep}>2. Request your personal data (GDPR)</Text>
+                  <Text style={styles.optionStep}>3. Sony will email you a download link</Text>
+                </View>
+              </View>
+            )}
           </View>
 
+          {/* File Upload Area */}
           <TouchableOpacity
             style={[
-              styles.findButton,
-              (!psnUsername.trim() || isLoading) && styles.findButtonDisabled,
+              styles.uploadArea,
+              selectedFile && styles.uploadAreaSelected,
             ]}
-            onPress={handleUsernameImport}
-            disabled={!psnUsername.trim() || isLoading}
+            onPress={handlePickFile}
           >
-            {isLoading ? (
-              <LoadingSpinner size="small" color={Colors.text} />
+            {selectedFile ? (
+              <View style={styles.selectedFileContainer}>
+                <Ionicons name="document-text" size={32} color={Colors.accent} />
+                <Text style={styles.selectedFileName}>{selectedFile.name}</Text>
+                <Text style={styles.selectedFileSize}>
+                  {formatFileSize(selectedFile.size)}
+                </Text>
+                <Text style={styles.tapToChange}>Tap to change file</Text>
+              </View>
             ) : (
-              <>
-                <Ionicons name="search" size={20} color={Colors.text} style={{ marginRight: 8 }} />
-                <Text style={styles.findButtonText}>FIND MY GAMES</Text>
-              </>
+              <View style={styles.uploadContent}>
+                <Ionicons name="cloud-upload-outline" size={48} color={Colors.textMuted} />
+                <Text style={styles.uploadText}>Choose CSV File</Text>
+                <Text style={styles.uploadSubtext}>Tap to select your exported file</Text>
+              </View>
             )}
           </TouchableOpacity>
-        </View>
 
-        {/* Privacy Help Accordion */}
-        <View style={styles.accordionContainer}>
-          <TouchableOpacity
-            style={styles.accordionHeader}
-            onPress={() => toggleSection('privacy')}
-          >
-            <View style={styles.accordionHeaderContent}>
-              <Ionicons name="help-circle-outline" size={20} color={Colors.textMuted} />
-              <Text style={styles.accordionTitle}>Profile not showing up?</Text>
-            </View>
-            <Ionicons
-              name={expandedSection === 'privacy' ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={Colors.textMuted}
-            />
-          </TouchableOpacity>
-
-          {expandedSection === 'privacy' && (
-            <View style={styles.accordionContent}>
-              <Text style={styles.privacyIntro}>
-                Your profile needs to be public on PSNProfiles for this to work:
-              </Text>
-              <View style={styles.stepContainer}>
-                <Text style={styles.privacyStep}>
-                  <Text style={styles.stepNumber}>1.</Text> On your PlayStation, go to Settings → Users and Accounts → Privacy
-                </Text>
-                <Text style={styles.privacyStep}>
-                  <Text style={styles.stepNumber}>2.</Text> Set "Anyone" for "View your game activities"
-                </Text>
-                <Text style={styles.privacyStep}>
-                  <Text style={styles.stepNumber}>3.</Text> Go to psnprofiles.com and search for your username
-                </Text>
-                <Text style={styles.privacyStep}>
-                  <Text style={styles.stepNumber}>4.</Text> Click "Update" to sync your latest games
-                </Text>
-              </View>
-              <Text style={styles.privacyNote}>
-                Don't want to make your profile public? Use the CSV import option below instead.
-              </Text>
-            </View>
+          {/* Import Button */}
+          {selectedFile && (
+            <TouchableOpacity
+              style={[styles.findButton, isLoading && styles.findButtonDisabled]}
+              onPress={handleCSVImport}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <LoadingSpinner size="small" color={Colors.text} />
+              ) : (
+                <Text style={styles.findButtonText}>IMPORT GAMES</Text>
+              )}
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* Divider */}
-        <View style={styles.dividerContainer}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>OR</Text>
-          <View style={styles.dividerLine} />
-        </View>
-
-        {/* Secondary: CSV Import */}
-        <View style={styles.secondarySection}>
-          <TouchableOpacity
-            style={styles.csvOption}
-            onPress={() => toggleSection('csv')}
-          >
-            <View style={styles.csvOptionContent}>
-              <Ionicons name="document-text-outline" size={24} color={Colors.textMuted} />
-              <View style={styles.csvOptionText}>
-                <Text style={styles.csvOptionTitle}>Import from file</Text>
-                <Text style={styles.csvOptionSubtitle}>Upload a CSV export</Text>
-              </View>
-            </View>
-            <Ionicons
-              name={expandedSection === 'csv' ? 'chevron-up' : 'chevron-down'}
-              size={20}
-              color={Colors.textMuted}
-            />
-          </TouchableOpacity>
-
-          {expandedSection === 'csv' && (
-            <View style={styles.csvContent}>
-              {/* How to get CSV Accordion */}
-              <TouchableOpacity
-                style={styles.howToHeader}
-                onPress={() => toggleSection('howto')}
-              >
-                <Text style={styles.howToTitle}>How to export your games</Text>
-                <Ionicons
-                  name={expandedSection === 'howto' ? 'chevron-up' : 'chevron-down'}
-                  size={16}
-                  color={Colors.textDim}
-                />
-              </TouchableOpacity>
-
-              {expandedSection === 'howto' && (
-                <View style={styles.howToContent}>
-                  <View style={styles.optionContainer}>
-                    <Text style={styles.optionTitle}>Browser Extension (Easiest)</Text>
-                    <Text style={styles.optionStep}>1. Install "PSN Library Exporter" for Chrome</Text>
-                    <Text style={styles.optionStep}>2. Go to store.playstation.com</Text>
-                    <Text style={styles.optionStep}>3. Click the extension → Download CSV</Text>
-                  </View>
-                  <View style={styles.optionContainer}>
-                    <Text style={styles.optionTitle}>PSNProfiles Export</Text>
-                    <Text style={styles.optionStep}>1. Go to psnprofiles.com</Text>
-                    <Text style={styles.optionStep}>2. Find your profile → Games</Text>
-                    <Text style={styles.optionStep}>3. Click Export → Download CSV</Text>
-                  </View>
-                </View>
-              )}
-
-              {/* File Upload Area */}
-              <TouchableOpacity
-                style={[
-                  styles.uploadArea,
-                  selectedFile && styles.uploadAreaSelected,
-                ]}
-                onPress={handlePickFile}
-              >
-                {selectedFile ? (
-                  <View style={styles.selectedFileContainer}>
-                    <Ionicons name="document-text" size={24} color={Colors.accent} />
-                    <Text style={styles.selectedFileName}>{selectedFile.name}</Text>
-                    <Text style={styles.selectedFileSize}>
-                      {formatFileSize(selectedFile.size)}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.uploadContent}>
-                    <Ionicons name="cloud-upload-outline" size={32} color={Colors.textDim} />
-                    <Text style={styles.uploadText}>Choose CSV File</Text>
-                  </View>
-                )}
-              </TouchableOpacity>
-
-              {/* Import Button */}
-              {selectedFile && (
-                <TouchableOpacity
-                  style={[styles.csvImportButton, isLoading && styles.findButtonDisabled]}
-                  onPress={handleCSVImport}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <LoadingSpinner size="small" color={Colors.text} />
-                  ) : (
-                    <Text style={styles.csvImportButtonText}>IMPORT FROM FILE</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-        </View>
+        {/* Note */}
+        <Text style={styles.noteText}>
+          This is a one-time import. Your games will be matched to our database
+          for cover art and details. You can import again anytime to add new games.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   )
@@ -567,11 +408,18 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  instructions: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
+    textAlign: 'center',
     marginBottom: Spacing.xl,
   },
-  // Primary Section (Username)
+  // Primary Section
   primarySection: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   sectionTitle: {
     fontFamily: Fonts.bodySemiBold,
@@ -587,19 +435,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
-  inputContainer: {
-    marginBottom: Spacing.md,
-  },
-  usernameInput: {
+  // How to accordion
+  howToAccordion: {
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    fontFamily: Fonts.body,
-    fontSize: FontSize.md,
-    color: Colors.text,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.lg,
+    overflow: 'hidden',
+  },
+  howToAccordionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+  },
+  howToAccordionContent: {
+    padding: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
   findButton: {
     backgroundColor: Colors.accent,
@@ -617,19 +470,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text,
   },
-  // Privacy Accordion
-  accordionContainer: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.xl,
-    overflow: 'hidden',
-  },
-  accordionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.md,
-  },
+  // Accordion
   accordionHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -639,109 +480,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
-  },
-  accordionContent: {
-    padding: Spacing.md,
-    paddingTop: 0,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  privacyIntro: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  stepContainer: {
-    marginBottom: Spacing.md,
-  },
-  privacyStep: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-    marginBottom: Spacing.sm,
-    paddingLeft: Spacing.xs,
-  },
-  stepNumber: {
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.accent,
-  },
-  privacyNote: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    fontStyle: 'italic',
-  },
-  // Divider
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.xl,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  dividerText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-    paddingHorizontal: Spacing.md,
-  },
-  // Secondary Section (CSV)
-  secondarySection: {
-    marginBottom: Spacing.xl,
-  },
-  csvOption: {
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  csvOptionContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  csvOptionText: {
-    gap: 2,
-  },
-  csvOptionTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.text,
-  },
-  csvOptionSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-  },
-  csvContent: {
-    marginTop: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-  },
-  howToHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.md,
-  },
-  howToTitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-  },
-  howToContent: {
-    marginBottom: Spacing.md,
-    paddingTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
   },
   optionContainer: {
     marginBottom: Spacing.md,
@@ -754,22 +492,29 @@ const styles = StyleSheet.create({
   },
   optionStep: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
+    fontSize: FontSize.sm,
     color: Colors.textMuted,
-    marginBottom: 2,
+    marginBottom: Spacing.xs,
     paddingLeft: Spacing.sm,
   },
+  optionStepNote: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    fontStyle: 'italic',
+    marginBottom: Spacing.sm,
+  },
   uploadArea: {
-    backgroundColor: Colors.background,
-    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
     borderWidth: 2,
     borderColor: Colors.border,
     borderStyle: 'dashed',
-    padding: Spacing.lg,
+    padding: Spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 100,
-    marginBottom: Spacing.md,
+    minHeight: 160,
+    marginBottom: Spacing.lg,
   },
   uploadAreaSelected: {
     borderColor: Colors.accent,
@@ -779,10 +524,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   uploadText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    marginTop: Spacing.md,
+  },
+  uploadSubtext: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginTop: Spacing.sm,
+    color: Colors.textDim,
+    marginTop: Spacing.xs,
   },
   selectedFileContainer: {
     alignItems: 'center',
@@ -796,22 +547,22 @@ const styles = StyleSheet.create({
   },
   selectedFileSize: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-    marginTop: 2,
-  },
-  csvImportButton: {
-    backgroundColor: Colors.surfaceLight,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  csvImportButtonText: {
-    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: Colors.text,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+  },
+  tapToChange: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.accent,
+    marginTop: Spacing.sm,
+  },
+  noteText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   // Processing state
   centerContent: {
@@ -831,12 +582,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.sm,
-  },
-  processingHint: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-    marginTop: Spacing.xs,
   },
   // Success state
   successContainer: {
@@ -934,14 +679,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-  },
-  errorHint: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
     textAlign: 'center',
     marginBottom: Spacing.xl,
     paddingHorizontal: Spacing.lg,
