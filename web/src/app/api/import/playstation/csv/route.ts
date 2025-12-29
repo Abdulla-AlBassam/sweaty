@@ -491,10 +491,12 @@ export async function POST(request: NextRequest) {
           if (result.matched && result.cachedGame) {
             results.matched++
             // Add to matched games list for review UI
+            const coverUrl = result.cachedGame.coverUrl
+            console.log(`Matched: ${result.cachedGame.name} - Cover: ${coverUrl || 'NULL'}`)
             results.matched_games.push({
               igdb_id: result.cachedGame.id,
               name: result.cachedGame.name,
-              cover_url: result.cachedGame.coverUrl,
+              cover_url: coverUrl,
               platform: result.psPlatform || null,
             })
           } else {

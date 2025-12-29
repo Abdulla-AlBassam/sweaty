@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   Image,
   FlatList,
+  Animated,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
@@ -37,6 +38,35 @@ export default function PlayStationImportScreen() {
   const [expandedSection, setExpandedSection] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [processingStatus, setProcessingStatus] = useState('')
+  const [processingStage, setProcessingStage] = useState<'reading' | 'uploading' | 'matching'>('reading')
+  const [rowCount, setRowCount] = useState(0)
+
+  // Animated progress bar
+  const progressAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    if (importState === 'importing') {
+      // Animate progress bar back and forth (indeterminate)
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(progressAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: false,
+          }),
+          Animated.timing(progressAnim, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: false,
+          }),
+        ])
+      )
+      animation.start()
+      return () => animation.stop()
+    } else {
+      progressAnim.setValue(0)
+    }
+  }, [importState, progressAnim])
 
   // Review & Log state
   const [loggedGames, setLoggedGames] = useState<Set<number>>(new Set())
@@ -89,13 +119,31 @@ export default function PlayStationImportScreen() {
     if (!selectedFile) return
 
     setImportState('importing')
-    setProcessingStatus('Reading file...')
+    setProcessingStage('reading')
+    setProcessingStatus('Reading your file...')
+    setRowCount(0)
 
     try {
       // Read file content
       const fileContent = await FileSystem.readAsStringAsync(selectedFile.uri)
 
-      setProcessingStatus('Uploading and processing...')
+      // Count rows (excluding header)
+      const lines = fileContent.split(/\r?\n/).filter(line => line.trim())
+      const dataRows = Math.max(0, lines.length - 1) // Subtract header row
+      setRowCount(dataRows)
+      setProcessingStatus(`Found ${dataRows} items in your library`)
+
+      // Small delay to show the count
+      await new Promise(resolve => setTimeout(resolve, 800))
+
+      setProcessingStage('uploading')
+      setProcessingStatus('Uploading to server...')
+
+      // Another small delay for visual feedback
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      setProcessingStage('matching')
+      setProcessingStatus('Matching games with IGDB database...')
 
       const result = await importPlayStationCSV(
         selectedFile.uri,
@@ -166,11 +214,21 @@ export default function PlayStationImportScreen() {
     // cover_url from API is already a full URL
     const coverUrl = item.cover_url
 
+    // Debug: Log cover URL for first few items
+    if (item.igdb_id && !coverUrl) {
+      console.log(`No cover for: ${item.name} (ID: ${item.igdb_id})`)
+    }
+
     return (
       <View style={styles.gameItem}>
         <View style={styles.gameItemLeft}>
           {coverUrl ? (
-            <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+            <Image
+              source={{ uri: coverUrl }}
+              style={styles.gameCover}
+              resizeMode="cover"
+              onError={(e) => console.log(`Image load error for ${item.name}:`, e.nativeEvent.error)}
+            />
           ) : (
             <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
               <Ionicons name="game-controller" size={20} color={Colors.textDim} />
@@ -202,6 +260,11 @@ export default function PlayStationImportScreen() {
 
   // Importing state
   if (importState === 'importing') {
+    const progressWidth = progressAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0%', '100%'],
+    })
+
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
@@ -211,8 +274,66 @@ export default function PlayStationImportScreen() {
         </View>
         <View style={styles.centerContent}>
           <LoadingSpinner size="large" color={Colors.accent} />
-          <Text style={styles.processingTitle}>Processing your games...</Text>
+
+          <Text style={styles.processingTitle}>
+            {processingStage === 'reading' && 'Reading your file...'}
+            {processingStage === 'uploading' && 'Uploading...'}
+            {processingStage === 'matching' && 'Matching games...'}
+          </Text>
+
           <Text style={styles.processingStatus}>{processingStatus}</Text>
+
+          {rowCount > 0 && (
+            <Text style={styles.rowCountText}>Processing {rowCount} items</Text>
+          )}
+
+          {/* Progress Bar */}
+          <View style={styles.progressBarContainer}>
+            <Animated.View
+              style={[
+                styles.progressBar,
+                { width: progressWidth },
+              ]}
+            />
+          </View>
+
+          {/* Stage indicators */}
+          <View style={styles.stageIndicators}>
+            <View style={styles.stageItem}>
+              <View style={[
+                styles.stageDot,
+                processingStage === 'reading' && styles.stageDotActive,
+                (processingStage === 'uploading' || processingStage === 'matching') && styles.stageDotComplete,
+              ]} />
+              <Text style={[
+                styles.stageText,
+                processingStage === 'reading' && styles.stageTextActive,
+              ]}>Read</Text>
+            </View>
+            <View style={styles.stageLine} />
+            <View style={styles.stageItem}>
+              <View style={[
+                styles.stageDot,
+                processingStage === 'uploading' && styles.stageDotActive,
+                processingStage === 'matching' && styles.stageDotComplete,
+              ]} />
+              <Text style={[
+                styles.stageText,
+                processingStage === 'uploading' && styles.stageTextActive,
+              ]}>Upload</Text>
+            </View>
+            <View style={styles.stageLine} />
+            <View style={styles.stageItem}>
+              <View style={[
+                styles.stageDot,
+                processingStage === 'matching' && styles.stageDotActive,
+              ]} />
+              <Text style={[
+                styles.stageText,
+                processingStage === 'matching' && styles.stageTextActive,
+              ]}>Match</Text>
+            </View>
+          </View>
         </View>
       </SafeAreaView>
     )
@@ -393,26 +514,34 @@ export default function PlayStationImportScreen() {
 
             {expandedSection === 'howto' && (
               <View style={styles.howToAccordionContent}>
+                <Text style={styles.timeEstimate}>⏱️ Only takes 2-3 minutes!</Text>
+
                 <View style={styles.optionContainer}>
-                  <Text style={styles.optionTitle}>Option 1: Browser Extension (Easiest)</Text>
-                  <Text style={styles.optionStep}>1. On your computer, install "PSN Library Exporter" for Chrome</Text>
-                  <Text style={styles.optionStep}>2. Go to store.playstation.com and sign in</Text>
-                  <Text style={styles.optionStep}>3. Click the extension icon</Text>
-                  <Text style={styles.optionStep}>4. Download the CSV file</Text>
+                  <Text style={styles.optionTitle}>Step 1: Install the Chrome Extension</Text>
+                  <Text style={styles.optionStep}>• On your computer, open Chrome browser</Text>
+                  <Text style={styles.optionStep}>• Search "PSN Library Exporter" in the Chrome Web Store</Text>
+                  <Text style={styles.optionStep}>• Click "Add to Chrome" to install</Text>
                 </View>
+
                 <View style={styles.optionContainer}>
-                  <Text style={styles.optionTitle}>Option 2: PSNProfiles Export</Text>
-                  <Text style={styles.optionStep}>1. Go to psnprofiles.com on your computer</Text>
-                  <Text style={styles.optionStep}>2. Search for your PSN username</Text>
-                  <Text style={styles.optionStep}>3. Go to your profile → Games tab</Text>
-                  <Text style={styles.optionStep}>4. Click Export → Download CSV</Text>
+                  <Text style={styles.optionTitle}>Step 2: Sign in to PlayStation</Text>
+                  <Text style={styles.optionStep}>• Go to store.playstation.com</Text>
+                  <Text style={styles.optionStep}>• Sign in with your PSN account</Text>
+                  <Text style={styles.optionStep}>• Make sure you're on the main store page</Text>
                 </View>
+
                 <View style={styles.optionContainer}>
-                  <Text style={styles.optionTitle}>Option 3: Request from Sony</Text>
-                  <Text style={styles.optionStepNote}>(Takes a few days)</Text>
-                  <Text style={styles.optionStep}>1. Go to PlayStation account settings</Text>
-                  <Text style={styles.optionStep}>2. Request your personal data (GDPR)</Text>
-                  <Text style={styles.optionStep}>3. Sony will email you a download link</Text>
+                  <Text style={styles.optionTitle}>Step 3: Export Your Library</Text>
+                  <Text style={styles.optionStep}>• Click the extension icon (puzzle piece → PSN Library Exporter)</Text>
+                  <Text style={styles.optionStep}>• Click "Export Library" or "Download CSV"</Text>
+                  <Text style={styles.optionStep}>• A CSV file will download to your computer</Text>
+                </View>
+
+                <View style={styles.optionContainer}>
+                  <Text style={styles.optionTitle}>Step 4: Transfer to Your Phone</Text>
+                  <Text style={styles.optionStep}>• Email the CSV file to yourself, or</Text>
+                  <Text style={styles.optionStep}>• Upload to iCloud/Google Drive, or</Text>
+                  <Text style={styles.optionStep}>• AirDrop it to your phone (if on Mac)</Text>
                 </View>
               </View>
             )}
@@ -610,6 +739,13 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: Spacing.sm,
   },
+  timeEstimate: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
   uploadArea: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
@@ -688,6 +824,62 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.sm,
+  },
+  rowCountText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginTop: Spacing.xs,
+  },
+  progressBarContainer: {
+    width: '80%',
+    height: 4,
+    backgroundColor: Colors.surfaceLight,
+    borderRadius: 2,
+    marginTop: Spacing.xl,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: Colors.accent,
+    borderRadius: 2,
+  },
+  stageIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.xl,
+  },
+  stageItem: {
+    alignItems: 'center',
+  },
+  stageDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceLight,
+    marginBottom: Spacing.xs,
+  },
+  stageDotActive: {
+    backgroundColor: Colors.accent,
+  },
+  stageDotComplete: {
+    backgroundColor: Colors.accent,
+  },
+  stageText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+  },
+  stageTextActive: {
+    color: Colors.accent,
+    fontFamily: Fonts.bodySemiBold,
+  },
+  stageLine: {
+    width: 40,
+    height: 2,
+    backgroundColor: Colors.surfaceLight,
+    marginHorizontal: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   // Success/Review state
   summaryBanner: {
