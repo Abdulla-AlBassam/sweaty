@@ -43,7 +43,7 @@ const TROPHY_COLUMNS = [
   'progress', 'achievements',
 ]
 
-// Patterns to skip (DLC, themes, avatars, etc.)
+// Patterns to skip (DLC, themes, avatars, currency, subscriptions, etc.)
 const SKIP_PATTERNS = [
   /\btheme\b/i,
   /\bavatar\b/i,
@@ -66,6 +66,35 @@ const SKIP_PATTERNS = [
   /\bvr experience\b/i,
   /\bdynamic theme\b/i,
   /\bstatic theme\b/i,
+  // In-game currency and points
+  /\bfc points\b/i,
+  /\b\d+\s*points\b/i,
+  /\blattice\b/i,
+  /\bcurrency\b/i,
+  /\bcoin(s)?\b/i,
+  /\bgold\s*pack\b/i,
+  /\bv-?bucks\b/i,
+  /\bcredits?\s*pack\b/i,
+  // Subscriptions and services
+  /\bea play\b/i,
+  /\bea access\b/i,
+  /\bubisoft\+/i,
+  /\bsubscription\b/i,
+  /\b\d+\s*month\b/i,
+  /\b\d+\s*day\b/i,
+  /\b\d+\s*year\b/i,
+  // Streaming apps (not games)
+  /^osn\+?$/i,
+  /^disney\+?$/i,
+  /^netflix$/i,
+  /^hulu$/i,
+  /^hbo/i,
+  /^youtube/i,
+  /^spotify$/i,
+  /^amazon\s*(prime|video)/i,
+  /^crunchyroll$/i,
+  /^twitch$/i,
+  /^apple\s*(tv|music)/i,
 ]
 
 // Parse CSV content into rows
@@ -157,15 +186,26 @@ function extractPSPlatform(platformStr: string | null): string | null {
 // Try to match a PlayStation game to IGDB
 async function matchGameToIgdb(gameName: string): Promise<{ igdbId: number | null; cachedGame: Game | null }> {
   try {
-    // Clean up the game name
+    // Clean up the game name - remove platform suffixes and special characters
     let cleanName = gameName
-      .replace(/\s*\(PS[45]\)\s*/gi, '') // Remove (PS4), (PS5)
-      .replace(/\s*-\s*PS[45]\s*$/gi, '') // Remove - PS4, - PS5 suffix
+      .replace(/\s*\(PS[1-5]?\)\s*/gi, '') // Remove (PS4), (PS5), (PS)
+      .replace(/\s*-\s*PS[1-5]?\s*(Edition)?$/gi, '') // Remove - PS4, - PS5 suffix
+      .replace(/\s+PS[1-5]\s*&?\s*PS[1-5]?\s*$/gi, '') // Remove " PS4 & PS5", " PS4 PS5"
+      .replace(/\s+PS[1-5]\s*$/gi, '') // Remove trailing " PS4", " PS5"
       .replace(/™|®|©/g, '') // Remove trademark symbols
+      .replace(/\s*:\s*$/, '') // Remove trailing colons
       .replace(/\s+/g, ' ')
       .trim()
 
+    // If name is too short after cleanup, use original (without symbols)
+    if (cleanName.length < 3) {
+      cleanName = gameName.replace(/™|®|©/g, '').trim()
+    }
+
+    console.log(`Searching IGDB for: "${cleanName}" (original: "${gameName}")`)
+
     const results = await searchGames(cleanName, 10)
+    console.log(`IGDB returned ${results.length} results for "${cleanName}"`)
 
     if (results.length === 0) {
       return { igdbId: null, cachedGame: null }
