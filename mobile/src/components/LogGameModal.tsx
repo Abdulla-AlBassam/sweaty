@@ -19,7 +19,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { MainStackParamList } from '../navigation'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { getIGDBImageUrl } from '../constants'
+import { getIGDBImageUrl, PLATFORMS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { getGamerLevel, getSocialLevel } from '../lib/xp'
@@ -469,25 +469,21 @@ export default function LogGameModal({
               <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
 
-            {/* Platform Dropdown */}
-            {game.platforms && game.platforms.length > 0 && (
-              <>
-                <Text style={styles.sectionLabel}>Platform</Text>
-                <TouchableOpacity
-                  style={styles.dropdown}
-                  onPress={() => setPlatformPickerVisible(true)}
-                >
-                  <View style={styles.dropdownContent}>
-                    {platform ? (
-                      <Text style={styles.dropdownText}>{platform}</Text>
-                    ) : (
-                      <Text style={styles.dropdownPlaceholder}>Select Platform</Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
-                </TouchableOpacity>
-              </>
-            )}
+            {/* Platform Dropdown - Always show with our granular platform options */}
+            <Text style={styles.sectionLabel}>Platform</Text>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => setPlatformPickerVisible(true)}
+            >
+              <View style={styles.dropdownContent}>
+                {platform ? (
+                  <Text style={styles.dropdownText}>{platform}</Text>
+                ) : (
+                  <Text style={styles.dropdownPlaceholder}>Select Platform</Text>
+                )}
+              </View>
+              <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
 
             {/* Rating */}
             <Text style={styles.sectionLabel}>Rating {rating ? `(${rating})` : ''}</Text>
@@ -588,18 +584,16 @@ export default function LogGameModal({
         showIcons={true}
       />
 
-      {/* Platform Picker Modal */}
-      {game.platforms && (
-        <PickerModal
-          visible={platformPickerVisible}
-          onClose={() => setPlatformPickerVisible(false)}
-          title="Select Platform"
-          options={game.platforms.map(p => ({ value: p, label: p }))}
-          selectedValue={platform}
-          onSelect={setPlatform}
-          showIcons={false}
-        />
-      )}
+      {/* Platform Picker Modal - Use our granular PLATFORMS constant */}
+      <PickerModal
+        visible={platformPickerVisible}
+        onClose={() => setPlatformPickerVisible(false)}
+        title="Select Platform"
+        options={PLATFORMS.map(p => ({ value: p, label: p }))}
+        selectedValue={platform}
+        onSelect={setPlatform}
+        showIcons={false}
+      />
     </Modal>
   )
 }

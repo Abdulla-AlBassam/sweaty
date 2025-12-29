@@ -10,16 +10,35 @@ export const STATUS_LABELS: Record<string, string> = {
   dropped: 'Dropped',
 }
 
-// Platform options for game logging
+// Platform options for game logging - Granular console selection
 export const PLATFORMS = [
+  // PC
   'PC',
+  'Steam Deck',
+  // PlayStation
   'PlayStation 5',
   'PlayStation 4',
+  'PlayStation 3',
+  'PlayStation 2',
+  'PlayStation',
+  'PS Vita',
+  'PSP',
+  // Xbox
   'Xbox Series X|S',
   'Xbox One',
+  'Xbox 360',
+  'Xbox',
+  // Nintendo
   'Nintendo Switch',
-  'Steam Deck',
-  'Mobile',
+  'Wii U',
+  'Wii',
+  'Nintendo 3DS',
+  'Nintendo DS',
+  'GameCube',
+  'Nintendo 64',
+  // Mobile & Other
+  'iOS',
+  'Android',
   'Other',
 ]
 
