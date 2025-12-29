@@ -9,6 +9,7 @@ import {
   Image,
   Animated,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -93,9 +94,27 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Header */}
+        {/* Terminal Header */}
         <View style={styles.header}>
-          <Text style={styles.logo}>sweaty</Text>
+          <LinearGradient
+            colors={['#001a00', '#000d00', '#000000']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.headerGradient}
+          >
+            <View style={styles.headerTop}>
+              <View style={styles.terminalDots}>
+                <View style={[styles.dot, styles.dotRed]} />
+                <View style={[styles.dot, styles.dotYellow]} />
+                <View style={[styles.dot, styles.dotGreen]} />
+              </View>
+              <Text style={styles.terminalTitle}>sweaty.exe</Text>
+            </View>
+            <View style={styles.headerContent}>
+              <Text style={styles.logo}>SWEATY</Text>
+              <Text style={styles.statusText}>[ONLINE]</Text>
+            </View>
+          </LinearGradient>
         </View>
 
         {/* Currently Playing Section - Inline Layout */}
@@ -170,21 +189,67 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   header: {
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.accent + '40',
+    ...Glow.subtle,
+  },
+  headerGradient: {
+    padding: Spacing.md,
+  },
+  headerTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    marginBottom: Spacing.sm,
+    paddingBottom: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: Colors.accent + '20',
+  },
+  terminalDots: {
+    flexDirection: 'row',
+    gap: 6,
+    marginRight: Spacing.sm,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  dotRed: {
+    backgroundColor: '#ff5f57',
+  },
+  dotYellow: {
+    backgroundColor: '#ffbd2e',
+  },
+  dotGreen: {
+    backgroundColor: Colors.accent,
+  },
+  terminalTitle: {
+    fontFamily: Fonts.mono,
+    fontSize: 11,
+    color: Colors.textDim,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   logo: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xxl,
     color: Colors.accent,
-    letterSpacing: 4,
-    textTransform: 'uppercase',
+    letterSpacing: 6,
     ...Glow.text,
+  },
+  statusText: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.accent,
+    letterSpacing: 1,
   },
   currentlyPlayingSection: {
     marginVertical: Spacing.md,

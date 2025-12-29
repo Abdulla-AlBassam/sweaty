@@ -14,9 +14,10 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
@@ -251,26 +252,34 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Search Header */}
+      {/* Terminal Search Header */}
       <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Search games or users..."
-            placeholderTextColor={Colors.textDim}
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-              <Ionicons name="close-circle" size={18} color={Colors.textDim} />
-            </TouchableOpacity>
-          )}
-        </View>
+        <LinearGradient
+          colors={['#001a00', '#000d00', '#000000']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.searchGradient}
+        >
+          <View style={styles.searchBar}>
+            <Text style={styles.searchPrompt}>{'>'}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="search --query"
+              placeholderTextColor={Colors.textDim}
+              value={query}
+              onChangeText={setQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                <Ionicons name="close-circle" size={18} color={Colors.accent} />
+              </TouchableOpacity>
+            )}
+            <Text style={styles.searchCursor}>_</Text>
+          </View>
+        </LinearGradient>
       </View>
 
       {/* Content */}
@@ -404,7 +413,7 @@ export default function SearchScreen() {
 
           {/* Discover Section - Dynamic Lists */}
           <View style={styles.discoverSection}>
-            <Text style={styles.discoverSectionTitle}>Discover</Text>
+            <Text style={styles.discoverSectionTitle}>[ DISCOVER ]</Text>
 
             {/* Trending Games from IGDB (global trending) */}
             <View style={styles.discoveryRow}>
@@ -467,25 +476,38 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+  },
+  searchGradient: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.accent + '40',
+    ...Glow.subtle,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
-  searchIcon: {
+  searchPrompt: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.lg,
+    color: Colors.accent,
     marginRight: Spacing.sm,
+    ...Glow.text,
   },
   input: {
     flex: 1,
-    fontFamily: Fonts.body,
-    color: Colors.text,
+    fontFamily: Fonts.mono,
+    color: Colors.accent,
     fontSize: FontSize.md,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  searchCursor: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.lg,
+    color: Colors.accent,
+    marginLeft: 2,
   },
   clearButton: {
     padding: Spacing.sm,
@@ -582,9 +604,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   recentSectionTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    color: Colors.text,
+    fontFamily: Fonts.mono,
+    fontSize: 12,
+    color: Colors.accent,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   clearText: {
     fontFamily: Fonts.body,
@@ -622,21 +646,26 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
   },
   discoverSectionTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    color: Colors.text,
+    fontFamily: Fonts.mono,
+    fontSize: 14,
+    color: Colors.accent,
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    ...Glow.text,
   },
   discoveryRow: {
     marginBottom: Spacing.xl,
   },
   discoveryRowTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 16,
-    color: Colors.text,
+    fontFamily: Fonts.mono,
+    fontSize: 12,
+    color: Colors.textMuted,
     marginLeft: Spacing.lg,
     marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   friendsScroll: {
     paddingHorizontal: Spacing.lg,
