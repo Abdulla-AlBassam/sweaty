@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
   Image,
   Animated,
 } from 'react-native'
@@ -24,6 +23,7 @@ import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
 import { GlitchBar } from '../components/GlitchText'
 import HolographicText from '../components/HolographicText'
+import PressableScale from '../components/PressableScale'
 
 
 export default function DashboardScreen() {
@@ -111,7 +111,7 @@ export default function DashboardScreen() {
           style={styles.currentlyPlayingSection}
           contentContainerStyle={styles.currentlyPlayingContent}
         >
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
+          <PressableScale onPress={() => navigation.navigate('Profile')} haptic="light" scale={0.9}>
             {profile?.avatar_url ? (
               <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
             ) : (
@@ -119,7 +119,7 @@ export default function DashboardScreen() {
                 <Text style={styles.headerAvatarInitial}>{avatarInitial}</Text>
               </View>
             )}
-          </TouchableOpacity>
+          </PressableScale>
           <View style={styles.currentlyPlayingTitleRow}>
             <Text style={styles.currentlyPlayingTitle}>Currently Playing</Text>
             <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
@@ -131,11 +131,12 @@ export default function DashboardScreen() {
               ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
               : null
             return (
-              <TouchableOpacity
+              <PressableScale
                 key={log.id}
                 style={styles.smallGameCard}
                 onPress={() => handleGamePress(game.id)}
-                activeOpacity={0.7}
+                haptic="light"
+                scale={0.92}
               >
                 {coverUrl ? (
                   <Image source={{ uri: coverUrl }} style={styles.smallGameCover} />
@@ -144,7 +145,7 @@ export default function DashboardScreen() {
                     <Text style={styles.placeholderText}>?</Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             )
           })}
         </ScrollView>

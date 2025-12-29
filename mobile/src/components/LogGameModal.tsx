@@ -25,6 +25,7 @@ import { supabase } from '../lib/supabase'
 import { getGamerLevel, getSocialLevel } from '../lib/xp'
 import { useStreak } from '../hooks/useStreak'
 import { haptics } from '../hooks/useHaptics'
+import PressableScale from './PressableScale'
 
 // XP values for different statuses
 const GAMER_XP_VALUES: Record<string, number> = {
@@ -537,15 +538,16 @@ export default function LogGameModal({
           {/* Footer Buttons */}
           <View style={styles.footer}>
             {existingLog && (
-              <TouchableOpacity
+              <PressableScale
                 style={styles.deleteButton}
                 onPress={handleDelete}
                 disabled={isSaving}
+                haptic="medium"
               >
                 <Ionicons name="trash-outline" size={20} color={Colors.error} />
-              </TouchableOpacity>
+              </PressableScale>
             )}
-            <TouchableOpacity
+            <PressableScale
               style={[
                 styles.saveButton,
                 !status && styles.saveButtonDisabled,
@@ -553,6 +555,7 @@ export default function LogGameModal({
               ]}
               onPress={handleSave}
               disabled={!status || isSaving}
+              haptic="medium"
             >
               {isSaving ? (
                 <LoadingSpinner size="small" color={Colors.background} />
@@ -561,7 +564,7 @@ export default function LogGameModal({
                   {existingLog ? 'Update' : 'Save'}
                 </Text>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         </Pressable>
       </Pressable>

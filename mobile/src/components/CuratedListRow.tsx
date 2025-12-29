@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Image,
   StyleSheet,
 } from 'react-native'
@@ -13,6 +12,7 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import { CuratedListWithGames } from '../types'
 import GlitchText from './GlitchText'
+import PressableScale from './PressableScale'
 
 interface CuratedListRowProps {
   list: CuratedListWithGames
@@ -53,9 +53,9 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
           style={styles.title}
           intensity="subtle"
         />
-        <TouchableOpacity onPress={handleSeeAll}>
+        <PressableScale onPress={handleSeeAll} haptic="light">
           <Text style={styles.seeAll}>See All</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </View>
       <ScrollView
         horizontal
@@ -63,11 +63,12 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
         contentContainerStyle={styles.scrollContent}
       >
         {list.games.slice(0, 15).map((game, index) => (
-          <TouchableOpacity
+          <PressableScale
             key={`${list.slug}-${game.id}-${index}`}
             style={styles.gameCard}
             onPress={() => handleGamePress(game.id)}
-            activeOpacity={0.7}
+            haptic="light"
+            scale={0.95}
           >
             {game.cover_url ? (
               <Image
@@ -81,7 +82,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </PressableScale>
         ))}
       </ScrollView>
     </View>

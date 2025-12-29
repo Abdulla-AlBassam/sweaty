@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, Image, StyleSheet } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
+import PressableScale from './PressableScale'
 
 interface GameCardProps {
   game: {
@@ -38,10 +39,11 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
   const showPlaceholder = !imageUrl || imageError
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={[styles.container, { width }]}
       onPress={handlePress}
-      activeOpacity={0.7}
+      haptic="light"
+      scale={0.95}
     >
       {showPlaceholder ? (
         <View style={[styles.placeholder, { width, height }]}>
@@ -66,7 +68,7 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
           )}
         </View>
       )}
-    </TouchableOpacity>
+    </PressableScale>
   )
 }
 
