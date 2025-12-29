@@ -17,6 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { MainStackParamList } from '../navigation'
 import * as ImagePicker from 'expo-image-picker'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -30,8 +32,10 @@ import { BannerOption } from '../constants/banners'
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_PREVIEW_HEIGHT = 80
 
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>
+
 export default function SettingsScreen() {
-  const navigation = useNavigation()
+  const navigation = useNavigation<NavigationProp>()
   const { user, profile, signOut, refreshProfile } = useAuth()
   const { isPremium } = usePremium(profile?.subscription_tier, profile?.subscription_expires_at)
 
@@ -400,6 +404,27 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Import Games */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>import games</Text>
+
+            <TouchableOpacity
+              style={styles.importGamesButton}
+              onPress={() => navigation.navigate('PlatformConnections')}
+            >
+              <View style={styles.importGamesContent}>
+                <Ionicons name="cloud-download-outline" size={24} color={Colors.accent} />
+                <View style={styles.importGamesText}>
+                  <Text style={styles.importGamesTitle}>Import from platforms</Text>
+                  <Text style={styles.importGamesSubtitle}>
+                    Steam, PlayStation, Xbox
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+            </TouchableOpacity>
+          </View>
+
           {/* Actions */}
           <View style={styles.section}>
             <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -676,6 +701,32 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
+  },
+  importGamesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  importGamesContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  importGamesText: {
+    gap: 2,
+  },
+  importGamesTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  importGamesSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
   },
   signOutButton: {
     flexDirection: 'row',

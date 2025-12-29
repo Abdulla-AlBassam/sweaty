@@ -15,6 +15,8 @@ import SettingsScreen from '../screens/SettingsScreen'
 import CuratedListDetailScreen from '../screens/CuratedListDetailScreen'
 import ListDetailScreen from '../screens/ListDetailScreen'
 import AIRecommendScreen from '../screens/AIRecommendScreen'
+import PlatformConnectionsScreen from '../screens/PlatformConnectionsScreen'
+import PlayStationImportScreen from '../screens/PlayStationImportScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -30,6 +32,8 @@ export type MainStackParamList = {
   CuratedListDetail: { listSlug: string; listTitle: string; gameIds: number[] }
   ListDetail: { listId: string }
   AIRecommend: undefined
+  PlatformConnections: undefined
+  PlayStationImport: undefined
 }
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -99,6 +103,20 @@ function MainNavigator() {
         options={{
           animation: 'slide_from_bottom',
           presentation: 'modal',
+        }}
+      />
+      <MainStack.Screen
+        name="PlatformConnections"
+        component={PlatformConnectionsScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="PlayStationImport"
+        component={PlayStationImportScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
     </MainStack.Navigator>
