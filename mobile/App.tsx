@@ -8,6 +8,7 @@ import * as Font from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 import { AuthProvider } from './src/contexts/AuthContext'
 import { QuickLogProvider, useQuickLog } from './src/contexts/QuickLogContext'
+import { CelebrationProvider } from './src/contexts/CelebrationContext'
 import { Colors } from './src/constants/colors'
 import { FontAssets, Fonts } from './src/constants/fonts'
 import Navigation from './src/navigation'
@@ -143,7 +144,9 @@ export default function App() {
       <SafeAreaProvider>
         <AuthProvider>
           <QuickLogProvider>
-            <AppContent />
+            <CelebrationProvider>
+              <AppContent />
+            </CelebrationProvider>
           </QuickLogProvider>
         </AuthProvider>
         <Toast config={toastConfig} topOffset={60} />

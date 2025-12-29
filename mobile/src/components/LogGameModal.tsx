@@ -9,7 +9,6 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  Alert,
   FlatList,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
@@ -21,9 +20,11 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, PLATFORMS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
+import { useCelebration } from '../contexts/CelebrationContext'
 import { supabase } from '../lib/supabase'
 import { getGamerLevel, getSocialLevel } from '../lib/xp'
 import { useStreak } from '../hooks/useStreak'
+import { haptics } from '../hooks/useHaptics'
 
 // XP values for different statuses
 const GAMER_XP_VALUES: Record<string, number> = {
@@ -110,6 +111,7 @@ export default function LogGameModal({
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
   const { recordActivity } = useStreak()
+  const { celebrateLevelUp } = useCelebration()
 
   const handleGamePress = () => {
     onClose()
@@ -276,38 +278,29 @@ export default function LogGameModal({
       if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
       if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
-      // Build level up message
-      const levelUpParts: string[] = []
-      if (newGamerLevel.level > currentGamerLevel.level) {
-        levelUpParts.push(`🎮 Gamer Rank: ${newGamerLevel.rank}`)
-      }
-      if (newSocialLevel.level > currentSocialLevel.level) {
-        levelUpParts.push(`🌟 Social Rank: ${newSocialLevel.rank}`)
-      }
+      // Check for level ups
+      const gamerLeveledUp = newGamerLevel.level > currentGamerLevel.level
+      const socialLeveledUp = newSocialLevel.level > currentSocialLevel.level
 
-      // Show XP notification using Alert (show BEFORE closing modal)
-      if (xpParts.length > 0 || levelUpParts.length > 0) {
-        const title = levelUpParts.length > 0 ? '🎉 Level Up!' : 'XP Earned!'
-        const message = [
-          ...xpParts,
-          ...(levelUpParts.length > 0 ? ['', ...levelUpParts] : [])
-        ].join('\n')
+      // Haptic feedback on successful save
+      haptics.success()
 
-        // Show alert and close modal when user dismisses it
-        Alert.alert(title, message, [
-          {
-            text: 'OK',
-            onPress: () => {
-              onSaveSuccess?.()
-              onClose()
-            }
-          }
-        ])
-        return // Don't call onSaveSuccess/onClose below since we do it in the alert callback
-      }
-
+      // Close modal first
       onSaveSuccess?.()
       onClose()
+
+      // Trigger celebration for level ups (after modal closes for better UX)
+      if (gamerLeveledUp || socialLeveledUp) {
+        // Small delay so modal closes first
+        setTimeout(() => {
+          if (gamerLeveledUp) {
+            celebrateLevelUp(newGamerLevel.rank, newGamerLevel.level)
+          } else if (socialLeveledUp) {
+            celebrateLevelUp(newSocialLevel.rank, newSocialLevel.level)
+          }
+        }, 300)
+      }
+
     } catch (err: any) {
       console.error('Save error:', err)
       setError(err.message || 'Failed to save')
