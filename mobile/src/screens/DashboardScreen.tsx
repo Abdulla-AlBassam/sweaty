@@ -94,18 +94,9 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Header Logo */}
+        {/* Header: Logo left, Profile right */}
         <View style={styles.header}>
           <GlitchLogo />
-        </View>
-
-        {/* Currently Playing Section - Inline Layout */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.currentlyPlayingSection}
-          contentContainerStyle={styles.currentlyPlayingContent}
-        >
           <PressableScale onPress={() => navigation.navigate('Profile')} haptic="light" scale={0.9}>
             {profile?.avatar_url ? (
               <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
@@ -115,35 +106,52 @@ export default function DashboardScreen() {
               </View>
             )}
           </PressableScale>
-          <View style={styles.currentlyPlayingTitleRow}>
-            <Text style={styles.currentlyPlayingTitle}>Currently Playing</Text>
-            <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
+        </View>
+
+        {/* Currently Playing Section */}
+        {currentlyPlaying.length > 0 && (
+          <View style={styles.currentlyPlayingSection}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>Now Playing</Text>
+                <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
+              </View>
+            </View>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.currentlyPlayingScroll}
+            >
+              {currentlyPlaying.map((log: any) => {
+                const game = log.games_cache
+                if (!game) return null
+                const coverUrl = game.cover_url
+                  ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
+                  : null
+                return (
+                  <PressableScale
+                    key={log.id}
+                    style={styles.nowPlayingCard}
+                    onPress={() => handleGamePress(game.id)}
+                    haptic="light"
+                    scale={0.95}
+                  >
+                    {coverUrl ? (
+                      <Image source={{ uri: coverUrl }} style={styles.nowPlayingCover} />
+                    ) : (
+                      <View style={[styles.nowPlayingCover, styles.coverPlaceholder]}>
+                        <Text style={styles.placeholderText}>?</Text>
+                      </View>
+                    )}
+                    <Text style={styles.nowPlayingTitle} numberOfLines={1}>
+                      {game.name}
+                    </Text>
+                  </PressableScale>
+                )
+              })}
+            </ScrollView>
           </View>
-          {currentlyPlaying.map((log: any) => {
-            const game = log.games_cache
-            if (!game) return null
-            const coverUrl = game.cover_url
-              ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
-              : null
-            return (
-              <PressableScale
-                key={log.id}
-                style={styles.smallGameCard}
-                onPress={() => handleGamePress(game.id)}
-                haptic="light"
-                scale={0.92}
-              >
-                {coverUrl ? (
-                  <Image source={{ uri: coverUrl }} style={styles.smallGameCover} />
-                ) : (
-                  <View style={[styles.smallGameCover, styles.gameCoverPlaceholder]}>
-                    <Text style={styles.placeholderText}>?</Text>
-                  </View>
-                )}
-              </PressableScale>
-            )
-          })}
-        </ScrollView>
+        )}
 
         {/* Curated Lists */}
         {listsLoading ? (
@@ -171,49 +179,53 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Spacing.xxl,
   },
+  // Header
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
-    alignItems: 'center',
-  },
-  currentlyPlayingSection: {
-    marginVertical: Spacing.md,
-  },
-  currentlyPlayingContent: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    gap: 10,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.md,
   },
   headerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: Colors.surface,
+    borderWidth: 2,
+    borderColor: Colors.accent,
   },
   headerAvatarFallback: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surface,
   },
   headerAvatarInitial: {
     fontFamily: Fonts.bodyBold,
-    color: Colors.background,
-    fontSize: 18,
+    color: Colors.accent,
+    fontSize: 16,
   },
-  currentlyPlayingTitleRow: {
+  // Currently Playing Section
+  currentlyPlayingSection: {
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  sectionHeader: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginRight: 4,
+    gap: 8,
   },
-  currentlyPlayingTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.sm,
-    color: Colors.textGreen,
+  sectionTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.lg,
+    color: Colors.text,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 2,
   },
   pulsingDot: {
     width: 8,
@@ -221,17 +233,20 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Colors.accent,
   },
-  smallGameCard: {
-    // Just for touch target
+  currentlyPlayingScroll: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
   },
-  smallGameCover: {
-    width: 45,
-    height: 60,
-    borderRadius: BorderRadius.xs,
+  nowPlayingCard: {
+    width: 120,
+  },
+  nowPlayingCover: {
+    width: 120,
+    height: 160,
+    borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
   },
-  gameCoverPlaceholder: {
-    backgroundColor: Colors.surface,
+  coverPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -239,6 +254,14 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     color: Colors.textDim,
   },
+  nowPlayingTitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  // Loading
   listsLoading: {
     paddingVertical: Spacing.xxl,
     alignItems: 'center',

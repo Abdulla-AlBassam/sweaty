@@ -1,28 +1,13 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { View, Text, StyleSheet, Animated } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Text, StyleSheet } from 'react-native'
 import { Fonts } from '../constants/fonts'
 
 /**
  * Glitchy SWEATY logo with RGB chromatic aberration
- * Inspired by classic glitch/VHS aesthetic
  */
 export default function GlitchLogo() {
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
   const [isGlitching, setIsGlitching] = useState(false)
-  const scanlineAnim = useRef(new Animated.Value(0)).current
-
-  // Scanline animation - moves down continuously
-  useEffect(() => {
-    const scanline = Animated.loop(
-      Animated.timing(scanlineAnim, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    )
-    scanline.start()
-    return () => scanline.stop()
-  }, [])
 
   // Random glitch effect
   useEffect(() => {
@@ -45,11 +30,6 @@ export default function GlitchLogo() {
 
     return () => clearInterval(glitchInterval)
   }, [])
-
-  const scanlineTranslateY = scanlineAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-50, 50],
-  })
 
   return (
     <View style={styles.container}>
@@ -87,23 +67,6 @@ export default function GlitchLogo() {
 
       {/* Main white text */}
       <Text style={[styles.text, styles.mainText]}>SWEATY</Text>
-
-      {/* Animated scanline */}
-      <Animated.View
-        style={[
-          styles.scanline,
-          {
-            transform: [{ translateY: scanlineTranslateY }],
-          },
-        ]}
-      />
-
-      {/* Static noise lines (decorative) */}
-      <View style={styles.noiseLinesContainer}>
-        <View style={[styles.noiseLine, { top: '20%' }]} />
-        <View style={[styles.noiseLine, { top: '50%' }]} />
-        <View style={[styles.noiseLine, { top: '80%' }]} />
-      </View>
     </View>
   )
 }
@@ -135,23 +98,5 @@ const styles = StyleSheet.create({
   },
   mainText: {
     color: '#ffffff',
-  },
-  scanline: {
-    position: 'absolute',
-    width: '120%',
-    height: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  noiseLinesContainer: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
-    pointerEvents: 'none',
-  },
-  noiseLine: {
-    position: 'absolute',
-    width: '100%',
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
   },
 })
