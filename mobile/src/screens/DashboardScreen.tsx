@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   logo: {
     fontFamily: Fonts.display,
     fontSize: FontSize.xxl,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   currentlyPlayingSection: {
     marginVertical: Spacing.md,

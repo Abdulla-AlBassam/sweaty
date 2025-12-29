@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
   value: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSize.lg,
-    color: Colors.accentLight,
+    color: Colors.accent,
     marginBottom: 2,
     textAlign: 'center',
   },

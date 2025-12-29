@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   statusRating: {
     flexDirection: 'row',

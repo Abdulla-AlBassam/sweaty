@@ -710,7 +710,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 40,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   displayName: {
     fontFamily: Fonts.display,
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   favoritesRow: {
     flexDirection: 'row',

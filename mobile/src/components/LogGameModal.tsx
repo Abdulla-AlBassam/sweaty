@@ -744,7 +744,7 @@ const styles = StyleSheet.create({
   },
   pickerItemTextSelected: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   // Rating styles
   ratingContainer: {

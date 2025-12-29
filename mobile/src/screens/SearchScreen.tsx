@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   View,
   Text,
@@ -9,13 +9,11 @@ import {
   Keyboard,
   Image,
   RefreshControl,
-  Animated,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
 import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -27,6 +25,7 @@ import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import StackedAvatars from '../components/StackedAvatars'
+import TerminalAICard from '../components/TerminalAICard'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 
@@ -71,70 +70,6 @@ export default function SearchScreen() {
   const [isLoadingTrending, setIsLoadingTrending] = useState(true)
   const [communityGames, setCommunityGames] = useState<DiscoveryGame[]>([])
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
-
-  // AI Card animations
-  const sparkleScale = useRef(new Animated.Value(1)).current
-  const sparkleRotate = useRef(new Animated.Value(0)).current
-  const glowOpacity = useRef(new Animated.Value(0.3)).current
-
-  // Start AI card animations
-  useEffect(() => {
-    // Pulsing scale animation for sparkle
-    const pulseAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(sparkleScale, {
-          toValue: 1.2,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(sparkleScale, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: true,
-        }),
-      ])
-    )
-
-    // Rotating animation for sparkle
-    const rotateAnim = Animated.loop(
-      Animated.timing(sparkleRotate, {
-        toValue: 1,
-        duration: 3000,
-        useNativeDriver: true,
-      })
-    )
-
-    // Glowing animation
-    const glowAnim = Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowOpacity, {
-          toValue: 0.6,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowOpacity, {
-          toValue: 0.3,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    )
-
-    pulseAnim.start()
-    rotateAnim.start()
-    glowAnim.start()
-
-    return () => {
-      pulseAnim.stop()
-      rotateAnim.stop()
-      glowAnim.stop()
-    }
-  }, [sparkleScale, sparkleRotate, glowOpacity])
-
-  const sparkleRotation = sparkleRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  })
 
   // Load discovery sections and recent searches on mount
   useEffect(() => {
@@ -429,47 +364,8 @@ export default function SearchScreen() {
             />
           }
         >
-          {/* Ask Sweaty AI Card */}
-          <TouchableOpacity
-            style={styles.aiCard}
-            onPress={() => navigation.navigate('AIRecommend')}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={[Colors.accent + '25', Colors.accent + '10']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.aiCardGradient}
-            >
-              <View style={styles.aiCardContent}>
-                <View style={styles.aiCardIconContainer}>
-                  {/* Animated glow behind sparkle */}
-                  <Animated.View
-                    style={[
-                      styles.aiCardGlow,
-                      { opacity: glowOpacity }
-                    ]}
-                  />
-                  {/* Animated sparkle icon */}
-                  <Animated.View
-                    style={{
-                      transform: [
-                        { scale: sparkleScale },
-                        { rotate: sparkleRotation },
-                      ],
-                    }}
-                  >
-                    <Ionicons name="sparkles" size={24} color={Colors.accent} />
-                  </Animated.View>
-                </View>
-                <View style={styles.aiCardTextContainer}>
-                  <Text style={styles.aiCardTitle}>Ask Sweaty AI</Text>
-                  <Text style={styles.aiCardSubtitle}>Personalized game recommendations</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.accent} />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
+          {/* Terminal AI Card */}
+          <TerminalAICard onPress={() => navigation.navigate('AIRecommend')} />
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
@@ -648,7 +544,7 @@ const styles = StyleSheet.create({
   userAvatarText: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSize.md,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   userInfo: {
     flex: 1,
@@ -774,52 +670,5 @@ const styles = StyleSheet.create({
   userInfoSkeleton: {
     flex: 1,
     marginLeft: Spacing.md,
-  },
-  // AI Card styles
-  aiCard: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.md,
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.accent + '30',
-  },
-  aiCardGradient: {
-    padding: Spacing.lg,
-  },
-  aiCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aiCardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.accent + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  aiCardGlow: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.accent,
-  },
-  aiCardTextContainer: {
-    flex: 1,
-  },
-  aiCardTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
-    color: Colors.text,
-    marginBottom: 2,
-  },
-  aiCardSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
   },
 })

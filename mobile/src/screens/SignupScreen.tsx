@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   logo: {
     fontFamily: Fonts.display,
     fontSize: 48,
-    color: Colors.accentLight,
+    color: Colors.accent,
     textAlign: 'center',
     marginBottom: Spacing.xs,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.accentLight,
+    color: Colors.accent,
     fontSize: FontSize.sm,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },

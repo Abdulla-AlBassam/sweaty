@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
   },
   gameName: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   meta: {
     flexDirection: 'row',

@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   saveText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   saveTextDisabled: {
     color: Colors.textDim,
@@ -528,7 +528,7 @@ const styles = StyleSheet.create({
   changeAvatarText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.accentLight,
+    color: Colors.accent,
     marginTop: Spacing.sm,
   },
   section: {
@@ -752,7 +752,7 @@ const styles = StyleSheet.create({
   appName: {
     fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   appVersion: {
     fontFamily: Fonts.body,
