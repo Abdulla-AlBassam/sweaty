@@ -124,29 +124,58 @@ async function twitchFetch<T>(endpoint: string, params: Record<string, string>):
   return response.json()
 }
 
+// Generate name variations to try matching on Twitch
+function getNameVariations(gameName: string): string[] {
+  const variations: string[] = [gameName]
+
+  // Try replacing "Delta" with Greek Δ symbol (common for remakes)
+  if (gameName.toLowerCase().includes('delta')) {
+    variations.push(gameName.replace(/delta/gi, 'Δ'))
+  }
+
+  // Try replacing Δ with "Delta" (reverse)
+  if (gameName.includes('Δ')) {
+    variations.push(gameName.replace(/Δ/g, 'Delta'))
+  }
+
+  // Remove subtitles after colon/dash
+  const simplifiedName = gameName.split(/[:\-–—]/)[0].trim()
+  if (simplifiedName !== gameName && simplifiedName.length > 3) {
+    variations.push(simplifiedName)
+  }
+
+  // Remove "The " prefix
+  if (gameName.startsWith('The ')) {
+    variations.push(gameName.slice(4))
+  }
+
+  // Remove edition suffixes
+  const withoutEdition = gameName.replace(/\s*(:|-)?\s*(Definitive|Ultimate|Complete|Game of the Year|GOTY|Deluxe|Standard|Premium|Gold)\s*Edition\s*$/i, '').trim()
+  if (withoutEdition !== gameName) {
+    variations.push(withoutEdition)
+  }
+
+  // Return unique variations
+  return [...new Set(variations)]
+}
+
 // Search for game on Twitch to get Twitch game ID
 async function getTwitchGameId(gameName: string): Promise<string | null> {
-  try {
-    const response = await twitchFetch<TwitchGameResponse>('games', { name: gameName })
+  const variations = getNameVariations(gameName)
 
-    if (response.data && response.data.length > 0) {
-      return response.data[0].id
-    }
+  for (const name of variations) {
+    try {
+      const response = await twitchFetch<TwitchGameResponse>('games', { name })
 
-    // If exact match fails, try with partial name (remove subtitles after colon/dash)
-    const simplifiedName = gameName.split(/[:\-–—]/)[0].trim()
-    if (simplifiedName !== gameName) {
-      const retryResponse = await twitchFetch<TwitchGameResponse>('games', { name: simplifiedName })
-      if (retryResponse.data && retryResponse.data.length > 0) {
-        return retryResponse.data[0].id
+      if (response.data && response.data.length > 0) {
+        return response.data[0].id
       }
+    } catch (error) {
+      console.error(`Error fetching Twitch game for "${name}":`, error)
     }
-
-    return null
-  } catch (error) {
-    console.error('Error fetching Twitch game:', error)
-    return null
   }
+
+  return null
 }
 
 // Get live streams for a game
