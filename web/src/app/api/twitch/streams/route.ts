@@ -138,6 +138,32 @@ function getNameVariations(gameName: string): string[] {
     variations.push(gameName.replace(/Δ/g, 'Delta'))
   }
 
+  // Handle Japanese romanization variations (o vs ō, u vs ū, etc.)
+  // Common in game names like "Yotei" vs "Yōtei"
+  const romanizationMap: Record<string, string> = {
+    'o': 'ō', 'O': 'Ō',
+    'u': 'ū', 'U': 'Ū',
+    'a': 'ā', 'A': 'Ā',
+  }
+
+  // Try adding macrons to vowels before consonants in Japanese-sounding words
+  const withMacrons = gameName
+    .replace(/Yotei/gi, 'Yōtei')
+    .replace(/Tsushima/gi, 'Tsushima')
+    .replace(/Sekiro/gi, 'Sekiro')
+  if (withMacrons !== gameName) {
+    variations.push(withMacrons)
+  }
+
+  // Also try the reverse - removing macrons
+  const withoutMacrons = gameName
+    .replace(/ō/g, 'o').replace(/Ō/g, 'O')
+    .replace(/ū/g, 'u').replace(/Ū/g, 'U')
+    .replace(/ā/g, 'a').replace(/Ā/g, 'A')
+  if (withoutMacrons !== gameName) {
+    variations.push(withoutMacrons)
+  }
+
   // Remove subtitles after colon/dash
   const simplifiedName = gameName.split(/[:\-–—]/)[0].trim()
   if (simplifiedName !== gameName && simplifiedName.length > 3) {
