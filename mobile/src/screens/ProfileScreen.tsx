@@ -37,10 +37,11 @@ import SweatDropIcon from '../components/SweatDropIcon'
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = 180
 
-// Calculate game card width for 3-column grid with proper gaps
+// Calculate game card width for 4-column grid with proper gaps
 const GRID_PADDING = Spacing.screenPadding * 2  // 32px total horizontal padding
-const GRID_GAPS = Spacing.cardGap * 2           // 24px total gaps (2 gaps for 3 columns)
-const GAME_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GRID_GAPS) / 3
+const GRID_GAP = 8                              // Smaller gap for more columns
+const GRID_GAPS = GRID_GAP * 3                  // 3 gaps for 4 columns
+const GAME_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GRID_GAPS) / 4
 
 interface FavoriteGame {
   id: number
@@ -907,7 +908,7 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.cardGap,                   // 12px gap between cards
+    gap: GRID_GAP,                          // 8px gap for 4-column layout
   },
   gameCard: {
     width: GAME_CARD_WIDTH,                 // Calculated for even spacing

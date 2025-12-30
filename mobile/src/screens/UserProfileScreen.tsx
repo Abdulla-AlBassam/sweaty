@@ -940,11 +940,11 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    gap: 8,                                   // 8px gap for 4-column layout
   },
   gameCard: {
-    width: '30%',
-    marginBottom: Spacing.sm,
+    width: '23%',                             // ~4 columns with gaps
+    marginBottom: Spacing.xs,
   },
   gameCover: {
     width: '100%',
