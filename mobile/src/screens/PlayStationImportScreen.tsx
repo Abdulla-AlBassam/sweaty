@@ -266,10 +266,15 @@ export default function PlayStationImportScreen() {
           </View>
         ) : (
           <TouchableOpacity
-            style={styles.logButton}
+            style={styles.logButtonWrapper}
             onPress={() => handleLogGame(item)}
           >
-            <Text style={styles.logButtonText}>LOG</Text>
+            {/* RGB Chromatic aberration layers */}
+            <View style={[styles.logButtonLayer, styles.logButtonCyan]} />
+            <View style={[styles.logButtonLayer, styles.logButtonGreen]} />
+            <View style={styles.logButton}>
+              <Text style={styles.logButtonText}>LOG</Text>
+            </View>
           </TouchableOpacity>
         )}
       </View>
@@ -1055,16 +1060,44 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 2,
   },
-  logButton: {
-    backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+  logButtonWrapper: {
+    position: 'relative',
+    width: 56,
+    height: 32,
+  },
+  logButtonLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderRadius: BorderRadius.sm,
+  },
+  logButtonCyan: {
+    backgroundColor: Colors.cyan,
+    opacity: 0.7,
+    transform: [{ translateX: -1.5 }],
+  },
+  logButtonGreen: {
+    backgroundColor: Colors.accent,
+    opacity: 0.7,
+    transform: [{ translateX: 1.5 }],
+  },
+  logButton: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.text,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.xs,
-    color: Colors.text,
+    color: Colors.background,
   },
   loggedBadge: {
     paddingHorizontal: Spacing.sm,

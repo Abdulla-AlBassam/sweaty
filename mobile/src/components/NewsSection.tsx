@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -9,6 +9,16 @@ import { useNews } from '../hooks/useNews'
 import GlitchText from './GlitchText'
 import PressableScale from './PressableScale'
 import Skeleton from './Skeleton'
+
+// Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
 
 // Format relative time
 function formatTimeAgo(dateString: string): string {
@@ -80,14 +90,29 @@ function NewsCardSkeleton() {
   )
 }
 
-export default function NewsSection() {
-  const navigation = useNavigation()
-  const { articles, isLoading, error } = useNews(20) // Fetch more to filter
+interface NewsSectionProps {
+  refreshKey?: number  // Changes trigger re-shuffle
+}
 
-  // Filter to only recent articles (last 24 hours)
+export default function NewsSection({ refreshKey = 0 }: NewsSectionProps) {
+  const navigation = useNavigation()
+  const { articles, isLoading, error, refetch } = useNews(20) // Fetch more to filter
+  const [shuffleKey, setShuffleKey] = useState(0)
+
+  // Re-shuffle when refreshKey changes (pull-to-refresh)
+  useEffect(() => {
+    if (refreshKey > 0) {
+      setShuffleKey((prev) => prev + 1)
+      refetch() // Also refetch news on refresh
+    }
+  }, [refreshKey, refetch])
+
+  // Filter to only recent articles (last 24 hours) and shuffle
   const recentArticles = useMemo(() => {
-    return articles.filter((article) => isRecent(article.publishedAt)).slice(0, 10)
-  }, [articles])
+    const filtered = articles.filter((article) => isRecent(article.publishedAt)).slice(0, 10)
+    return shuffleArray(filtered)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [articles, shuffleKey])
 
   const handleArticlePress = (article: NewsArticle) => {
     navigation.dispatch(

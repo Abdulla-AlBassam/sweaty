@@ -263,15 +263,20 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
         {/* Action Buttons */}
         <View style={styles.actionButtons}>
+          {/* Log/Edit Button with Chrome Aesthetic */}
           <TouchableOpacity
-            style={styles.logButton}
+            style={styles.logButtonWrapper}
             onPress={() => setIsModalVisible(true)}
           >
-            <Ionicons
-              name={userLog ? 'create-outline' : 'add'}
-              size={22}
-              color={Colors.background}
-            />
+            <View style={[styles.logButtonLayer, styles.logButtonCyan]} />
+            <View style={[styles.logButtonLayer, styles.logButtonGreen]} />
+            <View style={styles.logButton}>
+              <Ionicons
+                name={userLog ? 'create-outline' : 'add'}
+                size={22}
+                color={Colors.background}
+              />
+            </View>
           </TouchableOpacity>
 
           {user && (
@@ -445,12 +450,38 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
-  logButton: {
-    backgroundColor: Colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+  logButtonWrapper: {
+    position: 'relative',
     width: 44,
     height: 44,
+  },
+  logButtonLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: BorderRadius.md,
+  },
+  logButtonCyan: {
+    backgroundColor: Colors.cyan,
+    opacity: 0.7,
+    transform: [{ translateX: -1.5 }],
+  },
+  logButtonGreen: {
+    backgroundColor: Colors.accent,
+    opacity: 0.7,
+    transform: [{ translateX: 1.5 }],
+  },
+  logButton: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: BorderRadius.md,
   },
   addToListButton: {

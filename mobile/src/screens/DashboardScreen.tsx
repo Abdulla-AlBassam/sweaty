@@ -33,6 +33,7 @@ export default function DashboardScreen() {
   const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
 
   const [refreshing, setRefreshing] = useState(false)
+  const [refreshCount, setRefreshCount] = useState(0)
 
   // Pulsing animation for "Currently Playing" indicator
   const pulseAnim = useRef(new Animated.Value(1)).current
@@ -58,6 +59,7 @@ export default function DashboardScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
+    setRefreshCount((prev) => prev + 1) // Trigger news shuffle
     await Promise.all([
       refetchLogs(),
       refetchLists(),
@@ -144,7 +146,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Gaming News Section */}
-        <NewsSection />
+        <NewsSection refreshKey={refreshCount} />
 
         {/* Curated Lists */}
         {listsLoading ? (
