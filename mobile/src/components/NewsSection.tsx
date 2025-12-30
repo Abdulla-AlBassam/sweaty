@@ -125,9 +125,9 @@ export default function NewsSection() {
             <Text style={styles.errorText}>Unable to load news</Text>
           </View>
         ) : (
-          articles.map((article) => (
+          articles.map((article, index) => (
             <NewsItem
-              key={article.id}
+              key={`${article.id}-${index}`}
               article={article}
               onPress={() => handleArticlePress(article)}
             />

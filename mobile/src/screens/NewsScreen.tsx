@@ -115,7 +115,7 @@ export default function NewsScreen() {
         <FlatList
           data={articles}
           renderItem={renderArticle}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
