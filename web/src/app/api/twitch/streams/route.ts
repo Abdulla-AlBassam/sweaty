@@ -183,6 +183,12 @@ async function getTotalStreamCount(gameId: string): Promise<number> {
 
 export async function POST(request: Request): Promise<NextResponse<StreamsResponse | ErrorResponse>> {
   try {
+    // Check for required environment variables
+    if (!process.env.TWITCH_CLIENT_ID || !process.env.TWITCH_CLIENT_SECRET) {
+      console.error('Twitch credentials not configured')
+      return NextResponse.json({ success: false, error: 'twitch_not_configured' }, { status: 503 })
+    }
+
     const body = await request.json()
     const { game_name } = body as { game_name?: string; igdb_id?: number }
 

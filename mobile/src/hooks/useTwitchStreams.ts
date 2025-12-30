@@ -105,7 +105,25 @@ export function useTwitchStreams(gameName: string | null): UseTwitchStreamsResul
         body: JSON.stringify({ game_name: gameName }),
       })
 
-      const data = await response.json()
+      // Check if response is OK before parsing
+      if (!response.ok) {
+        console.log('Twitch streams API returned status:', response.status)
+        setStreams([])
+        setTotalLive(0)
+        return
+      }
+
+      // Get response text first to validate
+      const text = await response.text()
+      if (!text) {
+        console.log('Twitch streams API returned empty response')
+        setStreams([])
+        setTotalLive(0)
+        return
+      }
+
+      // Parse JSON
+      const data = JSON.parse(text)
 
       if (data.success) {
         setStreams(data.streams)
@@ -115,13 +133,13 @@ export function useTwitchStreams(gameName: string | null): UseTwitchStreamsResul
         // Game not found on Twitch or other error - just hide section
         setStreams([])
         setTotalLive(0)
-        if (data.error !== 'game_not_found') {
+        if (data.error !== 'game_not_found' && data.error !== 'twitch_not_configured') {
           console.log('Twitch streams error:', data.error)
         }
       }
     } catch (err) {
-      console.error('Error fetching Twitch streams:', err)
-      setError('Failed to fetch streams')
+      // Silently fail - just hide the section
+      console.log('Twitch streams unavailable:', err instanceof Error ? err.message : 'Unknown error')
       setStreams([])
       setTotalLive(0)
     } finally {
