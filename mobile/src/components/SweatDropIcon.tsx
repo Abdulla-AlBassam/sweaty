@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { View, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
 
 interface SweatDropIconProps {
@@ -8,7 +9,7 @@ interface SweatDropIconProps {
 
 /**
  * Glitchy sweat drop icon with RGB chromatic aberration
- * Matches the terminal/hacker aesthetic of the app
+ * Uses Ionicons water drop with glitch overlay effect
  */
 export default function SweatDropIcon({ size = 36 }: SweatDropIconProps) {
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
@@ -36,65 +37,44 @@ export default function SweatDropIcon({ size = 36 }: SweatDropIconProps) {
     return () => clearInterval(glitchInterval)
   }, [])
 
-  // Calculate dimensions based on size
-  const dropWidth = size * 0.65
-  const dropHeight = size
-  const circleSize = size * 0.55
-  const triangleSize = size * 0.5
-
-  const renderDrop = (color: string, opacity: number, offsetX: number, offsetY: number) => (
-    <View
-      style={[
-        styles.dropContainer,
-        {
-          width: dropWidth,
-          height: dropHeight,
-          opacity,
-          transform: [
-            { translateX: isGlitching ? offsetX + glitchOffset.x : offsetX },
-            { translateY: isGlitching ? offsetY + glitchOffset.y : offsetY },
-          ],
-        },
-      ]}
-    >
-      {/* Triangle top (rotated square) */}
-      <View
-        style={[
-          styles.triangle,
-          {
-            width: triangleSize,
-            height: triangleSize,
-            backgroundColor: color,
-            top: size * 0.08,
-          },
-        ]}
-      />
-      {/* Circle bottom */}
-      <View
-        style={[
-          styles.circle,
-          {
-            width: circleSize,
-            height: circleSize,
-            borderRadius: circleSize / 2,
-            backgroundColor: color,
-            bottom: size * 0.05,
-          },
-        ]}
-      />
-    </View>
-  )
-
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       {/* Cyan layer (offset left) */}
-      {renderDrop('#00ffff', 0.5, -1.5, 0)}
+      <View
+        style={[
+          styles.iconLayer,
+          {
+            opacity: 0.5,
+            transform: [
+              { translateX: isGlitching ? -1.5 + glitchOffset.x : -1.5 },
+              { translateY: isGlitching ? glitchOffset.y : 0 },
+            ],
+          },
+        ]}
+      >
+        <Ionicons name="water" size={size} color="#00ffff" />
+      </View>
 
-      {/* Green/Magenta layer (offset right) */}
-      {renderDrop(Colors.accent, 0.5, 1.5, 0)}
+      {/* Green layer (offset right) */}
+      <View
+        style={[
+          styles.iconLayer,
+          {
+            opacity: 0.5,
+            transform: [
+              { translateX: isGlitching ? 1.5 - glitchOffset.x : 1.5 },
+              { translateY: isGlitching ? -glitchOffset.y : 0 },
+            ],
+          },
+        ]}
+      >
+        <Ionicons name="water" size={size} color={Colors.accent} />
+      </View>
 
-      {/* Main white drop */}
-      {renderDrop('#ffffff', 1, 0, 0)}
+      {/* Main white icon */}
+      <View style={styles.iconLayer}>
+        <Ionicons name="water" size={size} color="#ffffff" />
+      </View>
     </View>
   )
 }
@@ -104,15 +84,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dropContainer: {
-    position: 'absolute',
-    alignItems: 'center',
-  },
-  triangle: {
-    position: 'absolute',
-    transform: [{ rotate: '45deg' }],
-  },
-  circle: {
+  iconLayer: {
     position: 'absolute',
   },
 })
