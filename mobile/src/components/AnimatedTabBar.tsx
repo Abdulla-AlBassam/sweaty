@@ -5,16 +5,12 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  Image,
-  Text,
 } from 'react-native'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons'
-import { Colors, Glow, BorderRadius } from '../constants/colors'
-import { Fonts } from '../constants/fonts'
+import { Colors, Glow } from '../constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuickLog } from '../contexts/QuickLogContext'
-import { useAuth } from '../contexts/AuthContext'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 const TAB_COUNT = 5
@@ -50,12 +46,7 @@ const renderIcon = (config: IconConfig, size: number, color: string) => {
 export default function AnimatedTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
   const { openQuickLog } = useQuickLog()
-  const { profile } = useAuth()
   const translateX = useRef(new Animated.Value(0)).current
-
-  // Get avatar info for profile tab
-  const displayName = profile?.display_name || profile?.username || 'U'
-  const avatarInitial = displayName.charAt(0).toUpperCase()
 
   // Calculate initial position on mount and when state changes
   useEffect(() => {
@@ -119,7 +110,6 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
           const { options } = descriptors[route.key]
           const isFocused = state.index === index
           const isAddTab = route.name === 'Add'
-          const isProfileTab = route.name === 'Profile'
 
           const iconConfig = iconMap[route.name]
 
@@ -138,15 +128,6 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
                 // Special Add button with green circle
                 <View style={styles.addButton}>
                   <Ionicons name="add" size={22} color={Colors.background} />
-                </View>
-              ) : isProfileTab ? (
-                // Profile tab shows user avatar
-                <View style={[styles.profileAvatar, isFocused && styles.profileAvatarFocused]}>
-                  {profile?.avatar_url ? (
-                    <Image source={{ uri: profile.avatar_url }} style={styles.profileAvatarImage} />
-                  ) : (
-                    <Text style={styles.profileAvatarInitial}>{avatarInitial}</Text>
-                  )}
                 </View>
               ) : (
                 // Regular tab icon
@@ -207,30 +188,5 @@ const styles = StyleSheet.create({
     marginTop: -6,
     // Matrix glow effect
     ...Glow.accent,
-  },
-  // Profile avatar styles
-  profileAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-    overflow: 'hidden',
-  },
-  profileAvatarFocused: {
-    borderColor: Colors.accent,
-  },
-  profileAvatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 14,
-  },
-  profileAvatarInitial: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 12,
-    color: Colors.textMuted,
   },
 })
