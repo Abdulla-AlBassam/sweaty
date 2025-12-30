@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Sweaty Logo - RGB Chromatic Aberration Effect -->
-  <!-- Teardrop with smile curve + glitch effect -->
+  <!-- Simple teardrop with glitch effect (matches Ionicons water icon) -->
 
-  <!-- Cyan layer (offset left-up, behind) - GLITCH -->
-  <g transform="translate(-8, -3)" opacity="0.65">
+  <!-- Cyan layer (offset left, behind) - GLITCH -->
+  <g transform="translate(-4, 0)" opacity="0.6">
     <path
       d="M256 48
          C256 48 136 192 136 312
@@ -15,8 +15,8 @@
     />
   </g>
 
-  <!-- Green layer (offset right-down, behind) - GLITCH -->
-  <g transform="translate(8, 3)" opacity="0.65">
+  <!-- Green layer (offset right, behind) - GLITCH -->
+  <g transform="translate(4, 0)" opacity="0.6">
     <path
       d="M256 48
          C256 48 136 192 136 312
@@ -35,14 +35,5 @@
        C322.274 432 376 378.274 376 312
        C376 192 256 48 256 48Z"
     fill="#ffffff"
-  />
-
-  <!-- Smile curve line -->
-  <path
-    d="M196 358 Q256 396 316 358"
-    fill="none"
-    stroke="#0f0f0f"
-    stroke-width="16"
-    stroke-linecap="round"
   />
 </svg>

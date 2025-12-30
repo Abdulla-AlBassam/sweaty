@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Sweaty Logo - White only version with smile curve -->
+  <!-- Sweaty Logo - White only version -->
   <!-- For use on colored backgrounds -->
 
   <!-- Main white teardrop -->
@@ -11,14 +11,5 @@
        C322.274 432 376 378.274 376 312
        C376 192 256 48 256 48Z"
     fill="#ffffff"
-  />
-
-  <!-- Smile curve cutout -->
-  <path
-    d="M196 358 Q256 396 316 358"
-    fill="none"
-    stroke="transparent"
-    stroke-width="16"
-    stroke-linecap="round"
   />
 </svg>
