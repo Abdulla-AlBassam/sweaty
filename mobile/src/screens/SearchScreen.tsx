@@ -264,9 +264,7 @@ export default function SearchScreen() {
 
           {/* Main Search Bar */}
           <View style={styles.searchBar}>
-            <View style={styles.searchIconContainer}>
-              <SweatDropIcon size={20} variant="static" />
-            </View>
+            <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
             <TextInput
               style={styles.input}
               placeholder="Search games..."
@@ -525,7 +523,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
   },
-  searchIconContainer: {
+  searchIcon: {
     marginRight: Spacing.sm,
   },
   input: {
@@ -540,7 +538,8 @@ const styles = StyleSheet.create({
   },
   aiLogoContainer: {
     alignItems: 'center',
-    paddingVertical: Spacing.xl,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
   scrollView: {
     flex: 1,

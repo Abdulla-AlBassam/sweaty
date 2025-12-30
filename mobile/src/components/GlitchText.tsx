@@ -222,14 +222,14 @@ const headerStyles = StyleSheet.create({
   bracketText: {
     fontFamily: Fonts.mono,
     fontSize: 14,
-    color: Colors.textDim,
+    color: Colors.cyan,
   },
   title: {
     fontFamily: Fonts.mono,
     fontSize: 12,
-    color: Colors.accent,
+    color: Colors.text,
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 3,
   },
 })
 

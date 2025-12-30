@@ -464,12 +464,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   addButtonMain: {
-    backgroundColor: Colors.pink,
+    backgroundColor: Colors.accent,
     width: 38,
     height: 38,
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Glow.pink,
+    ...Glow.subtle,
   },
 })
