@@ -1,5 +1,6 @@
-import React from 'react'
-import { View, Text, StyleSheet, Image } from 'react-native'
+import React, { useMemo } from 'react'
+import { View, Text, StyleSheet, Image, ScrollView } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -25,55 +26,68 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-interface NewsItemProps {
+// Check if article is recent (within last 24 hours)
+function isRecent(dateString: string): boolean {
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffMs = now.getTime() - date.getTime()
+  const diffHours = diffMs / 3600000
+  return diffHours <= 24
+}
+
+interface NewsCardProps {
   article: NewsArticle
   onPress: () => void
 }
 
-function NewsItem({ article, onPress }: NewsItemProps) {
+function NewsCard({ article, onPress }: NewsCardProps) {
   return (
-    <PressableScale onPress={onPress} haptic="light" scale={0.98}>
-      <View style={styles.newsItem}>
-        <View style={styles.newsContent}>
-          <Text style={styles.newsTitle} numberOfLines={2}>
-            {article.title}
-          </Text>
-          <View style={styles.newsMeta}>
-            <Text style={styles.sourceName}>{article.source}</Text>
-            <Text style={styles.separator}>|</Text>
-            <Text style={styles.timeAgo}>{formatTimeAgo(article.publishedAt)}</Text>
-          </View>
-        </View>
-        {article.thumbnail && (
+    <PressableScale onPress={onPress} haptic="light" scale={0.95}>
+      <View style={styles.card}>
+        {article.thumbnail ? (
           <Image
             source={{ uri: article.thumbnail }}
-            style={styles.thumbnail}
+            style={styles.cardImage}
             resizeMode="cover"
           />
+        ) : (
+          <View style={[styles.cardImage, styles.cardImagePlaceholder]} />
         )}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.7)', 'rgba(0,0,0,0.9)']}
+          locations={[0, 0.5, 1]}
+          style={styles.cardOverlay}
+        />
+        <View style={styles.cardContent}>
+          <Text style={styles.cardTitle} numberOfLines={3}>
+            {article.title}
+          </Text>
+          <View style={styles.cardMeta}>
+            <Text style={styles.cardSource}>{article.source}</Text>
+            <Text style={styles.cardTime}>{formatTimeAgo(article.publishedAt)}</Text>
+          </View>
+        </View>
       </View>
     </PressableScale>
   )
 }
 
-function NewsItemSkeleton() {
+function NewsCardSkeleton() {
   return (
-    <View style={styles.newsItem}>
-      <View style={styles.newsContent}>
-        <Skeleton width="100%" height={16} style={{ marginBottom: 6 }} />
-        <Skeleton width="70%" height={16} style={{ marginBottom: 8 }} />
-        <View style={styles.newsMeta}>
-          <Skeleton width={60} height={12} />
-        </View>
-      </View>
-      <Skeleton width={60} height={60} style={{ borderRadius: BorderRadius.sm }} />
+    <View style={styles.card}>
+      <Skeleton width={180} height={220} style={{ borderRadius: BorderRadius.md }} />
     </View>
   )
 }
 
 export default function NewsSection() {
   const navigation = useNavigation()
-  const { articles, isLoading, error } = useNews(5)
+  const { articles, isLoading, error } = useNews(20) // Fetch more to filter
+
+  // Filter to only recent articles (last 24 hours)
+  const recentArticles = useMemo(() => {
+    return articles.filter((article) => isRecent(article.publishedAt)).slice(0, 10)
+  }, [articles])
 
   const handleArticlePress = (article: NewsArticle) => {
     navigation.dispatch(
@@ -95,8 +109,8 @@ export default function NewsSection() {
     )
   }
 
-  // Don't render if no articles (but show error state if error)
-  if (!isLoading && !error && articles.length === 0) {
+  // Don't render if no recent articles
+  if (!isLoading && !error && recentArticles.length === 0) {
     return null
   }
 
@@ -113,27 +127,35 @@ export default function NewsSection() {
         </PressableScale>
       </View>
 
-      <View style={styles.newsList}>
-        {isLoading ? (
-          <>
-            <NewsItemSkeleton />
-            <NewsItemSkeleton />
-            <NewsItemSkeleton />
-          </>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Unable to load news</Text>
-          </View>
-        ) : (
-          articles.map((article, index) => (
-            <NewsItem
+      {isLoading ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <NewsCardSkeleton />
+          <NewsCardSkeleton />
+          <NewsCardSkeleton />
+        </ScrollView>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Unable to load news</Text>
+        </View>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {recentArticles.map((article, index) => (
+            <NewsCard
               key={`${article.id}-${index}`}
               article={article}
               onPress={() => handleArticlePress(article)}
             />
-          ))
-        )}
-      </View>
+          ))}
+        </ScrollView>
+      )}
     </View>
   )
 }
@@ -163,56 +185,61 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  newsList: {
+  scrollContent: {
     paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
   },
-  newsItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
+  card: {
+    width: 180,
+    height: 220,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    gap: Spacing.md,
+    overflow: 'hidden',
+    backgroundColor: Colors.surface,
   },
-  newsContent: {
-    flex: 1,
+  cardImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
   },
-  newsTitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-    lineHeight: 20,
-    marginBottom: Spacing.xs,
-  },
-  newsMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  sourceName: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    textTransform: 'uppercase',
-  },
-  separator: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-  },
-  timeAgo: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-  },
-  thumbnail: {
-    width: 60,
-    height: 60,
-    borderRadius: BorderRadius.sm,
+  cardImagePlaceholder: {
     backgroundColor: Colors.surfaceLight,
   },
+  cardOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    padding: Spacing.md,
+  },
+  cardTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    lineHeight: 18,
+    marginBottom: Spacing.xs,
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  cardMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cardSource: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.textGreen,
+    textTransform: 'uppercase',
+  },
+  cardTime: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.textMuted,
+  },
   errorContainer: {
+    marginHorizontal: Spacing.lg,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
