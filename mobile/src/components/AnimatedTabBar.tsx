@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
 import {
   View,
   TouchableOpacity,
@@ -11,6 +11,90 @@ import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons'
 import { Colors, Glow } from '../constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuickLog } from '../contexts/QuickLogContext'
+
+// Glitchy Add Button Component
+function GlitchAddButton({ onPress }: { onPress: () => void }) {
+  const [isGlitching, setIsGlitching] = useState(false)
+  const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
+  const scaleAnim = useRef(new Animated.Value(1)).current
+
+  // Glitch effect
+  useEffect(() => {
+    const glitchInterval = setInterval(() => {
+      if (Math.random() < 0.25) {
+        setIsGlitching(true)
+        setGlitchOffset({
+          x: (Math.random() - 0.5) * 4,
+          y: (Math.random() - 0.5) * 3,
+        })
+
+        // Scale flicker
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 0.95 + Math.random() * 0.15,
+            duration: 40,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 40,
+            useNativeDriver: true,
+          }),
+        ]).start()
+
+        setTimeout(() => {
+          setIsGlitching(false)
+          setGlitchOffset({ x: 0, y: 0 })
+        }, 60 + Math.random() * 80)
+      }
+    }, 300)
+
+    return () => clearInterval(glitchInterval)
+  }, [scaleAnim])
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <Animated.View style={[styles.addButtonContainer, { transform: [{ scale: scaleAnim }] }]}>
+        {/* Cyan layer */}
+        <View
+          style={[
+            styles.addButtonLayer,
+            styles.addButtonCyan,
+            {
+              transform: [
+                { translateX: isGlitching ? -2 + glitchOffset.x : -1.5 },
+                { translateY: isGlitching ? glitchOffset.y : 0 },
+              ],
+            },
+          ]}
+        >
+          <Ionicons name="add" size={22} color={Colors.cyan} />
+        </View>
+
+        {/* Green layer */}
+        <View
+          style={[
+            styles.addButtonLayer,
+            styles.addButtonGreen,
+            {
+              transform: [
+                { translateX: isGlitching ? 2 - glitchOffset.x : 1.5 },
+                { translateY: isGlitching ? -glitchOffset.y : 0 },
+              ],
+            },
+          ]}
+        >
+          <Ionicons name="add" size={22} color={Colors.accent} />
+        </View>
+
+        {/* Main pink button */}
+        <View style={styles.addButtonMain}>
+          <Ionicons name="add" size={22} color={Colors.background} />
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
+  )
+}
 
 const SCREEN_WIDTH = Dimensions.get('window').width
 const TAB_COUNT = 5
@@ -125,10 +209,8 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
               activeOpacity={0.7}
             >
               {isAddTab ? (
-                // Special Add button with green circle
-                <View style={styles.addButton}>
-                  <Ionicons name="add" size={22} color={Colors.background} />
-                </View>
+                // Special Add button with RGB glitch effect
+                <GlitchAddButton onPress={() => handleTabPress(route, index)} />
               ) : (
                 // Regular tab icon
                 <Animated.View style={styles.iconContainer}>
@@ -178,15 +260,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addButton: {
-    backgroundColor: Colors.accent,
+  // Glitch Add Button styles
+  addButtonContainer: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -6,
+  },
+  addButtonLayer: {
+    position: 'absolute',
     width: 38,
     height: 38,
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -6,
-    // Matrix glow effect
-    ...Glow.accent,
+  },
+  addButtonCyan: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: Colors.cyan,
+    opacity: 0.6,
+  },
+  addButtonGreen: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: Colors.accent,
+    opacity: 0.6,
+  },
+  addButtonMain: {
+    backgroundColor: Colors.pink,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Glow.pink,
   },
 })

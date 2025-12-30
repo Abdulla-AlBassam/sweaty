@@ -31,6 +31,7 @@ import ListCard from '../components/ListCard'
 import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
+import GlitchBorder from '../components/GlitchBorder'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = 180
@@ -393,13 +394,19 @@ export default function ProfileScreen() {
                     style={styles.favoriteSlot}
                     onPress={() => navigation.navigate('GameDetail', { gameId: game.id })}
                   >
-                    {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
-                    ) : (
-                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                        <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
-                      </View>
-                    )}
+                    <GlitchBorder
+                      borderRadius={BorderRadius.md}
+                      borderWidth={2}
+                      intensity="medium"
+                    >
+                      {coverUrl ? (
+                        <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                      ) : (
+                        <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                          <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                        </View>
+                      )}
+                    </GlitchBorder>
                   </TouchableOpacity>
                 )
               }
@@ -823,8 +830,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+    // Border removed - GlitchBorder handles the RGB border effect
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.surface,

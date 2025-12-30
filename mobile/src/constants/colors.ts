@@ -30,6 +30,13 @@ export const Colors = {
   goldMuted: '#D4AF37',       // Dimmer gold
   goldGlow: 'rgba(255, 215, 0, 0.2)',  // Subtle glow
 
+  // HOT PINK - Glitch effects & special accents
+  // Use for: Plus button, glitch borders, special effects
+  pink: '#FF1493',            // Hot pink base
+  pinkBright: '#FF69B4',      // Lighter pink
+  pinkMuted: '#CC1177',       // Darker pink
+  pinkGlow: 'rgba(255, 20, 147, 0.3)',  // Pink glow
+
   // Text hierarchy
   text: '#FFFFFF',            // Primary text (pure white)
   textSecondary: '#A1A1A1',   // Secondary text
@@ -157,5 +164,13 @@ export const Glow = {
     shadowOpacity: 0.4,
     shadowRadius: 6,
     elevation: 3,
+  },
+  // Hot pink glow for plus button and accents
+  pink: {
+    shadowColor: '#FF1493',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 5,
   },
 }
