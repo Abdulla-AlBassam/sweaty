@@ -34,6 +34,12 @@ interface GameVideo {
   name: string
 }
 
+interface SimilarGame {
+  id: number
+  name: string
+  coverUrl: string | null
+}
+
 interface GameDetails {
   id: number
   name: string
@@ -47,6 +53,7 @@ interface GameDetails {
   platforms?: string[]
   rating?: number
   videos?: GameVideo[]
+  similarGames?: SimilarGame[]
 }
 
 interface UserGameLog {
@@ -399,6 +406,34 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
           </View>
         )}
+
+        {/* Similar Games */}
+        {game.similarGames && game.similarGames.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Similar Games</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.similarGamesRow}
+            >
+              {game.similarGames.map((similarGame) => (
+                <TouchableOpacity
+                  key={similarGame.id}
+                  style={styles.similarGameCard}
+                  onPress={() => navigation.push('GameDetail', { gameId: similarGame.id })}
+                >
+                  {similarGame.coverUrl ? (
+                    <Image source={{ uri: similarGame.coverUrl }} style={styles.similarGameCover} />
+                  ) : (
+                    <View style={[styles.similarGameCover, styles.similarGamePlaceholder]}>
+                      <SweatDropIcon size={24} variant="static" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
 
       {/* Log Game Modal */}
@@ -629,6 +664,23 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   friendAvatarPlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Similar Games styles
+  similarGamesRow: {
+    gap: Spacing.sm,
+  },
+  similarGameCard: {
+    width: 105,
+  },
+  similarGameCover: {
+    width: 105,
+    height: 140,
+    borderRadius: BorderRadius.sm,
+  },
+  similarGamePlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
