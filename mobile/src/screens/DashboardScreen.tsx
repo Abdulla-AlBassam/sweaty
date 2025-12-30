@@ -92,10 +92,15 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Header: Sweat drop icon centered */}
-        <View style={styles.header}>
+        {/* Header: Sweat drop icon centered - tap to open AI */}
+        <PressableScale
+          style={styles.header}
+          onPress={() => navigation.navigate('AIRecommend')}
+          haptic="light"
+          scale={0.9}
+        >
           <SweatDropIcon size={40} isRefreshing={refreshing} />
-        </View>
+        </PressableScale>
 
         {/* Currently Playing Section */}
         {currentlyPlaying.length > 0 && (
