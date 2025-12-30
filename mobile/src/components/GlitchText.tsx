@@ -141,17 +141,11 @@ export function GlitchHeader({
   return (
     <View style={[headerStyles.container, style]}>
       <View style={headerStyles.line} />
-      <View style={headerStyles.bracket}>
-        <Text style={headerStyles.bracketText}>[</Text>
-      </View>
       <GlitchText
         text={title}
         style={headerStyles.title}
         intensity="subtle"
       />
-      <View style={headerStyles.bracket}>
-        <Text style={headerStyles.bracketText}>]</Text>
-      </View>
       <View style={headerStyles.line} />
     </View>
   )
@@ -216,20 +210,13 @@ const headerStyles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.border,
   },
-  bracket: {
-    paddingHorizontal: 4,
-  },
-  bracketText: {
-    fontFamily: Fonts.mono,
-    fontSize: 14,
-    color: Colors.cyan,
-  },
   title: {
     fontFamily: Fonts.mono,
     fontSize: 12,
     color: Colors.text,
     textTransform: 'uppercase',
     letterSpacing: 3,
+    paddingHorizontal: 12,
   },
 })
 
