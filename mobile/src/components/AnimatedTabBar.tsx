@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Easing,
 } from 'react-native'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons'
@@ -12,11 +13,18 @@ import { Colors, Glow } from '../constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuickLog } from '../contexts/QuickLogContext'
 
-// Glitchy Add Button Component
+// Glitchy Add Button Component with burst animation
 function GlitchAddButton({ onPress }: { onPress: () => void }) {
   const [isGlitching, setIsGlitching] = useState(false)
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
   const scaleAnim = useRef(new Animated.Value(1)).current
+  const rotationAnim = useRef(new Animated.Value(0)).current
+
+  // Burst animation values
+  const burstScale = useRef(new Animated.Value(1)).current
+  const cyanBurst = useRef(new Animated.Value(0)).current
+  const greenBurst = useRef(new Animated.Value(0)).current
+  const pinkBurst = useRef(new Animated.Value(0)).current
 
   // Glitch effect
   useEffect(() => {
@@ -52,45 +60,212 @@ function GlitchAddButton({ onPress }: { onPress: () => void }) {
     return () => clearInterval(glitchInterval)
   }, [scaleAnim])
 
+  // Handle press with burst animation
+  const handlePress = () => {
+    // Play burst animation
+    Animated.parallel([
+      // Scale: grow big, shrink small, normalize
+      Animated.sequence([
+        Animated.timing(burstScale, {
+          toValue: 1.4,
+          duration: 100,
+          easing: Easing.out(Easing.exp),
+          useNativeDriver: true,
+        }),
+        Animated.timing(burstScale, {
+          toValue: 0.8,
+          duration: 80,
+          useNativeDriver: true,
+        }),
+        Animated.spring(burstScale, {
+          toValue: 1,
+          friction: 4,
+          tension: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Rotation: quick spin
+      Animated.sequence([
+        Animated.timing(rotationAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotationAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Cyan layer burst outward (left-up)
+      Animated.sequence([
+        Animated.timing(cyanBurst, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(cyanBurst, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+      // Green layer burst outward (right-down)
+      Animated.sequence([
+        Animated.timing(greenBurst, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(greenBurst, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]),
+      // Pink glow pulse
+      Animated.sequence([
+        Animated.timing(pinkBurst, {
+          toValue: 1,
+          duration: 100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pinkBurst, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start()
+
+    // Call onPress after a slight delay for visual feedback
+    setTimeout(() => {
+      onPress()
+    }, 80)
+  }
+
+  // Interpolations for burst animation
+  const rotationInterpolate = rotationAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  })
+
+  const cyanBurstX = cyanBurst.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -10],
+  })
+
+  const cyanBurstY = cyanBurst.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -8],
+  })
+
+  const cyanBurstOpacity = cyanBurst.interpolate({
+    inputRange: [0, 0.3, 1],
+    outputRange: [0.6, 0.9, 0],
+  })
+
+  const greenBurstX = greenBurst.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 10],
+  })
+
+  const greenBurstY = greenBurst.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 8],
+  })
+
+  const greenBurstOpacity = greenBurst.interpolate({
+    inputRange: [0, 0.3, 1],
+    outputRange: [0.6, 0.9, 0],
+  })
+
+  const pinkGlowScale = pinkBurst.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.3],
+  })
+
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
-      <Animated.View style={[styles.addButtonContainer, { transform: [{ scale: scaleAnim }] }]}>
-        {/* Cyan layer */}
-        <View
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+      <Animated.View
+        style={[
+          styles.addButtonContainer,
+          {
+            transform: [
+              { scale: Animated.multiply(scaleAnim, burstScale) },
+              { rotate: rotationInterpolate },
+            ],
+          },
+        ]}
+      >
+        {/* Cyan layer with burst */}
+        <Animated.View
           style={[
             styles.addButtonLayer,
             styles.addButtonCyan,
             {
+              opacity: cyanBurstOpacity,
               transform: [
-                { translateX: isGlitching ? -2 + glitchOffset.x : -1.5 },
-                { translateY: isGlitching ? glitchOffset.y : 0 },
+                {
+                  translateX: Animated.add(
+                    cyanBurstX,
+                    isGlitching ? -2 + glitchOffset.x : -1.5
+                  ),
+                },
+                {
+                  translateY: Animated.add(
+                    cyanBurstY,
+                    isGlitching ? glitchOffset.y : 0
+                  ),
+                },
               ],
             },
           ]}
         >
           <Ionicons name="add" size={22} color={Colors.cyan} />
-        </View>
+        </Animated.View>
 
-        {/* Green layer */}
-        <View
+        {/* Green layer with burst */}
+        <Animated.View
           style={[
             styles.addButtonLayer,
             styles.addButtonGreen,
             {
+              opacity: greenBurstOpacity,
               transform: [
-                { translateX: isGlitching ? 2 - glitchOffset.x : 1.5 },
-                { translateY: isGlitching ? -glitchOffset.y : 0 },
+                {
+                  translateX: Animated.add(
+                    greenBurstX,
+                    isGlitching ? 2 - glitchOffset.x : 1.5
+                  ),
+                },
+                {
+                  translateY: Animated.add(
+                    greenBurstY,
+                    isGlitching ? -glitchOffset.y : 0
+                  ),
+                },
               ],
             },
           ]}
         >
           <Ionicons name="add" size={22} color={Colors.accent} />
-        </View>
+        </Animated.View>
 
-        {/* Main pink button */}
-        <View style={styles.addButtonMain}>
+        {/* Main pink button with glow pulse */}
+        <Animated.View
+          style={[
+            styles.addButtonMain,
+            {
+              transform: [{ scale: pinkGlowScale }],
+            },
+          ]}
+        >
           <Ionicons name="add" size={22} color={Colors.background} />
-        </View>
+        </Animated.View>
       </Animated.View>
     </TouchableOpacity>
   )

@@ -6,6 +6,7 @@ import { Colors } from '../constants/colors'
 interface SweatDropIconProps {
   size?: number
   isRefreshing?: boolean
+  variant?: 'default' | 'static' | 'loading'  // default = full animation, static = minimal, loading = pulse
 }
 
 /**
@@ -14,8 +15,12 @@ interface SweatDropIconProps {
  * - Intense RGB glitch effect
  * - Random floating/drifting motion
  * - Burst animation on refresh
+ * Variants:
+ * - default: Full floating + glitch animations
+ * - static: Minimal glitch, no floating (for placeholders)
+ * - loading: Pulsing animation (for loading states)
  */
-export default function SweatDropIcon({ size = 36, isRefreshing = false }: SweatDropIconProps) {
+export default function SweatDropIcon({ size = 36, isRefreshing = false, variant = 'default' }: SweatDropIconProps) {
   // Glitch state
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
   const [isGlitching, setIsGlitching] = useState(false)
@@ -33,17 +38,48 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false }: Sweat
   // Animated value for scale flicker during glitch
   const glitchScale = useRef(new Animated.Value(1)).current
 
-  // Intensified random glitch effect
+  // Animated value for loading pulse
+  const loadingPulse = useRef(new Animated.Value(1)).current
+
+  // Loading pulse animation
   useEffect(() => {
+    if (variant === 'loading') {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(loadingPulse, {
+            toValue: 1.15,
+            duration: 600,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(loadingPulse, {
+            toValue: 1,
+            duration: 600,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ])
+      )
+      pulse.start()
+      return () => pulse.stop()
+    }
+  }, [variant, loadingPulse])
+
+  // Intensified random glitch effect (reduced for static/loading variants)
+  useEffect(() => {
+    // Glitch settings based on variant
+    const glitchChance = variant === 'default' ? 0.35 : variant === 'loading' ? 0.2 : 0.1
+    const glitchIntensity = variant === 'default' ? 1 : 0.5
+    const interval = variant === 'default' ? 250 : 400
+
     const glitchInterval = setInterval(() => {
-      // 35% chance to glitch (increased from 20%)
-      if (Math.random() < 0.35) {
+      if (Math.random() < glitchChance) {
         setIsGlitching(true)
 
-        // More dramatic offsets
+        // Offset based on variant intensity
         setGlitchOffset({
-          x: (Math.random() - 0.5) * 8,  // Increased from 3
-          y: (Math.random() - 0.5) * 6,  // Increased from 2
+          x: (Math.random() - 0.5) * 8 * glitchIntensity,
+          y: (Math.random() - 0.5) * 6 * glitchIntensity,
         })
 
         // Random scale flicker
@@ -66,13 +102,15 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false }: Sweat
           setGlitchOffset({ x: 0, y: 0 })
         }, 60 + Math.random() * 100)
       }
-    }, 250) // Faster interval (was 400)
+    }, interval)
 
     return () => clearInterval(glitchInterval)
-  }, [glitchScale])
+  }, [glitchScale, variant])
 
-  // Floating/drifting animation - icon wanders around
+  // Floating/drifting animation - only for default variant
   useEffect(() => {
+    if (variant !== 'default') return
+
     const createFloatAnimation = () => {
       // Pick random destination within bounds
       const targetX = (Math.random() - 0.5) * 20 // ±10px
@@ -123,7 +161,7 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false }: Sweat
       floatX.stopAnimation()
       floatY.stopAnimation()
     }
-  }, [floatX, floatY])
+  }, [floatX, floatY, variant])
 
   // Burst animation when refresh is triggered
   useEffect(() => {
@@ -213,19 +251,31 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false }: Sweat
     outputRange: [0, 15],
   })
 
+  // Container size varies by variant (default needs extra space for floating)
+  const containerWidth = variant === 'default' ? size + 40 : size + 10
+  const containerHeight = variant === 'default' ? size + 20 : size + 10
+
+  // Build transform array based on variant
+  const getTransforms = () => {
+    const transforms: any[] = []
+    if (variant === 'default') {
+      transforms.push({ translateX: floatX }, { translateY: floatY })
+    }
+    if (variant === 'loading') {
+      transforms.push({ scale: loadingPulse })
+    }
+    transforms.push({ scale: burstScale }, { rotate: rotationInterpolate })
+    return transforms
+  }
+
   return (
     <Animated.View
       style={[
         styles.container,
         {
-          width: size + 40, // Extra space for floating
-          height: size + 20,
-          transform: [
-            { translateX: floatX },
-            { translateY: floatY },
-            { scale: burstScale },
-            { rotate: rotationInterpolate },
-          ],
+          width: containerWidth,
+          height: containerHeight,
+          transform: getTransforms(),
         }
       ]}
     >

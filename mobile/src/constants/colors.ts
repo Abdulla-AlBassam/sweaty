@@ -1,5 +1,5 @@
-// Sweaty Theme - Refined Terminal Aesthetic
-// Premium cyberpunk with intentional color hierarchy
+// Sweaty Theme - Chrome Glitch Aesthetic
+// Premium RGB chromatic aberration with intentional color hierarchy
 
 export const Colors = {
   // Backgrounds - Deep blacks with depth levels
@@ -9,16 +9,18 @@ export const Colors = {
   surfaceBright: '#282828',   // Highlighted elements
 
   // PRIMARY ACCENT (Green) - Primary actions only
-  // Use for: Primary buttons, active filters, progress bars, level bars, NOW PLAYING dot, terminal/AI elements
-  accent: '#22C55E',          // Primary green
+  // Use for: Primary buttons, active filters, progress bars, glitch layers
+  accent: '#22C55E',          // Primary green (for buttons/glitch)
   accentBright: '#4ade80',    // Brighter for emphasis
   accentMuted: '#16a34a',     // Dimmer green
+  accentSoft: '#86EFAC',      // Soft green for text (less intense)
   accentDark: '#052e16',      // Dark green tint
   accentGlow: 'rgba(34, 197, 94, 0.2)',  // Subtle glow
 
   // SECONDARY ACCENT (Cyan) - Interactive text elements
-  // Use for: Game titles, usernames, "See All" links, secondary interactive elements
-  cyan: '#00BFFF',            // Clickable text
+  // Use for: Game titles, usernames, "See All" links, glitch layers
+  cyan: '#00BFFF',            // Vibrant cyan (for glitch effects only)
+  cyanSoft: '#7DD3FC',        // Soft sky blue (for text - less intense)
   cyanBright: '#33CCFF',      // Hover/active state
   cyanMuted: '#0099CC',       // Dimmer cyan
   cyanGlow: 'rgba(0, 191, 255, 0.2)',  // Subtle glow

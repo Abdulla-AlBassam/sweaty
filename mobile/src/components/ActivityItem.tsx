@@ -145,11 +145,11 @@ const styles = StyleSheet.create({
   },
   username: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.cyan,
+    color: Colors.cyanSoft,           // Softer cyan for readability
   },
   gameName: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.cyan,
+    color: Colors.cyanSoft,           // Softer cyan for readability
   },
   meta: {
     flexDirection: 'row',
