@@ -474,35 +474,62 @@ export async function getSimilarGames(gameId: number, limit: number = 15): Promi
 // Get games by a specific company (developer/publisher)
 export async function getGamesByCompany(companyName: string, limit: number = 15): Promise<Game[]> {
   try {
-    // First find the company ID
-    const companyBody = `
+    // First find the company ID - try exact match then search
+    let companyBody = `
       fields id, name;
-      search "${companyName}";
-      limit 1;
+      where name ~ "${companyName}"*;
+      limit 5;
     `
 
-    const companyData = await igdbFetch('companies', companyBody) as Array<{
+    let companyData = await igdbFetch('companies', companyBody) as Array<{
       id: number
       name: string
     }>
 
-    if (!companyData[0]) {
+    // If no results, try search
+    if (!companyData || companyData.length === 0) {
+      companyBody = `
+        fields id, name;
+        search "${companyName}";
+        limit 5;
+      `
+      companyData = await igdbFetch('companies', companyBody) as Array<{
+        id: number
+        name: string
+      }>
+    }
+
+    if (!companyData || companyData.length === 0) {
       console.log('[getGamesByCompany] Company not found:', companyName)
       return []
     }
 
-    const companyId = companyData[0].id
-    console.log('[getGamesByCompany] Found company:', companyData[0].name, 'ID:', companyId)
+    // Try to find exact match first
+    const exactMatch = companyData.find(c => c.name.toLowerCase() === companyName.toLowerCase())
+    const company = exactMatch || companyData[0]
 
-    // Get involved_companies records for this company to find game IDs
+    console.log('[getGamesByCompany] Found company:', company.name, 'ID:', company.id)
+
+    // Get involved_companies records - prioritize developer roles
     const involvedBody = `
       fields game;
-      where company = ${companyId} & (developer = true | publisher = true);
-      limit 100;
+      where company = ${company.id} & developer = true;
+      limit 150;
     `
 
-    const involvedData = await igdbFetch('involved_companies', involvedBody) as Array<{ game: number }>
-    console.log('[getGamesByCompany] Found', involvedData.length, 'involved_companies records')
+    let involvedData = await igdbFetch('involved_companies', involvedBody) as Array<{ game: number }>
+    console.log('[getGamesByCompany] Found', involvedData.length, 'games as developer')
+
+    // If no games as developer, check publisher too
+    if (involvedData.length === 0) {
+      const pubBody = `
+        fields game;
+        where company = ${company.id};
+        limit 150;
+      `
+      involvedData = await igdbFetch('involved_companies', pubBody) as Array<{ game: number }>
+      console.log('[getGamesByCompany] Found', involvedData.length, 'games as dev/pub')
+    }
 
     if (involvedData.length === 0) {
       return []
@@ -511,25 +538,25 @@ export async function getGamesByCompany(companyName: string, limit: number = 15)
     const gameIds = [...new Set(involvedData.map(ic => ic.game))]
     console.log('[getGamesByCompany] Unique game IDs:', gameIds.length)
 
-    // Fetch full game details - first try with rating filter
+    // Fetch full game details - first try with rating filter (lowered to 50)
     let body = `
       fields name, slug, summary, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating, category;
       where id = (${gameIds.join(',')})
         & cover != null
         & total_rating != null
-        & total_rating > 60
+        & total_rating > 50
         & category = (0, 8, 9, 10);
       sort total_rating desc;
       limit ${limit};
     `
 
     let games = await igdbFetch('games', body) as IGDBGame[]
-    console.log('[getGamesByCompany] Found', games.length, 'rated games from', companyName)
+    console.log('[getGamesByCompany] Found', games.length, 'rated games (50+) from', company.name)
 
-    // If no rated games, try without rating filter
-    if (games.length === 0) {
-      console.log('[getGamesByCompany] No rated games, trying without rating filter...')
+    // If not enough, try without rating filter
+    if (games.length < 5) {
+      console.log('[getGamesByCompany] Not enough rated games, trying without rating filter...')
       body = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
@@ -539,19 +566,182 @@ export async function getGamesByCompany(companyName: string, limit: number = 15)
         sort first_release_date desc;
         limit ${limit};
       `
-      games = await igdbFetch('games', body) as IGDBGame[]
-      console.log('[getGamesByCompany] Found', games.length, 'unrated games from', companyName)
+      const unratedGames = await igdbFetch('games', body) as IGDBGame[]
+      console.log('[getGamesByCompany] Found', unratedGames.length, 'total games from', company.name)
+
+      // Merge and dedupe
+      const allIds = new Set(games.map(g => g.id))
+      for (const g of unratedGames) {
+        if (!allIds.has(g.id)) {
+          games.push(g)
+          allIds.add(g.id)
+        }
+      }
     }
 
-    return games.map(game => transformGame(game))
+    return games.slice(0, limit).map(game => transformGame(game))
   } catch (error) {
     console.error('getGamesByCompany error:', error)
     return []
   }
 }
 
+// Get smart similar games using themes, keywords, and franchises
+// This provides much better recommendations than just genre matching
+export async function getSmartSimilarGames(gameId: number, limit: number = 15): Promise<Game[]> {
+  try {
+    // Get the game's themes, keywords, franchises, and genres
+    const gameBody = `
+      fields name, similar_games, genres, themes, keywords, franchises,
+             game_modes, player_perspectives, collection;
+      where id = ${gameId};
+    `
+
+    const gameData = await igdbFetch('games', gameBody) as Array<{
+      name?: string
+      similar_games?: number[]
+      genres?: number[]
+      themes?: number[]
+      keywords?: number[]
+      franchises?: number[]
+      game_modes?: number[]
+      player_perspectives?: number[]
+      collection?: number
+    }>
+
+    if (!gameData[0]) {
+      console.log('[getSmartSimilarGames] Game not found:', gameId)
+      return []
+    }
+
+    const game = gameData[0]
+    console.log('[getSmartSimilarGames] Finding similar games for:', game.name)
+    console.log('[getSmartSimilarGames] Themes:', game.themes?.slice(0, 5))
+    console.log('[getSmartSimilarGames] Keywords:', game.keywords?.slice(0, 5))
+    console.log('[getSmartSimilarGames] Franchises:', game.franchises)
+
+    let allCandidates: IGDBGame[] = []
+
+    // Strategy 1: Same franchise/collection (highest priority - e.g., other Marvel games)
+    if (game.franchises && game.franchises.length > 0) {
+      const franchiseBody = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, category;
+        where franchises = (${game.franchises.join(',')})
+          & id != ${gameId}
+          & cover != null
+          & total_rating != null
+          & total_rating > 70
+          & category = (0, 8, 9, 10);
+        sort total_rating desc;
+        limit 10;
+      `
+      const franchiseGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Found', franchiseGames.length, 'franchise games')
+      allCandidates.push(...franchiseGames)
+    }
+
+    // Strategy 2: Same themes (e.g., "Superhero" theme for Spider-Man → Batman, etc.)
+    if (game.themes && game.themes.length > 0) {
+      const themeBody = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, category;
+        where themes = (${game.themes.slice(0, 3).join(',')})
+          & id != ${gameId}
+          & cover != null
+          & total_rating != null
+          & total_rating > 75
+          & category = (0, 8, 9, 10);
+        sort total_rating desc;
+        limit 15;
+      `
+      const themeGames = await igdbFetch('games', themeBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Found', themeGames.length, 'theme-matched games')
+      allCandidates.push(...themeGames)
+    }
+
+    // Strategy 3: IGDB's similar_games field (if available)
+    if (game.similar_games && game.similar_games.length > 0) {
+      const similarIds = game.similar_games.slice(0, 15)
+      const similarBody = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, category;
+        where id = (${similarIds.join(',')})
+          & cover != null;
+        limit 15;
+      `
+      const similarGames = await igdbFetch('games', similarBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Found', similarGames.length, 'IGDB similar games')
+      allCandidates.push(...similarGames)
+    }
+
+    // Strategy 4: Same keywords (more specific than genres)
+    if (game.keywords && game.keywords.length > 0 && allCandidates.length < limit) {
+      // Use top 5 keywords for matching
+      const keywordBody = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, category;
+        where keywords = (${game.keywords.slice(0, 5).join(',')})
+          & id != ${gameId}
+          & cover != null
+          & total_rating != null
+          & total_rating > 75
+          & category = (0, 8, 9, 10);
+        sort total_rating desc;
+        limit 10;
+      `
+      const keywordGames = await igdbFetch('games', keywordBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Found', keywordGames.length, 'keyword-matched games')
+      allCandidates.push(...keywordGames)
+    }
+
+    // Strategy 5: Genre fallback (last resort)
+    if (game.genres && game.genres.length > 0 && allCandidates.length < 5) {
+      const genreBody = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, category;
+        where genres = (${game.genres.slice(0, 2).join(',')})
+          & id != ${gameId}
+          & cover != null
+          & total_rating != null
+          & total_rating > 80
+          & category = (0, 8, 9, 10);
+        sort total_rating desc;
+        limit 10;
+      `
+      const genreGames = await igdbFetch('games', genreBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Found', genreGames.length, 'genre-matched games (fallback)')
+      allCandidates.push(...genreGames)
+    }
+
+    // Deduplicate by game ID and sort by rating
+    const uniqueGames = new Map<number, IGDBGame>()
+    for (const g of allCandidates) {
+      if (!uniqueGames.has(g.id)) {
+        uniqueGames.set(g.id, g)
+      }
+    }
+
+    const sortedGames = Array.from(uniqueGames.values())
+      .sort((a, b) => (b.total_rating || 0) - (a.total_rating || 0))
+      .slice(0, limit)
+
+    console.log('[getSmartSimilarGames] Returning', sortedGames.length, 'unique recommendations')
+    return sortedGames.map(g => transformGame(g))
+  } catch (error) {
+    console.error('getSmartSimilarGames error:', error)
+    return []
+  }
+}
+
 // Get game with company info (for identifying user's most-played studio)
-export async function getGameWithCompany(gameId: number): Promise<{ game: Game; companies: string[] } | null> {
+// Returns developers separately from publishers for better recommendations
+export async function getGameWithCompany(gameId: number): Promise<{
+  game: Game
+  companies: string[]
+  developers: string[]
+  publishers: string[]
+} | null> {
   try {
     const body = `
       fields name, slug, summary, cover.image_id, first_release_date,
@@ -571,13 +761,26 @@ export async function getGameWithCompany(gameId: number): Promise<{ game: Game; 
     if (!games[0]) return null
 
     const game = games[0]
+
+    // Separate developers from publishers
+    const developers = game.involved_companies
+      ?.filter(ic => ic.developer)
+      .map(ic => ic.company.name) || []
+
+    const publishers = game.involved_companies
+      ?.filter(ic => ic.publisher && !ic.developer)
+      .map(ic => ic.company.name) || []
+
+    // All companies for backwards compatibility
     const companies = game.involved_companies
       ?.filter(ic => ic.developer || ic.publisher)
       .map(ic => ic.company.name) || []
 
     return {
       game: transformGame(game),
-      companies
+      companies,
+      developers,
+      publishers
     }
   } catch (error) {
     console.error('getGameWithCompany error:', error)

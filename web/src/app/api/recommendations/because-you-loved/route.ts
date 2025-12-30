@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSimilarGames, getGameById } from '@/lib/igdb'
+import { getSmartSimilarGames } from '@/lib/igdb'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,8 +71,9 @@ export async function GET(request: Request) {
       coverUrl: gameCache.cover_url
     }
 
-    // Get similar games from IGDB
-    const similarGames = await getSimilarGames(basedOnGame.id, 20)
+    // Get smart similar games from IGDB (uses themes, keywords, franchises)
+    console.log('[BecauseYouLoved] Finding smart recommendations for:', basedOnGame.name)
+    const similarGames = await getSmartSimilarGames(basedOnGame.id, 25)
 
     // Filter out games already in user's library
     const recommendations = similarGames

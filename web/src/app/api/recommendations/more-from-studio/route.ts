@@ -23,11 +23,12 @@ export async function GET(request: Request) {
       .eq('user_id', userId)
 
     if (logsError) {
-      console.error('Error fetching user logs:', logsError)
+      console.error('[MoreFromStudio] Error fetching user logs:', logsError)
       return NextResponse.json({ error: 'Failed to fetch user games' }, { status: 500 })
     }
 
     if (!userLogs || userLogs.length === 0) {
+      console.log('[MoreFromStudio] No games in library')
       return NextResponse.json({
         studio: null,
         games: [],
@@ -35,39 +36,34 @@ export async function GET(request: Request) {
       })
     }
 
+    console.log('[MoreFromStudio] User has', userLogs.length, 'games in library')
     const userGameIds = new Set(userLogs.map(log => log.game_id))
 
     // Get company info for user's games (sample up to 20 for performance)
     const sampleGameIds = userLogs.slice(0, 20).map(log => log.game_id)
-    const companyCount = new Map<string, number>()
+    console.log('[MoreFromStudio] Sampling', sampleGameIds.length, 'games for company info')
+
+    // Track developers separately (they make better recommendations than publishers)
+    const developerCount = new Map<string, number>()
 
     // Fetch company info for each game
     const companyPromises = sampleGameIds.map(id => getGameWithCompany(id))
     const companyResults = await Promise.all(companyPromises)
 
-    // Generic publishers to skip (we want actual dev studios)
-    const genericPublishers = [
-      'sony', 'microsoft', 'nintendo', 'xbox', 'playstation',
-      'ea sports', 'electronic arts', 'activision', 'ubisoft',
-      'square enix', 'bandai namco', 'sega', 'capcom', 'konami',
-      'take-two', '2k games', 'thq', 'deep silver', 'focus entertainment',
-      'devolver digital', 'annapurna', 'team17', 'raw fury', 'humble games'
-    ]
-
+    // Count how many times we've seen each developer
     for (const result of companyResults) {
-      if (result?.companies) {
-        for (const company of result.companies) {
-          const companyLower = company.toLowerCase()
-          // Skip generic publishers
-          if (genericPublishers.some(p => companyLower.includes(p))) {
-            continue
-          }
-          companyCount.set(company, (companyCount.get(company) || 0) + 1)
+      if (result?.developers && result.developers.length > 0) {
+        console.log('[MoreFromStudio] Game:', result.game.name, '| Developers:', result.developers.join(', '))
+        for (const dev of result.developers) {
+          developerCount.set(dev, (developerCount.get(dev) || 0) + 1)
         }
       }
     }
 
-    if (companyCount.size === 0) {
+    console.log('[MoreFromStudio] Found', developerCount.size, 'unique developers')
+
+    if (developerCount.size === 0) {
+      console.log('[MoreFromStudio] No developers found in user library')
       return NextResponse.json({
         studio: null,
         games: [],
@@ -75,20 +71,20 @@ export async function GET(request: Request) {
       })
     }
 
-    // Find the most common studios
-    const sortedStudios = Array.from(companyCount.entries())
+    // Find the most common developers (sorted by frequency)
+    const sortedDevelopers = Array.from(developerCount.entries())
       .sort((a, b) => b[1] - a[1])
 
-    console.log('[MoreFromStudio] Top studios:', sortedStudios.slice(0, 5).map(s => `${s[0]} (${s[1]})`))
+    console.log('[MoreFromStudio] Top developers:', sortedDevelopers.slice(0, 10).map(s => `${s[0]} (${s[1]} games)`))
 
-    // Try each studio until we find one with games
+    // Try each developer until we find one with recommendable games
     let selectedStudio: string | null = null
     let recommendations: { id: number; name: string; coverUrl: string | null }[] = []
 
-    for (const [studio] of sortedStudios.slice(0, 5)) {
+    for (const [studio] of sortedDevelopers.slice(0, 10)) {
       console.log('[MoreFromStudio] Trying studio:', studio)
-      const studioGames = await getGamesByCompany(studio, 20)
-      console.log('[MoreFromStudio] Got', studioGames.length, 'games from', studio)
+      const studioGames = await getGamesByCompany(studio, 30)
+      console.log('[MoreFromStudio] Got', studioGames.length, 'total games from', studio)
 
       // Filter out games already in user's library
       const filtered = studioGames
@@ -100,12 +96,20 @@ export async function GET(request: Request) {
           coverUrl: game.coverUrl
         }))
 
+      console.log('[MoreFromStudio] After filtering user\'s games:', filtered.length, 'remaining')
+
       if (filtered.length > 0) {
         selectedStudio = studio
         recommendations = filtered
-        console.log('[MoreFromStudio] Found', filtered.length, 'recommendations from', studio)
+        console.log('[MoreFromStudio] SUCCESS! Found', filtered.length, 'recommendations from', studio)
         break
+      } else {
+        console.log('[MoreFromStudio] Studio', studio, 'has no new games to recommend, trying next...')
       }
+    }
+
+    if (!selectedStudio) {
+      console.log('[MoreFromStudio] Could not find any studio with new games to recommend')
     }
 
     return NextResponse.json({
@@ -113,7 +117,7 @@ export async function GET(request: Request) {
       games: recommendations
     })
   } catch (error) {
-    console.error('Error in more-from-studio:', error)
+    console.error('[MoreFromStudio] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
