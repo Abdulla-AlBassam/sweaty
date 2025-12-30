@@ -17,7 +17,7 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed, FriendWhoPlayed } from '../hooks/useSupabase'
+import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed } from '../hooks/useSupabase'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import AddToListModal from '../components/AddToListModal'
@@ -353,18 +353,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         {/* Friends Who Played */}
         {friendsWhoPlayed.length > 0 && (
           <View style={styles.friendsSection}>
-            <Text style={styles.friendsSectionTitle}>
-              {friendsWhoPlayed.length} {friendsWhoPlayed.length === 1 ? 'friend' : 'friends'} played this
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.friendsScrollContent}
-            >
+            <Text style={styles.friendsSectionTitle}>Friends Who Played</Text>
+            <View style={styles.friendsRow}>
               {friendsWhoPlayed.map((friend) => (
                 <TouchableOpacity
                   key={friend.id}
-                  style={styles.friendItem}
                   onPress={() => navigation.navigate('UserProfile', { username: friend.username })}
                 >
                   {friend.avatar_url ? (
@@ -374,18 +367,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                       <Ionicons name="person" size={16} color={Colors.textMuted} />
                     </View>
                   )}
-                  <Text style={styles.friendName} numberOfLines={1}>
-                    {friend.display_name || friend.username}
-                  </Text>
-                  {friend.rating && (
-                    <View style={styles.friendRating}>
-                      <Ionicons name="star" size={10} color="#FFD700" />
-                      <Text style={styles.friendRatingText}>{friend.rating}</Text>
-                    </View>
-                  )}
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
           </View>
         )}
 
@@ -635,39 +619,18 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginBottom: Spacing.sm,
   },
-  friendsScrollContent: {
-    gap: Spacing.md,
-  },
-  friendItem: {
-    alignItems: 'center',
-    width: 60,
+  friendsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
   },
   friendAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginBottom: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   friendAvatarPlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  friendName: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.text,
-    textAlign: 'center',
-  },
-  friendRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    marginTop: 2,
-  },
-  friendRatingText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
-    color: Colors.text,
   },
 })
