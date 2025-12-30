@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sweaty Logo - RGB Chromatic Aberration Effect -->
+  <!-- Teardrop/Water drop shape based on Ionicons "water" -->
+
+  <!-- Background (optional - remove for transparent) -->
+  <!-- <rect width="512" height="512" fill="#0f0f0f"/> -->
+
+  <!-- Cyan layer (offset left, behind) -->
+  <path
+    d="M256 48C256 48 144 176 144 288C144 349.856 194.144 400 256 400C317.856 400 368 349.856 368 288C368 176 256 48 256 48Z"
+    fill="#00ffff"
+    fill-opacity="0.6"
+    transform="translate(-6, 0)"
+  />
+
+  <!-- Green layer (offset right, behind) -->
+  <path
+    d="M256 48C256 48 144 176 144 288C144 349.856 194.144 400 256 400C317.856 400 368 349.856 368 288C368 176 256 48 256 48Z"
+    fill="#22c55e"
+    fill-opacity="0.6"
+    transform="translate(6, 0)"
+  />
+
+  <!-- Main white layer (front) -->
+  <path
+    d="M256 48C256 48 144 176 144 288C144 349.856 194.144 400 256 400C317.856 400 368 349.856 368 288C368 176 256 48 256 48Z"
+    fill="#ffffff"
+  />
+</svg>
