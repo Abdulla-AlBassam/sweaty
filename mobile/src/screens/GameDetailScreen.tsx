@@ -23,6 +23,7 @@ import AddToListModal from '../components/AddToListModal'
 import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
 import TrailerSection from '../components/TrailerSection'
+import TwitchStreamsSection from '../components/TwitchStreamsSection'
 import { GameDetailSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
@@ -315,6 +316,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.summaryText}>{game.summary}</Text>
           </View>
         )}
+
+        {/* Live on Twitch */}
+        <TwitchStreamsSection gameName={game.name} />
 
         {/* Trailers */}
         {game.videos && game.videos.length > 0 && (
