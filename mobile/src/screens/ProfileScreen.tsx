@@ -32,6 +32,7 @@ import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
 import GlitchBorder from '../components/GlitchBorder'
+import SweatDropIcon from '../components/SweatDropIcon'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = 180
@@ -403,7 +404,7 @@ export default function ProfileScreen() {
                         <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
                       ) : (
                         <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                          <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                          <SweatDropIcon size={20} variant="static" />
                         </View>
                       )}
                     </GlitchBorder>
@@ -448,7 +449,7 @@ export default function ProfileScreen() {
                     />
                   ) : (
                     <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -549,7 +550,7 @@ export default function ProfileScreen() {
                     />
                   ) : (
                     <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
                   {(log.rating || log.review) && (
@@ -565,7 +566,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+              <SweatDropIcon size={48} variant="static" />
               <Text style={styles.emptyText}>
                 {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
               </Text>

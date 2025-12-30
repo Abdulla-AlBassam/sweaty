@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
@@ -26,7 +26,8 @@ import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import StackedAvatars from '../components/StackedAvatars'
-import TerminalAICard from '../components/TerminalAICard'
+import ChromeAICard from '../components/ChromeAICard'
+import SweatDropIcon from '../components/SweatDropIcon'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 import { GlitchHeader } from '../components/GlitchText'
@@ -253,19 +254,22 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Terminal Search Header */}
+      {/* Chrome Glitch Search Header */}
       <View style={styles.header}>
-        <LinearGradient
-          colors={[Colors.surfaceLight, Colors.surface, Colors.background]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.searchGradient}
-        >
+        <View style={styles.searchContainer}>
+          {/* RGB Glitch Border Layers */}
+          <View style={[styles.searchBorderLayer, styles.searchBorderCyan]} />
+          <View style={[styles.searchBorderLayer, styles.searchBorderGreen]} />
+          <View style={[styles.searchBorderLayer, styles.searchBorderPink]} />
+
+          {/* Main Search Bar */}
           <View style={styles.searchBar}>
-            <Text style={styles.searchPrompt}>{'>'}</Text>
+            <View style={styles.searchIconContainer}>
+              <SweatDropIcon size={20} variant="static" />
+            </View>
             <TextInput
               style={styles.input}
-              placeholder="search --query"
+              placeholder="Search games..."
               placeholderTextColor={Colors.textDim}
               value={query}
               onChangeText={setQuery}
@@ -275,12 +279,11 @@ export default function SearchScreen() {
             />
             {query.length > 0 && (
               <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={18} color={Colors.accent} />
+                <Ionicons name="close-circle" size={18} color={Colors.pink} />
               </TouchableOpacity>
             )}
-            <Text style={styles.searchCursor}>_</Text>
           </View>
-        </LinearGradient>
+        </View>
       </View>
 
       {/* Content */}
@@ -374,8 +377,8 @@ export default function SearchScreen() {
             />
           }
         >
-          {/* Terminal AI Card */}
-          <TerminalAICard onPress={() => navigation.navigate('AIRecommend')} />
+          {/* Chrome AI Card */}
+          <ChromeAICard onPress={() => navigation.navigate('AIRecommend')} />
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
@@ -478,36 +481,52 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.lg,
   },
-  searchGradient: {
+  searchContainer: {
+    position: 'relative',
+  },
+  searchBorderLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.accent + '40',
-    ...Glow.subtle,
+    borderWidth: 2,
+  },
+  searchBorderCyan: {
+    borderColor: Colors.cyan,
+    opacity: 0.5,
+    transform: [{ translateX: -1.5 }],
+  },
+  searchBorderGreen: {
+    borderColor: Colors.accent,
+    opacity: 0.5,
+    transform: [{ translateX: 1.5 }],
+  },
+  searchBorderPink: {
+    borderColor: Colors.pink,
+    opacity: 0.4,
+    transform: [{ translateY: 0.5 }],
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
   },
-  searchPrompt: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.lg,
-    color: Colors.accent,
+  searchIconContainer: {
     marginRight: Spacing.sm,
   },
   input: {
     flex: 1,
-    fontFamily: Fonts.mono,
-    color: Colors.accent,
+    fontFamily: Fonts.body,
+    color: Colors.text,
     fontSize: FontSize.md,
     paddingVertical: Spacing.sm,
-  },
-  searchCursor: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.lg,
-    color: Colors.accent,
-    marginLeft: 2,
   },
   clearButton: {
     padding: Spacing.sm,

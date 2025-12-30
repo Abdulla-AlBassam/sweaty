@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
@@ -31,6 +31,8 @@ import XPProgressBar from '../components/XPProgressBar'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
 import { ProfileSkeleton } from '../components/skeletons'
+import GlitchBorder from '../components/GlitchBorder'
+import SweatDropIcon from '../components/SweatDropIcon'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = 180
@@ -529,13 +531,19 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     style={styles.favoriteSlot}
                     onPress={() => handleGamePress(game.id)}
                   >
-                    {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
-                    ) : (
-                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                        <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
-                      </View>
-                    )}
+                    <GlitchBorder
+                      borderRadius={BorderRadius.md}
+                      borderWidth={2}
+                      intensity="medium"
+                    >
+                      {coverUrl ? (
+                        <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                      ) : (
+                        <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                          <SweatDropIcon size={20} variant="static" />
+                        </View>
+                      )}
+                    </GlitchBorder>
                   </TouchableOpacity>
                 )
               })}
@@ -570,7 +578,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -654,7 +662,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
                   {(log.rating || log.review) && (
@@ -670,7 +678,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+              <SweatDropIcon size={48} variant="static" />
               <Text style={styles.emptyText}>
                 {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
               </Text>
@@ -983,8 +991,6 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.accent,
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.surface,
