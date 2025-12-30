@@ -45,14 +45,21 @@ export async function GET(request: Request) {
     const companyPromises = sampleGameIds.map(id => getGameWithCompany(id))
     const companyResults = await Promise.all(companyPromises)
 
+    // Generic publishers to skip (we want actual dev studios)
+    const genericPublishers = [
+      'sony', 'microsoft', 'nintendo', 'xbox', 'playstation',
+      'ea sports', 'electronic arts', 'activision', 'ubisoft',
+      'square enix', 'bandai namco', 'sega', 'capcom', 'konami',
+      'take-two', '2k games', 'thq', 'deep silver', 'focus entertainment',
+      'devolver digital', 'annapurna', 'team17', 'raw fury', 'humble games'
+    ]
+
     for (const result of companyResults) {
       if (result?.companies) {
         for (const company of result.companies) {
+          const companyLower = company.toLowerCase()
           // Skip generic publishers
-          if (company.toLowerCase().includes('sony') ||
-              company.toLowerCase().includes('microsoft') ||
-              company.toLowerCase().includes('nintendo') ||
-              company.toLowerCase().includes('xbox')) {
+          if (genericPublishers.some(p => companyLower.includes(p))) {
             continue
           }
           companyCount.set(company, (companyCount.get(company) || 0) + 1)
