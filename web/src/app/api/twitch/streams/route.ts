@@ -164,6 +164,24 @@ function getNameVariations(gameName: string): string[] {
     variations.push(withoutMacrons)
   }
 
+  // Handle numbered sequels (e.g., "Red Dead Redemption 2" vs "Red Dead Redemption II")
+  const withRomanNumerals = gameName
+    .replace(/ 2$/i, ' II')
+    .replace(/ 3$/i, ' III')
+    .replace(/ 4$/i, ' IV')
+  if (withRomanNumerals !== gameName) {
+    variations.push(withRomanNumerals)
+  }
+
+  // Reverse - Roman numerals to Arabic
+  const withArabicNumerals = gameName
+    .replace(/ II$/i, ' 2')
+    .replace(/ III$/i, ' 3')
+    .replace(/ IV$/i, ' 4')
+  if (withArabicNumerals !== gameName) {
+    variations.push(withArabicNumerals)
+  }
+
   // Remove subtitles after colon/dash
   const simplifiedName = gameName.split(/[:\-–—]/)[0].trim()
   if (simplifiedName !== gameName && simplifiedName.length > 3) {
