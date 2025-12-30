@@ -75,27 +75,41 @@ export async function GET(request: Request) {
       })
     }
 
-    // Find the most common studio
+    // Find the most common studios
     const sortedStudios = Array.from(companyCount.entries())
       .sort((a, b) => b[1] - a[1])
 
-    const topStudio = sortedStudios[0][0]
+    console.log('[MoreFromStudio] Top studios:', sortedStudios.slice(0, 5).map(s => `${s[0]} (${s[1]})`))
 
-    // Get games from that studio
-    const studioGames = await getGamesByCompany(topStudio, 20)
+    // Try each studio until we find one with games
+    let selectedStudio: string | null = null
+    let recommendations: { id: number; name: string; coverUrl: string | null }[] = []
 
-    // Filter out games already in user's library
-    const recommendations = studioGames
-      .filter(game => !userGameIds.has(game.id))
-      .slice(0, 15)
-      .map(game => ({
-        id: game.id,
-        name: game.name,
-        coverUrl: game.coverUrl
-      }))
+    for (const [studio] of sortedStudios.slice(0, 5)) {
+      console.log('[MoreFromStudio] Trying studio:', studio)
+      const studioGames = await getGamesByCompany(studio, 20)
+      console.log('[MoreFromStudio] Got', studioGames.length, 'games from', studio)
+
+      // Filter out games already in user's library
+      const filtered = studioGames
+        .filter(game => !userGameIds.has(game.id))
+        .slice(0, 15)
+        .map(game => ({
+          id: game.id,
+          name: game.name,
+          coverUrl: game.coverUrl
+        }))
+
+      if (filtered.length > 0) {
+        selectedStudio = studio
+        recommendations = filtered
+        console.log('[MoreFromStudio] Found', filtered.length, 'recommendations from', studio)
+        break
+      }
+    }
 
     return NextResponse.json({
-      studio: topStudio,
+      studio: selectedStudio,
       games: recommendations
     })
   } catch (error) {
