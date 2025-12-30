@@ -12,12 +12,6 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
-// Convert seconds to hours (rounded to 1 decimal)
-function secondsToHours(seconds?: number): number | null {
-  if (!seconds) return null
-  return Math.round(seconds / 3600 * 10) / 10
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -27,7 +21,6 @@ export async function GET(
   try {
     const token = await getAccessToken()
 
-    // Base query without time_to_beat (it's often not available)
     const query = `
       fields name, slug, summary, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating,
@@ -45,7 +38,6 @@ export async function GET(
       body: query,
     })
 
-    // Check if IGDB returned an error
     if (!response.ok) {
       console.error('IGDB API error:', response.status, await response.text())
       return NextResponse.json({ error: 'IGDB API error' }, { status: 502 })
@@ -58,40 +50,6 @@ export async function GET(
     }
 
     const game = games[0]
-
-    // Try to fetch time_to_beat separately (it's often missing)
-    let howLongToBeat = null
-    try {
-      const hltbQuery = `
-        fields time_to_beat.hastily, time_to_beat.normally, time_to_beat.completely;
-        where id = ${gameId};
-      `
-      const hltbResponse = await fetch('https://api.igdb.com/v4/games', {
-        method: 'POST',
-        headers: {
-          'Client-ID': TWITCH_CLIENT_ID,
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'text/plain',
-        },
-        body: hltbQuery,
-      })
-
-      if (hltbResponse.ok) {
-        const hltbData = await hltbResponse.json()
-        if (hltbData?.[0]?.time_to_beat) {
-          const ttb = hltbData[0].time_to_beat
-          const main = secondsToHours(ttb.normally)
-          const mainExtra = secondsToHours(ttb.hastily)
-          const completionist = secondsToHours(ttb.completely)
-          if (main || mainExtra || completionist) {
-            howLongToBeat = { main, mainExtra, completionist }
-          }
-        }
-      }
-    } catch (hltbError) {
-      // HLTB fetch failed - just continue without it
-      console.log('HLTB fetch failed (non-critical):', hltbError)
-    }
 
     return NextResponse.json({
       id: game.id,
@@ -110,8 +68,7 @@ export async function GET(
       videos: game.videos?.map((v: any) => ({
         videoId: v.video_id,
         name: v.name || 'Trailer'
-      })) || [],
-      howLongToBeat
+      })) || []
     })
   } catch (error) {
     console.error('Error fetching game details:', error)

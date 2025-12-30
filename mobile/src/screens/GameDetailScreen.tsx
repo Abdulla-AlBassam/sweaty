@@ -17,7 +17,7 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { useOpenCritic, useCommunityStats } from '../hooks/useSupabase'
+import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed, FriendWhoPlayed } from '../hooks/useSupabase'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import AddToListModal from '../components/AddToListModal'
@@ -34,12 +34,6 @@ interface GameVideo {
   name: string
 }
 
-interface HowLongToBeat {
-  main: number | null
-  mainExtra: number | null
-  completionist: number | null
-}
-
 interface GameDetails {
   id: number
   name: string
@@ -53,7 +47,6 @@ interface GameDetails {
   platforms?: string[]
   rating?: number
   videos?: GameVideo[]
-  howLongToBeat?: HowLongToBeat | null
 }
 
 interface UserGameLog {
@@ -79,6 +72,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   // Fetch ratings data
   const { data: openCriticData } = useOpenCritic(gameId, game?.name || '')
   const { stats: communityStats, refetch: refetchCommunityStats } = useCommunityStats(gameId)
+
+  // Fetch friends who played this game
+  const { friends: friendsWhoPlayed } = useFriendsWhoPlayed(gameId, user?.id)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
@@ -285,8 +281,8 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
 
-            {/* Inline Ratings & HLTB */}
-            {(openCriticData?.score || communityStats.averageRating || game.howLongToBeat?.main) && (
+            {/* Inline Ratings */}
+            {(openCriticData?.score || communityStats.averageRating) && (
               <View style={styles.inlineRatings}>
                 {openCriticData?.score && (
                   <View style={styles.ratingItem}>
@@ -302,15 +298,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                     <View style={styles.communityRating}>
                       <Ionicons name="star" size={14} color="#FFD700" />
                       <Text style={styles.ratingValue}>{communityStats.averageRating}</Text>
-                    </View>
-                  </View>
-                )}
-                {game.howLongToBeat?.main && (
-                  <View style={styles.ratingItem}>
-                    <Text style={styles.ratingLabel}>How Long</Text>
-                    <View style={styles.hltbValue}>
-                      <Ionicons name="time-outline" size={14} color={Colors.accent} />
-                      <Text style={styles.ratingValue}>{game.howLongToBeat.main}h</Text>
                     </View>
                   </View>
                 )}
@@ -360,6 +347,45 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                 <StarRating rating={userLog.rating} size={14} />
               </View>
             )}
+          </View>
+        )}
+
+        {/* Friends Who Played */}
+        {friendsWhoPlayed.length > 0 && (
+          <View style={styles.friendsSection}>
+            <Text style={styles.friendsSectionTitle}>
+              {friendsWhoPlayed.length} {friendsWhoPlayed.length === 1 ? 'friend' : 'friends'} played this
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.friendsScrollContent}
+            >
+              {friendsWhoPlayed.map((friend) => (
+                <TouchableOpacity
+                  key={friend.id}
+                  style={styles.friendItem}
+                  onPress={() => navigation.navigate('UserProfile', { username: friend.username })}
+                >
+                  {friend.avatar_url ? (
+                    <Image source={{ uri: friend.avatar_url }} style={styles.friendAvatar} />
+                  ) : (
+                    <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
+                      <Ionicons name="person" size={16} color={Colors.textMuted} />
+                    </View>
+                  )}
+                  <Text style={styles.friendName} numberOfLines={1}>
+                    {friend.display_name || friend.username}
+                  </Text>
+                  {friend.rating && (
+                    <View style={styles.friendRating}>
+                      <Ionicons name="star" size={10} color="#FFD700" />
+                      <Text style={styles.friendRatingText}>{friend.rating}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </View>
         )}
 
@@ -599,9 +625,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  hltbValue: {
+  // Friends Who Played styles
+  friendsSection: {
+    marginBottom: Spacing.lg,
+  },
+  friendsSectionTitle: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.sm,
+  },
+  friendsScrollContent: {
+    gap: Spacing.md,
+  },
+  friendItem: {
+    alignItems: 'center',
+    width: 60,
+  },
+  friendAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 4,
+  },
+  friendAvatarPlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  friendName: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  friendRating: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
+    marginTop: 2,
+  },
+  friendRatingText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 10,
+    color: Colors.text,
   },
 })

@@ -418,6 +418,85 @@ export function useOpenCritic(gameId: number, gameName: string) {
   return { data, isLoading }
 }
 
+// Type for friend who played a game
+export interface FriendWhoPlayed {
+  id: string
+  username: string
+  display_name: string | null
+  avatar_url: string | null
+  rating: number | null
+  status: string
+}
+
+// Hook to fetch friends who played a specific game
+export function useFriendsWhoPlayed(gameId: number, userId: string | undefined) {
+  const [friends, setFriends] = useState<FriendWhoPlayed[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!gameId || !userId) {
+      setFriends([])
+      setIsLoading(false)
+      return
+    }
+
+    const fetchFriendsWhoPlayed = async () => {
+      setIsLoading(true)
+      try {
+        // Get users the current user follows
+        const { data: following, error: followError } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', userId)
+
+        if (followError) throw followError
+
+        if (!following || following.length === 0) {
+          setFriends([])
+          setIsLoading(false)
+          return
+        }
+
+        const followingIds = following.map((f) => f.following_id)
+
+        // Get game logs from followed users for this specific game
+        const { data: logs, error: logsError } = await supabase
+          .from('game_logs')
+          .select(`
+            status,
+            rating,
+            user_id,
+            profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url)
+          `)
+          .eq('game_id', gameId)
+          .in('user_id', followingIds)
+
+        if (logsError) throw logsError
+
+        const friendsList: FriendWhoPlayed[] = (logs || []).map((log: any) => ({
+          id: log.profiles.id,
+          username: log.profiles.username,
+          display_name: log.profiles.display_name,
+          avatar_url: log.profiles.avatar_url,
+          rating: log.rating,
+          status: log.status,
+        }))
+
+        setFriends(friendsList)
+      } catch (error) {
+        console.log('Friends who played error:', error)
+        setFriends([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchFriendsWhoPlayed()
+  }, [gameId, userId])
+
+  return { friends, isLoading }
+}
+
 // Hook to fetch community rating stats for a game
 export function useCommunityStats(gameId: number) {
   const [stats, setStats] = useState<CommunityStats>({ averageRating: null, totalLogs: 0 })
