@@ -16,6 +16,7 @@ export interface Game {
 
 // User types
 export type SubscriptionTier = 'free' | 'trial' | 'monthly' | 'yearly' | 'lifetime'
+export type GamingPlatform = 'playstation' | 'xbox' | 'pc' | 'nintendo'
 
 export interface Profile {
   id: string
@@ -25,6 +26,7 @@ export interface Profile {
   banner_url: string | null
   bio: string | null
   favorite_games: number[] | null
+  gaming_platforms: GamingPlatform[] | null
   subscription_tier: SubscriptionTier
   subscription_expires_at: string | null
   trial_started_at: string | null

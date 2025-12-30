@@ -30,7 +30,9 @@ import StarRating from '../components/StarRating'
 import XPProgressBar from '../components/XPProgressBar'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
+import PlatformBadges from '../components/PlatformBadges'
 import { ProfileSkeleton } from '../components/skeletons'
+import { GamingPlatform } from '../types'
 import GlitchBorder from '../components/GlitchBorder'
 import SweatDropIcon from '../components/SweatDropIcon'
 
@@ -52,6 +54,7 @@ interface Profile {
   current_streak?: number
   longest_streak?: number
   last_activity_at?: string | null
+  gaming_platforms?: GamingPlatform[] | null
 }
 
 interface FavoriteGame {
@@ -440,6 +443,9 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               <PremiumBadge size="small" variant={profile.username === 'abdulla' ? 'developer' : 'premium'} />
             )}
             <StreakBadge streak={profile.current_streak || 0} size="medium" />
+            {profile.gaming_platforms && profile.gaming_platforms.length > 0 && (
+              <PlatformBadges platforms={profile.gaming_platforms} size="small" />
+            )}
           </View>
           <Text style={styles.username}>@{profile.username}</Text>
 

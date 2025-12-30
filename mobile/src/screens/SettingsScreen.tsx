@@ -16,7 +16,7 @@ import {
 import LoadingSpinner from '../components/LoadingSpinner'
 import SweatDropIcon from '../components/SweatDropIcon'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -29,10 +29,19 @@ import { supabase } from '../lib/supabase'
 import { usePremium } from '../hooks/usePremium'
 import BannerSelector from '../components/BannerSelector'
 import PremiumBadge from '../components/PremiumBadge'
+import PlatformBadges from '../components/PlatformBadges'
 import { BannerOption } from '../constants/banners'
+import { GamingPlatform } from '../types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_PREVIEW_HEIGHT = 80
+
+const PLATFORM_OPTIONS: { key: GamingPlatform; label: string; icon: string; iconLibrary: 'fa5' | 'mci'; color: string }[] = [
+  { key: 'playstation', label: 'PlayStation', icon: 'playstation', iconLibrary: 'fa5', color: '#006FCD' },
+  { key: 'xbox', label: 'Xbox', icon: 'xbox', iconLibrary: 'fa5', color: '#107C10' },
+  { key: 'pc', label: 'PC', icon: 'desktop-tower-monitor', iconLibrary: 'mci', color: '#FF6600' },
+  { key: 'nintendo', label: 'Nintendo', icon: 'nintendo-switch', iconLibrary: 'mci', color: '#E60012' },
+]
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 
@@ -46,6 +55,7 @@ export default function SettingsScreen() {
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
+  const [gamingPlatforms, setGamingPlatforms] = useState<GamingPlatform[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [isSavingBanner, setIsSavingBanner] = useState(false)
@@ -60,6 +70,7 @@ export default function SettingsScreen() {
       setDisplayName(profile.display_name || '')
       setUsername(profile.username || '')
       setBio(profile.bio || '')
+      setGamingPlatforms(profile.gaming_platforms || [])
     }
   }, [profile])
 
@@ -68,14 +79,21 @@ export default function SettingsScreen() {
     const originalBio = profile?.bio || ''
     const originalUsername = profile?.username || ''
     const originalAvatar = profile?.avatar_url || null
+    const originalPlatforms = profile?.gaming_platforms || []
+
+    // Check if platforms arrays are different
+    const platformsChanged =
+      gamingPlatforms.length !== originalPlatforms.length ||
+      gamingPlatforms.some(p => !originalPlatforms.includes(p))
 
     setHasChanges(
       displayName !== originalDisplayName ||
       bio !== originalBio ||
       username !== originalUsername ||
-      avatarUrl !== originalAvatar
+      avatarUrl !== originalAvatar ||
+      platformsChanged
     )
-  }, [displayName, bio, username, avatarUrl, profile])
+  }, [displayName, bio, username, avatarUrl, gamingPlatforms, profile])
 
   const validateUsername = (value: string): boolean => {
     if (value.length < 3) {
@@ -102,6 +120,14 @@ export default function SettingsScreen() {
     } else {
       setUsernameError(null)
     }
+  }
+
+  const togglePlatform = (platform: GamingPlatform) => {
+    setGamingPlatforms(prev =>
+      prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    )
   }
 
   const pickImage = async () => {
@@ -196,6 +222,7 @@ export default function SettingsScreen() {
           display_name: displayName.trim() || null,
           username: username,
           bio: bio.trim() || null,
+          gaming_platforms: gamingPlatforms,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -393,6 +420,45 @@ export default function SettingsScreen() {
                 textAlignVertical="top"
               />
               <Text style={styles.charCount}>{bio.length}/160</Text>
+            </View>
+          </View>
+
+          {/* Gaming Platforms */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>gaming platforms</Text>
+            <Text style={styles.platformSubtitle}>Select the platforms you play on</Text>
+
+            <View style={styles.platformsGrid}>
+              {PLATFORM_OPTIONS.map((platform) => {
+                const isSelected = gamingPlatforms.includes(platform.key)
+                return (
+                  <TouchableOpacity
+                    key={platform.key}
+                    style={[
+                      styles.platformButton,
+                      isSelected && { borderColor: platform.color, backgroundColor: `${platform.color}15` }
+                    ]}
+                    onPress={() => togglePlatform(platform.key)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.platformIconContainer, { backgroundColor: platform.color }]}>
+                      {platform.iconLibrary === 'fa5' ? (
+                        <FontAwesome5 name={platform.icon} size={18} color="#FFFFFF" />
+                      ) : (
+                        <MaterialCommunityIcons name={platform.icon as any} size={18} color="#FFFFFF" />
+                      )}
+                    </View>
+                    <Text style={[styles.platformLabel, isSelected && { color: Colors.text }]}>
+                      {platform.label}
+                    </Text>
+                    {isSelected && (
+                      <View style={[styles.platformCheck, { backgroundColor: platform.color }]}>
+                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
             </View>
           </View>
 
@@ -694,6 +760,48 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     textAlign: 'right',
     marginTop: Spacing.xs,
+  },
+  platformSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginBottom: Spacing.md,
+  },
+  platformsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  platformButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    paddingRight: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  platformIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  platformLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  platformCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.xs,
   },
   infoRow: {
     flexDirection: 'row',

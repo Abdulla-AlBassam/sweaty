@@ -31,6 +31,7 @@ import ListCard from '../components/ListCard'
 import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
+import PlatformBadges from '../components/PlatformBadges'
 import GlitchBorder from '../components/GlitchBorder'
 import SweatDropIcon from '../components/SweatDropIcon'
 
@@ -315,6 +316,9 @@ export default function ProfileScreen() {
             <Text style={styles.displayName}>{displayName}</Text>
             {isPremium && <PremiumBadge size="small" variant={username === 'abdulla' ? 'developer' : 'premium'} />}
             <StreakBadge streak={profile?.current_streak || 0} size="medium" />
+            {profile?.gaming_platforms && profile.gaming_platforms.length > 0 && (
+              <PlatformBadges platforms={profile.gaming_platforms} size="small" />
+            )}
           </View>
           <Text style={styles.username}>@{username}</Text>
 
