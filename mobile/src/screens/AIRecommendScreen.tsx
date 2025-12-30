@@ -5,22 +5,22 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   Image,
   Keyboard,
+  Animated,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { MainStackParamList } from '../navigation'
+import PressableScale from '../components/PressableScale'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 
@@ -39,23 +39,47 @@ interface ChatMessage {
   games?: Game[]
 }
 
-// Example prompts to help users get started
+// Example prompts with icons
 const EXAMPLE_PROMPTS = [
-  "2025 releases similar to God of War",
-  "Games like Zelda but shorter",
-  "Couch co-op for beginners",
-  "Challenging roguelikes",
-  "Story-driven games under 20 hours",
+  { text: "2025 releases similar to God of War", icon: "sword-cross" },
+  { text: "Games like Zelda but shorter", icon: "clock-outline" },
+  { text: "Couch co-op for beginners", icon: "account-group" },
+  { text: "Challenging roguelikes", icon: "skull" },
+  { text: "Story-driven games under 20 hours", icon: "book-open-variant" },
 ]
 
 export default function AIRecommendScreen() {
   const navigation = useNavigation<NavigationProp>()
   const scrollViewRef = useRef<ScrollView>(null)
 
+  // Animated values for glitch effect
+  const glitchAnim = useRef(new Animated.Value(0)).current
+  const pulseAnim = useRef(new Animated.Value(1)).current
+
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Pulse animation for the AI icon
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    )
+    pulse.start()
+    return () => pulse.stop()
+  }, [])
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -105,7 +129,6 @@ export default function AIRecommendScreen() {
     } catch (err) {
       console.error('AI recommend error:', err)
       setError('Failed to get recommendations. Please try again.')
-      // Remove the user message if we failed
       setMessages(messages)
     } finally {
       setIsLoading(false)
@@ -125,14 +148,13 @@ export default function AIRecommendScreen() {
 
     return (
       <View key={index} style={styles.messageContainer}>
-        {/* Message bubble */}
         <View style={[
           styles.messageBubble,
           isUser ? styles.userBubble : styles.assistantBubble
         ]}>
           {!isUser && (
-            <View style={styles.aiIconContainer}>
-              <Ionicons name="sparkles" size={14} color={Colors.accent} />
+            <View style={styles.aiIconSmall}>
+              <Ionicons name="sparkles" size={12} color={Colors.accent} />
             </View>
           )}
           <Text style={[
@@ -143,20 +165,23 @@ export default function AIRecommendScreen() {
           </Text>
         </View>
 
-        {/* Games grid (only for assistant messages with games) */}
         {!isUser && message.games && message.games.length > 0 && (
           <View style={styles.gamesContainer}>
-            <View style={styles.gamesGrid}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.gamesScroll}
+            >
               {message.games.map((game, gameIndex) => {
                 const coverUrl = game.coverUrl || game.cover_url
                 const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'coverBig') : null
 
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={`${game.id}-${gameIndex}`}
-                    style={styles.gameCard}
                     onPress={() => handleGamePress(game.id)}
-                    activeOpacity={0.8}
+                    haptic="light"
+                    scale={0.95}
                   >
                     {imageUrl ? (
                       <Image source={{ uri: imageUrl }} style={styles.gameCover} />
@@ -165,10 +190,10 @@ export default function AIRecommendScreen() {
                         <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
                       </View>
                     )}
-                  </TouchableOpacity>
+                  </PressableScale>
                 )
               })}
-            </View>
+            </ScrollView>
           </View>
         )}
       </View>
@@ -179,12 +204,14 @@ export default function AIRecommendScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="close" size={24} color={Colors.text} />
-        </TouchableOpacity>
+        <PressableScale onPress={() => navigation.goBack()} haptic="light">
+          <View style={styles.closeButton}>
+            <Ionicons name="close" size={24} color={Colors.text} />
+          </View>
+        </PressableScale>
         <View style={styles.headerTitleContainer}>
-          <Ionicons name="sparkles" size={18} color={Colors.accent} style={styles.headerIcon} />
-          <Text style={styles.headerTitle}>Sweaty AI</Text>
+          <Text style={styles.headerTitleGreen}>SWEATY</Text>
+          <Text style={styles.headerTitleWhite}> AI</Text>
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -194,7 +221,6 @@ export default function AIRecommendScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={0}
       >
-        {/* Chat Messages */}
         <ScrollView
           ref={scrollViewRef}
           style={styles.messagesContainer}
@@ -203,57 +229,66 @@ export default function AIRecommendScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {messages.length === 0 ? (
-            // Welcome state with example prompts
             <View style={styles.welcomeContainer}>
-              <LinearGradient
-                colors={[Colors.accent + '20', Colors.accent + '05']}
-                style={styles.welcomeGradient}
-              >
-                <View style={styles.welcomeIconContainer}>
-                  <Ionicons name="sparkles" size={32} color={Colors.accent} />
+              {/* AI Icon with pulse */}
+              <Animated.View style={[styles.aiIconContainer, { transform: [{ scale: pulseAnim }] }]}>
+                <View style={styles.aiIconInner}>
+                  <Ionicons name="sparkles" size={36} color={Colors.accent} />
                 </View>
-                <Text style={styles.welcomeTitle}>Ask Sweaty AI</Text>
-                <Text style={styles.welcomeSubtitle}>
-                  Describe what kind of game you're in the mood for and I'll find the perfect match.
-                </Text>
-              </LinearGradient>
+                {/* Glitch layers */}
+                <View style={[styles.aiIconGlitch, styles.aiIconGlitchCyan]} />
+                <View style={[styles.aiIconGlitch, styles.aiIconGlitchGreen]} />
+              </Animated.View>
 
-              <Text style={styles.examplePromptsLabel}>Try asking...</Text>
-              <View style={styles.examplePrompts}>
+              <Text style={styles.welcomeTitle}>What do you want to play?</Text>
+              <Text style={styles.welcomeSubtitle}>
+                Describe your mood and I'll find the perfect game for you.
+              </Text>
+
+              {/* Example Prompts */}
+              <View style={styles.promptsContainer}>
+                <Text style={styles.promptsLabel}>TRY ASKING</Text>
                 {EXAMPLE_PROMPTS.map((prompt, index) => (
-                  <TouchableOpacity
+                  <PressableScale
                     key={index}
-                    style={styles.examplePromptChip}
-                    onPress={() => handleExamplePrompt(prompt)}
-                    activeOpacity={0.7}
+                    onPress={() => handleExamplePrompt(prompt.text)}
+                    haptic="light"
+                    scale={0.98}
                   >
-                    <Text style={styles.examplePromptText}>{prompt}</Text>
-                    <Ionicons name="arrow-forward" size={14} color={Colors.accent} />
-                  </TouchableOpacity>
+                    <View style={styles.promptCard}>
+                      <MaterialCommunityIcons
+                        name={prompt.icon as any}
+                        size={20}
+                        color={Colors.accent}
+                        style={styles.promptIcon}
+                      />
+                      <Text style={styles.promptText}>{prompt.text}</Text>
+                      <Ionicons name="chevron-forward" size={18} color={Colors.textDim} />
+                    </View>
+                  </PressableScale>
                 ))}
               </View>
             </View>
           ) : (
-            // Chat messages
             messages.map((message, index) => renderMessage(message, index))
           )}
 
-          {/* Loading indicator */}
           {isLoading && (
             <View style={styles.loadingContainer}>
               <View style={styles.loadingBubble}>
-                <LoadingSpinner size="small" color={Colors.accent} />
-                <Text style={styles.loadingText}>Finding games for you...</Text>
+                <View style={styles.loadingDots}>
+                  <LoadingSpinner size="small" color={Colors.accent} />
+                </View>
+                <Text style={styles.loadingText}>Searching games...</Text>
               </View>
             </View>
           )}
 
-          {/* Error message */}
           {error && (
             <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={20} color={Colors.error} />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity
-                style={styles.retryButton}
+              <PressableScale
                 onPress={() => {
                   setError(null)
                   if (messages.length > 0) {
@@ -263,9 +298,10 @@ export default function AIRecommendScreen() {
                     }
                   }
                 }}
+                haptic="light"
               >
                 <Text style={styles.retryText}>Retry</Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           )}
         </ScrollView>
@@ -285,20 +321,23 @@ export default function AIRecommendScreen() {
               blurOnSubmit={false}
               onSubmitEditing={() => sendMessage(inputText)}
             />
-            <TouchableOpacity
-              style={[
-                styles.sendButton,
-                (!inputText.trim() || isLoading) && styles.sendButtonDisabled
-              ]}
+            <PressableScale
               onPress={() => sendMessage(inputText)}
               disabled={!inputText.trim() || isLoading}
+              haptic="medium"
+              scale={0.9}
             >
-              <Ionicons
-                name="send"
-                size={20}
-                color={inputText.trim() && !isLoading ? Colors.background : Colors.textDim}
-              />
-            </TouchableOpacity>
+              <View style={[
+                styles.sendButton,
+                (!inputText.trim() || isLoading) && styles.sendButtonDisabled
+              ]}>
+                <Ionicons
+                  name="arrow-up"
+                  size={22}
+                  color={inputText.trim() && !isLoading ? Colors.background : Colors.textDim}
+                />
+              </View>
+            </PressableScale>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -311,30 +350,39 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  // Header
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  backButton: {
-    padding: Spacing.xs,
+  closeButton: {
     width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  headerIcon: {
-    marginRight: Spacing.xs,
+  headerTitleGreen: {
+    fontFamily: Fonts.mono,
+    fontSize: 18,
+    fontWeight: '600',
+    color: Colors.accent,
+    letterSpacing: 2,
   },
-  headerTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
+  headerTitleWhite: {
+    fontFamily: Fonts.mono,
+    fontSize: 18,
+    fontWeight: '600',
     color: Colors.text,
+    letterSpacing: 2,
   },
   headerSpacer: {
     width: 40,
@@ -347,66 +395,93 @@ const styles = StyleSheet.create({
   },
   messagesContent: {
     paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   // Welcome state
   welcomeContainer: {
+    alignItems: 'center',
     paddingTop: Spacing.xl,
   },
-  welcomeGradient: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
+  aiIconContainer: {
+    width: 80,
+    height: 80,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.xl,
   },
-  welcomeIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+  aiIconInner: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: Colors.accent + '20',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent + '40',
+  },
+  aiIconGlitch: {
+    position: 'absolute',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 1,
+  },
+  aiIconGlitchCyan: {
+    borderColor: '#00ffff',
+    opacity: 0.3,
+    transform: [{ translateX: -2 }, { translateY: -1 }],
+  },
+  aiIconGlitchGreen: {
+    borderColor: Colors.accent,
+    opacity: 0.3,
+    transform: [{ translateX: 2 }, { translateY: 1 }],
   },
   welcomeTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.xxl,
+    fontSize: 24,
     color: Colors.text,
     marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
   welcomeSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     textAlign: 'center',
+    marginBottom: Spacing.xxl,
+    paddingHorizontal: Spacing.lg,
     lineHeight: 22,
   },
-  examplePromptsLabel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
+  // Prompts
+  promptsContainer: {
+    width: '100%',
+  },
+  promptsLabel: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    letterSpacing: 2,
     marginBottom: Spacing.md,
-    marginLeft: Spacing.xs,
   },
-  examplePrompts: {
-    gap: Spacing.sm,
-  },
-  examplePromptChip: {
+  promptCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: Colors.surface,
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  examplePromptText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.md,
-    color: Colors.text,
+  promptIcon: {
+    marginRight: Spacing.md,
+  },
+  promptText: {
     flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.text,
   },
   // Messages
   messageContainer: {
@@ -416,21 +491,17 @@ const styles = StyleSheet.create({
     maxWidth: '85%',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
   },
   userBubble: {
     alignSelf: 'flex-end',
     backgroundColor: Colors.accent,
-    borderBottomRightRadius: 4,
   },
   assistantBubble: {
     alignSelf: 'flex-start',
     backgroundColor: Colors.surface,
-    borderBottomLeftRadius: 4,
   },
-  aiIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  aiIconSmall: {
     marginBottom: Spacing.xs,
   },
   messageText: {
@@ -444,21 +515,16 @@ const styles = StyleSheet.create({
   assistantMessageText: {
     color: Colors.text,
   },
-  // Games grid
+  // Games
   gamesContainer: {
     marginTop: Spacing.md,
   },
-  gamesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  gamesScroll: {
     gap: Spacing.sm,
   },
-  gameCard: {
-    width: '31%',
-  },
   gameCover: {
-    width: '100%',
-    aspectRatio: 3 / 4,
+    width: 100,
+    height: 133,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
   },
@@ -477,32 +543,33 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.lg,
     gap: Spacing.sm,
   },
+  loadingDots: {
+    // Container for spinner
+  },
   loadingText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
+    letterSpacing: 1,
   },
   // Error
   errorContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
     backgroundColor: Colors.error + '15',
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
+    gap: Spacing.sm,
   },
   errorText: {
+    flex: 1,
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.error,
-    textAlign: 'center',
-    marginBottom: Spacing.sm,
-  },
-  retryButton: {
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.md,
   },
   retryText: {
     fontFamily: Fonts.bodySemiBold,
@@ -511,21 +578,19 @@ const styles = StyleSheet.create({
   },
   // Input
   inputContainer: {
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
     backgroundColor: Colors.background,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.xl,
+    borderRadius: 24,
     paddingLeft: Spacing.lg,
-    paddingRight: Spacing.xs,
-    paddingVertical: Spacing.xs,
+    paddingRight: 6,
+    paddingVertical: 6,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -538,9 +603,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
