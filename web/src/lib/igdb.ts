@@ -399,23 +399,26 @@ export async function getSimilarGames(gameId: number, limit: number = 15): Promi
     // Try similar_games first
     if (gameData[0]?.similar_games && gameData[0].similar_games.length > 0) {
       const similarIds = gameData[0].similar_games.slice(0, limit)
+      console.log('[getSimilarGames] Found', similarIds.length, 'similar_games IDs:', similarIds.slice(0, 5), '...')
 
       const body = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
         where id = (${similarIds.join(',')})
-          & cover != null
-          & category = (0, 8, 9, 10);
+          & cover != null;
         limit ${limit};
       `
 
       const games = await igdbFetch('games', body) as IGDBGame[]
+      console.log('[getSimilarGames] Fetched', games.length, 'games from similar_games')
 
       if (games.length > 0) {
         const sorted = games.sort((a, b) => (b.total_rating || 0) - (a.total_rating || 0))
-        console.log('[getSimilarGames] Found', sorted.length, 'similar games via similar_games field')
+        console.log('[getSimilarGames] Returning', sorted.length, 'similar games')
         return sorted.map(game => transformGame(game))
       }
+    } else {
+      console.log('[getSimilarGames] No similar_games field found for game', gameId)
     }
 
     // Fallback: Find games with same genres
@@ -423,7 +426,7 @@ export async function getSimilarGames(gameId: number, limit: number = 15): Promi
       console.log('[getSimilarGames] Falling back to genre-based search with genres:', gameData[0].genres)
       const genreIds = gameData[0].genres.slice(0, 2) // Use up to 2 genres for better matches
 
-      // Try with rating first
+      // Try with rating first (lowered threshold to 60)
       let body = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
@@ -431,14 +434,14 @@ export async function getSimilarGames(gameId: number, limit: number = 15): Promi
           & id != ${gameId}
           & cover != null
           & total_rating != null
-          & total_rating > 70
+          & total_rating > 60
           & category = (0, 8, 9, 10);
         sort total_rating desc;
         limit ${limit};
       `
 
       let games = await igdbFetch('games', body) as IGDBGame[]
-      console.log('[getSimilarGames] Found', games.length, 'genre-based recommendations (rated)')
+      console.log('[getSimilarGames] Found', games.length, 'genre-based recommendations (rated 60+)')
 
       // If no rated games, try without rating filter
       if (games.length === 0) {
@@ -508,20 +511,38 @@ export async function getGamesByCompany(companyName: string, limit: number = 15)
     const gameIds = [...new Set(involvedData.map(ic => ic.game))]
     console.log('[getGamesByCompany] Unique game IDs:', gameIds.length)
 
-    // Fetch full game details
-    const body = `
+    // Fetch full game details - first try with rating filter
+    let body = `
       fields name, slug, summary, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating, category;
       where id = (${gameIds.join(',')})
         & cover != null
-        & total_rating > 70
+        & total_rating != null
+        & total_rating > 60
         & category = (0, 8, 9, 10);
       sort total_rating desc;
       limit ${limit};
     `
 
-    const games = await igdbFetch('games', body) as IGDBGame[]
-    console.log('[getGamesByCompany] Found', games.length, 'games from', companyName)
+    let games = await igdbFetch('games', body) as IGDBGame[]
+    console.log('[getGamesByCompany] Found', games.length, 'rated games from', companyName)
+
+    // If no rated games, try without rating filter
+    if (games.length === 0) {
+      console.log('[getGamesByCompany] No rated games, trying without rating filter...')
+      body = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, category;
+        where id = (${gameIds.join(',')})
+          & cover != null
+          & category = (0, 8, 9, 10);
+        sort first_release_date desc;
+        limit ${limit};
+      `
+      games = await igdbFetch('games', body) as IGDBGame[]
+      console.log('[getGamesByCompany] Found', games.length, 'unrated games from', companyName)
+    }
+
     return games.map(game => transformGame(game))
   } catch (error) {
     console.error('getGamesByCompany error:', error)
