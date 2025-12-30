@@ -249,3 +249,14 @@ export interface PlatformGameWithMatch extends PlatformGame {
     cover_url: string | null
   } | null
 }
+
+// News types
+export interface NewsArticle {
+  id: string
+  title: string
+  source: string
+  sourceIcon: string
+  url: string
+  thumbnail: string | null
+  publishedAt: string
+}

@@ -17,6 +17,8 @@ import ListDetailScreen from '../screens/ListDetailScreen'
 import AIRecommendScreen from '../screens/AIRecommendScreen'
 import PlatformConnectionsScreen from '../screens/PlatformConnectionsScreen'
 import PlayStationImportScreen from '../screens/PlayStationImportScreen'
+import NewsScreen from '../screens/NewsScreen'
+import WebViewScreen from '../screens/WebViewScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -34,6 +36,8 @@ export type MainStackParamList = {
   AIRecommend: undefined
   PlatformConnections: undefined
   PlayStationImport: undefined
+  News: undefined
+  WebView: { url: string; title: string }
 }
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -117,6 +121,21 @@ function MainNavigator() {
         component={PlayStationImportScreen}
         options={{
           animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="News"
+        component={NewsScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="WebView"
+        component={WebViewScreen}
+        options={{
+          animation: 'slide_from_bottom',
+          presentation: 'modal',
         }}
       />
     </MainStack.Navigator>

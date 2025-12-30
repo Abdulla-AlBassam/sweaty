@@ -23,6 +23,7 @@ import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
 import GlitchLogo from '../components/GlitchLogo'
 import PressableScale from '../components/PressableScale'
+import NewsSection from '../components/NewsSection'
 
 
 export default function DashboardScreen() {
@@ -148,6 +149,9 @@ export default function DashboardScreen() {
             </ScrollView>
           </View>
         )}
+
+        {/* Gaming News Section */}
+        <NewsSection />
 
         {/* Curated Lists */}
         {listsLoading ? (
