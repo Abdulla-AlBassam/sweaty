@@ -94,7 +94,7 @@ export default function DashboardScreen() {
       >
         {/* Header: Sweat drop icon centered */}
         <View style={styles.header}>
-          <SweatDropIcon size={40} />
+          <SweatDropIcon size={40} isRefreshing={refreshing} />
         </View>
 
         {/* Currently Playing Section */}
