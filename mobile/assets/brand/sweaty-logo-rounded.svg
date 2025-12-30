@@ -1,29 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Sweaty Logo - Rounded corners for app icons -->
+  <!-- Teardrop with smile curve + RGB chromatic aberration glitch -->
 
   <!-- Dark background with rounded corners -->
-  <rect width="512" height="512" rx="102" fill="#0f0f0f"/>
+  <rect width="512" height="512" rx="96" fill="#0f0f0f"/>
 
-  <!-- Cyan layer (offset left, behind) -->
-  <path
-    d="M256 72C256 72 160 184 160 280C160 332.944 203.056 376 256 376C308.944 376 352 332.944 352 280C352 184 256 72 256 72Z"
-    fill="#00ffff"
-    fill-opacity="0.6"
-    transform="translate(-5, 0)"
-  />
+  <!-- Cyan layer (offset left-up, behind) - GLITCH -->
+  <g transform="translate(-8, -3)" opacity="0.65">
+    <path
+      d="M256 56
+         C256 56 144 188 144 304
+         C144 365.856 194.144 416 256 416
+         C317.856 416 368 365.856 368 304
+         C368 188 256 56 256 56Z"
+      fill="#00ffff"
+    />
+  </g>
 
-  <!-- Green layer (offset right, behind) -->
-  <path
-    d="M256 72C256 72 160 184 160 280C160 332.944 203.056 376 256 376C308.944 376 352 332.944 352 280C352 184 256 72 256 72Z"
-    fill="#22c55e"
-    fill-opacity="0.6"
-    transform="translate(5, 0)"
-  />
+  <!-- Green layer (offset right-down, behind) - GLITCH -->
+  <g transform="translate(8, 3)" opacity="0.65">
+    <path
+      d="M256 56
+         C256 56 144 188 144 304
+         C144 365.856 194.144 416 256 416
+         C317.856 416 368 365.856 368 304
+         C368 188 256 56 256 56Z"
+      fill="#22c55e"
+    />
+  </g>
 
   <!-- Main white layer (front) -->
   <path
-    d="M256 72C256 72 160 184 160 280C160 332.944 203.056 376 256 376C308.944 376 352 332.944 352 280C352 184 256 72 256 72Z"
+    d="M256 56
+       C256 56 144 188 144 304
+       C144 365.856 194.144 416 256 416
+       C317.856 416 368 365.856 368 304
+       C368 188 256 56 256 56Z"
     fill="#ffffff"
+  />
+
+  <!-- Smile curve cutout -->
+  <path
+    d="M200 348 Q256 382 312 348"
+    fill="none"
+    stroke="#0f0f0f"
+    stroke-width="14"
+    stroke-linecap="round"
   />
 </svg>

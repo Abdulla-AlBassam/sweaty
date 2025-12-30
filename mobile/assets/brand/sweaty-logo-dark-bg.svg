@@ -1,29 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Sweaty Logo - RGB Chromatic Aberration Effect on Dark Background -->
+  <!-- Teardrop with smile curve + RGB glitch effect -->
 
   <!-- Dark background -->
   <rect width="512" height="512" fill="#0f0f0f"/>
 
-  <!-- Cyan layer (offset left, behind) -->
-  <path
-    d="M256 48C256 48 144 176 144 288C144 349.856 194.144 400 256 400C317.856 400 368 349.856 368 288C368 176 256 48 256 48Z"
-    fill="#00ffff"
-    fill-opacity="0.6"
-    transform="translate(-6, 0)"
-  />
+  <!-- Cyan layer (offset left-up, behind) - GLITCH -->
+  <g transform="translate(-8, -3)" opacity="0.65">
+    <path
+      d="M256 48
+         C256 48 136 192 136 312
+         C136 378.274 189.726 432 256 432
+         C322.274 432 376 378.274 376 312
+         C376 192 256 48 256 48Z"
+      fill="#00ffff"
+    />
+    <!-- Smile curve cutout -->
+    <ellipse cx="256" cy="358" rx="60" ry="32" fill="#0f0f0f"/>
+  </g>
 
-  <!-- Green layer (offset right, behind) -->
-  <path
-    d="M256 48C256 48 144 176 144 288C144 349.856 194.144 400 256 400C317.856 400 368 349.856 368 288C368 176 256 48 256 48Z"
-    fill="#22c55e"
-    fill-opacity="0.6"
-    transform="translate(6, 0)"
-  />
+  <!-- Green layer (offset right-down, behind) - GLITCH -->
+  <g transform="translate(8, 3)" opacity="0.65">
+    <path
+      d="M256 48
+         C256 48 136 192 136 312
+         C136 378.274 189.726 432 256 432
+         C322.274 432 376 378.274 376 312
+         C376 192 256 48 256 48Z"
+      fill="#22c55e"
+    />
+    <!-- Smile curve cutout -->
+    <ellipse cx="256" cy="358" rx="60" ry="32" fill="#0f0f0f"/>
+  </g>
 
   <!-- Main white layer (front) -->
-  <path
-    d="M256 48C256 48 144 176 144 288C144 349.856 194.144 400 256 400C317.856 400 368 349.856 368 288C368 176 256 48 256 48Z"
-    fill="#ffffff"
-  />
+  <g>
+    <path
+      d="M256 48
+         C256 48 136 192 136 312
+         C136 378.274 189.726 432 256 432
+         C322.274 432 376 378.274 376 312
+         C376 192 256 48 256 48Z"
+      fill="#ffffff"
+    />
+    <!-- Smile curve cutout - creates the water droplet indent -->
+    <ellipse cx="256" cy="358" rx="60" ry="32" fill="#0f0f0f"/>
+  </g>
 </svg>
