@@ -590,6 +590,7 @@ const styles = StyleSheet.create({
   connectButtonWrapper: {
     position: 'relative',
     height: 40,
+    width: 130,
   },
   connectButtonLayer: {
     position: 'absolute',
