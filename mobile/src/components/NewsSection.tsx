@@ -95,8 +95,8 @@ export default function NewsSection() {
     )
   }
 
-  // Don't render if there's an error or no articles
-  if (error || (!isLoading && articles.length === 0)) {
+  // Don't render if no articles (but show error state if error)
+  if (!isLoading && !error && articles.length === 0) {
     return null
   }
 
@@ -120,6 +120,10 @@ export default function NewsSection() {
             <NewsItemSkeleton />
             <NewsItemSkeleton />
           </>
+        ) : error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Unable to load news</Text>
+          </View>
         ) : (
           articles.map((article) => (
             <NewsItem
@@ -207,5 +211,17 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surfaceLight,
+  },
+  errorContainer: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.lg,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
   },
 })
