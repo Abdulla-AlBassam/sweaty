@@ -418,25 +418,45 @@ export async function getSimilarGames(gameId: number, limit: number = 15): Promi
       }
     }
 
-    // Fallback: Find highly-rated games with same genres
+    // Fallback: Find games with same genres
     if (gameData[0]?.genres && gameData[0].genres.length > 0) {
       console.log('[getSimilarGames] Falling back to genre-based search with genres:', gameData[0].genres)
-      const genreIds = gameData[0].genres.slice(0, 3) // Use up to 3 genres
+      const genreIds = gameData[0].genres.slice(0, 2) // Use up to 2 genres for better matches
 
-      const body = `
+      // Try with rating first
+      let body = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
         where genres = (${genreIds.join(',')})
           & id != ${gameId}
           & cover != null
-          & total_rating > 75
+          & total_rating != null
+          & total_rating > 70
           & category = (0, 8, 9, 10);
         sort total_rating desc;
         limit ${limit};
       `
 
-      const games = await igdbFetch('games', body) as IGDBGame[]
-      console.log('[getSimilarGames] Found', games.length, 'genre-based recommendations')
+      let games = await igdbFetch('games', body) as IGDBGame[]
+      console.log('[getSimilarGames] Found', games.length, 'genre-based recommendations (rated)')
+
+      // If no rated games, try without rating filter
+      if (games.length === 0) {
+        console.log('[getSimilarGames] Trying without rating filter')
+        body = `
+          fields name, slug, summary, cover.image_id, first_release_date,
+                 genres.name, platforms.name, total_rating, category;
+          where genres = (${genreIds.join(',')})
+            & id != ${gameId}
+            & cover != null
+            & category = (0, 8, 9, 10);
+          sort first_release_date desc;
+          limit ${limit};
+        `
+        games = await igdbFetch('games', body) as IGDBGame[]
+        console.log('[getSimilarGames] Found', games.length, 'genre-based recommendations (unrated)')
+      }
+
       return games.map(game => transformGame(game))
     }
 
@@ -471,12 +491,28 @@ export async function getGamesByCompany(companyName: string, limit: number = 15)
     const companyId = companyData[0].id
     console.log('[getGamesByCompany] Found company:', companyData[0].name, 'ID:', companyId)
 
-    // Search for games with this company as developer or publisher via involved_companies
+    // Get involved_companies records for this company to find game IDs
+    const involvedBody = `
+      fields game;
+      where company = ${companyId} & (developer = true | publisher = true);
+      limit 100;
+    `
+
+    const involvedData = await igdbFetch('involved_companies', involvedBody) as Array<{ game: number }>
+    console.log('[getGamesByCompany] Found', involvedData.length, 'involved_companies records')
+
+    if (involvedData.length === 0) {
+      return []
+    }
+
+    const gameIds = [...new Set(involvedData.map(ic => ic.game))]
+    console.log('[getGamesByCompany] Unique game IDs:', gameIds.length)
+
+    // Fetch full game details
     const body = `
       fields name, slug, summary, cover.image_id, first_release_date,
-             genres.name, platforms.name, total_rating, category,
-             involved_companies.company, involved_companies.developer;
-      where involved_companies.company = ${companyId}
+             genres.name, platforms.name, total_rating, category;
+      where id = (${gameIds.join(',')})
         & cover != null
         & total_rating > 70
         & category = (0, 8, 9, 10);
