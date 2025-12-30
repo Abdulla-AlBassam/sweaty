@@ -26,8 +26,8 @@ import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import StackedAvatars from '../components/StackedAvatars'
-import ChromeAICard from '../components/ChromeAICard'
 import SweatDropIcon from '../components/SweatDropIcon'
+import PressableScale from '../components/PressableScale'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 import { GlitchHeader } from '../components/GlitchText'
@@ -377,8 +377,15 @@ export default function SearchScreen() {
             />
           }
         >
-          {/* Chrome AI Card */}
-          <ChromeAICard onPress={() => navigation.navigate('AIRecommend')} />
+          {/* AI Logo - Tap to open AI Recommendations */}
+          <PressableScale
+            style={styles.aiLogoContainer}
+            onPress={() => navigation.navigate('AIRecommend')}
+            haptic="light"
+            scale={0.9}
+          >
+            <SweatDropIcon size={48} variant="default" />
+          </PressableScale>
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
@@ -530,6 +537,10 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: Spacing.sm,
+  },
+  aiLogoContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
   },
   scrollView: {
     flex: 1,
