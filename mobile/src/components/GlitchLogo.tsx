@@ -9,24 +9,24 @@ export default function GlitchLogo() {
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
   const [isGlitching, setIsGlitching] = useState(false)
 
-  // Random glitch effect
+  // Random glitch effect - slower and more subtle
   useEffect(() => {
     const glitchInterval = setInterval(() => {
-      // 30% chance to glitch
-      if (Math.random() < 0.3) {
+      // 20% chance to glitch (reduced from 30%)
+      if (Math.random() < 0.2) {
         setIsGlitching(true)
         setGlitchOffset({
-          x: (Math.random() - 0.5) * 6,
-          y: (Math.random() - 0.5) * 4,
+          x: (Math.random() - 0.5) * 3,  // Reduced from 6
+          y: (Math.random() - 0.5) * 2,  // Reduced from 4
         })
 
         // Reset after short duration
         setTimeout(() => {
           setIsGlitching(false)
           setGlitchOffset({ x: 0, y: 0 })
-        }, 50 + Math.random() * 100)
+        }, 80 + Math.random() * 120)  // Slightly longer glitch
       }
-    }, 200)
+    }, 400)  // Slowed from 200ms to 400ms (50% slower)
 
     return () => clearInterval(glitchInterval)
   }, [])
@@ -86,13 +86,13 @@ const styles = StyleSheet.create({
   },
   cyanLayer: {
     color: '#00ffff',
-    opacity: 0.6,
-    transform: [{ translateX: -1.5 }],
+    opacity: 0.5,  // Reduced from 0.6
+    transform: [{ translateX: -1 }],  // Reduced from -1.5
   },
   magentaLayer: {
-    color: '#22c55e', // Green accent instead of magenta
-    opacity: 0.6,
-    transform: [{ translateX: 1.5 }],
+    color: '#22c55e', // Green accent
+    opacity: 0.5,  // Reduced from 0.6
+    transform: [{ translateX: 1 }],  // Reduced from 1.5
   },
   mainText: {
     color: '#ffffff',

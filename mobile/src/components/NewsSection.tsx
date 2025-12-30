@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   seeAll: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
-    color: Colors.textGreen,
+    color: Colors.cyan,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   cardSource: {
     fontFamily: Fonts.mono,
     fontSize: 10,
-    color: Colors.textGreen,
+    color: Colors.cyan,
     textTransform: 'uppercase',
   },
   cardTime: {

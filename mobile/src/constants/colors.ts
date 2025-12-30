@@ -1,26 +1,44 @@
 // Sweaty Theme - Refined Terminal Aesthetic
-// Premium cyberpunk with subtle green undertones
+// Premium cyberpunk with intentional color hierarchy
 
 export const Colors = {
-  // Backgrounds - Deep blacks with subtle warmth
-  background: '#0a0a0a',      // Rich black
-  surface: '#111111',         // Elevated surface
-  surfaceLight: '#1a1a1a',    // Cards and containers
-  surfaceBright: '#222222',   // Highlighted elements
+  // Backgrounds - Deep blacks with depth levels
+  background: '#0A0A0A',      // Main background (deepest)
+  surface: '#151515',         // Card/surface background
+  surfaceLight: '#1E1E1E',    // Elevated elements
+  surfaceBright: '#282828',   // Highlighted elements
 
-  // Terminal Green - Sophisticated, not neon
-  accent: '#22c55e',          // Modern green (refined)
+  // PRIMARY ACCENT (Green) - Primary actions only
+  // Use for: Primary buttons, active filters, progress bars, level bars, NOW PLAYING dot, terminal/AI elements
+  accent: '#22C55E',          // Primary green
   accentBright: '#4ade80',    // Brighter for emphasis
   accentMuted: '#16a34a',     // Dimmer green
   accentDark: '#052e16',      // Dark green tint
   accentGlow: 'rgba(34, 197, 94, 0.2)',  // Subtle glow
 
+  // SECONDARY ACCENT (Cyan) - Interactive text elements
+  // Use for: Game titles, usernames, "See All" links, secondary interactive elements
+  cyan: '#00BFFF',            // Clickable text
+  cyanBright: '#33CCFF',      // Hover/active state
+  cyanMuted: '#0099CC',       // Dimmer cyan
+  cyanGlow: 'rgba(0, 191, 255, 0.2)',  // Subtle glow
+
+  // TERTIARY ACCENT (Gold) - Achievements & ratings
+  // Use for: Star ratings, achievements, special badges
+  gold: '#FFD700',            // Star ratings
+  goldBright: '#FFED4A',      // Brighter gold
+  goldMuted: '#D4AF37',       // Dimmer gold
+  goldGlow: 'rgba(255, 215, 0, 0.2)',  // Subtle glow
+
   // Text hierarchy
-  text: '#f0f0f0',            // Primary text (off-white)
-  textBright: '#ffffff',      // Pure white for emphasis
-  textGreen: '#22c55e',       // Green accent text
-  textMuted: '#888888',       // Secondary text
-  textDim: '#555555',         // Tertiary/disabled
+  text: '#FFFFFF',            // Primary text (pure white)
+  textSecondary: '#A1A1A1',   // Secondary text
+  textMuted: '#6B6B6B',       // Muted/tertiary text
+  textDim: '#4A4A4A',         // Disabled/very muted
+
+  // Legacy aliases (for backwards compatibility)
+  textBright: '#FFFFFF',      // Alias for text
+  textGreen: '#22C55E',       // Keep for specific green text needs
 
   // Borders - Subtle definition
   border: '#222222',          // Standard border
@@ -30,11 +48,11 @@ export const Colors = {
   // Status colors - Refined palette
   error: '#ef4444',           // Red
   warning: '#f59e0b',         // Amber
-  success: '#22c55e',         // Green
+  success: '#22C55E',         // Green
 
-  // Game status colors - Cyberpunk but refined
+  // Game status colors
   statusPlaying: '#3b82f6',   // Blue
-  statusCompleted: '#22c55e', // Green
+  statusCompleted: '#22C55E', // Green
   statusPlayed: '#8b5cf6',    // Purple
   statusWantToPlay: '#f59e0b',// Amber
   statusOnHold: '#6b7280',    // Gray
@@ -59,7 +77,8 @@ export const Spacing = {
 
 // Border radius values
 export const BorderRadius = {
-  sm: 4,
+  xs: 4,
+  sm: 6,
   md: 8,
   lg: 12,
   xl: 16,
@@ -81,15 +100,31 @@ export const FontSize = {
 export const Glow = {
   // Primary green glow for interactive elements
   accent: {
-    shadowColor: '#22c55e',
+    shadowColor: '#22C55E',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
+  // Cyan glow for links/interactive text
+  cyan: {
+    shadowColor: '#00BFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  // Gold glow for ratings/achievements
+  gold: {
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
   // Subtle glow for cards and surfaces
   subtle: {
-    shadowColor: '#22c55e',
+    shadowColor: '#22C55E',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 4,

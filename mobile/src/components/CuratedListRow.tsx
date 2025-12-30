@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   seeAll: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
-    color: Colors.textGreen,
+    color: Colors.cyan,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
