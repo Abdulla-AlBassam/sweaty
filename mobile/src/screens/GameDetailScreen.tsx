@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -207,7 +208,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <Text style={styles.headerTitle}>not found</Text>
         </View>
         <View style={styles.centered}>
-          <Ionicons name="game-controller-outline" size={64} color={Colors.textDim} />
+          <SweatDropIcon size={64} variant="static" />
           <Text style={styles.errorText}>game not found</Text>
         </View>
       </SafeAreaView>
@@ -245,7 +246,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Image source={{ uri: coverUrl }} style={styles.cover} />
           ) : (
             <View style={[styles.cover, styles.coverPlaceholder]}>
-              <Ionicons name="game-controller" size={40} color={Colors.textDim} />
+              <SweatDropIcon size={40} variant="static" />
             </View>
           )}
 

@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { useNavigation, useFocusEffect } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -124,7 +125,7 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
             onPress={onContinueLogging}
             disabled={isLoading}
           >
-            <Ionicons name="game-controller-outline" size={18} color={Colors.text} />
+            <SweatDropIcon size={18} variant="static" />
             <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
               Continue Logging ({unloggedCount} games)
             </Text>

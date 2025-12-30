@@ -14,6 +14,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
@@ -375,7 +376,7 @@ export default function ListDetailScreen() {
                                 />
                               ) : (
                                 <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
-                                  <Ionicons name="game-controller" size={12} color={Colors.textDim} />
+                                  <SweatDropIcon size={12} variant="static" />
                                 </View>
                               )}
                               <Text style={styles.searchResultName} numberOfLines={1}>
@@ -420,7 +421,7 @@ export default function ListDetailScreen() {
                           />
                         ) : (
                           <View style={[styles.libraryCover, styles.coverPlaceholder, inList && styles.libraryCoverInList]}>
-                            <Ionicons name="game-controller" size={20} color={Colors.textDim} />
+                            <SweatDropIcon size={20} variant="static" />
                           </View>
                         )}
                         {inList && (
@@ -476,7 +477,7 @@ export default function ListDetailScreen() {
               </View>
             ) : (
               <View style={styles.emptyList}>
-                <Ionicons name="game-controller-outline" size={40} color={Colors.textDim} />
+                <SweatDropIcon size={40} variant="static" />
                 <Text style={styles.emptyListText}>No games in this list yet</Text>
                 {isOwner && (
                   <Text style={styles.emptyListSubtext}>Use search or tap games from your library above</Text>

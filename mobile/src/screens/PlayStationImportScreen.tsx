@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
 import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
@@ -248,7 +249,7 @@ export default function PlayStationImportScreen() {
             />
           ) : (
             <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-              <Ionicons name="game-controller" size={20} color={Colors.textDim} />
+              <SweatDropIcon size={20} variant="static" />
             </View>
           )}
           <View style={styles.gameInfo}>
@@ -400,7 +401,7 @@ export default function PlayStationImportScreen() {
           />
         ) : (
           <View style={styles.emptyContainer}>
-            <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+            <SweatDropIcon size={48} variant="static" />
             <Text style={styles.emptyText}>No games matched</Text>
             <Text style={styles.emptySubtext}>
               Try importing a different CSV file
@@ -484,7 +485,7 @@ export default function PlayStationImportScreen() {
         {/* Summary Banner */}
         <View style={styles.summaryBanner}>
           <View style={styles.summaryLeft}>
-            <Ionicons name="game-controller" size={24} color={Colors.accent} />
+            <SweatDropIcon size={24} variant="loading" />
             <Text style={styles.summaryText}>
               {remainingGames.length} games remaining
             </Text>

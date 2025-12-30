@@ -26,6 +26,7 @@ import { getGamerLevel, getSocialLevel } from '../lib/xp'
 import { useStreak } from '../hooks/useStreak'
 import { haptics } from '../hooks/useHaptics'
 import PressableScale from './PressableScale'
+import SweatDropIcon from './SweatDropIcon'
 
 // XP values for different statuses
 const GAMER_XP_VALUES: Record<string, number> = {
@@ -433,7 +434,7 @@ export default function LogGameModal({
                 <Image source={{ uri: imageUrl }} style={styles.gameCover} />
               ) : (
                 <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                  <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
+                  <SweatDropIcon size={24} variant="static" />
                 </View>
               )}
               <Text style={styles.gameTitle} numberOfLines={2}>{game.name}</Text>

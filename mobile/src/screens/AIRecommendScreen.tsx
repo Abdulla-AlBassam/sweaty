@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
@@ -187,7 +188,7 @@ export default function AIRecommendScreen() {
                       <Image source={{ uri: imageUrl }} style={styles.gameCover} />
                     ) : (
                       <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                        <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
+                        <SweatDropIcon size={24} variant="static" />
                       </View>
                     )}
                   </PressableScale>

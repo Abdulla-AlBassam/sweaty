@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { View, Text, Image, StyleSheet } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
-import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from './SweatDropIcon'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 import PressableScale from './PressableScale'
@@ -47,7 +47,7 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
     >
       {showPlaceholder ? (
         <View style={[styles.placeholder, { width, height }]}>
-          <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
+          <SweatDropIcon size={24} variant="static" />
         </View>
       ) : (
         <View style={[styles.imageContainer, { width, height }]}>

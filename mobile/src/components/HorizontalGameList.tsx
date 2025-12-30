@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from './SweatDropIcon'
 import { Colors, Spacing, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 import Skeleton from './Skeleton'
@@ -80,11 +80,7 @@ export default function HorizontalGameList({
               <Image source={{ uri: coverUrl }} style={styles.cover} />
             ) : (
               <View style={[styles.cover, styles.coverPlaceholder]}>
-                <Ionicons
-                  name="game-controller-outline"
-                  size={24}
-                  color={Colors.textDim}
-                />
+                <SweatDropIcon size={24} variant="static" />
               </View>
             )}
           </TouchableOpacity>

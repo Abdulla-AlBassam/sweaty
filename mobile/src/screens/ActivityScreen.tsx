@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { useAuth } from '../contexts/AuthContext'
 import { useActivityFeed, useOwnActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -154,20 +155,15 @@ export default function ActivityScreen() {
           <ActivitySkeletonList count={6} />
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons
-              name={
-                activeCategory === 'reviews'
-                  ? 'chatbubble-outline'
-                  : activeCategory === 'logs'
-                  ? 'game-controller-outline'
-                  : activeTab === 'friends'
-                  ? 'people-outline'
-                  : 'game-controller-outline'
-              }
-              size={48}
-              color={Colors.textDim}
-              style={styles.emptyIcon}
-            />
+            {activeCategory === 'reviews' ? (
+              <Ionicons name="chatbubble-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
+            ) : activeTab === 'friends' && activeCategory === 'all' ? (
+              <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
+            ) : (
+              <View style={styles.emptyIcon}>
+                <SweatDropIcon size={48} variant="static" />
+              </View>
+            )}
             <Text style={styles.emptyTitle}>no activity yet</Text>
             <Text style={styles.emptyText}>{getEmptyMessage()}</Text>
           </View>

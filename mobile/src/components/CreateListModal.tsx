@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from './SweatDropIcon'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
@@ -316,7 +317,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                       />
                     ) : (
                       <View style={[styles.selectedCover, styles.coverPlaceholder]}>
-                        <Ionicons name="game-controller" size={16} color={Colors.textDim} />
+                        <SweatDropIcon size={16} variant="static" />
                       </View>
                     )}
                     <View style={styles.removeIcon}>
@@ -373,7 +374,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                           />
                         ) : (
                           <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
-                            <Ionicons name="game-controller" size={12} color={Colors.textDim} />
+                            <SweatDropIcon size={12} variant="static" />
                           </View>
                         )}
                         <Text style={styles.searchResultName} numberOfLines={1}>
@@ -416,7 +417,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                         />
                       ) : (
                         <View style={[styles.libraryCover, styles.coverPlaceholder, selected && styles.libraryCoverSelected]}>
-                          <Ionicons name="game-controller" size={20} color={Colors.textDim} />
+                          <SweatDropIcon size={20} variant="static" />
                         </View>
                       )}
                       {selected && (
