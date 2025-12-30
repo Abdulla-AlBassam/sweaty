@@ -43,11 +43,12 @@ interface MoreFromStudioData {
 export function useBecauseYouLoved(userId: string | undefined) {
   const [basedOnGame, setBasedOnGame] = useState<Game | null>(null)
   const [recommendations, setRecommendations] = useState<Game[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(!!userId) // Start loading if we have userId
   const [error, setError] = useState<string | null>(null)
 
   const fetch_ = useCallback(async () => {
     if (!userId) {
+      setIsLoading(false)
       setBasedOnGame(null)
       setRecommendations([])
       return
@@ -66,10 +67,11 @@ export function useBecauseYouLoved(userId: string | undefined) {
       }
 
       const data: BecauseYouLovedData = await response.json()
+      console.log('[BecauseYouLoved] API Response:', JSON.stringify(data, null, 2))
       setBasedOnGame(data.basedOnGame)
       setRecommendations(data.recommendations || [])
     } catch (err) {
-      console.error('Error fetching because-you-loved:', err)
+      console.error('[BecauseYouLoved] Error:', err)
       setError('Failed to load recommendations')
       setBasedOnGame(null)
       setRecommendations([])
@@ -97,11 +99,12 @@ export function useBecauseYouLoved(userId: string | undefined) {
 
 export function useFriendsFavorites(userId: string | undefined) {
   const [games, setGames] = useState<GameWithFriends[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(!!userId) // Start loading if we have userId
   const [error, setError] = useState<string | null>(null)
 
   const fetch_ = useCallback(async () => {
     if (!userId) {
+      setIsLoading(false)
       setGames([])
       return
     }
@@ -119,9 +122,10 @@ export function useFriendsFavorites(userId: string | undefined) {
       }
 
       const data: FriendsFavoritesData = await response.json()
+      console.log('[FriendsFavorites] API Response:', JSON.stringify(data, null, 2))
       setGames(data.games || [])
     } catch (err) {
-      console.error('Error fetching friends-favorites:', err)
+      console.error('[FriendsFavorites] Error:', err)
       setError('Failed to load friend favorites')
       setGames([])
     } finally {
@@ -148,11 +152,12 @@ export function useFriendsFavorites(userId: string | undefined) {
 export function useMoreFromStudio(userId: string | undefined) {
   const [studio, setStudio] = useState<string | null>(null)
   const [games, setGames] = useState<Game[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(!!userId) // Start loading if we have userId
   const [error, setError] = useState<string | null>(null)
 
   const fetch_ = useCallback(async () => {
     if (!userId) {
+      setIsLoading(false)
       setStudio(null)
       setGames([])
       return
@@ -171,10 +176,11 @@ export function useMoreFromStudio(userId: string | undefined) {
       }
 
       const data: MoreFromStudioData = await response.json()
+      console.log('[MoreFromStudio] API Response:', JSON.stringify(data, null, 2))
       setStudio(data.studio)
       setGames(data.games || [])
     } catch (err) {
-      console.error('Error fetching more-from-studio:', err)
+      console.error('[MoreFromStudio] Error:', err)
       setError('Failed to load studio games')
       setStudio(null)
       setGames([])
