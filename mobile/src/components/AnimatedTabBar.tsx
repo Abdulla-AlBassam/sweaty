@@ -201,7 +201,7 @@ function GlitchAddButton({ onPress }: { onPress: () => void }) {
           },
         ]}
       >
-        {/* Cyan layer with burst */}
+        {/* Cyan layer with burst (offset left) */}
         <Animated.View
           style={[
             styles.addButtonLayer,
@@ -225,10 +225,10 @@ function GlitchAddButton({ onPress }: { onPress: () => void }) {
             },
           ]}
         >
-          <Ionicons name="add" size={22} color={Colors.cyan} />
+          <Ionicons name="add" size={22} color={Colors.background} />
         </Animated.View>
 
-        {/* Green layer with burst */}
+        {/* Green layer with burst (offset right) */}
         <Animated.View
           style={[
             styles.addButtonLayer,
@@ -252,10 +252,10 @@ function GlitchAddButton({ onPress }: { onPress: () => void }) {
             },
           ]}
         >
-          <Ionicons name="add" size={22} color={Colors.accent} />
+          <Ionicons name="add" size={22} color={Colors.background} />
         </Animated.View>
 
-        {/* Main pink button with glow pulse */}
+        {/* Main white button */}
         <Animated.View
           style={[
             styles.addButtonMain,
@@ -452,24 +452,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addButtonCyan: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: Colors.cyan,
-    opacity: 0.6,
+    backgroundColor: Colors.cyan,
+    opacity: 0.7,
   },
   addButtonGreen: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: Colors.accent,
-    opacity: 0.6,
+    backgroundColor: Colors.accent,
+    opacity: 0.7,
   },
   addButtonMain: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.text,
     width: 38,
     height: 38,
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Glow.subtle,
   },
 })
