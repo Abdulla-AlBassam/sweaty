@@ -27,11 +27,11 @@ export async function GET(
   try {
     const token = await getAccessToken()
 
+    // Base query without time_to_beat (it's often not available)
     const query = `
       fields name, slug, summary, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating,
-             videos.video_id, videos.name,
-             time_to_beat.hastily, time_to_beat.normally, time_to_beat.completely;
+             videos.video_id, videos.name;
       where id = ${gameId};
     `
 
@@ -45,6 +45,12 @@ export async function GET(
       body: query,
     })
 
+    // Check if IGDB returned an error
+    if (!response.ok) {
+      console.error('IGDB API error:', response.status, await response.text())
+      return NextResponse.json({ error: 'IGDB API error' }, { status: 502 })
+    }
+
     const games = await response.json()
 
     if (!games || games.length === 0) {
@@ -53,17 +59,38 @@ export async function GET(
 
     const game = games[0]
 
-    // Transform time_to_beat from seconds to hours
+    // Try to fetch time_to_beat separately (it's often missing)
     let howLongToBeat = null
-    if (game.time_to_beat) {
-      const ttb = game.time_to_beat
-      const main = secondsToHours(ttb.normally)
-      const mainExtra = secondsToHours(ttb.hastily)
-      const completionist = secondsToHours(ttb.completely)
-      // Only include if at least one value exists
-      if (main || mainExtra || completionist) {
-        howLongToBeat = { main, mainExtra, completionist }
+    try {
+      const hltbQuery = `
+        fields time_to_beat.hastily, time_to_beat.normally, time_to_beat.completely;
+        where id = ${gameId};
+      `
+      const hltbResponse = await fetch('https://api.igdb.com/v4/games', {
+        method: 'POST',
+        headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'text/plain',
+        },
+        body: hltbQuery,
+      })
+
+      if (hltbResponse.ok) {
+        const hltbData = await hltbResponse.json()
+        if (hltbData?.[0]?.time_to_beat) {
+          const ttb = hltbData[0].time_to_beat
+          const main = secondsToHours(ttb.normally)
+          const mainExtra = secondsToHours(ttb.hastily)
+          const completionist = secondsToHours(ttb.completely)
+          if (main || mainExtra || completionist) {
+            howLongToBeat = { main, mainExtra, completionist }
+          }
+        }
       }
+    } catch (hltbError) {
+      // HLTB fetch failed - just continue without it
+      console.log('HLTB fetch failed (non-critical):', hltbError)
     }
 
     return NextResponse.json({
