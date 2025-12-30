@@ -381,3 +381,129 @@ export async function getPopularGames(limit: number = 15): Promise<Game[]> {
     throw error
   }
 }
+
+// Get similar games to a specific game
+// Uses IGDB's similar_games field which is based on themes, genres, and gameplay
+export async function getSimilarGames(gameId: number, limit: number = 15): Promise<Game[]> {
+  try {
+    // First, get the game with its similar_games IDs
+    const gameBody = `
+      fields similar_games;
+      where id = ${gameId};
+    `
+
+    const gameData = await igdbFetch('games', gameBody) as Array<{ similar_games?: number[] }>
+
+    if (!gameData[0]?.similar_games || gameData[0].similar_games.length === 0) {
+      console.log('No similar games found for game ID:', gameId)
+      return []
+    }
+
+    const similarIds = gameData[0].similar_games.slice(0, limit)
+
+    // Fetch full details for similar games
+    const body = `
+      fields name, slug, summary, cover.image_id, first_release_date,
+             genres.name, platforms.name, total_rating, category;
+      where id = (${similarIds.join(',')})
+        & cover != null
+        & category = (0, 8, 9, 10);
+      limit ${limit};
+    `
+
+    const games = await igdbFetch('games', body) as IGDBGame[]
+
+    // Sort by rating
+    const sorted = games.sort((a, b) => (b.total_rating || 0) - (a.total_rating || 0))
+
+    return sorted.map(game => transformGame(game))
+  } catch (error) {
+    console.error('getSimilarGames error:', error)
+    return []
+  }
+}
+
+// Get games by a specific company (developer/publisher)
+export async function getGamesByCompany(companyName: string, limit: number = 15): Promise<Game[]> {
+  try {
+    // First find the company by name
+    const companyBody = `
+      fields id, name, developed, published;
+      search "${companyName}";
+      limit 1;
+    `
+
+    const companyData = await igdbFetch('companies', companyBody) as Array<{
+      id: number
+      name: string
+      developed?: number[]
+      published?: number[]
+    }>
+
+    if (!companyData[0]) {
+      console.log('Company not found:', companyName)
+      return []
+    }
+
+    const company = companyData[0]
+    const gameIds = [...(company.developed || []), ...(company.published || [])]
+    const uniqueGameIds = [...new Set(gameIds)].slice(0, limit * 2) // Get more to filter
+
+    if (uniqueGameIds.length === 0) {
+      return []
+    }
+
+    // Fetch full game details
+    const body = `
+      fields name, slug, summary, cover.image_id, first_release_date,
+             genres.name, platforms.name, total_rating, category;
+      where id = (${uniqueGameIds.join(',')})
+        & cover != null
+        & category = (0, 8, 9, 10)
+        & total_rating != null;
+      sort total_rating desc;
+      limit ${limit};
+    `
+
+    const games = await igdbFetch('games', body) as IGDBGame[]
+    return games.map(game => transformGame(game))
+  } catch (error) {
+    console.error('getGamesByCompany error:', error)
+    return []
+  }
+}
+
+// Get game with company info (for identifying user's most-played studio)
+export async function getGameWithCompany(gameId: number): Promise<{ game: Game; companies: string[] } | null> {
+  try {
+    const body = `
+      fields name, slug, summary, cover.image_id, first_release_date,
+             genres.name, platforms.name, total_rating,
+             involved_companies.company.name, involved_companies.developer, involved_companies.publisher;
+      where id = ${gameId};
+    `
+
+    const games = await igdbFetch('games', body) as Array<IGDBGame & {
+      involved_companies?: Array<{
+        company: { name: string }
+        developer: boolean
+        publisher: boolean
+      }>
+    }>
+
+    if (!games[0]) return null
+
+    const game = games[0]
+    const companies = game.involved_companies
+      ?.filter(ic => ic.developer || ic.publisher)
+      .map(ic => ic.company.name) || []
+
+    return {
+      game: transformGame(game),
+      companies
+    }
+  } catch (error) {
+    console.error('getGameWithCompany error:', error)
+    return null
+  }
+}

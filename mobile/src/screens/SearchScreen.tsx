@@ -14,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
 import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -22,13 +21,13 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
+import { useCuratedLists } from '../hooks/useSupabase'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
-import StackedAvatars from '../components/StackedAvatars'
+import CuratedListRow from '../components/CuratedListRow'
 import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
-import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
+import { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 import { GlitchHeader } from '../components/GlitchText'
 
@@ -59,7 +58,7 @@ const MAX_RECENT_SEARCHES = 5
 export default function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
-  const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
+  const { lists: curatedLists, refetch: refetchLists } = useCuratedLists()
   const [query, setQuery] = useState('')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])
   const [userResults, setUserResults] = useState<SearchUser[]>([])
@@ -121,10 +120,10 @@ export default function SearchScreen() {
     await Promise.all([
       loadTrendingGames(),
       loadCommunityGames(),
-      refetchFriendsPlaying(),
+      refetchLists(),
     ])
     setRefreshing(false)
-  }, [refetchFriendsPlaying])
+  }, [refetchLists])
 
   const loadRecentSearches = async () => {
     try {
@@ -153,7 +152,7 @@ export default function SearchScreen() {
   // Search for users in Supabase
   const searchUsers = async (searchQuery: string): Promise<SearchUser[]> => {
     try {
-      let query = supabase
+      let dbQuery = supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url')
         .or(`username.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
@@ -161,10 +160,10 @@ export default function SearchScreen() {
 
       // Exclude current user
       if (user) {
-        query = query.neq('id', user.id)
+        dbQuery = dbQuery.neq('id', user.id)
       }
 
-      const { data, error } = await query
+      const { data, error } = await dbQuery
 
       if (error) throw error
       return data || []
@@ -443,34 +442,12 @@ export default function SearchScreen() {
                 isLoading={isLoadingCommunity}
               />
             </View>
-
-            {/* What Your Friends Are Playing */}
-            {friendsPlaying.length > 0 && (
-              <View style={styles.discoveryRow}>
-                <Text style={styles.discoveryRowTitle}>What Your Friends Are Playing</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.friendsScroll}
-                >
-                  {friendsPlaying.map((game) => (
-                    <TouchableOpacity
-                      key={game.id}
-                      style={styles.friendsGameCard}
-                      onPress={() => handleGamePress(game.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Image
-                        source={{ uri: getIGDBImageUrl(game.cover_url) }}
-                        style={styles.friendsGameCover}
-                      />
-                      <StackedAvatars users={game.friends} />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
           </View>
+
+          {/* Curated Discovery Lists */}
+          {curatedLists.map((list) => (
+            <CuratedListRow key={list.id} list={list} />
+          ))}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -692,20 +669,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sectionHeaderBelow,
     textTransform: 'uppercase',
     letterSpacing: 1,
-  },
-  friendsScroll: {
-    paddingHorizontal: Spacing.screenPadding,
-    gap: Spacing.cardGap,               // 12px gap
-  },
-  friendsGameCard: {
-    position: 'relative',
-    width: 100,
-  },
-  friendsGameCover: {
-    width: 100,
-    height: 133,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,

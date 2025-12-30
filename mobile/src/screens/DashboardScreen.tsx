@@ -7,6 +7,7 @@ import {
   RefreshControl,
   Image,
   Animated,
+  TouchableOpacity,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -17,20 +18,32 @@ import { MainStackParamList } from '../navigation'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
+import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
+import { useBecauseYouLoved, useFriendsFavorites, useMoreFromStudio } from '../hooks/useRecommendations'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
 import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
+import StackedAvatars from '../components/StackedAvatars'
 import NewsSection from '../components/NewsSection'
+import Skeleton from '../components/Skeleton'
 
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
-  const { user, profile } = useAuth()
-  const { logs, isLoading: logsLoading, refetch: refetchLogs } = useGameLogs(user?.id)
+  const { user } = useAuth()
+  const { logs, refetch: refetchLogs } = useGameLogs(user?.id)
   const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
+
+  // Friends playing
+  const { games: friendsPlaying, isLoading: friendsLoading, refetch: refetchFriends } = useFriendsPlaying(user?.id)
+
+  // Personalized recommendations
+  const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id)
+  const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
+  const { studio, games: studioGames, isLoading: studioLoading, refetch: refetchStudio } = useMoreFromStudio(user?.id)
 
   const [refreshing, setRefreshing] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
@@ -63,9 +76,13 @@ export default function DashboardScreen() {
     await Promise.all([
       refetchLogs(),
       refetchLists(),
+      refetchFriends(),
+      refetchLoved(),
+      refetchFavorites(),
+      refetchStudio(),
     ])
     setRefreshing(false)
-  }, [refetchLogs, refetchLists])
+  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchStudio])
 
 
   // Currently playing games
@@ -75,9 +92,28 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
+  // Get 2025 Essentials curated list (or first available)
+  const featuredCuratedList = useMemo(() => {
+    const essentials = curatedLists.find(list => list.slug === '2025-essentials')
+    return essentials || curatedLists[0] || null
+  }, [curatedLists])
+
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
   }
+
+  // Skeleton for horizontal game rows
+  const HorizontalSkeleton = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.horizontalScroll}
+    >
+      {[1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} width={105} height={140} borderRadius={BorderRadius.md} />
+      ))}
+    </ScrollView>
+  )
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -104,9 +140,9 @@ export default function DashboardScreen() {
           <SweatDropIcon size={40} isRefreshing={refreshing} />
         </PressableScale>
 
-        {/* Currently Playing Section */}
+        {/* NOW PLAYING Section */}
         {currentlyPlaying.length > 0 && (
-          <View style={styles.currentlyPlayingSection}>
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
                 <Text style={styles.sectionTitle}>Now Playing</Text>
@@ -116,7 +152,7 @@ export default function DashboardScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.currentlyPlayingScroll}
+              contentContainerStyle={styles.horizontalScroll}
             >
               {currentlyPlaying.map((log: any) => {
                 const game = log.games_cache
@@ -132,9 +168,9 @@ export default function DashboardScreen() {
                     scale={0.95}
                   >
                     {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.nowPlayingCover} />
+                      <Image source={{ uri: coverUrl }} style={styles.gameCover} />
                     ) : (
-                      <View style={[styles.nowPlayingCover, styles.coverPlaceholder]}>
+                      <View style={[styles.gameCover, styles.coverPlaceholder]}>
                         <Text style={styles.placeholderText}>?</Text>
                       </View>
                     )}
@@ -145,18 +181,156 @@ export default function DashboardScreen() {
           </View>
         )}
 
+        {/* FRIENDS ARE PLAYING Section */}
+        {(friendsLoading || friendsPlaying.length > 0) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Friends Are Playing</Text>
+            </View>
+            {friendsLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {friendsPlaying.map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.friendsGameCard}
+                    onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.cover_url) }}
+                      style={styles.gameCover}
+                    />
+                    <StackedAvatars users={game.friends} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* FOR YOU: BECAUSE YOU LOVED [GAME] */}
+        {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.forYouTitle}>
+                Because You Loved{' '}
+                <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
+              </Text>
+            </View>
+            {lovedLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {becauseYouLovedGames.map((game) => (
+                  <PressableScale
+                    key={game.id}
+                    onPress={() => handleGamePress(game.id)}
+                    haptic="light"
+                    scale={0.95}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                      style={styles.gameCover}
+                    />
+                  </PressableScale>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* FOR YOU: POPULAR WITH YOUR FRIENDS */}
+        {(favoritesLoading || friendsFavorites.length > 0) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.forYouTitle}>Popular With Your Friends</Text>
+            </View>
+            {favoritesLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {friendsFavorites.map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.friendsFavoriteCard}
+                    onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                      style={styles.gameCover}
+                    />
+                    <View style={styles.friendCountBadge}>
+                      <Text style={styles.friendCountText}>
+                        ♥ {game.friendCount} {game.friendCount === 1 ? 'friend' : 'friends'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* FOR YOU: MORE FROM [STUDIO] */}
+        {(studioLoading || (studio && studioGames.length > 0)) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.forYouTitle}>
+                More From{' '}
+                <Text style={styles.accentText}>{studio || '...'}</Text>
+              </Text>
+            </View>
+            {studioLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {studioGames.map((game) => (
+                  <PressableScale
+                    key={game.id}
+                    onPress={() => handleGamePress(game.id)}
+                    haptic="light"
+                    scale={0.95}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                      style={styles.gameCover}
+                    />
+                  </PressableScale>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
         {/* Gaming News Section */}
         <NewsSection refreshKey={refreshCount} />
 
-        {/* Curated Lists */}
+        {/* Featured Curated List (2025 Essentials) */}
         {listsLoading ? (
           <View style={styles.listsLoading}>
-            <LoadingSpinner size="large" color={Colors.accent} />
+            <LoadingSpinner size="large" />
           </View>
-        ) : curatedLists.length > 0 ? (
-          curatedLists.map((list) => (
-            <CuratedListRow key={list.id} list={list} />
-          ))
+        ) : featuredCuratedList ? (
+          <CuratedListRow list={featuredCuratedList} />
         ) : null}
       </ScrollView>
     </SafeAreaView>
@@ -181,8 +355,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.xxl,  // 32px below header
   },
-  // Currently Playing Section
-  currentlyPlayingSection: {
+  // Sections
+  section: {
     marginBottom: Spacing.xxl,   // 32px between sections
   },
   sectionHeader: {
@@ -201,17 +375,29 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
+  forYouTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  accentText: {
+    color: Colors.cyanSoft,
+  },
   pulsingDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: Colors.accent,
   },
-  currentlyPlayingScroll: {
+  // Horizontal scroll
+  horizontalScroll: {
     paddingHorizontal: Spacing.screenPadding,
     gap: Spacing.cardGap,        // 12px gap between cards
   },
-  nowPlayingCover: {
+  // Game covers
+  gameCover: {
     width: 105,
     height: 140,
     borderRadius: BorderRadius.md,
@@ -224,6 +410,32 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: FontSize.xxl,
     color: Colors.textDim,
+  },
+  // Friends game card with avatar overlay
+  friendsGameCard: {
+    position: 'relative',
+    width: 105,
+  },
+  // Friends favorites card with count badge
+  friendsFavoriteCard: {
+    position: 'relative',
+    width: 105,
+  },
+  friendCountBadge: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: BorderRadius.xs,
+  },
+  friendCountText: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.text,
+    textAlign: 'center',
   },
   // Loading
   listsLoading: {
