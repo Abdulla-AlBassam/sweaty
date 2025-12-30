@@ -439,13 +439,13 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <Text style={styles.displayName}>
               {profile.display_name || profile.username}
             </Text>
+            {profile.gaming_platforms && profile.gaming_platforms.length > 0 && (
+              <PlatformBadges platforms={profile.gaming_platforms} size="small" />
+            )}
             {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
               <PremiumBadge size="small" variant={profile.username === 'abdulla' ? 'developer' : 'premium'} />
             )}
             <StreakBadge streak={profile.current_streak || 0} size="medium" />
-            {profile.gaming_platforms && profile.gaming_platforms.length > 0 && (
-              <PlatformBadges platforms={profile.gaming_platforms} size="small" />
-            )}
           </View>
           <Text style={styles.username}>@{profile.username}</Text>
 
