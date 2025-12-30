@@ -83,13 +83,13 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false }: Sweat
         Animated.timing(floatX, {
           toValue: targetX,
           duration,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
         Animated.timing(floatY, {
           toValue: targetY,
           duration,
-          easing: Easing.inOut(Easing.sine),
+          easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
       ]).start(() => {
