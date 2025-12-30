@@ -85,8 +85,8 @@ export async function GET(request: Request) {
     const gameMap = new Map<number, GameWithFriendCount>()
 
     for (const log of friendLogs) {
-      const gameCache = log.games_cache as { id: number; name: string; cover_url: string | null } | null
-      const profile = log.profiles as { id: string; username: string; avatar_url: string | null } | null
+      const gameCache = log.games_cache as unknown as { id: number; name: string; cover_url: string | null } | null
+      const profile = log.profiles as unknown as { id: string; username: string; avatar_url: string | null } | null
 
       if (!gameCache || userGameIds.has(log.game_id)) {
         continue // Skip games in user's library or without cache

@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     // Pick a random highly rated game
     const randomIndex = Math.floor(Math.random() * Math.min(lovedGames.length, 5)) // Top 5 loved games
     const selectedLog = lovedGames[randomIndex]
-    const gameCache = selectedLog.games_cache as { id: number; name: string; cover_url: string | null } | null
+    const gameCache = selectedLog.games_cache as unknown as { id: number; name: string; cover_url: string | null } | null
 
     if (!gameCache) {
       return NextResponse.json({
