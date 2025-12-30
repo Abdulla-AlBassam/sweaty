@@ -177,21 +177,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.xxl,
+    paddingTop: Spacing.xl,      // 24px top padding
+    paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
   },
   // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xxl,  // 32px below header
   },
   headerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: Colors.surface,
     borderWidth: 2,
     borderColor: Colors.accent,
@@ -204,38 +204,37 @@ const styles = StyleSheet.create({
   headerAvatarInitial: {
     fontFamily: Fonts.bodyBold,
     color: Colors.accent,
-    fontSize: 16,
+    fontSize: 15,
   },
   // Currently Playing Section
   currentlyPlayingSection: {
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxl,   // 32px between sections
   },
   sectionHeader: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.sectionHeaderBelow, // 16px below header
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.sm,       // Smaller, more subtle
     color: Colors.text,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
   pulsingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: Colors.accent,
   },
   currentlyPlayingScroll: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,        // 12px gap between cards
   },
   nowPlayingCover: {
     width: 105,
@@ -253,7 +252,7 @@ const styles = StyleSheet.create({
   },
   // Loading
   listsLoading: {
-    paddingVertical: Spacing.xxl,
+    paddingVertical: Spacing.xxxl,
     alignItems: 'center',
   },
 })

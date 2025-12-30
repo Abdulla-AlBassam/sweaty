@@ -630,7 +630,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxxl,          // 48px bottom padding
   },
   bannerContainer: {
     width: SCREEN_WIDTH,
@@ -659,22 +659,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.xxl,
+    fontSize: FontSize.xl,
     color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   settingsButton: {
     padding: Spacing.sm,
@@ -682,7 +684,7 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
   },
   profileSectionWithBanner: {
     marginTop: -60,
@@ -747,11 +749,11 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md,            // 12px vertical padding
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: Colors.border,
-    marginHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.screenPadding,
   },
   stat: {
     alignItems: 'center',
@@ -775,18 +777,20 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   ranksSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
+    fontSize: FontSize.sm,                  // Smaller, consistent headers
+    color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: Spacing.sectionHeaderBelow, // 16px below header
   },
   favoritesSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   favoritesTitleRow: {
     flexDirection: 'row',
@@ -805,7 +809,7 @@ const styles = StyleSheet.create({
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.md,
+    gap: Spacing.cardGap,                   // 12px gap between cards
   },
   favoriteSlot: {
     flex: 1,
@@ -830,15 +834,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   recentlyLoggedSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   recentlyLoggedScroll: {
-    marginHorizontal: -Spacing.lg,
+    marginHorizontal: -Spacing.screenPadding,
   },
   recentlyLoggedContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,                   // 12px gap between cards
   },
   recentlyLoggedCard: {
     width: 105,
@@ -850,16 +854,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   librarySection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   filterTabsContainer: {
-    marginBottom: Spacing.md,
-    marginHorizontal: -Spacing.lg,
+    marginBottom: Spacing.xxl,              // 32px below filters
+    marginHorizontal: -Spacing.screenPadding,
   },
   filterTabsContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,                   // 12px gap between pills
   },
   filterTab: {
     paddingHorizontal: Spacing.md,
@@ -891,7 +895,7 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    gap: Spacing.cardGap,                   // 12px gap between cards
   },
   gameCard: {
     width: '30%',
@@ -939,8 +943,8 @@ const styles = StyleSheet.create({
   },
   // Lists section styles
   listsSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   listsTitleRow: {
     flexDirection: 'row',
@@ -960,11 +964,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   listsScroll: {
-    marginHorizontal: -Spacing.lg,
+    marginHorizontal: -Spacing.screenPadding,
   },
   listsContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,                   // 12px gap between cards
   },
   listCardWrapper: {
     width: 280,
@@ -973,7 +977,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
   },
   seeAllListsText: {
     fontFamily: Fonts.bodySemiBold,

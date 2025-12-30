@@ -194,24 +194,26 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.lg,
   },
   title: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.xxl,
+    fontSize: FontSize.xl,
     color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   tabContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xl,            // 24px space below tabs
   },
   tabsRow: {
     flexDirection: 'row',
-    gap: Spacing.lg,
+    gap: Spacing.xl,
   },
   tab: {
     paddingVertical: Spacing.sm,
@@ -257,7 +259,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xxxl,          // 48px bottom padding
   },
   emptyState: {
     flex: 1,

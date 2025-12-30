@@ -108,10 +108,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
+    padding: Spacing.lg,               // 16px internal padding
     borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceLight,
+    borderBottomColor: Colors.border,
   },
   avatarContainer: {
     marginRight: Spacing.sm,

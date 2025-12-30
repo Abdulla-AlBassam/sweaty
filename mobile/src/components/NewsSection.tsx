@@ -162,32 +162,32 @@ export default function NewsSection() {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxl,            // 32px between sections
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.sectionHeaderBelow, // 16px below header
   },
   title: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,                // Smaller, consistent with other headers
     color: Colors.text,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   seeAll: {
     fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.cyan,
+    fontSize: FontSize.xs,                // 12px
+    color: Colors.textSecondary,          // Gray instead of cyan
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
   },
   scrollContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,                 // 12px gap between cards
   },
   card: {
     width: 180,
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     justifyContent: 'flex-end',
-    padding: Spacing.md,
+    padding: Spacing.lg,              // 16px padding
   },
   cardTitle: {
     fontFamily: Fonts.bodySemiBold,

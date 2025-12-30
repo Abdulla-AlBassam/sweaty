@@ -65,14 +65,28 @@ export const Colors = {
   glitchCyan: '#06b6d4',              // Cyan for RGB split effect
 }
 
-// Spacing values
+// Spacing values - 8px grid system
 export const Spacing = {
+  // Tight spacing (icon + label pairs)
   xs: 4,
   sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 32,
-  xxl: 48,
+  // Medium spacing (between list items, card padding)
+  md: 12,
+  // Standard padding
+  lg: 16,
+  // Section internal spacing
+  xl: 24,
+  // Between major sections
+  xxl: 32,
+  // Major visual breaks
+  xxxl: 48,
+  // Screen edge padding
+  screenPadding: 16,
+  // Card gap
+  cardGap: 12,
+  // Section header spacing
+  sectionHeaderAbove: 32,
+  sectionHeaderBelow: 16,
 }
 
 // Border radius values

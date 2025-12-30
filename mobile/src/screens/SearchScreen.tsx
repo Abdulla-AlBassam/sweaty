@@ -475,8 +475,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.lg,
   },
   searchGradient: {
     borderRadius: BorderRadius.lg,
@@ -516,7 +516,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   browseContent: {
-    paddingBottom: Spacing.xxl,
+    paddingTop: Spacing.xl,             // 24px top padding
+    paddingBottom: Spacing.xxxl,        // 48px bottom padding
   },
   centered: {
     flex: 1,
@@ -536,14 +537,16 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
   section: {
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.xxl,            // 32px above section
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    fontSize: FontSize.sm,              // Smaller, consistent
+    color: Colors.textSecondary,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.sectionHeaderBelow,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   userRow: {
     flexDirection: 'row',
@@ -586,27 +589,27 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,               // 12px gap
   },
   gridItem: {
     width: '30%',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.cardGap,
   },
   recentSection: {
-    paddingTop: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingHorizontal: Spacing.screenPadding,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.sectionHeaderBelow,
   },
   recentSectionTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 12,
-    color: Colors.accent,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -643,27 +646,27 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   discoverSection: {
-    marginTop: Spacing.xl,
+    marginTop: Spacing.xxl,             // 32px above discover
   },
   discoverHeader: {
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.xl,           // 24px below header
   },
   discoveryRow: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxl,          // 32px between rows
   },
   discoveryRowTitle: {
     fontFamily: Fonts.mono,
-    fontSize: 12,
-    color: Colors.textMuted,
-    marginLeft: Spacing.lg,
-    marginBottom: 12,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginLeft: Spacing.screenPadding,
+    marginBottom: Spacing.sectionHeaderBelow,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   friendsScroll: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,               // 12px gap
   },
   friendsGameCard: {
     position: 'relative',
