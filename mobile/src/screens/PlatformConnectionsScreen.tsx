@@ -121,14 +121,19 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
         {/* Continue Logging button - show on its own row if there are unlogged games */}
         {isConnected && platform === 'playstation' && unloggedCount !== undefined && unloggedCount > 0 && onContinueLogging && (
           <TouchableOpacity
-            style={[styles.actionButton, styles.actionButtonPrimary, styles.actionButtonFullWidth]}
+            style={styles.continueButtonWrapper}
             onPress={onContinueLogging}
             disabled={isLoading}
           >
-            <SweatDropIcon size={18} variant="static" />
-            <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
-              Continue Logging ({unloggedCount} games)
-            </Text>
+            {/* RGB Chromatic aberration layers */}
+            <View style={[styles.continueButtonLayer, styles.continueButtonCyan]} />
+            <View style={[styles.continueButtonLayer, styles.continueButtonGreen]} />
+            <View style={styles.continueButton}>
+              <SweatDropIcon size={18} variant="static" />
+              <Text style={styles.continueButtonText}>
+                Continue Logging ({unloggedCount} games)
+              </Text>
+            </View>
           </TouchableOpacity>
         )}
 
@@ -178,22 +183,29 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
           </>
         ) : (
           <TouchableOpacity
-            style={[styles.actionButton, styles.actionButtonPrimary]}
+            style={styles.connectButtonWrapper}
             onPress={onConnect}
             disabled={isLoading}
           >
             {isLoading ? (
-              <LoadingSpinner size="small" color={Colors.text} />
+              <View style={styles.connectButton}>
+                <LoadingSpinner size="small" color={Colors.background} />
+              </View>
             ) : (
               <>
-                <Ionicons
-                  name={platform === 'playstation' ? 'cloud-upload-outline' : 'link-outline'}
-                  size={18}
-                  color={Colors.text}
-                />
-                <Text style={[styles.actionButtonText, styles.actionButtonTextPrimary]}>
-                  {platform === 'playstation' ? 'Import CSV' : 'Connect'}
-                </Text>
+                {/* RGB Chromatic aberration layers */}
+                <View style={[styles.connectButtonLayer, styles.connectButtonCyan]} />
+                <View style={[styles.connectButtonLayer, styles.connectButtonGreen]} />
+                <View style={styles.connectButton}>
+                  <Ionicons
+                    name={platform === 'playstation' ? 'cloud-upload-outline' : 'link-outline'}
+                    size={18}
+                    color={Colors.background}
+                  />
+                  <Text style={styles.connectButtonText}>
+                    {platform === 'playstation' ? 'Import CSV' : 'Connect'}
+                  </Text>
+                </View>
               </>
             )}
           </TouchableOpacity>
@@ -533,8 +545,88 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surfaceLight,
   },
-  actionButtonPrimary: {
+  // Chrome aesthetic buttons
+  continueButtonWrapper: {
+    position: 'relative',
+    height: 44,
+    width: '100%',
+  },
+  continueButtonLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: BorderRadius.md,
+  },
+  continueButtonCyan: {
+    backgroundColor: Colors.cyan,
+    opacity: 0.7,
+    transform: [{ translateX: -2 }],
+  },
+  continueButtonGreen: {
     backgroundColor: Colors.accent,
+    opacity: 0.7,
+    transform: [{ translateX: 2 }],
+  },
+  continueButton: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.text,
+    borderRadius: BorderRadius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+  },
+  continueButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.background,
+  },
+  connectButtonWrapper: {
+    position: 'relative',
+    height: 40,
+  },
+  connectButtonLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: BorderRadius.md,
+  },
+  connectButtonCyan: {
+    backgroundColor: Colors.cyan,
+    opacity: 0.7,
+    transform: [{ translateX: -1.5 }],
+  },
+  connectButtonGreen: {
+    backgroundColor: Colors.accent,
+    opacity: 0.7,
+    transform: [{ translateX: 1.5 }],
+  },
+  connectButton: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.text,
+    borderRadius: BorderRadius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+  },
+  connectButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.background,
   },
   actionButtonDanger: {
     borderWidth: 1,

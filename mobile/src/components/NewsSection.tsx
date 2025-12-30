@@ -20,6 +20,22 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled
 }
 
+// Decode HTML entities in text
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&#039;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+}
+
 // Format relative time
 function formatTimeAgo(dateString: string): string {
   const now = new Date()
@@ -70,7 +86,7 @@ function NewsCard({ article, onPress }: NewsCardProps) {
         />
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={3}>
-            {article.title}
+            {decodeHtmlEntities(article.title)}
           </Text>
           <View style={styles.cardMeta}>
             <Text style={styles.cardSource}>{article.source}</Text>

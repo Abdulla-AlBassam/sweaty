@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -11,8 +11,10 @@ import {
   Platform,
   Image,
   Dimensions,
+  Animated,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -433,9 +435,19 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* App Info */}
+          {/* App Info with Chrome Aesthetic */}
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>sweaty</Text>
+            <View style={styles.appLogoContainer}>
+              <SweatDropIcon size={32} variant="static" />
+              <View style={styles.appNameWrapper}>
+                {/* Cyan layer */}
+                <Text style={[styles.appNameLayer, styles.appNameCyan]}>sweaty</Text>
+                {/* Green layer */}
+                <Text style={[styles.appNameLayer, styles.appNameGreen]}>sweaty</Text>
+                {/* Main white text */}
+                <Text style={styles.appName}>sweaty</Text>
+              </View>
+            </View>
             <Text style={styles.appVersion}>Version 1.0.0</Text>
           </View>
         </ScrollView>
@@ -749,10 +761,33 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.xxl,
   },
+  appLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  appNameWrapper: {
+    position: 'relative',
+  },
+  appNameLayer: {
+    position: 'absolute',
+    fontFamily: Fonts.display,
+    fontSize: FontSize.lg,
+  },
+  appNameCyan: {
+    color: Colors.cyan,
+    opacity: 0.6,
+    transform: [{ translateX: -1.5 }],
+  },
+  appNameGreen: {
+    color: Colors.accent,
+    opacity: 0.6,
+    transform: [{ translateX: 1.5 }],
+  },
   appName: {
     fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    color: Colors.accent,
+    color: Colors.text,
   },
   appVersion: {
     fontFamily: Fonts.body,
