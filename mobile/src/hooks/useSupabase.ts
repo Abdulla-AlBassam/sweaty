@@ -1,6 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { Game, GameLog, Profile, ActivityItem, CuratedList, CuratedListWithGames } from '../types'
+import { API_CONFIG } from '../constants'
+
+// OpenCritic data type
+export interface OpenCriticData {
+  score: number | null
+  tier: string | null
+  numReviews: number | null
+}
+
+// Community stats type
+export interface CommunityStats {
+  averageRating: number | null
+  totalLogs: number
+}
 
 export function useGameLogs(userId: string | undefined) {
   const [logs, setLogs] = useState<GameLog[]>([])
@@ -359,4 +373,95 @@ export function useCuratedLists() {
   }, [fetchLists])
 
   return { lists, isLoading, error, refetch: fetchLists }
+}
+
+// Hook to fetch OpenCritic score for a game
+export function useOpenCritic(gameId: number, gameName: string) {
+  const [data, setData] = useState<OpenCriticData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!gameId || !gameName) {
+      setData(null)
+      setIsLoading(false)
+      return
+    }
+
+    const fetchOpenCritic = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch(
+          `${API_CONFIG.baseUrl}/api/opencritic/${gameId}?name=${encodeURIComponent(gameName)}`
+        )
+
+        if (response.ok) {
+          const result = await response.json()
+          setData({
+            score: result.score,
+            tier: result.tier,
+            numReviews: result.numReviews,
+          })
+        } else {
+          setData(null)
+        }
+      } catch (error) {
+        console.log('OpenCritic fetch error:', error)
+        setData(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchOpenCritic()
+  }, [gameId, gameName])
+
+  return { data, isLoading }
+}
+
+// Hook to fetch community rating stats for a game
+export function useCommunityStats(gameId: number) {
+  const [stats, setStats] = useState<CommunityStats>({ averageRating: null, totalLogs: 0 })
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchStats = useCallback(async () => {
+    if (!gameId) {
+      setStats({ averageRating: null, totalLogs: 0 })
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      // Get all ratings for this game
+      const { data, error } = await supabase
+        .from('game_logs')
+        .select('rating')
+        .eq('game_id', gameId)
+        .not('rating', 'is', null)
+
+      if (error) throw error
+
+      const ratings = (data || []).map((d: { rating: number }) => d.rating).filter((r): r is number => r !== null)
+      const totalLogs = ratings.length
+
+      if (totalLogs === 0) {
+        setStats({ averageRating: null, totalLogs: 0 })
+      } else {
+        const sum = ratings.reduce((a, b) => a + b, 0)
+        const average = Math.round((sum / totalLogs) * 10) / 10 // Round to 1 decimal
+        setStats({ averageRating: average, totalLogs })
+      }
+    } catch (error) {
+      console.log('Community stats error:', error)
+      setStats({ averageRating: null, totalLogs: 0 })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [gameId])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
+
+  return { stats, isLoading, refetch: fetchStats }
 }

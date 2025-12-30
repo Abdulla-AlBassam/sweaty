@@ -17,6 +17,7 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useOpenCritic, useCommunityStats } from '../hooks/useSupabase'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import AddToListModal from '../components/AddToListModal'
@@ -67,6 +68,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [isAddToListVisible, setIsAddToListVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+
+  // Fetch ratings data
+  const { data: openCriticData } = useOpenCritic(gameId, game?.name || '')
+  const { stats: communityStats, refetch: refetchCommunityStats } = useCommunityStats(gameId)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
@@ -156,10 +161,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   }, [user, gameId])
 
   const handleLogSaveSuccess = useCallback(() => {
-    // Refresh the user's log and reviews after saving
+    // Refresh the user's log, reviews, and community stats after saving
     fetchUserLog()
     setReviewsRefreshKey(prev => prev + 1)
-  }, [fetchUserLog])
+    refetchCommunityStats()
+  }, [fetchUserLog, refetchCommunityStats])
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
@@ -169,8 +175,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
       fetchUserLog(),
     ])
     setReviewsRefreshKey(prev => prev + 1)
+    refetchCommunityStats()
     setRefreshing(false)
-  }, [fetchUserLog])
+  }, [fetchUserLog, refetchCommunityStats])
 
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
@@ -181,6 +188,17 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     const date = game?.firstReleaseDate || game?.first_release_date
     if (!date) return null
     return new Date(date).getFullYear()
+  }
+
+  // Get color based on OpenCritic tier
+  const getOpenCriticColor = (tier: string | null) => {
+    switch (tier) {
+      case 'Mighty': return '#66CC33' // Green
+      case 'Strong': return '#4A90D9' // Blue
+      case 'Fair': return '#FFCC33' // Amber/Yellow
+      case 'Weak': return '#FF6633' // Red/Orange
+      default: return Colors.textMuted
+    }
   }
 
   if (isLoading) {
@@ -258,6 +276,29 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             )}
             {game.genres && game.genres.length > 0 && (
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
+            )}
+
+            {/* Inline Ratings */}
+            {(openCriticData?.score || communityStats.averageRating) && (
+              <View style={styles.inlineRatings}>
+                {openCriticData?.score && (
+                  <View style={styles.ratingItem}>
+                    <Text style={styles.ratingLabel}>OpenCritic</Text>
+                    <Text style={[styles.ratingValue, { color: getOpenCriticColor(openCriticData.tier) }]}>
+                      {openCriticData.score}
+                    </Text>
+                  </View>
+                )}
+                {communityStats.averageRating && (
+                  <View style={styles.ratingItem}>
+                    <Text style={styles.ratingLabel}>Community</Text>
+                    <View style={styles.communityRating}>
+                      <Ionicons name="star" size={14} color="#FFD700" />
+                      <Text style={styles.ratingValue}>{communityStats.averageRating}</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
             )}
           </View>
         </View>
@@ -517,5 +558,29 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
+  },
+  inlineRatings: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
+  },
+  ratingItem: {
+    alignItems: 'flex-start',
+  },
+  ratingLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginBottom: 2,
+  },
+  ratingValue: {
+    fontFamily: Fonts.displayBold,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+  },
+  communityRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
 })
