@@ -35,6 +35,11 @@ import StreakBadge from '../components/StreakBadge'
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = 180
 
+// Calculate game card width for 3-column grid with proper gaps
+const GRID_PADDING = Spacing.screenPadding * 2  // 32px total horizontal padding
+const GRID_GAPS = Spacing.cardGap * 2           // 24px total gaps (2 gaps for 3 columns)
+const GAME_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GRID_GAPS) / 3
+
 interface FavoriteGame {
   id: number
   name: string
@@ -898,8 +903,7 @@ const styles = StyleSheet.create({
     gap: Spacing.cardGap,                   // 12px gap between cards
   },
   gameCard: {
-    width: '30%',
-    marginBottom: Spacing.sm,
+    width: GAME_CARD_WIDTH,                 // Calculated for even spacing
   },
   gameCover: {
     width: '100%',

@@ -21,7 +21,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
-import GlitchLogo from '../components/GlitchLogo'
+import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
 import NewsSection from '../components/NewsSection'
 
@@ -73,9 +73,6 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
-  const displayName = profile?.display_name || profile?.username || 'Gamer'
-  const avatarInitial = displayName.charAt(0).toUpperCase()
-
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
   }
@@ -95,18 +92,9 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Header: Logo left, Profile right */}
+        {/* Header: Sweat drop icon centered */}
         <View style={styles.header}>
-          <GlitchLogo />
-          <PressableScale onPress={() => navigation.navigate('Profile')} haptic="light" scale={0.9}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
-            ) : (
-              <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
-                <Text style={styles.headerAvatarInitial}>{avatarInitial}</Text>
-              </View>
-            )}
-          </PressableScale>
+          <SweatDropIcon size={40} />
         </View>
 
         {/* Currently Playing Section */}
@@ -182,29 +170,9 @@ const styles = StyleSheet.create({
   },
   // Header
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.xxl,  // 32px below header
-  },
-  headerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.accent,
-  },
-  headerAvatarFallback: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-  },
-  headerAvatarInitial: {
-    fontFamily: Fonts.bodyBold,
-    color: Colors.accent,
-    fontSize: 15,
   },
   // Currently Playing Section
   currentlyPlayingSection: {
