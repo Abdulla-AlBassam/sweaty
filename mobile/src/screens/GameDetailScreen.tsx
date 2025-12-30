@@ -34,6 +34,12 @@ interface GameVideo {
   name: string
 }
 
+interface HowLongToBeat {
+  main: number | null
+  mainExtra: number | null
+  completionist: number | null
+}
+
 interface GameDetails {
   id: number
   name: string
@@ -47,6 +53,7 @@ interface GameDetails {
   platforms?: string[]
   rating?: number
   videos?: GameVideo[]
+  howLongToBeat?: HowLongToBeat | null
 }
 
 interface UserGameLog {
@@ -278,8 +285,8 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
 
-            {/* Inline Ratings */}
-            {(openCriticData?.score || communityStats.averageRating) && (
+            {/* Inline Ratings & HLTB */}
+            {(openCriticData?.score || communityStats.averageRating || game.howLongToBeat?.main) && (
               <View style={styles.inlineRatings}>
                 {openCriticData?.score && (
                   <View style={styles.ratingItem}>
@@ -295,6 +302,15 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                     <View style={styles.communityRating}>
                       <Ionicons name="star" size={14} color="#FFD700" />
                       <Text style={styles.ratingValue}>{communityStats.averageRating}</Text>
+                    </View>
+                  </View>
+                )}
+                {game.howLongToBeat?.main && (
+                  <View style={styles.ratingItem}>
+                    <Text style={styles.ratingLabel}>How Long</Text>
+                    <View style={styles.hltbValue}>
+                      <Ionicons name="time-outline" size={14} color={Colors.accent} />
+                      <Text style={styles.ratingValue}>{game.howLongToBeat.main}h</Text>
                     </View>
                   </View>
                 )}
@@ -579,6 +595,11 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   communityRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  hltbValue: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
