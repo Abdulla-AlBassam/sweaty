@@ -87,21 +87,21 @@ export async function GET(request: Request) {
 
       console.log('[BecauseYouLoved] Trying:', basedOnGame.name, '(ID:', gameId, ', rating:', selectedLog.rating, '★)')
 
-      // Get smart similar games from IGDB
+      // Get smart similar games from IGDB - request 50 to get good variety
       const similarGames = await getSmartSimilarGames(basedOnGame.id, 50)
       console.log('[BecauseYouLoved] IGDB returned', similarGames.length, 'similar games for', basedOnGame.name)
 
-      // Filter out games already in user's library
+      // Don't filter out user's library - they might want to see games they have
+      // Just return all recommendations
       const recommendations = similarGames
-        .filter(game => !userGameIds.has(game.id))
-        .slice(0, 15)
+        .slice(0, 30)
         .map(game => ({
           id: game.id,
           name: game.name,
           coverUrl: game.coverUrl
         }))
 
-      console.log('[BecauseYouLoved] After filtering user library:', recommendations.length, 'recommendations remain')
+      console.log('[BecauseYouLoved] Returning', recommendations.length, 'recommendations')
 
       // If we found at least 3 recommendations, return them
       if (recommendations.length >= 3) {

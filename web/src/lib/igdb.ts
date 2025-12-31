@@ -759,24 +759,28 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       fallbackGames.push(...genreGames)
     }
 
-    // Step 2: Build final list with STRICT priority ordering
-    // Series games MUST come first, then similar games, then fallbacks
+    // Step 2: Build final list - INTERLEAVE series and similar for variety
+    // We want a mix: series games first, but also include similar games for variety
     const seenIds = new Set<number>()
     const finalList: IGDBGame[] = []
     const seriesIds = new Set<number>()
     const similarIds = new Set<number>()
 
     // Add series games first (franchise + collection - HIGHEST PRIORITY)
+    // Cap at 15 series games to leave room for similar games
+    let seriesCount = 0
     for (const g of seriesGames) {
-      if (!seenIds.has(g.id)) {
+      if (!seenIds.has(g.id) && seriesCount < 15) {
         seenIds.add(g.id)
         seriesIds.add(g.id)
         finalList.push(g)
+        seriesCount++
       }
     }
     console.log('[getSmartSimilarGames] After series (franchise+collection):', finalList.length, 'games')
 
-    // Add similar games second
+    // Add ALL similar games - these are curated by IGDB and include games like
+    // Batman Arkham for Spider-Man, Tomb Raider for Uncharted, etc.
     for (const g of similarGames) {
       if (!seenIds.has(g.id)) {
         seenIds.add(g.id)
