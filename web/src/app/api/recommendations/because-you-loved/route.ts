@@ -32,19 +32,23 @@ export async function GET(request: Request) {
       .order('rating', { ascending: false })
 
     if (logsError) {
-      console.error('Error fetching loved games:', logsError)
+      console.error('[BecauseYouLoved] Error fetching loved games:', logsError)
       return NextResponse.json({ error: 'Failed to fetch user games' }, { status: 500 })
     }
 
     if (!lovedGames || lovedGames.length === 0) {
+      console.log('[BecauseYouLoved] No games rated 4+ stars found for user:', userId)
       return NextResponse.json({
         basedOnGame: null,
         recommendations: [],
-        message: 'No highly rated games found'
+        message: 'No highly rated games found',
+        debug: { gamesRated4Plus: 0 }
       })
     }
 
+    // Log ALL game IDs found so we can debug
     console.log('[BecauseYouLoved] Found', lovedGames.length, 'games rated 4+ stars')
+    console.log('[BecauseYouLoved] Game IDs:', lovedGames.map(g => `${g.game_id} (${g.rating}★)`).join(', '))
 
     // Get all game IDs in user's library (to exclude from recommendations)
     const { data: allLogs } = await supabase
@@ -53,17 +57,18 @@ export async function GET(request: Request) {
       .eq('user_id', userId)
 
     const userGameIds = new Set(allLogs?.map(log => log.game_id) || [])
+    console.log('[BecauseYouLoved] User has', userGameIds.size, 'total games in library (will exclude from recs)')
 
     // Shuffle all loved games randomly for variety on each refresh
     const shuffled = [...lovedGames].sort(() => Math.random() - 0.5)
-    const gamesToTry = shuffled.slice(0, Math.min(shuffled.length, 15)) // Try up to 15 games
+    const gamesToTry = shuffled.slice(0, Math.min(shuffled.length, 15))
 
-    console.log('[BecauseYouLoved] Will try up to', gamesToTry.length, 'games to find recommendations')
+    console.log('[BecauseYouLoved] Will try', gamesToTry.length, 'games in this order:', gamesToTry.map(g => g.game_id).join(', '))
 
     for (const selectedLog of gamesToTry) {
       const gameId = selectedLog.game_id
 
-      // Fetch game info from IGDB directly (not from cache)
+      // Fetch game info from IGDB directly
       const gameInfo = await getGameById(gameId)
 
       if (!gameInfo) {
@@ -77,10 +82,11 @@ export async function GET(request: Request) {
         coverUrl: gameInfo.coverUrl
       }
 
-      console.log('[BecauseYouLoved] Trying game:', basedOnGame.name, '(rating:', selectedLog.rating, ')')
+      console.log('[BecauseYouLoved] Trying:', basedOnGame.name, '(ID:', gameId, ', rating:', selectedLog.rating, '★)')
 
       // Get smart similar games from IGDB
       const similarGames = await getSmartSimilarGames(basedOnGame.id, 50)
+      console.log('[BecauseYouLoved] IGDB returned', similarGames.length, 'similar games for', basedOnGame.name)
 
       // Filter out games already in user's library
       const recommendations = similarGames
@@ -92,27 +98,37 @@ export async function GET(request: Request) {
           coverUrl: game.coverUrl
         }))
 
+      console.log('[BecauseYouLoved] After filtering user library:', recommendations.length, 'recommendations remain')
+
       // If we found at least 3 recommendations, return them
       if (recommendations.length >= 3) {
-        console.log('[BecauseYouLoved] Found', recommendations.length, 'recommendations for', basedOnGame.name)
+        console.log('[BecauseYouLoved] SUCCESS! Returning', recommendations.length, 'recs for', basedOnGame.name)
         return NextResponse.json({
           basedOnGame,
-          recommendations
+          recommendations,
+          debug: {
+            gamesRated4Plus: lovedGames.length,
+            gamesTried: gamesToTry.map(g => g.game_id).indexOf(selectedLog) + 1
+          }
         })
       }
 
-      console.log('[BecauseYouLoved] Only', recommendations.length, 'recommendations for', basedOnGame.name, '- trying next game')
+      console.log('[BecauseYouLoved] Not enough recs for', basedOnGame.name, '- trying next game')
     }
 
     // If no game returned enough recommendations, return empty
-    console.log('[BecauseYouLoved] No games returned sufficient recommendations after trying all')
+    console.log('[BecauseYouLoved] FAILED - no games returned sufficient recommendations after trying all', gamesToTry.length)
     return NextResponse.json({
       basedOnGame: null,
       recommendations: [],
-      message: 'Could not find recommendations'
+      message: 'Could not find recommendations',
+      debug: {
+        gamesRated4Plus: lovedGames.length,
+        allTriedGameIds: gamesToTry.map(g => g.game_id)
+      }
     })
   } catch (error) {
-    console.error('Error in because-you-loved:', error)
+    console.error('[BecauseYouLoved] Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
