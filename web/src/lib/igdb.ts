@@ -681,8 +681,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, category;
           where id = (${uniqueFranchiseIds.slice(0, 50).join(',')})
-            & cover != null
-            & category = (0, 8, 9, 10, 11);
+            & cover != null;
           limit 50;
         `
         const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
@@ -714,8 +713,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             fields name, slug, summary, cover.image_id, first_release_date,
                    genres.name, platforms.name, total_rating, category;
             where id = (${collectionGameIds.slice(0, 50).join(',')})
-              & cover != null
-              & category = (0, 8, 9, 10, 11);
+              & cover != null;
             limit 50;
           `
           const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
@@ -736,13 +734,18 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
         where id = (${similarIdsToFetch.join(',')})
-          & cover != null
-          & category = (0, 8, 9, 10, 11);
+          & cover != null;
         limit 100;
       `
-      const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', simGames.length, 'from similar_games')
-      similarGames.push(...simGames)
+      const simGames = await igdbFetch('games', similarBody) as (IGDBGame & { category?: number })[]
+      // Filter out DLCs (category 1) and other non-main game types
+      const filteredSimGames = simGames.filter(g => {
+        // Include: 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port, undefined=assume main
+        const validCategories = new Set([0, 8, 9, 10, 11, undefined])
+        return validCategories.has(g.category)
+      })
+      console.log('[getSmartSimilarGames] Got', filteredSimGames.length, 'from similar_games (after filtering DLCs)')
+      similarGames.push(...filteredSimGames)
     }
 
     // NOTE: Removed genre fallback as it was adding low-quality unrelated games
