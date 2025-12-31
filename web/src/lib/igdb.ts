@@ -654,39 +654,75 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     const fallbackGames: IGDBGame[] = []
 
     // PRIORITY 1: Games from the same FRANCHISE (most reliable for series)
-    // This is the key fix - franchises field is more consistently set than collection
+    // Query the franchises endpoint directly to get all games in the franchise
     if (game.franchises && game.franchises.length > 0) {
-      const franchiseBody = `
-        fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, category;
-        where franchises = (${game.franchises.join(',')})
-          & id != ${gameId}
-          & cover != null
-          & category = (0, 8, 9, 10, 11);
-        sort first_release_date desc;
-        limit 30;
+      // First, get the franchise details which includes the games array
+      const franchiseQuery = `
+        fields name, games;
+        where id = (${game.franchises.join(',')});
       `
-      const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', franGames.length, 'games from same FRANCHISE (series)')
-      seriesGames.push(...franGames)
+      const franchiseData = await igdbFetch('franchises', franchiseQuery) as Array<{
+        name: string
+        games?: number[]
+      }>
+
+      // Collect all game IDs from all franchises
+      const franchiseGameIds: number[] = []
+      for (const franchise of franchiseData) {
+        console.log('[getSmartSimilarGames] Franchise:', franchise.name, 'has', franchise.games?.length || 0, 'games')
+        if (franchise.games) {
+          franchiseGameIds.push(...franchise.games)
+        }
+      }
+
+      // Remove the current game and fetch details for franchise games
+      const uniqueFranchiseIds = [...new Set(franchiseGameIds)].filter(id => id !== gameId)
+
+      if (uniqueFranchiseIds.length > 0) {
+        const franchiseBody = `
+          fields name, slug, summary, cover.image_id, first_release_date,
+                 genres.name, platforms.name, total_rating, category;
+          where id = (${uniqueFranchiseIds.slice(0, 30).join(',')})
+            & cover != null;
+          limit 30;
+        `
+        const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
+        console.log('[getSmartSimilarGames] Got', franGames.length, 'games from same FRANCHISE (series)')
+        seriesGames.push(...franGames)
+      } else {
+        console.log('[getSmartSimilarGames] No other games in franchise')
+      }
     }
 
     // PRIORITY 1B: Also check collection field (some games use this instead)
+    // Query the collections endpoint directly to get all games in the collection
     if (game.collection) {
-      const collectionBody = `
-        fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, category;
-        where collection = ${game.collection}
-          & id != ${gameId}
-          & cover != null
-          & category = (0, 8, 9, 10, 11);
-        sort first_release_date desc;
-        limit 20;
+      const collectionQuery = `
+        fields name, games;
+        where id = ${game.collection};
       `
-      const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', colGames.length, 'games from same COLLECTION')
-      // Add to series games (dedupe later)
-      seriesGames.push(...colGames)
+      const collectionData = await igdbFetch('collections', collectionQuery) as Array<{
+        name: string
+        games?: number[]
+      }>
+
+      if (collectionData[0]?.games) {
+        console.log('[getSmartSimilarGames] Collection:', collectionData[0].name, 'has', collectionData[0].games.length, 'games')
+        const collectionGameIds = collectionData[0].games.filter(id => id !== gameId)
+
+        if (collectionGameIds.length > 0) {
+          const collectionBody = `
+            fields name, slug, summary, cover.image_id, first_release_date,
+                   genres.name, platforms.name, total_rating, category;
+            where id = (${collectionGameIds.slice(0, 20).join(',')})
+              & cover != null;
+            limit 20;
+          `
+          const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
+          console.log('[getSmartSimilarGames] Got', colGames.length, 'games from same COLLECTION')
+          seriesGames.push(...colGames)
+        }
+      }
     }
 
     // PRIORITY 2: IGDB's similar_games (curated similar-but-different games)
