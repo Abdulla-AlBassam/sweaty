@@ -85,13 +85,13 @@ export async function GET(request: Request) {
 
     for (const [studio] of sortedDevelopers.slice(0, 10)) {
       console.log('[MoreFromStudio] Trying studio:', studio)
-      const studioGames = await getGamesByCompany(studio, 30)
+      const studioGames = await getGamesByCompany(studio, 50)
       console.log('[MoreFromStudio] Got', studioGames.length, 'total games from', studio)
 
       // Filter out games already in user's library
       const filtered = studioGames
         .filter(game => !userGameIds.has(game.id))
-        .slice(0, 15)
+        .slice(0, 20)
         .map(game => ({
           id: game.id,
           name: game.name,

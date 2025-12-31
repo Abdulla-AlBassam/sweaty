@@ -82,12 +82,12 @@ export async function GET(request: Request) {
 
     // Get smart similar games from IGDB (uses themes, keywords, franchises)
     console.log('[BecauseYouLoved] Finding smart recommendations for:', basedOnGame.name)
-    const similarGames = await getSmartSimilarGames(basedOnGame.id, 25)
+    const similarGames = await getSmartSimilarGames(basedOnGame.id, 50)
 
-    // Filter out games already in user's library
+    // Filter out games already in user's library and take top 15
     const recommendations = similarGames
       .filter(game => !userGameIds.has(game.id))
-      .slice(0, 10)
+      .slice(0, 15)
       .map(game => ({
         id: game.id,
         name: game.name,
