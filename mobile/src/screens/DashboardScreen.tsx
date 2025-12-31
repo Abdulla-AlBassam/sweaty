@@ -375,6 +375,9 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.sectionHeaderBelow, // 16px below header
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionTitleRow: {
     flexDirection: 'row',
