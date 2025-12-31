@@ -39,6 +39,7 @@ export async function GET(request: Request) {
     }
 
     if (!following || following.length === 0) {
+      console.log('[FriendsFavorites] User is not following anyone')
       return NextResponse.json({
         games: [],
         message: 'Not following anyone yet'
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
     }
 
     const friendIds = following.map(f => f.following_id)
+    console.log('[FriendsFavorites] User follows', friendIds.length, 'people')
 
     // Get current user's game IDs (to exclude)
     const { data: userLogs } = await supabase

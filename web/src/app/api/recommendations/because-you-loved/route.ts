@@ -52,24 +52,33 @@ export async function GET(request: Request) {
 
     const userGameIds = new Set(allLogs?.map(log => log.game_id) || [])
 
-    // Pick a random highly rated game
-    const randomIndex = Math.floor(Math.random() * Math.min(lovedGames.length, 5)) // Top 5 loved games
-    const selectedLog = lovedGames[randomIndex]
-    const gameCache = selectedLog.games_cache as unknown as { id: number; name: string; cover_url: string | null } | null
+    // Filter to only games that have cache data
+    const gamesWithCache = lovedGames.filter(log => {
+      const cache = log.games_cache as unknown as { id: number } | null
+      return cache !== null
+    })
 
-    if (!gameCache) {
+    if (gamesWithCache.length === 0) {
+      console.log('[BecauseYouLoved] No cached games found for user')
       return NextResponse.json({
         basedOnGame: null,
         recommendations: [],
-        message: 'Game data not found'
+        message: 'No cached game data found'
       })
     }
+
+    // Pick a random highly rated game from those with cache
+    const randomIndex = Math.floor(Math.random() * Math.min(gamesWithCache.length, 5))
+    const selectedLog = gamesWithCache[randomIndex]
+    const gameCache = selectedLog.games_cache as unknown as { id: number; name: string; cover_url: string | null }
 
     const basedOnGame: Game = {
       id: gameCache.id,
       name: gameCache.name,
       coverUrl: gameCache.cover_url
     }
+
+    console.log('[BecauseYouLoved] Selected game:', basedOnGame.name, '(from', gamesWithCache.length, 'cached games)')
 
     // Get smart similar games from IGDB (uses themes, keywords, franchises)
     console.log('[BecauseYouLoved] Finding smart recommendations for:', basedOnGame.name)

@@ -28,13 +28,15 @@ export async function GET(request: Request) {
     }
 
     if (!userLogs || userLogs.length === 0) {
-      console.log('[MoreFromStudio] No games in library')
+      console.log('[MoreFromStudio] No games in user library')
       return NextResponse.json({
         studio: null,
         games: [],
         message: 'No games in library'
       })
     }
+
+    console.log('[MoreFromStudio] User ID:', userId)
 
     console.log('[MoreFromStudio] User has', userLogs.length, 'games in library')
     const userGameIds = new Set(userLogs.map(log => log.game_id))
