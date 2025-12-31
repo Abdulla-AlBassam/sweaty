@@ -81,7 +81,11 @@ async function searchGame(gameName, releaseYear = null, developer = null) {
       return null;
     }
 
-    const games = await response.json();
+    const data = await response.json();
+
+    // Handle both array and object responses
+    const games = Array.isArray(data) ? data : (data.games || data.results || []);
+
     if (!games || games.length === 0) {
       console.error(`  No results for "${gameName}"`);
       return null;
@@ -91,7 +95,7 @@ async function searchGame(gameName, releaseYear = null, developer = null) {
     let bestMatch = games[0];
 
     // If we have a release year, find exact match
-    if (releaseYear) {
+    if (releaseYear && Array.isArray(games)) {
       const yearMatch = games.find(g => {
         if (!g.firstReleaseDate) return false;
         const gameYear = new Date(g.firstReleaseDate).getFullYear().toString();
@@ -101,10 +105,12 @@ async function searchGame(gameName, releaseYear = null, developer = null) {
     }
 
     // If name is exact match (case insensitive), prefer it
-    const exactMatch = games.find(g =>
-      g.name.toLowerCase() === gameName.toLowerCase()
-    );
-    if (exactMatch) bestMatch = exactMatch;
+    if (Array.isArray(games)) {
+      const exactMatch = games.find(g =>
+        g.name && g.name.toLowerCase() === gameName.toLowerCase()
+      );
+      if (exactMatch) bestMatch = exactMatch;
+    }
 
     return bestMatch;
   } catch (error) {
