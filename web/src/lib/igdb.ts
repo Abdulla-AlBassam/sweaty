@@ -617,12 +617,13 @@ async function getPopularityForGames(gameIds: number[]): Promise<Map<number, num
   return popularityMap
 }
 
-// Get similar games - simple, robust approach with PopScore sorting
+// Get similar games - prioritizes same-series games (collections) + similar games
+// For Uncharted 3: returns Uncharted 1,2,4 (collection) + Tomb Raider, Last of Us (similar)
 export async function getSmartSimilarGames(gameId: number, limit: number = 15): Promise<Game[]> {
   try {
-    // Step 1: Get the base game's similar_games list from IGDB (already curated)
+    // Step 1: Get the base game's data including collections (series) and similar_games
     const gameBody = `
-      fields name, similar_games, genres, themes, franchises;
+      fields name, similar_games, genres, themes, franchises, collection;
       where id = ${gameId};
     `
     const gameData = await igdbFetch('games', gameBody) as Array<{
@@ -631,6 +632,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       genres?: number[]
       themes?: number[]
       franchises?: number[]
+      collection?: number  // e.g., "Uncharted Collection" ID
     }>
 
     if (!gameData[0]) {
@@ -640,27 +642,54 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
 
     const game = gameData[0]
     console.log('[getSmartSimilarGames] Finding similar games for:', game.name)
+    console.log('[getSmartSimilarGames] Collection ID:', game.collection, '| Similar games:', game.similar_games?.length || 0)
 
-    let allCandidates: IGDBGame[] = []
+    // We'll collect games in priority order:
+    // 1. Same collection (series) - highest priority
+    // 2. Similar games from IGDB
+    // 3. Franchise fallback
+    // 4. Genre fallback
+    const collectionGames: IGDBGame[] = []
+    const similarGames: IGDBGame[] = []
+    const fallbackGames: IGDBGame[] = []
 
-    // Strategy 1: IGDB's similar_games (primary source - IGDB curates this)
+    // Priority 1: Games from the same COLLECTION (series)
+    // This gives us Uncharted 1,2,4 when querying Uncharted 3
+    if (game.collection) {
+      const collectionBody = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, category;
+        where collection = ${game.collection}
+          & id != ${gameId}
+          & cover != null
+          & category = (0, 8, 9, 10);
+        sort first_release_date asc;
+        limit 20;
+      `
+      const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Got', colGames.length, 'games from same COLLECTION (series)')
+      collectionGames.push(...colGames)
+    }
+
+    // Priority 2: IGDB's similar_games (curated similar-but-different games)
+    // This gives us Tomb Raider, Last of Us for Uncharted 3
     if (game.similar_games && game.similar_games.length > 0) {
-      const similarIds = game.similar_games.slice(0, 40)
-      console.log('[getSmartSimilarGames] Fetching', similarIds.length, 'similar games from IGDB')
+      const similarIds = game.similar_games.slice(0, 30)
+      console.log('[getSmartSimilarGames] Fetching', similarIds.length, 'similar_games from IGDB')
 
       const similarBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
         where id = (${similarIds.join(',')}) & cover != null;
-        limit 40;
+        limit 30;
       `
-      const similarGames = await igdbFetch('games', similarBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', similarGames.length, 'from similar_games')
-      allCandidates.push(...similarGames)
+      const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Got', simGames.length, 'from similar_games')
+      similarGames.push(...simGames)
     }
 
-    // Strategy 2: Same franchise (if not enough from similar_games)
-    if (game.franchises && game.franchises.length > 0 && allCandidates.length < limit) {
+    // Priority 3: Same franchise (broader than collection)
+    if (game.franchises && game.franchises.length > 0) {
       const franchiseBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
@@ -671,30 +700,13 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         sort total_rating desc;
         limit 15;
       `
-      const franchiseGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', franchiseGames.length, 'from franchise')
-      allCandidates.push(...franchiseGames)
+      const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Got', franGames.length, 'from franchise')
+      fallbackGames.push(...franGames)
     }
 
-    // Strategy 3: Same themes (if still not enough)
-    if (game.themes && game.themes.length > 0 && allCandidates.length < limit) {
-      const themeBody = `
-        fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, category;
-        where themes = (${game.themes.slice(0, 2).join(',')})
-          & id != ${gameId}
-          & cover != null
-          & category = (0, 8, 9, 10);
-        sort total_rating desc;
-        limit 20;
-      `
-      const themeGames = await igdbFetch('games', themeBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', themeGames.length, 'from themes')
-      allCandidates.push(...themeGames)
-    }
-
-    // Strategy 4: Same genres (final fallback)
-    if (game.genres && game.genres.length > 0 && allCandidates.length < limit) {
+    // Priority 4: Same genres (final fallback)
+    if (game.genres && game.genres.length > 0 && (collectionGames.length + similarGames.length) < limit) {
       const genreBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
@@ -707,50 +719,82 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       `
       const genreGames = await igdbFetch('games', genreBody) as IGDBGame[]
       console.log('[getSmartSimilarGames] Got', genreGames.length, 'from genres')
-      allCandidates.push(...genreGames)
+      fallbackGames.push(...genreGames)
     }
 
-    // Deduplicate
-    const uniqueGames = new Map<number, IGDBGame>()
-    for (const g of allCandidates) {
-      if (!uniqueGames.has(g.id)) {
-        uniqueGames.set(g.id, g)
+    // Step 2: Build final list with priority ordering
+    // Collection games come first (same series), then similar games, then fallbacks
+    const seenIds = new Set<number>()
+    const finalList: IGDBGame[] = []
+
+    // Add collection games first (same series - highest priority)
+    for (const g of collectionGames) {
+      if (!seenIds.has(g.id)) {
+        seenIds.add(g.id)
+        finalList.push(g)
       }
     }
+    console.log('[getSmartSimilarGames] After collection:', finalList.length, 'games')
 
-    const uniqueList = Array.from(uniqueGames.values())
-    console.log('[getSmartSimilarGames] Found', uniqueList.length, 'unique candidates')
+    // Add similar games (good variety - second priority)
+    for (const g of similarGames) {
+      if (!seenIds.has(g.id)) {
+        seenIds.add(g.id)
+        finalList.push(g)
+      }
+    }
+    console.log('[getSmartSimilarGames] After similar:', finalList.length, 'games')
 
-    if (uniqueList.length === 0) {
+    // Add fallback games if needed
+    for (const g of fallbackGames) {
+      if (!seenIds.has(g.id)) {
+        seenIds.add(g.id)
+        finalList.push(g)
+      }
+    }
+    console.log('[getSmartSimilarGames] After fallbacks:', finalList.length, 'unique games total')
+
+    if (finalList.length === 0) {
       return []
     }
 
-    // Step 2: Get PopScore popularity data for these games
-    const gameIds = uniqueList.map(g => g.id)
+    // Step 3: Get PopScore popularity data for sorting within each priority tier
+    const gameIds = finalList.map(g => g.id)
     const popularityMap = await getPopularityForGames(gameIds)
     console.log('[getSmartSimilarGames] Got popularity data for', popularityMap.size, 'games')
 
-    // Step 3: Sort by combined score (popularity + rating)
-    // Formula: (rating/100 * 0.4) + (popularity_normalized * 0.6)
-    // This weights popularity higher to surface mainstream games
+    // Step 4: Sort by priority tier first, then by combined score within tier
+    // Collection games (tier 0) always come before similar games (tier 1) which come before fallbacks (tier 2)
+    const collectionIds = new Set(collectionGames.map(g => g.id))
+    const similarIds = new Set(similarGames.map(g => g.id))
+
     const maxPopularity = Math.max(...Array.from(popularityMap.values()), 0.001)
 
-    const sortedGames = uniqueList
-      .map(g => ({
-        game: g,
-        rating: g.total_rating || 0,
-        popularity: popularityMap.get(g.id) || 0,
-        // Combined score: normalized rating + normalized popularity (popularity weighted higher)
-        score: ((g.total_rating || 0) / 100 * 0.4) + ((popularityMap.get(g.id) || 0) / maxPopularity * 0.6)
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
+    const scoredGames = finalList.map(g => {
+      const tier = collectionIds.has(g.id) ? 0 : (similarIds.has(g.id) ? 1 : 2)
+      const popularity = popularityMap.get(g.id) || 0
+      const rating = g.total_rating || 0
+      // Combined score for sorting within tier
+      const score = (rating / 100 * 0.4) + (popularity / maxPopularity * 0.6)
 
-    console.log('[getSmartSimilarGames] Top 5 by score:',
-      sortedGames.slice(0, 5).map(g => `${g.game.name} (rating:${g.rating.toFixed(0)}, pop:${g.popularity.toFixed(6)}, score:${g.score.toFixed(3)})`).join(', ')
+      return { game: g, tier, rating, popularity, score }
+    })
+
+    // Sort: tier ascending (collection first), then score descending
+    scoredGames.sort((a, b) => {
+      if (a.tier !== b.tier) return a.tier - b.tier
+      return b.score - a.score
+    })
+
+    const result = scoredGames.slice(0, limit)
+
+    console.log('[getSmartSimilarGames] Final top games:',
+      result.slice(0, 8).map(g =>
+        `${g.game.name} [tier:${g.tier}]`
+      ).join(', ')
     )
 
-    return sortedGames.map(g => transformGame(g.game))
+    return result.map(g => transformGame(g.game))
   } catch (error) {
     console.error('[getSmartSimilarGames] Error:', error)
     return []
