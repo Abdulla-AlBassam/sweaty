@@ -87,14 +87,13 @@ export async function GET(request: Request) {
 
       console.log('[BecauseYouLoved] Trying:', basedOnGame.name, '(ID:', gameId, ', rating:', selectedLog.rating, '★)')
 
-      // Get smart similar games from IGDB - request 50 to get good variety
-      const similarGames = await getSmartSimilarGames(basedOnGame.id, 50)
+      // Get smart similar games from IGDB - request 100 for comprehensive recommendations
+      const similarGames = await getSmartSimilarGames(basedOnGame.id, 100)
       console.log('[BecauseYouLoved] IGDB returned', similarGames.length, 'similar games for', basedOnGame.name)
 
-      // Don't filter out user's library - they might want to see games they have
-      // Just return all recommendations
+      // Return all recommendations (up to 100) - mobile app will show 10 with "See All"
       const recommendations = similarGames
-        .slice(0, 30)
+        .slice(0, 100)
         .map(game => ({
           id: game.id,
           name: game.name,

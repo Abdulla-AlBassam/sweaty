@@ -682,9 +682,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         const franchiseBody = `
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, category;
-          where id = (${uniqueFranchiseIds.slice(0, 30).join(',')})
+          where id = (${uniqueFranchiseIds.slice(0, 50).join(',')})
             & cover != null;
-          limit 30;
+          limit 50;
         `
         const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
         console.log('[getSmartSimilarGames] Got', franGames.length, 'games from same FRANCHISE (series)')
@@ -714,9 +714,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           const collectionBody = `
             fields name, slug, summary, cover.image_id, first_release_date,
                    genres.name, platforms.name, total_rating, category;
-            where id = (${collectionGameIds.slice(0, 20).join(',')})
+            where id = (${collectionGameIds.slice(0, 50).join(',')})
               & cover != null;
-            limit 20;
+            limit 50;
           `
           const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
           console.log('[getSmartSimilarGames] Got', colGames.length, 'games from same COLLECTION')
@@ -726,16 +726,17 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
 
     // PRIORITY 2: IGDB's similar_games (curated similar-but-different games)
-    // These are games like Tomb Raider for Uncharted, or other stealth games for MGS
+    // These are games like Tomb Raider for Uncharted, Batman Arkham for Spider-Man
     if (game.similar_games && game.similar_games.length > 0) {
-      const similarIds = game.similar_games.slice(0, 40)
-      console.log('[getSmartSimilarGames] Fetching', similarIds.length, 'similar_games from IGDB')
+      // Get ALL similar games from IGDB (they curate this list)
+      const similarIdsToFetch = game.similar_games
+      console.log('[getSmartSimilarGames] Fetching', similarIdsToFetch.length, 'similar_games from IGDB')
 
       const similarBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
-        where id = (${similarIds.join(',')}) & cover != null;
-        limit 40;
+        where id = (${similarIdsToFetch.join(',')}) & cover != null;
+        limit 100;
       `
       const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
       console.log('[getSmartSimilarGames] Got', simGames.length, 'from similar_games')
@@ -752,7 +753,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           & cover != null
           & category = (0, 8, 9, 10);
         sort total_rating desc;
-        limit 30;
+        limit 50;
       `
       const genreGames = await igdbFetch('games', genreBody) as IGDBGame[]
       console.log('[getSmartSimilarGames] Got', genreGames.length, 'from genres')
@@ -760,21 +761,19 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
 
     // Step 2: Build final list - INTERLEAVE series and similar for variety
-    // We want a mix: series games first, but also include similar games for variety
+    // We want a mix: series games first, then similar games, then genre fallback
     const seenIds = new Set<number>()
     const finalList: IGDBGame[] = []
     const seriesIds = new Set<number>()
     const similarIds = new Set<number>()
 
-    // Add series games first (franchise + collection - HIGHEST PRIORITY)
-    // Cap at 15 series games to leave room for similar games
-    let seriesCount = 0
+    // Add ALL series games first (franchise + collection - HIGHEST PRIORITY)
+    // No cap - include all games from the same franchise/series
     for (const g of seriesGames) {
-      if (!seenIds.has(g.id) && seriesCount < 15) {
+      if (!seenIds.has(g.id)) {
         seenIds.add(g.id)
         seriesIds.add(g.id)
         finalList.push(g)
-        seriesCount++
       }
     }
     console.log('[getSmartSimilarGames] After series (franchise+collection):', finalList.length, 'games')
