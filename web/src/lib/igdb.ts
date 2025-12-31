@@ -587,12 +587,12 @@ export async function getGamesByCompany(companyName: string, limit: number = 15)
   }
 }
 
-// Get smart similar games - prioritizes popular, highly-rated, thematically similar games
+// Get smart similar games - prioritizes highly-rated, thematically similar games
 export async function getSmartSimilarGames(gameId: number, limit: number = 15): Promise<Game[]> {
   try {
-    // Get the game's detailed data including keywords for better matching
+    // Get the game's data
     const gameBody = `
-      fields name, similar_games, genres, themes, franchises, keywords, game_modes, player_perspectives;
+      fields name, similar_games, genres, themes, franchises;
       where id = ${gameId};
     `
 
@@ -602,9 +602,6 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       genres?: number[]
       themes?: number[]
       franchises?: number[]
-      keywords?: number[]
-      game_modes?: number[]
-      player_perspectives?: number[]
     }>
 
     if (!gameData[0]) {
@@ -614,7 +611,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
 
     const game = gameData[0]
     console.log('[getSmartSimilarGames] Finding similar games for:', game.name)
-    console.log('[getSmartSimilarGames] genres:', game.genres, 'themes:', game.themes, 'keywords:', game.keywords?.length || 0)
+    console.log('[getSmartSimilarGames] genres:', game.genres, 'themes:', game.themes, 'franchises:', game.franchises)
 
     let allCandidates: IGDBGame[] = []
 
@@ -622,7 +619,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     if (game.franchises && game.franchises.length > 0) {
       const franchiseBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, total_rating_count, category;
+               genres.name, platforms.name, total_rating, category;
         where franchises = (${game.franchises.join(',')})
           & id != ${gameId}
           & cover != null
@@ -635,35 +632,32 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       allCandidates.push(...franchiseGames)
     }
 
-    // Strategy 2: IGDB's similar_games BUT filtered for quality (rating > 70, rating_count > 20)
+    // Strategy 2: IGDB's similar_games (curated by IGDB)
     if (game.similar_games && game.similar_games.length > 0) {
-      const similarIds = game.similar_games.slice(0, 30) // Get more, then filter
+      const similarIds = game.similar_games.slice(0, 30)
       const similarBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, total_rating_count, category;
+               genres.name, platforms.name, total_rating, category;
         where id = (${similarIds.join(',')})
-          & cover != null
-          & total_rating > 70
-          & total_rating_count > 20;
+          & cover != null;
         sort total_rating desc;
-        limit 20;
+        limit 25;
       `
       const similarGames = await igdbFetch('games', similarBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', similarGames.length, 'quality games from IGDB similar_games')
+      console.log('[getSmartSimilarGames] Got', similarGames.length, 'from IGDB similar_games')
       allCandidates.push(...similarGames)
     }
 
-    // Strategy 3: Same themes AND genres (more specific matching)
+    // Strategy 3: Same themes AND genres (specific matching)
     if (game.themes && game.themes.length > 0 && game.genres && game.genres.length > 0 && allCandidates.length < limit * 2) {
       const themeGenreBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, total_rating_count, category;
+               genres.name, platforms.name, total_rating, category;
         where themes = (${game.themes.slice(0, 3).join(',')})
           & genres = (${game.genres.slice(0, 2).join(',')})
           & id != ${gameId}
           & cover != null
-          & total_rating > 75
-          & total_rating_count > 50
+          & total_rating > 70
           & category = (0, 8, 9, 10);
         sort total_rating desc;
         limit 15;
@@ -673,54 +667,51 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       allCandidates.push(...themeGenreGames)
     }
 
-    // Strategy 4: Same themes only (broader, but still thematic)
+    // Strategy 4: Same themes only (broader)
     if (game.themes && game.themes.length > 0 && allCandidates.length < limit * 2) {
       const themeBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, total_rating_count, category;
+               genres.name, platforms.name, total_rating, category;
         where themes = (${game.themes.slice(0, 3).join(',')})
           & id != ${gameId}
           & cover != null
-          & total_rating > 78
-          & total_rating_count > 100
+          & total_rating > 72
           & category = (0, 8, 9, 10);
         sort total_rating desc;
         limit 15;
       `
       const themeGames = await igdbFetch('games', themeBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', themeGames.length, 'popular games from themes')
+      console.log('[getSmartSimilarGames] Got', themeGames.length, 'from themes')
       allCandidates.push(...themeGames)
     }
 
-    // Strategy 5: Same genres with high popularity (fallback)
+    // Strategy 5: Same genres (fallback)
     if (game.genres && game.genres.length > 0 && allCandidates.length < limit) {
       const genreBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, total_rating_count, category;
+               genres.name, platforms.name, total_rating, category;
         where genres = (${game.genres.slice(0, 2).join(',')})
           & id != ${gameId}
           & cover != null
-          & total_rating > 80
-          & total_rating_count > 200
+          & total_rating > 75
           & category = (0, 8, 9, 10);
         sort total_rating desc;
         limit 15;
       `
       const genreGames = await igdbFetch('games', genreBody) as IGDBGame[]
-      console.log('[getSmartSimilarGames] Got', genreGames.length, 'popular games from genres')
+      console.log('[getSmartSimilarGames] Got', genreGames.length, 'from genres')
       allCandidates.push(...genreGames)
     }
 
-    // Strategy 6: Ultimate fallback - top rated popular games
+    // Strategy 6: Ultimate fallback - top rated games
     if (allCandidates.length < 5) {
-      console.log('[getSmartSimilarGames] Using ultimate fallback - top popular games')
+      console.log('[getSmartSimilarGames] Using ultimate fallback')
       const fallbackBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
-               genres.name, platforms.name, total_rating, total_rating_count, category;
+               genres.name, platforms.name, total_rating, category;
         where id != ${gameId}
           & cover != null
-          & total_rating > 85
-          & total_rating_count > 500
+          & total_rating > 80
           & category = (0, 8, 9, 10);
         sort total_rating desc;
         limit 20;
@@ -730,7 +721,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       allCandidates.push(...fallbackGames)
     }
 
-    // Deduplicate
+    // Deduplicate and sort by rating
     const uniqueGames = new Map<number, IGDBGame>()
     for (const g of allCandidates) {
       if (!uniqueGames.has(g.id)) {
@@ -738,18 +729,11 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       }
     }
 
-    // Sort by popularity-weighted rating: rating * log10(rating_count + 1)
-    // This balances quality with popularity - a game with 85 rating and 1000 reviews
-    // ranks higher than a game with 90 rating and 30 reviews
     const sortedGames = Array.from(uniqueGames.values())
-      .sort((a, b) => {
-        const scoreA = (a.total_rating || 0) * Math.log10((a.total_rating_count || 1) + 1)
-        const scoreB = (b.total_rating || 0) * Math.log10((b.total_rating_count || 1) + 1)
-        return scoreB - scoreA
-      })
+      .sort((a, b) => (b.total_rating || 0) - (a.total_rating || 0))
       .slice(0, limit)
 
-    console.log('[getSmartSimilarGames] Returning', sortedGames.length, 'unique games (popularity-weighted)')
+    console.log('[getSmartSimilarGames] Returning', sortedGames.length, 'unique games')
     return sortedGames.map(g => transformGame(g))
   } catch (error) {
     console.error('getSmartSimilarGames error:', error)
