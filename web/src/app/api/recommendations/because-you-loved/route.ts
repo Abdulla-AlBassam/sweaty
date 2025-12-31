@@ -67,36 +67,54 @@ export async function GET(request: Request) {
       })
     }
 
-    // Pick a random highly rated game from those with cache
-    const randomIndex = Math.floor(Math.random() * Math.min(gamesWithCache.length, 5))
-    const selectedLog = gamesWithCache[randomIndex]
-    const gameCache = selectedLog.games_cache as unknown as { id: number; name: string; cover_url: string | null }
+    // Shuffle games and try each one until we find recommendations
+    const shuffled = [...gamesWithCache].sort(() => Math.random() - 0.5)
+    const gamesToTry = shuffled.slice(0, Math.min(shuffled.length, 10)) // Try up to 10 games
 
-    const basedOnGame: Game = {
-      id: gameCache.id,
-      name: gameCache.name,
-      coverUrl: gameCache.cover_url
+    console.log('[BecauseYouLoved] Will try up to', gamesToTry.length, 'games to find recommendations')
+
+    for (const selectedLog of gamesToTry) {
+      const gameCache = selectedLog.games_cache as unknown as { id: number; name: string; cover_url: string | null }
+
+      const basedOnGame: Game = {
+        id: gameCache.id,
+        name: gameCache.name,
+        coverUrl: gameCache.cover_url
+      }
+
+      console.log('[BecauseYouLoved] Trying game:', basedOnGame.name)
+
+      // Get smart similar games from IGDB
+      const similarGames = await getSmartSimilarGames(basedOnGame.id, 50)
+
+      // Filter out games already in user's library
+      const recommendations = similarGames
+        .filter(game => !userGameIds.has(game.id))
+        .slice(0, 15)
+        .map(game => ({
+          id: game.id,
+          name: game.name,
+          coverUrl: game.coverUrl
+        }))
+
+      // If we found recommendations, return them
+      if (recommendations.length >= 3) {
+        console.log('[BecauseYouLoved] Found', recommendations.length, 'recommendations for', basedOnGame.name)
+        return NextResponse.json({
+          basedOnGame,
+          recommendations
+        })
+      }
+
+      console.log('[BecauseYouLoved] Only', recommendations.length, 'recommendations for', basedOnGame.name, '- trying next game')
     }
 
-    console.log('[BecauseYouLoved] Selected game:', basedOnGame.name, '(from', gamesWithCache.length, 'cached games)')
-
-    // Get smart similar games from IGDB (uses themes, keywords, franchises)
-    console.log('[BecauseYouLoved] Finding smart recommendations for:', basedOnGame.name)
-    const similarGames = await getSmartSimilarGames(basedOnGame.id, 50)
-
-    // Filter out games already in user's library and take top 15
-    const recommendations = similarGames
-      .filter(game => !userGameIds.has(game.id))
-      .slice(0, 15)
-      .map(game => ({
-        id: game.id,
-        name: game.name,
-        coverUrl: game.coverUrl
-      }))
-
+    // If no game returned enough recommendations, return empty
+    console.log('[BecauseYouLoved] No games returned sufficient recommendations')
     return NextResponse.json({
-      basedOnGame,
-      recommendations
+      basedOnGame: null,
+      recommendations: [],
+      message: 'Could not find recommendations'
     })
   } catch (error) {
     console.error('Error in because-you-loved:', error)
