@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
-import { View, Text, Image, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { View, Text, Image, StyleSheet } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
+import SweatDropIcon from './SweatDropIcon'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
+import PressableScale from './PressableScale'
 
 interface GameCardProps {
   game: {
@@ -37,14 +39,15 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
   const showPlaceholder = !imageUrl || imageError
 
   return (
-    <TouchableOpacity
+    <PressableScale
       style={[styles.container, { width }]}
       onPress={handlePress}
-      activeOpacity={0.7}
+      haptic="light"
+      scale={0.9}
     >
       {showPlaceholder ? (
         <View style={[styles.placeholder, { width, height }]}>
-          <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
+          <SweatDropIcon size={24} variant="static" />
         </View>
       ) : (
         <View style={[styles.imageContainer, { width, height }]}>
@@ -60,12 +63,12 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
           />
           {imageLoading && (
             <View style={[styles.loadingOverlay, { width, height }]}>
-              <ActivityIndicator size="small" color={Colors.textDim} />
+              <LoadingSpinner size="small" color={Colors.textDim} />
             </View>
           )}
         </View>
       )}
-    </TouchableOpacity>
+    </PressableScale>
   )
 }
 

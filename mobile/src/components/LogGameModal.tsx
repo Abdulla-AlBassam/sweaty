@@ -7,23 +7,28 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  ActivityIndicator,
   Pressable,
   TextInput,
-  Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { MainStackParamList } from '../navigation'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { getIGDBImageUrl } from '../constants'
+import { getIGDBImageUrl, PLATFORMS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
+import { useCelebration } from '../contexts/CelebrationContext'
 import { supabase } from '../lib/supabase'
 import { getGamerLevel, getSocialLevel } from '../lib/xp'
 import { useStreak } from '../hooks/useStreak'
+import { haptics } from '../hooks/useHaptics'
+import PressableScale from './PressableScale'
+import SweatDropIcon from './SweatDropIcon'
 
 // XP values for different statuses
 const GAMER_XP_VALUES: Record<string, number> = {
@@ -110,6 +115,7 @@ export default function LogGameModal({
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
   const { recordActivity } = useStreak()
+  const { celebrateLevelUp } = useCelebration()
 
   const handleGamePress = () => {
     onClose()
@@ -276,38 +282,29 @@ export default function LogGameModal({
       if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
       if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
-      // Build level up message
-      const levelUpParts: string[] = []
-      if (newGamerLevel.level > currentGamerLevel.level) {
-        levelUpParts.push(`🎮 Gamer Rank: ${newGamerLevel.rank}`)
-      }
-      if (newSocialLevel.level > currentSocialLevel.level) {
-        levelUpParts.push(`🌟 Social Rank: ${newSocialLevel.rank}`)
-      }
+      // Check for level ups
+      const gamerLeveledUp = newGamerLevel.level > currentGamerLevel.level
+      const socialLeveledUp = newSocialLevel.level > currentSocialLevel.level
 
-      // Show XP notification using Alert (show BEFORE closing modal)
-      if (xpParts.length > 0 || levelUpParts.length > 0) {
-        const title = levelUpParts.length > 0 ? '🎉 Level Up!' : 'XP Earned!'
-        const message = [
-          ...xpParts,
-          ...(levelUpParts.length > 0 ? ['', ...levelUpParts] : [])
-        ].join('\n')
+      // Haptic feedback on successful save
+      haptics.success()
 
-        // Show alert and close modal when user dismisses it
-        Alert.alert(title, message, [
-          {
-            text: 'OK',
-            onPress: () => {
-              onSaveSuccess?.()
-              onClose()
-            }
-          }
-        ])
-        return // Don't call onSaveSuccess/onClose below since we do it in the alert callback
-      }
-
+      // Close modal first
       onSaveSuccess?.()
       onClose()
+
+      // Trigger celebration for level ups (after modal closes for better UX)
+      if (gamerLeveledUp || socialLeveledUp) {
+        // Small delay so modal closes first
+        setTimeout(() => {
+          if (gamerLeveledUp) {
+            celebrateLevelUp(newGamerLevel.rank, newGamerLevel.level)
+          } else if (socialLeveledUp) {
+            celebrateLevelUp(newSocialLevel.rank, newSocialLevel.level)
+          }
+        }, 300)
+      }
+
     } catch (err: any) {
       console.error('Save error:', err)
       setError(err.message || 'Failed to save')
@@ -420,8 +417,12 @@ export default function LogGameModal({
       transparent={true}
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        <Pressable style={styles.overlay} onPress={onClose}>
+          <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
@@ -439,7 +440,7 @@ export default function LogGameModal({
                 <Image source={{ uri: imageUrl }} style={styles.gameCover} />
               ) : (
                 <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                  <Ionicons name="game-controller-outline" size={24} color={Colors.textDim} />
+                  <SweatDropIcon size={24} variant="static" />
                 </View>
               )}
               <Text style={styles.gameTitle} numberOfLines={2}>{game.name}</Text>
@@ -469,25 +470,21 @@ export default function LogGameModal({
               <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
 
-            {/* Platform Dropdown */}
-            {game.platforms && game.platforms.length > 0 && (
-              <>
-                <Text style={styles.sectionLabel}>Platform</Text>
-                <TouchableOpacity
-                  style={styles.dropdown}
-                  onPress={() => setPlatformPickerVisible(true)}
-                >
-                  <View style={styles.dropdownContent}>
-                    {platform ? (
-                      <Text style={styles.dropdownText}>{platform}</Text>
-                    ) : (
-                      <Text style={styles.dropdownPlaceholder}>Select Platform</Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
-                </TouchableOpacity>
-              </>
-            )}
+            {/* Platform Dropdown - Always show with our granular platform options */}
+            <Text style={styles.sectionLabel}>Platform</Text>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => setPlatformPickerVisible(true)}
+            >
+              <View style={styles.dropdownContent}>
+                {platform ? (
+                  <Text style={styles.dropdownText}>{platform}</Text>
+                ) : (
+                  <Text style={styles.dropdownPlaceholder}>Select Platform</Text>
+                )}
+              </View>
+              <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+            </TouchableOpacity>
 
             {/* Rating */}
             <Text style={styles.sectionLabel}>Rating {rating ? `(${rating})` : ''}</Text>
@@ -548,34 +545,37 @@ export default function LogGameModal({
           {/* Footer Buttons */}
           <View style={styles.footer}>
             {existingLog && (
-              <TouchableOpacity
+              <PressableScale
                 style={styles.deleteButton}
                 onPress={handleDelete}
                 disabled={isSaving}
+                haptic="medium"
               >
                 <Ionicons name="trash-outline" size={20} color={Colors.error} />
-              </TouchableOpacity>
+              </PressableScale>
             )}
-            <TouchableOpacity
+            <PressableScale
+              containerStyle={{ flex: 1 }}
               style={[
                 styles.saveButton,
                 !status && styles.saveButtonDisabled,
-                existingLog && styles.saveButtonWithDelete,
               ]}
               onPress={handleSave}
               disabled={!status || isSaving}
+              haptic="medium"
             >
               {isSaving ? (
-                <ActivityIndicator size="small" color={Colors.background} />
+                <LoadingSpinner size="small" color={Colors.background} />
               ) : (
                 <Text style={styles.saveButtonText}>
                   {existingLog ? 'Update' : 'Save'}
                 </Text>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           </View>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
 
       {/* Status Picker Modal */}
       <PickerModal
@@ -588,23 +588,24 @@ export default function LogGameModal({
         showIcons={true}
       />
 
-      {/* Platform Picker Modal */}
-      {game.platforms && (
-        <PickerModal
-          visible={platformPickerVisible}
-          onClose={() => setPlatformPickerVisible(false)}
-          title="Select Platform"
-          options={game.platforms.map(p => ({ value: p, label: p }))}
-          selectedValue={platform}
-          onSelect={setPlatform}
-          showIcons={false}
-        />
-      )}
+      {/* Platform Picker Modal - Use our granular PLATFORMS constant */}
+      <PickerModal
+        visible={platformPickerVisible}
+        onClose={() => setPlatformPickerVisible(false)}
+        title="Select Platform"
+        options={PLATFORMS.map(p => ({ value: p, label: p }))}
+        selectedValue={platform}
+        onSelect={setPlatform}
+        showIcons={false}
+      />
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -744,7 +745,7 @@ const styles = StyleSheet.create({
   },
   pickerItemTextSelected: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   // Rating styles
   ratingContainer: {
@@ -829,15 +830,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButton: {
-    flex: 1,
     backgroundColor: Colors.accent,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  saveButtonWithDelete: {
-    flex: 1,
+    height: 50,
   },
   saveButtonDisabled: {
     backgroundColor: Colors.textDim,

@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Image,
   FlatList,
-  ActivityIndicator,
   Dimensions,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { BlurView } from 'expo-blur'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -108,7 +108,7 @@ export default function BannerSelector({
               ]}
             >
               {isLoading ? (
-                <ActivityIndicator size="small" color={Colors.text} />
+                <LoadingSpinner size="small" color={Colors.text} />
               ) : (
                 <Text style={styles.confirmText}>Save</Text>
               )}

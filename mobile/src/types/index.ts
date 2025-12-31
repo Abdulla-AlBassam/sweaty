@@ -16,6 +16,7 @@ export interface Game {
 
 // User types
 export type SubscriptionTier = 'free' | 'trial' | 'monthly' | 'yearly' | 'lifetime'
+export type GamingPlatform = 'playstation' | 'xbox' | 'pc' | 'nintendo'
 
 export interface Profile {
   id: string
@@ -25,6 +26,7 @@ export interface Profile {
   banner_url: string | null
   bio: string | null
   favorite_games: number[] | null
+  gaming_platforms: GamingPlatform[] | null
   subscription_tier: SubscriptionTier
   subscription_expires_at: string | null
   trial_started_at: string | null
@@ -135,6 +137,51 @@ export interface CuratedListWithGames extends CuratedList {
   }>
 }
 
+// Custom list types
+export interface GameList {
+  id: string
+  user_id: string
+  title: string
+  description: string | null
+  is_public: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ListItem {
+  id: string
+  list_id: string
+  game_id: number
+  position: number
+  added_at: string
+}
+
+export interface GameListWithItems extends GameList {
+  items: Array<ListItem & {
+    game: {
+      id: number
+      name: string
+      cover_url: string | null
+    }
+  }>
+  item_count?: number
+}
+
+export interface GameListWithUser extends GameList {
+  user: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+  item_count?: number
+  preview_games?: Array<{
+    id: number
+    name: string
+    cover_url: string | null
+  }>
+}
+
 // Review likes & comments types
 export interface ReviewLike {
   id: string
@@ -164,4 +211,54 @@ export interface ReviewComment {
     avatar_url: string | null
   }
   replies?: ReviewComment[]
+}
+
+// Platform import types
+export type Platform = 'steam' | 'xbox' | 'playstation'
+
+export interface PlatformConnection {
+  id: string
+  user_id: string
+  platform: Platform
+  platform_user_id: string
+  platform_username: string | null
+  access_token?: string | null  // Sensitive - may not be exposed via API
+  refresh_token?: string | null // Sensitive - may not be exposed via API
+  token_expires_at: string | null
+  last_synced_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface PlatformGame {
+  id: string
+  user_id: string
+  platform: Platform
+  platform_game_id: string
+  igdb_game_id: number | null
+  game_name: string
+  playtime_minutes: number | null
+  last_played_at: string | null
+  achievements_earned: number | null
+  achievements_total: number | null
+  imported_at: string
+}
+
+export interface PlatformGameWithMatch extends PlatformGame {
+  matched_game?: {
+    id: number
+    name: string
+    cover_url: string | null
+  } | null
+}
+
+// News types
+export interface NewsArticle {
+  id: string
+  title: string
+  source: string
+  sourceIcon: string
+  url: string
+  thumbnail: string | null
+  publishedAt: string
 }

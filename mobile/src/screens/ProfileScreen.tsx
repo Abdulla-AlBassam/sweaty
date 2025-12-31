@@ -11,10 +11,11 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, CommonActions } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
+import { useUserLists } from '../hooks/useLists'
 import { usePremium } from '../hooks/usePremium'
 import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -25,12 +26,23 @@ import XPProgressBar from '../components/XPProgressBar'
 import LogGameModal from '../components/LogGameModal'
 import EditFavoritesModal from '../components/EditFavoritesModal'
 import FollowersModal from '../components/FollowersModal'
+import CreateListModal from '../components/CreateListModal'
+import ListCard from '../components/ListCard'
 import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
+import PlatformBadges from '../components/PlatformBadges'
+import GlitchBorder from '../components/GlitchBorder'
+import SweatDropIcon from '../components/SweatDropIcon'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const BANNER_HEIGHT = 150
+const BANNER_HEIGHT = 180
+
+// Calculate game card width for 4-column grid with proper gaps
+const GRID_PADDING = Spacing.screenPadding * 2  // 32px total horizontal padding
+const GRID_GAP = 8                              // Smaller gap for more columns
+const GRID_GAPS = GRID_GAP * 3                  // 3 gaps for 4 columns
+const GAME_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GRID_GAPS) / 4
 
 interface FavoriteGame {
   id: number
@@ -57,6 +69,7 @@ export default function ProfileScreen() {
   const { user, profile, refreshProfile } = useAuth()
   const { logs, refetch: refreshLogs } = useGameLogs(user?.id)
   const { followers, following } = useFollowCounts(user?.id)
+  const { lists: userLists, refetch: refetchLists } = useUserLists(user?.id)
   const navigation = useNavigation()
 
   const [gameLogs, setGameLogs] = useState<GameLogWithGame[]>([])
@@ -64,6 +77,7 @@ export default function ProfileScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [favorites, setFavorites] = useState<FavoriteGame[]>([])
   const [isFavoritesModalVisible, setIsFavoritesModalVisible] = useState(false)
+  const [isCreateListModalVisible, setIsCreateListModalVisible] = useState(false)
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
@@ -201,9 +215,10 @@ export default function ProfileScreen() {
       fetchGameLogs(),
       fetchFavorites(),
       refreshLogs(),
+      refetchLists(),
     ])
     setRefreshing(false)
-  }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs])
+  }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs, refetchLists])
 
   const handleFavoritesSaveSuccess = () => {
     refreshProfile()
@@ -217,6 +232,19 @@ export default function ProfileScreen() {
   const handleLogSaveSuccess = () => {
     fetchGameLogs()
     refreshLogs()
+  }
+
+  const handleListPress = (listId: string) => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'ListDetail',
+        params: { listId },
+      })
+    )
+  }
+
+  const handleListCreated = () => {
+    refetchLists()
   }
 
   return (
@@ -233,7 +261,7 @@ export default function ProfileScreen() {
           />
         }
       >
-        {/* Banner */}
+        {/* Banner with Header */}
         {profile?.banner_url ? (
           <View style={styles.bannerContainer}>
             <Image
@@ -241,25 +269,38 @@ export default function ProfileScreen() {
               style={styles.banner}
               resizeMode="cover"
             />
+            {/* Gradient overlay for blending */}
             <LinearGradient
-              colors={['transparent', Colors.background]}
+              colors={['rgba(15, 15, 15, 0.3)', 'rgba(15, 15, 15, 0.6)', Colors.background]}
+              locations={[0, 0.5, 1]}
               style={styles.bannerGradient}
             />
+            {/* Header overlaid on banner */}
+            <View style={styles.headerOverBanner}>
+              <Text style={styles.headerTitle}>profile</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Settings' as never)}
+                style={styles.settingsButton}
+              >
+                <Ionicons name="settings-outline" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
-          <View style={styles.bannerPlaceholder} />
+          <>
+            <View style={styles.bannerPlaceholder} />
+            {/* Header without banner */}
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>profile</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Settings' as never)}
+                style={styles.settingsButton}
+              >
+                <Ionicons name="settings-outline" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+          </>
         )}
-
-        {/* Header - overlaid on banner */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>profile</Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Settings' as never)}
-            style={styles.settingsButton}
-          >
-            <Ionicons name="settings-outline" size={24} color={Colors.text} />
-          </TouchableOpacity>
-        </View>
 
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile?.banner_url && styles.profileSectionWithBanner]}>
@@ -273,6 +314,9 @@ export default function ProfileScreen() {
 
           <View style={styles.nameRow}>
             <Text style={styles.displayName}>{displayName}</Text>
+            {profile?.gaming_platforms && profile.gaming_platforms.length > 0 && (
+              <PlatformBadges platforms={profile.gaming_platforms} size="small" />
+            )}
             {isPremium && <PremiumBadge size="small" variant={username === 'abdulla' ? 'developer' : 'premium'} />}
             <StreakBadge streak={profile?.current_streak || 0} size="medium" />
           </View>
@@ -356,13 +400,19 @@ export default function ProfileScreen() {
                     style={styles.favoriteSlot}
                     onPress={() => navigation.navigate('GameDetail', { gameId: game.id })}
                   >
-                    {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
-                    ) : (
-                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                        <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
-                      </View>
-                    )}
+                    <GlitchBorder
+                      borderRadius={BorderRadius.md}
+                      borderWidth={2}
+                      intensity="medium"
+                    >
+                      {coverUrl ? (
+                        <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                      ) : (
+                        <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                          <SweatDropIcon size={20} variant="static" />
+                        </View>
+                      )}
+                    </GlitchBorder>
                   </TouchableOpacity>
                 )
               }
@@ -404,7 +454,7 @@ export default function ProfileScreen() {
                     />
                   ) : (
                     <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
                 </TouchableOpacity>
@@ -412,6 +462,45 @@ export default function ProfileScreen() {
             </ScrollView>
           </View>
         )}
+
+        {/* Lists - only show if user has lists with games */}
+        {(() => {
+          // Filter out empty lists (no games)
+          const listsWithGames = userLists.filter(
+            (list) => list.preview_games && list.preview_games.length > 0
+          )
+
+          return listsWithGames.length > 0 ? (
+            <View style={styles.listsSection}>
+              <View style={styles.listsTitleRow}>
+                <Text style={styles.sectionTitle}>Lists</Text>
+                <TouchableOpacity
+                  onPress={() => setIsCreateListModalVisible(true)}
+                  style={styles.newListButton}
+                >
+                  <Ionicons name="add" size={18} color={Colors.accent} />
+                  <Text style={styles.newListButtonText}>New</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.listsScroll}
+                contentContainerStyle={styles.listsContent}
+              >
+                {listsWithGames.map((list) => (
+                  <ListCard
+                    key={list.id}
+                    list={list}
+                    onPress={() => handleListPress(list.id)}
+                    showUser={false}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null
+        })()}
 
         {/* Library */}
         <View style={styles.librarySection}>
@@ -466,12 +555,15 @@ export default function ProfileScreen() {
                     />
                   ) : (
                     <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
-                  {log.rating && (
+                  {(log.rating || log.review) && (
                     <View style={styles.ratingBelow}>
-                      <StarRating rating={log.rating} size={12} filledOnly />
+                      {log.rating && <StarRating rating={log.rating} size={12} filledOnly />}
+                      {log.review && log.review.trim().length > 0 && (
+                        <Ionicons name="chatbubble" size={12} color={Colors.accent} style={log.rating ? { marginLeft: 4 } : undefined} />
+                      )}
                     </View>
                   )}
                 </TouchableOpacity>
@@ -479,7 +571,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+              <SweatDropIcon size={48} variant="static" />
               <Text style={styles.emptyText}>
                 {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
               </Text>
@@ -536,6 +628,13 @@ export default function ProfileScreen() {
           type={followersModalType}
         />
       )}
+
+      {/* Create List Modal */}
+      <CreateListModal
+        visible={isCreateListModalVisible}
+        onClose={() => setIsCreateListModalVisible(false)}
+        onCreated={handleListCreated}
+      />
     </SafeAreaView>
   )
 }
@@ -549,7 +648,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxxl,          // 48px bottom padding
   },
   bannerContainer: {
     width: SCREEN_WIDTH,
@@ -562,27 +661,40 @@ const styles = StyleSheet.create({
   },
   bannerGradient: {
     position: 'absolute',
+    top: 0,
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
   },
   bannerPlaceholder: {
     height: 0,
+  },
+  headerOverBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.md,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.xxl,
+    fontSize: FontSize.xl,
     color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   settingsButton: {
     padding: Spacing.sm,
@@ -590,10 +702,10 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
   },
   profileSectionWithBanner: {
-    marginTop: -40,
+    marginTop: -60,
   },
   nameRow: {
     flexDirection: 'row',
@@ -618,7 +730,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 40,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   displayName: {
     fontFamily: Fonts.display,
@@ -655,11 +767,11 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: Spacing.lg,
+    paddingVertical: Spacing.md,            // 12px vertical padding
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: Colors.border,
-    marginHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.screenPadding,
   },
   stat: {
     alignItems: 'center',
@@ -683,18 +795,20 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   ranksSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
+    fontSize: FontSize.sm,                  // Smaller, consistent headers
+    color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: Spacing.sectionHeaderBelow, // 16px below header
   },
   favoritesSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   favoritesTitleRow: {
     flexDirection: 'row',
@@ -708,12 +822,12 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.md,
+    gap: Spacing.cardGap,                   // 12px gap between cards
   },
   favoriteSlot: {
     flex: 1,
@@ -722,8 +836,7 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+    // Border removed - GlitchBorder handles the RGB border effect
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.surface,
@@ -738,15 +851,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   recentlyLoggedSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   recentlyLoggedScroll: {
-    marginHorizontal: -Spacing.lg,
+    marginHorizontal: -Spacing.screenPadding,
   },
   recentlyLoggedContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,                   // 12px gap between cards
   },
   recentlyLoggedCard: {
     width: 105,
@@ -758,16 +871,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   librarySection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
   },
   filterTabsContainer: {
-    marginBottom: Spacing.md,
-    marginHorizontal: -Spacing.lg,
+    marginBottom: Spacing.xxl,              // 32px below filters
+    marginHorizontal: -Spacing.screenPadding,
   },
   filterTabsContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,                   // 12px gap between pills
   },
   filterTab: {
     paddingHorizontal: Spacing.md,
@@ -799,11 +912,10 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    gap: GRID_GAP,                          // 8px gap for 4-column layout
   },
   gameCard: {
-    width: '30%',
-    marginBottom: Spacing.sm,
+    width: GAME_CARD_WIDTH,                 // Calculated for even spacing
   },
   gameCover: {
     width: '100%',
@@ -822,8 +934,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   ratingBelow: {
+    flexDirection: 'row',
     marginTop: Spacing.xs,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',
@@ -842,5 +956,75 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,
+  },
+  // Lists section styles
+  listsSection: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,                // 32px above section
+  },
+  listsTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  newListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.sm,
+  },
+  newListButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+    marginLeft: 4,
+  },
+  listsScroll: {
+    marginHorizontal: -Spacing.screenPadding,
+  },
+  listsContent: {
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,                   // 12px gap between cards
+  },
+  listCardWrapper: {
+    width: 280,
+  },
+  seeAllLists: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.screenPadding,
+  },
+  seeAllListsText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+  },
+  emptyListsState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xl,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+  },
+  emptyListsText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  createListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.accent,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  createListButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.background,
+    marginLeft: Spacing.xs,
   },
 })

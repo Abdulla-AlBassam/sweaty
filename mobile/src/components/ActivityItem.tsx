@@ -108,10 +108,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
+    padding: Spacing.lg,               // 16px internal padding
     borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceLight,
+    borderBottomColor: Colors.border,
   },
   avatarContainer: {
     marginRight: Spacing.sm,
@@ -146,11 +145,11 @@ const styles = StyleSheet.create({
   },
   username: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.text,
+    color: Colors.cyanSoft,           // Softer cyan for readability
   },
   gameName: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.accentLight,
+    color: Colors.cyanSoft,           // Softer cyan for readability
   },
   meta: {
     flexDirection: 'row',

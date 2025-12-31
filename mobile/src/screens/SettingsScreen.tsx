@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -6,17 +6,21 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   Image,
   Dimensions,
+  Animated,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { MainStackParamList } from '../navigation'
 import * as ImagePicker from 'expo-image-picker'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -25,13 +29,24 @@ import { supabase } from '../lib/supabase'
 import { usePremium } from '../hooks/usePremium'
 import BannerSelector from '../components/BannerSelector'
 import PremiumBadge from '../components/PremiumBadge'
+import PlatformBadges from '../components/PlatformBadges'
 import { BannerOption } from '../constants/banners'
+import { GamingPlatform } from '../types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_PREVIEW_HEIGHT = 80
 
+const PLATFORM_OPTIONS: { key: GamingPlatform; label: string; icon: string; iconLibrary: 'fa5' | 'mci'; color: string }[] = [
+  { key: 'playstation', label: 'PlayStation', icon: 'playstation', iconLibrary: 'fa5', color: '#006FCD' },
+  { key: 'xbox', label: 'Xbox', icon: 'xbox', iconLibrary: 'fa5', color: '#107C10' },
+  { key: 'pc', label: 'PC', icon: 'desktop-tower-monitor', iconLibrary: 'mci', color: '#FF6600' },
+  { key: 'nintendo', label: 'Nintendo', icon: 'nintendo-switch', iconLibrary: 'mci', color: '#E60012' },
+]
+
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>
+
 export default function SettingsScreen() {
-  const navigation = useNavigation()
+  const navigation = useNavigation<NavigationProp>()
   const { user, profile, signOut, refreshProfile } = useAuth()
   const { isPremium } = usePremium(profile?.subscription_tier, profile?.subscription_expires_at)
 
@@ -40,6 +55,7 @@ export default function SettingsScreen() {
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
+  const [gamingPlatforms, setGamingPlatforms] = useState<GamingPlatform[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [isSavingBanner, setIsSavingBanner] = useState(false)
@@ -54,6 +70,7 @@ export default function SettingsScreen() {
       setDisplayName(profile.display_name || '')
       setUsername(profile.username || '')
       setBio(profile.bio || '')
+      setGamingPlatforms(profile.gaming_platforms || [])
     }
   }, [profile])
 
@@ -62,14 +79,21 @@ export default function SettingsScreen() {
     const originalBio = profile?.bio || ''
     const originalUsername = profile?.username || ''
     const originalAvatar = profile?.avatar_url || null
+    const originalPlatforms = profile?.gaming_platforms || []
+
+    // Check if platforms arrays are different
+    const platformsChanged =
+      gamingPlatforms.length !== originalPlatforms.length ||
+      gamingPlatforms.some(p => !originalPlatforms.includes(p))
 
     setHasChanges(
       displayName !== originalDisplayName ||
       bio !== originalBio ||
       username !== originalUsername ||
-      avatarUrl !== originalAvatar
+      avatarUrl !== originalAvatar ||
+      platformsChanged
     )
-  }, [displayName, bio, username, avatarUrl, profile])
+  }, [displayName, bio, username, avatarUrl, gamingPlatforms, profile])
 
   const validateUsername = (value: string): boolean => {
     if (value.length < 3) {
@@ -96,6 +120,14 @@ export default function SettingsScreen() {
     } else {
       setUsernameError(null)
     }
+  }
+
+  const togglePlatform = (platform: GamingPlatform) => {
+    setGamingPlatforms(prev =>
+      prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    )
   }
 
   const pickImage = async () => {
@@ -190,6 +222,7 @@ export default function SettingsScreen() {
           display_name: displayName.trim() || null,
           username: username,
           bio: bio.trim() || null,
+          gaming_platforms: gamingPlatforms,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -256,7 +289,7 @@ export default function SettingsScreen() {
           style={styles.saveButton}
         >
           {isSaving ? (
-            <ActivityIndicator size="small" color={Colors.accent} />
+            <LoadingSpinner size="small" color={Colors.accent} />
           ) : (
             <Text style={[styles.saveText, (!hasChanges || !!usernameError) && styles.saveTextDisabled]}>
               SAVE
@@ -275,7 +308,7 @@ export default function SettingsScreen() {
             <TouchableOpacity onPress={pickImage} disabled={isUploadingAvatar}>
               {isUploadingAvatar ? (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <ActivityIndicator size="large" color={Colors.accent} />
+                  <LoadingSpinner size="large" color={Colors.accent} />
                 </View>
               ) : avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />
@@ -390,6 +423,45 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Gaming Platforms */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>gaming platforms</Text>
+            <Text style={styles.platformSubtitle}>Select the platforms you play on</Text>
+
+            <View style={styles.platformsGrid}>
+              {PLATFORM_OPTIONS.map((platform) => {
+                const isSelected = gamingPlatforms.includes(platform.key)
+                return (
+                  <TouchableOpacity
+                    key={platform.key}
+                    style={[
+                      styles.platformButton,
+                      isSelected && { borderColor: platform.color, backgroundColor: `${platform.color}15` }
+                    ]}
+                    onPress={() => togglePlatform(platform.key)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.platformIconContainer, { backgroundColor: platform.color }]}>
+                      {platform.iconLibrary === 'fa5' ? (
+                        <FontAwesome5 name={platform.icon} size={18} color="#FFFFFF" />
+                      ) : (
+                        <MaterialCommunityIcons name={platform.icon as any} size={18} color="#FFFFFF" />
+                      )}
+                    </View>
+                    <Text style={[styles.platformLabel, isSelected && { color: Colors.text }]}>
+                      {platform.label}
+                    </Text>
+                    {isSelected && (
+                      <View style={[styles.platformCheck, { backgroundColor: platform.color }]}>
+                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+
           {/* Account Info */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>account</Text>
@@ -400,6 +472,27 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {/* Import Games */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>import games</Text>
+
+            <TouchableOpacity
+              style={styles.importGamesButton}
+              onPress={() => navigation.navigate('PlatformConnections')}
+            >
+              <View style={styles.importGamesContent}>
+                <Ionicons name="cloud-download-outline" size={24} color={Colors.accent} />
+                <View style={styles.importGamesText}>
+                  <Text style={styles.importGamesTitle}>Import from platforms</Text>
+                  <Text style={styles.importGamesSubtitle}>
+                    Steam, PlayStation, Xbox
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+            </TouchableOpacity>
+          </View>
+
           {/* Actions */}
           <View style={styles.section}>
             <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
@@ -408,9 +501,19 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* App Info */}
+          {/* App Info with Chrome Aesthetic */}
           <View style={styles.appInfo}>
-            <Text style={styles.appName}>sweaty</Text>
+            <View style={styles.appLogoContainer}>
+              <SweatDropIcon size={32} variant="static" />
+              <View style={styles.appNameWrapper}>
+                {/* Cyan layer */}
+                <Text style={[styles.appNameLayer, styles.appNameCyan]}>sweaty</Text>
+                {/* Green layer */}
+                <Text style={[styles.appNameLayer, styles.appNameGreen]}>sweaty</Text>
+                {/* Main white text */}
+                <Text style={styles.appName}>sweaty</Text>
+              </View>
+            </View>
             <Text style={styles.appVersion}>Version 1.0.0</Text>
           </View>
         </ScrollView>
@@ -459,7 +562,7 @@ const styles = StyleSheet.create({
   saveText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   saveTextDisabled: {
     color: Colors.textDim,
@@ -503,7 +606,7 @@ const styles = StyleSheet.create({
   changeAvatarText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.accentLight,
+    color: Colors.accent,
     marginTop: Spacing.sm,
   },
   section: {
@@ -658,6 +761,48 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     marginTop: Spacing.xs,
   },
+  platformSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginBottom: Spacing.md,
+  },
+  platformsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  platformButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    paddingRight: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  platformIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  platformLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  platformCheck: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: Spacing.xs,
+  },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -676,6 +821,32 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
+  },
+  importGamesButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  importGamesContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  importGamesText: {
+    gap: 2,
+  },
+  importGamesTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  importGamesSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
   },
   signOutButton: {
     flexDirection: 'row',
@@ -698,10 +869,33 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.xxl,
   },
+  appLogoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  appNameWrapper: {
+    position: 'relative',
+  },
+  appNameLayer: {
+    position: 'absolute',
+    fontFamily: Fonts.display,
+    fontSize: FontSize.lg,
+  },
+  appNameCyan: {
+    color: Colors.cyan,
+    opacity: 0.6,
+    transform: [{ translateX: -1.5 }],
+  },
+  appNameGreen: {
+    color: Colors.accent,
+    opacity: 0.6,
+    transform: [{ translateX: 1.5 }],
+  },
   appName: {
     fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    color: Colors.accentLight,
+    color: Colors.text,
   },
   appVersion: {
     fontFamily: Fonts.body,

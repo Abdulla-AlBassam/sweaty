@@ -5,11 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   Alert,
   TextInput,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -350,7 +350,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
         <View style={styles.expandedSection}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="small" color={Colors.accent} />
+              <LoadingSpinner size="small" color={Colors.accent} />
             </View>
           ) : (
             <>
@@ -407,7 +407,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
                       disabled={!inputText.trim() || isSubmitting}
                     >
                       {isSubmitting ? (
-                        <ActivityIndicator size="small" color={Colors.text} />
+                        <LoadingSpinner size="small" color={Colors.text} />
                       ) : (
                         <Ionicons name="arrow-up" size={16} color={inputText.trim() ? Colors.background : Colors.textDim} />
                       )}

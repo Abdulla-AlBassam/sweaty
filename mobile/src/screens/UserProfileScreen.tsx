@@ -6,15 +6,15 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Dimensions,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
@@ -23,15 +23,21 @@ import { MainStackParamList } from '../navigation'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { calculateXP, getLevel } from '../lib/xp'
 import { checkIsPremium } from '../hooks/usePremium'
+import { useUserLists } from '../hooks/useLists'
 import FollowersModal from '../components/FollowersModal'
+import ListCard from '../components/ListCard'
 import StarRating from '../components/StarRating'
 import XPProgressBar from '../components/XPProgressBar'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
+import PlatformBadges from '../components/PlatformBadges'
 import { ProfileSkeleton } from '../components/skeletons'
+import { GamingPlatform } from '../types'
+import GlitchBorder from '../components/GlitchBorder'
+import SweatDropIcon from '../components/SweatDropIcon'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const BANNER_HEIGHT = 150
+const BANNER_HEIGHT = 180
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -48,6 +54,7 @@ interface Profile {
   current_streak?: number
   longest_streak?: number
   last_activity_at?: string | null
+  gaming_platforms?: GamingPlatform[] | null
 }
 
 interface FavoriteGame {
@@ -94,6 +101,21 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
+
+  // Fetch user's public lists
+  const { lists: userLists, refetch: refetchLists } = useUserLists(profile?.id)
+  // Only show public lists that have games
+  const publicLists = userLists
+    .filter(list => list.is_public && list.preview_games && list.preview_games.length > 0)
+    .map(list => ({
+      ...list,
+      user: {
+        id: profile?.id,
+        username: profile?.username || '',
+        display_name: profile?.display_name,
+        avatar_url: profile?.avatar_url,
+      }
+    }))
 
   const isOwnProfile = user?.id === profile?.id
 
@@ -308,6 +330,15 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     )
   }
 
+  const handleListPress = (listId: string) => {
+    nav.dispatch(
+      CommonActions.navigate({
+        name: 'ListDetail',
+        params: { listId },
+      })
+    )
+  }
+
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -316,9 +347,10 @@ export default function UserProfileScreen({ navigation, route }: Props) {
       fetchGameLogs(),
       fetchFollowCounts(),
       fetchFavorites(),
+      refetchLists(),
     ])
     setRefreshing(false)
-  }, [profile])
+  }, [profile, refetchLists])
 
   if (isLoading) {
     return (
@@ -384,7 +416,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['transparent', Colors.background]}
+              colors={['rgba(15, 15, 15, 0.3)', 'rgba(15, 15, 15, 0.6)', Colors.background]}
+              locations={[0, 0.5, 1]}
               style={styles.bannerGradient}
             />
           </View>
@@ -406,6 +439,9 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <Text style={styles.displayName}>
               {profile.display_name || profile.username}
             </Text>
+            {profile.gaming_platforms && profile.gaming_platforms.length > 0 && (
+              <PlatformBadges platforms={profile.gaming_platforms} size="small" />
+            )}
             {checkIsPremium(profile.subscription_tier, profile.subscription_expires_at) && (
               <PremiumBadge size="small" variant={profile.username === 'abdulla' ? 'developer' : 'premium'} />
             )}
@@ -448,7 +484,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               disabled={isFollowLoading}
             >
               {isFollowLoading ? (
-                <ActivityIndicator size="small" color={isFollowing ? Colors.text : Colors.background} />
+                <LoadingSpinner size="small" color={isFollowing ? Colors.text : Colors.background} />
               ) : (
                 <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
                   {isFollowing ? 'following' : 'follow'}
@@ -501,13 +537,19 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     style={styles.favoriteSlot}
                     onPress={() => handleGamePress(game.id)}
                   >
-                    {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
-                    ) : (
-                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                        <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
-                      </View>
-                    )}
+                    <GlitchBorder
+                      borderRadius={BorderRadius.md}
+                      borderWidth={2}
+                      intensity="medium"
+                    >
+                      {coverUrl ? (
+                        <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                      ) : (
+                        <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                          <SweatDropIcon size={20} variant="static" />
+                        </View>
+                      )}
+                    </GlitchBorder>
                   </TouchableOpacity>
                 )
               })}
@@ -542,10 +584,32 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
                 </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Lists - Only show if user has public lists with games */}
+        {publicLists.length > 0 && (
+          <View style={styles.listsSection}>
+            <Text style={styles.sectionTitle}>Lists</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.listsScroll}
+              contentContainerStyle={styles.listsContent}
+            >
+              {publicLists.map((list) => (
+                <ListCard
+                  key={list.id}
+                  list={list}
+                  onPress={() => handleListPress(list.id)}
+                  showUser={true}
+                />
               ))}
             </ScrollView>
           </View>
@@ -604,12 +668,15 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     />
                   ) : (
                     <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                      <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                      <SweatDropIcon size={20} variant="static" />
                     </View>
                   )}
-                  {log.rating && (
+                  {(log.rating || log.review) && (
                     <View style={styles.ratingBelow}>
-                      <StarRating rating={log.rating} size={12} filledOnly />
+                      {log.rating && <StarRating rating={log.rating} size={12} filledOnly />}
+                      {log.review && log.review.trim().length > 0 && (
+                        <Ionicons name="chatbubble" size={12} color={Colors.accent} style={log.rating ? { marginLeft: 4 } : undefined} />
+                      )}
                     </View>
                   )}
                 </TouchableOpacity>
@@ -617,7 +684,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+              <SweatDropIcon size={48} variant="static" />
               <Text style={styles.emptyText}>
                 {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
               </Text>
@@ -695,16 +762,16 @@ const styles = StyleSheet.create({
   },
   bannerGradient: {
     position: 'absolute',
+    top: 0,
     bottom: 0,
     left: 0,
     right: 0,
-    height: 60,
   },
   bannerPlaceholder: {
     height: 0,
   },
   profileSectionWithBanner: {
-    marginTop: -40,
+    marginTop: -60,
   },
   nameRow: {
     flexDirection: 'row',
@@ -879,11 +946,11 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    gap: 8,                                   // 8px gap for 4-column layout
   },
   gameCard: {
-    width: '30%',
-    marginBottom: Spacing.sm,
+    width: '23%',                             // ~4 columns with gaps
+    marginBottom: Spacing.xs,
   },
   gameCover: {
     width: '100%',
@@ -903,8 +970,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   ratingBelow: {
+    flexDirection: 'row',
     marginTop: Spacing.xs,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',
@@ -928,8 +997,6 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.accent,
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.surface,
@@ -946,5 +1013,20 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
+  },
+  // Lists section styles
+  listsSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  listsScroll: {
+    marginHorizontal: -Spacing.lg,
+  },
+  listsContent: {
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
+  },
+  listCardWrapper: {
+    width: 280,
   },
 })

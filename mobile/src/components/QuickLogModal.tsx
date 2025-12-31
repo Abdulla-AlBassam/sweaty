@@ -8,22 +8,105 @@ import {
   TouchableWithoutFeedback,
   FlatList,
   Image,
-  ActivityIndicator,
   Keyboard,
   Animated,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Easing,
 } from 'react-native'
+import SweatDropIcon from './SweatDropIcon'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import LogGameModal from './LogGameModal'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.85
+
+// RGB Glitch Add Button for search results
+function GlitchResultButton({ onPress }: { onPress: () => void }) {
+  const [isGlitching, setIsGlitching] = useState(false)
+  const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
+  const scaleAnim = useRef(new Animated.Value(1)).current
+
+  useEffect(() => {
+    const glitchInterval = setInterval(() => {
+      if (Math.random() < 0.15) {
+        setIsGlitching(true)
+        setGlitchOffset({
+          x: (Math.random() - 0.5) * 3,
+          y: (Math.random() - 0.5) * 2,
+        })
+
+        Animated.sequence([
+          Animated.timing(scaleAnim, {
+            toValue: 0.95 + Math.random() * 0.1,
+            duration: 40,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleAnim, {
+            toValue: 1,
+            duration: 40,
+            useNativeDriver: true,
+          }),
+        ]).start()
+
+        setTimeout(() => {
+          setIsGlitching(false)
+          setGlitchOffset({ x: 0, y: 0 })
+        }, 50 + Math.random() * 60)
+      }
+    }, 400)
+
+    return () => clearInterval(glitchInterval)
+  }, [scaleAnim])
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <Animated.View style={[styles.addButtonContainer, { transform: [{ scale: scaleAnim }] }]}>
+        {/* Cyan layer */}
+        <View
+          style={[
+            styles.addButtonLayer,
+            styles.addButtonCyan,
+            {
+              transform: [
+                { translateX: isGlitching ? -1.5 + glitchOffset.x : -1 },
+                { translateY: isGlitching ? glitchOffset.y : 0 },
+              ],
+            },
+          ]}
+        >
+          <Ionicons name="add" size={16} color={Colors.cyan} />
+        </View>
+
+        {/* Green layer */}
+        <View
+          style={[
+            styles.addButtonLayer,
+            styles.addButtonGreen,
+            {
+              transform: [
+                { translateX: isGlitching ? 1.5 - glitchOffset.x : 1 },
+                { translateY: isGlitching ? -glitchOffset.y : 0 },
+              ],
+            },
+          ]}
+        >
+          <Ionicons name="add" size={16} color={Colors.accent} />
+        </View>
+
+        {/* Main pink button */}
+        <View style={styles.addButtonMain}>
+          <Ionicons name="add" size={16} color={Colors.background} />
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
+  )
+}
 
 interface Game {
   id: number
@@ -54,6 +137,57 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
   const [selectedGame, setSelectedGame] = useState<Game | null>(null)
   const [isLogModalVisible, setIsLogModalVisible] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+
+  // RGB glitch state for search input
+  const [searchGlitchOffset, setSearchGlitchOffset] = useState({ x: 0, y: 0 })
+  const [isSearchGlitching, setIsSearchGlitching] = useState(false)
+
+  // Title glitch animation
+  const titleGlitchAnim = useRef(new Animated.Value(0)).current
+
+  // Search input glitch effect (only when focused)
+  useEffect(() => {
+    if (!isFocused) return
+
+    const glitchInterval = setInterval(() => {
+      if (Math.random() < 0.2) {
+        setIsSearchGlitching(true)
+        setSearchGlitchOffset({
+          x: (Math.random() - 0.5) * 3,
+          y: (Math.random() - 0.5) * 2,
+        })
+
+        setTimeout(() => {
+          setIsSearchGlitching(false)
+          setSearchGlitchOffset({ x: 0, y: 0 })
+        }, 60 + Math.random() * 80)
+      }
+    }, 300)
+
+    return () => clearInterval(glitchInterval)
+  }, [isFocused])
+
+  // Title glitch animation loop
+  useEffect(() => {
+    if (visible) {
+      const glitchAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(titleGlitchAnim, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(titleGlitchAnim, {
+            toValue: 0,
+            duration: 2000 + Math.random() * 3000,
+            useNativeDriver: true,
+          }),
+        ])
+      )
+      glitchAnimation.start()
+      return () => glitchAnimation.stop()
+    }
+  }, [visible, titleGlitchAnim])
 
   // Animation on open/close
   useEffect(() => {
@@ -179,7 +313,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
           <Image source={{ uri: coverUrl }} style={styles.gameCover} />
         ) : (
           <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-            <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+            <SweatDropIcon size={24} variant="static" />
           </View>
         )}
         <View style={styles.gameInfo}>
@@ -191,9 +325,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
             </Text>
           )}
         </View>
-        <View style={styles.addButton}>
-          <Ionicons name="add" size={20} color={Colors.background} />
-        </View>
+        <GlitchResultButton onPress={() => handleGameSelect(item)} />
       </TouchableOpacity>
     )
   }
@@ -233,41 +365,138 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
             <View style={styles.dragHandle} />
           </View>
 
-          {/* Header */}
+          {/* Header with RGB glitch title */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>quick log</Text>
+            <View style={styles.titleContainer}>
+              {/* Cyan layer */}
+              <Animated.Text
+                style={[
+                  styles.headerTitleLayer,
+                  styles.headerTitleCyan,
+                  {
+                    transform: [
+                      {
+                        translateX: titleGlitchAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, -2],
+                        }),
+                      },
+                    ],
+                    opacity: titleGlitchAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.3, 0.6, 0.3],
+                    }),
+                  },
+                ]}
+              >
+                quick log
+              </Animated.Text>
+              {/* Green layer */}
+              <Animated.Text
+                style={[
+                  styles.headerTitleLayer,
+                  styles.headerTitleGreen,
+                  {
+                    transform: [
+                      {
+                        translateX: titleGlitchAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, 2],
+                        }),
+                      },
+                    ],
+                    opacity: titleGlitchAnim.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: [0.3, 0.6, 0.3],
+                    }),
+                  },
+                ]}
+              >
+                quick log
+              </Animated.Text>
+              {/* Main white title */}
+              <Text style={styles.headerTitle}>quick log</Text>
+            </View>
             <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
-          {/* Search Input */}
-          <View style={[styles.searchContainer, isFocused && styles.searchContainerFocused]}>
-            <Ionicons name="search" size={20} color={Colors.textDim} style={styles.searchIcon} />
-            <TextInput
-              ref={searchInputRef}
-              style={styles.searchInput}
-              placeholder="Search for a game..."
-              placeholderTextColor={Colors.textDim}
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={20} color={Colors.textDim} />
-              </TouchableOpacity>
+          {/* Search Input with RGB glitch effect */}
+          <View style={styles.searchWrapper}>
+            {/* Cyan border layer */}
+            {isFocused && (
+              <View
+                style={[
+                  styles.searchBorderLayer,
+                  styles.searchBorderCyan,
+                  {
+                    transform: [
+                      { translateX: isSearchGlitching ? -1.5 + searchGlitchOffset.x : -1 },
+                      { translateY: isSearchGlitching ? searchGlitchOffset.y : 0 },
+                    ],
+                  },
+                ]}
+              />
             )}
+            {/* Green border layer */}
+            {isFocused && (
+              <View
+                style={[
+                  styles.searchBorderLayer,
+                  styles.searchBorderGreen,
+                  {
+                    transform: [
+                      { translateX: isSearchGlitching ? 1.5 - searchGlitchOffset.x : 1 },
+                      { translateY: isSearchGlitching ? -searchGlitchOffset.y : 0 },
+                    ],
+                  },
+                ]}
+              />
+            )}
+            {/* Pink border layer */}
+            {isFocused && (
+              <View
+                style={[
+                  styles.searchBorderLayer,
+                  styles.searchBorderPink,
+                  {
+                    transform: [
+                      { translateY: isSearchGlitching ? 1 + searchGlitchOffset.y : 0.5 },
+                    ],
+                  },
+                ]}
+              />
+            )}
+            {/* Main search container */}
+            <View style={[styles.searchContainer, isFocused && styles.searchContainerFocused]}>
+              <Ionicons name="search" size={20} color={isFocused ? Colors.text : Colors.textDim} style={styles.searchIcon} />
+              <TextInput
+                ref={searchInputRef}
+                style={styles.searchInput}
+                placeholder="Search for a game..."
+                placeholderTextColor={Colors.textDim}
+                value={query}
+                onChangeText={setQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity onPress={() => setQuery('')} style={styles.clearButton}>
+                  <Ionicons name="close-circle" size={20} color={Colors.textDim} />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Results */}
           <View style={styles.resultsContainer}>
             {isLoading ? (
               <View style={styles.centered}>
-                <ActivityIndicator size="large" color={Colors.accent} />
+                <SweatDropIcon size={48} variant="loading" />
+                <Text style={styles.loadingText}>Searching...</Text>
               </View>
             ) : results.length > 0 ? (
               <FlatList
@@ -280,12 +509,12 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
               />
             ) : query.length >= 2 ? (
               <View style={styles.centered}>
-                <Ionicons name="search-outline" size={48} color={Colors.textDim} />
+                <SweatDropIcon size={48} variant="static" />
                 <Text style={styles.emptyText}>No games found</Text>
               </View>
             ) : (
               <View style={styles.centered}>
-                <Ionicons name="game-controller-outline" size={64} color={Colors.textDim} />
+                <SweatDropIcon size={64} variant="default" />
                 <Text style={styles.emptyText}>Search for a game</Text>
                 <Text style={styles.emptySubtext}>Type at least 2 characters to search</Text>
               </View>
@@ -348,29 +577,69 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  titleContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.xl,
     color: Colors.text,
+  },
+  headerTitleLayer: {
+    position: 'absolute',
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
+  },
+  headerTitleCyan: {
+    color: Colors.cyan,
+  },
+  headerTitleGreen: {
+    color: Colors.accent,
   },
   closeButton: {
     position: 'absolute',
     right: Spacing.lg,
     padding: Spacing.xs,
   },
+  searchWrapper: {
+    position: 'relative',
+    marginHorizontal: Spacing.lg,
+    marginVertical: Spacing.md,
+  },
+  searchBorderLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+  },
+  searchBorderCyan: {
+    borderColor: Colors.cyan,
+    opacity: 0.5,
+  },
+  searchBorderGreen: {
+    borderColor: Colors.accent,
+    opacity: 0.5,
+  },
+  searchBorderPink: {
+    borderColor: Colors.pink,
+    opacity: 0.4,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.background,
-    marginHorizontal: Spacing.lg,
-    marginVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.lg,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   searchContainerFocused: {
-    borderColor: Colors.accent,
+    borderColor: Colors.text,
   },
   searchIcon: {
     marginRight: Spacing.sm,
@@ -392,6 +661,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadingText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
+    marginTop: Spacing.lg,
   },
   emptyText: {
     fontFamily: Fonts.body,
@@ -448,12 +723,40 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     marginTop: Spacing.xs,
   },
-  addButton: {
-    backgroundColor: Colors.accent,
+  // RGB Glitch Add Button styles
+  addButtonContainer: {
     width: 32,
     height: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  addButtonLayer: {
+    position: 'absolute',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonCyan: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: Colors.cyan,
+    opacity: 0.6,
+  },
+  addButtonGreen: {
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: Colors.accent,
+    opacity: 0.6,
+  },
+  addButtonMain: {
+    backgroundColor: Colors.pink,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Glow.pink,
   },
 })

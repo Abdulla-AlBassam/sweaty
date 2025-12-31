@@ -14,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
-import { LinearGradient } from 'expo-linear-gradient'
 import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -22,12 +21,15 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
-import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
+import { useCuratedLists } from '../hooks/useSupabase'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
-import StackedAvatars from '../components/StackedAvatars'
-import Skeleton, { SkeletonCircle, SkeletonText } from '../components/Skeleton'
+import CuratedListRow from '../components/CuratedListRow'
+import SweatDropIcon from '../components/SweatDropIcon'
+import PressableScale from '../components/PressableScale'
+import { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
+import { GlitchHeader } from '../components/GlitchText'
 
 interface SearchGame {
   id: number
@@ -56,7 +58,7 @@ const MAX_RECENT_SEARCHES = 5
 export default function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
-  const { games: friendsPlaying, isLoading: isLoadingFriends, refetch: refetchFriendsPlaying } = useFriendsPlaying(user?.id)
+  const { lists: curatedLists, refetch: refetchLists } = useCuratedLists()
   const [query, setQuery] = useState('')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])
   const [userResults, setUserResults] = useState<SearchUser[]>([])
@@ -118,10 +120,10 @@ export default function SearchScreen() {
     await Promise.all([
       loadTrendingGames(),
       loadCommunityGames(),
-      refetchFriendsPlaying(),
+      refetchLists(),
     ])
     setRefreshing(false)
-  }, [refetchFriendsPlaying])
+  }, [refetchLists])
 
   const loadRecentSearches = async () => {
     try {
@@ -150,7 +152,7 @@ export default function SearchScreen() {
   // Search for users in Supabase
   const searchUsers = async (searchQuery: string): Promise<SearchUser[]> => {
     try {
-      let query = supabase
+      let dbQuery = supabase
         .from('profiles')
         .select('id, username, display_name, avatar_url')
         .or(`username.ilike.%${searchQuery}%,display_name.ilike.%${searchQuery}%`)
@@ -158,10 +160,10 @@ export default function SearchScreen() {
 
       // Exclude current user
       if (user) {
-        query = query.neq('id', user.id)
+        dbQuery = dbQuery.neq('id', user.id)
       }
 
-      const { data, error } = await query
+      const { data, error } = await dbQuery
 
       if (error) throw error
       return data || []
@@ -251,25 +253,33 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Search Header */}
+      {/* Chrome Glitch Search Header */}
       <View style={styles.header}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
-          <TextInput
-            style={styles.input}
-            placeholder="Search games or users..."
-            placeholderTextColor={Colors.textDim}
-            value={query}
-            onChangeText={setQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="search"
-          />
-          {query.length > 0 && (
-            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-              <Ionicons name="close-circle" size={18} color={Colors.textDim} />
-            </TouchableOpacity>
-          )}
+        <View style={styles.searchContainer}>
+          {/* RGB Glitch Border Layers */}
+          <View style={[styles.searchBorderLayer, styles.searchBorderCyan]} />
+          <View style={[styles.searchBorderLayer, styles.searchBorderGreen]} />
+          <View style={[styles.searchBorderLayer, styles.searchBorderPink]} />
+
+          {/* Main Search Bar */}
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Search games..."
+              placeholderTextColor={Colors.textDim}
+              value={query}
+              onChangeText={setQuery}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+            />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                <Ionicons name="close-circle" size={18} color={Colors.pink} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
       </View>
 
@@ -364,30 +374,15 @@ export default function SearchScreen() {
             />
           }
         >
-          {/* Ask Sweaty AI Card */}
-          <TouchableOpacity
-            style={styles.aiCard}
+          {/* AI Logo - Tap to open AI Recommendations */}
+          <PressableScale
+            style={styles.aiLogoContainer}
             onPress={() => navigation.navigate('AIRecommend')}
-            activeOpacity={0.85}
+            haptic="light"
+            scale={0.9}
           >
-            <LinearGradient
-              colors={[Colors.accent + '25', Colors.accent + '10']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.aiCardGradient}
-            >
-              <View style={styles.aiCardContent}>
-                <View style={styles.aiCardIconContainer}>
-                  <Ionicons name="sparkles" size={24} color={Colors.accent} />
-                </View>
-                <View style={styles.aiCardTextContainer}>
-                  <Text style={styles.aiCardTitle}>Ask Sweaty AI...</Text>
-                  <Text style={styles.aiCardSubtitle}>Get personalized game recommendations</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.accent} />
-              </View>
-            </LinearGradient>
-          </TouchableOpacity>
+            <SweatDropIcon size={48} variant="default" />
+          </PressableScale>
 
           {/* Recent Searches */}
           {recentSearches.length > 0 && (
@@ -426,7 +421,7 @@ export default function SearchScreen() {
 
           {/* Discover Section - Dynamic Lists */}
           <View style={styles.discoverSection}>
-            <Text style={styles.discoverSectionTitle}>Discover</Text>
+            <GlitchHeader title="DISCOVER" style={styles.discoverHeader} />
 
             {/* Trending Games from IGDB (global trending) */}
             <View style={styles.discoveryRow}>
@@ -447,34 +442,12 @@ export default function SearchScreen() {
                 isLoading={isLoadingCommunity}
               />
             </View>
-
-            {/* What Your Friends Are Playing */}
-            {friendsPlaying.length > 0 && (
-              <View style={styles.discoveryRow}>
-                <Text style={styles.discoveryRowTitle}>What Your Friends Are Playing</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.friendsScroll}
-                >
-                  {friendsPlaying.map((game) => (
-                    <TouchableOpacity
-                      key={game.id}
-                      style={styles.friendsGameCard}
-                      onPress={() => handleGamePress(game.id)}
-                      activeOpacity={0.8}
-                    >
-                      <Image
-                        source={{ uri: getIGDBImageUrl(game.cover_url) }}
-                        style={styles.friendsGameCover}
-                      />
-                      <StackedAvatars users={game.friends} />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
           </View>
+
+          {/* Curated Discovery Lists */}
+          {curatedLists.map((list) => (
+            <CuratedListRow key={list.id} list={list} />
+          ))}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -487,17 +460,45 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.lg,
+  },
+  searchContainer: {
+    position: 'relative',
+  },
+  searchBorderLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+  },
+  searchBorderCyan: {
+    borderColor: Colors.cyan,
+    opacity: 0.5,
+    transform: [{ translateX: -1.5 }],
+  },
+  searchBorderGreen: {
+    borderColor: Colors.accent,
+    opacity: 0.5,
+    transform: [{ translateX: 1.5 }],
+  },
+  searchBorderPink: {
+    borderColor: Colors.pink,
+    opacity: 0.4,
+    transform: [{ translateY: 0.5 }],
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
     paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   searchIcon: {
     marginRight: Spacing.sm,
@@ -507,16 +508,22 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     color: Colors.text,
     fontSize: FontSize.md,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.sm,
   },
   clearButton: {
     padding: Spacing.sm,
+  },
+  aiLogoContainer: {
+    alignItems: 'center',
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
   },
   scrollView: {
     flex: 1,
   },
   browseContent: {
-    paddingBottom: Spacing.xxl,
+    paddingTop: Spacing.xl,             // 24px top padding
+    paddingBottom: Spacing.xxxl,        // 48px bottom padding
   },
   centered: {
     flex: 1,
@@ -536,14 +543,16 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
   section: {
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.xxl,            // 32px above section
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.md,
+    fontSize: FontSize.sm,              // Smaller, consistent
+    color: Colors.textSecondary,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.sectionHeaderBelow,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   userRow: {
     flexDirection: 'row',
@@ -566,7 +575,7 @@ const styles = StyleSheet.create({
   userAvatarText: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSize.md,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   userInfo: {
     flex: 1,
@@ -586,27 +595,29 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,               // 12px gap
   },
   gridItem: {
     width: '30%',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.cardGap,
   },
   recentSection: {
-    paddingTop: Spacing.lg,
-    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingHorizontal: Spacing.screenPadding,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: Spacing.sectionHeaderBelow,
   },
   recentSectionTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    color: Colors.text,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   clearText: {
     fontFamily: Fonts.body,
@@ -641,38 +652,23 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   discoverSection: {
-    marginTop: Spacing.xl,
+    marginTop: Spacing.xxl,             // 32px above discover
   },
-  discoverSectionTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    color: Colors.text,
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
+  discoverHeader: {
+    paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.xl,           // 24px below header
   },
   discoveryRow: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxl,          // 32px between rows
   },
   discoveryRowTitle: {
-    fontFamily: Fonts.display,
-    fontSize: 16,
-    color: Colors.text,
-    marginLeft: Spacing.lg,
-    marginBottom: 12,
-  },
-  friendsScroll: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
-  },
-  friendsGameCard: {
-    position: 'relative',
-    width: 100,
-  },
-  friendsGameCover: {
-    width: 100,
-    height: 133,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginLeft: Spacing.screenPadding,
+    marginBottom: Spacing.sectionHeaderBelow,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
@@ -692,45 +688,5 @@ const styles = StyleSheet.create({
   userInfoSkeleton: {
     flex: 1,
     marginLeft: Spacing.md,
-  },
-  // AI Card styles
-  aiCard: {
-    marginHorizontal: Spacing.lg,
-    marginTop: Spacing.lg,
-    marginBottom: Spacing.md,
-    borderRadius: BorderRadius.xl,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.accent + '30',
-  },
-  aiCardGradient: {
-    padding: Spacing.lg,
-  },
-  aiCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  aiCardIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.accent + '20',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.md,
-  },
-  aiCardTextContainer: {
-    flex: 1,
-  },
-  aiCardTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
-    color: Colors.text,
-    marginBottom: 2,
-  },
-  aiCardSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
   },
 })

@@ -7,11 +7,12 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
-  ActivityIndicator,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
@@ -107,7 +108,7 @@ export default function QuickLogScreen() {
           <Image source={{ uri: coverUrl }} style={styles.gameCover} />
         ) : (
           <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-            <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+            <SweatDropIcon size={20} variant="static" />
           </View>
         )}
         <View style={styles.gameInfo}>
@@ -154,7 +155,7 @@ export default function QuickLogScreen() {
       {/* Results */}
       {isLoading ? (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color={Colors.accent} />
+          <LoadingSpinner size="large" color={Colors.accent} />
         </View>
       ) : results.length > 0 ? (
         <FlatList
@@ -171,7 +172,7 @@ export default function QuickLogScreen() {
         </View>
       ) : (
         <View style={styles.centered}>
-          <Ionicons name="game-controller-outline" size={64} color={Colors.textDim} />
+          <SweatDropIcon size={64} variant="static" />
           <Text style={styles.emptyText}>search for a game</Text>
           <Text style={styles.emptySubtext}>type at least 2 characters to search</Text>
         </View>

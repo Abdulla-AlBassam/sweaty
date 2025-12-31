@@ -1,6 +1,7 @@
 // Font family constants
 // BBH Bogle - Display font (headlines, logo, section titles)
 // Geist - Body font (everything else)
+// Space Mono - Terminal/cyberpunk elements
 
 export const Fonts = {
   // Display font - BBH Bogle
@@ -11,6 +12,9 @@ export const Fonts = {
   bodyMedium: 'Geist-Medium',
   bodySemiBold: 'Geist-SemiBold',
   bodyBold: 'Geist-Bold',
+
+  // Monospace font - Space Mono (for terminal/cyberpunk aesthetic)
+  mono: 'SpaceMono-Regular',
 }
 
 // Font files to load (must match filenames in assets/fonts/)
@@ -20,6 +24,7 @@ export const FontAssets = {
   'Geist-Medium': require('../../assets/fonts/Geist-Medium.ttf'),
   'Geist-SemiBold': require('../../assets/fonts/Geist-SemiBold.ttf'),
   'Geist-Bold': require('../../assets/fonts/Geist-Bold.ttf'),
+  'SpaceMono-Regular': require('../../assets/fonts/SpaceMono-Regular.ttf'),
 }
 
 // Typography presets for consistent styling
@@ -68,5 +73,23 @@ export const Typography = {
   label: {
     fontFamily: 'Geist-Medium',
     fontSize: 14,
+  },
+
+  // Terminal/Cyberpunk styles (Space Mono)
+  terminal: {
+    fontFamily: 'SpaceMono-Regular',
+    fontSize: 14,
+  },
+  terminalLarge: {
+    fontFamily: 'SpaceMono-Regular',
+    fontSize: 16,
+  },
+  terminalSmall: {
+    fontFamily: 'SpaceMono-Regular',
+    fontSize: 12,
+  },
+  code: {
+    fontFamily: 'SpaceMono-Regular',
+    fontSize: 13,
   },
 }

@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  ActivityIndicator,
+  Dimensions,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
@@ -18,6 +19,13 @@ import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 
 type CuratedListDetailRouteProp = RouteProp<MainStackParamList, 'CuratedListDetail'>
+
+// Calculate card width: (screen width - padding - gaps) / 3 columns
+const SCREEN_WIDTH = Dimensions.get('window').width
+const GRID_PADDING = Spacing.lg * 2 // padding on both sides
+const GAP = Spacing.md
+const NUM_COLUMNS = 3
+const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS
 
 interface GameItem {
   id: number
@@ -112,7 +120,7 @@ export default function CuratedListDetailScreen() {
       {/* Content */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={Colors.accent} />
+          <LoadingSpinner size="large" color={Colors.accent} />
         </View>
       ) : (
         <FlatList
@@ -171,11 +179,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   gameCard: {
-    width: '30%',
+    width: CARD_WIDTH,
   },
   cover: {
-    width: '100%',
-    aspectRatio: 3 / 4,
+    width: CARD_WIDTH,
+    height: CARD_WIDTH * (4 / 3), // 3:4 aspect ratio
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
   },

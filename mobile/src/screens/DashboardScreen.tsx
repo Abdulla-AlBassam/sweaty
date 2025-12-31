@@ -5,11 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   RefreshControl,
-  TouchableOpacity,
   Image,
-  ActivityIndicator,
   Animated,
+  TouchableOpacity,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
@@ -18,36 +18,35 @@ import { MainStackParamList } from '../navigation'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
+import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
+import { useBecauseYouLoved, useFriendsFavorites, useMoreFromStudio } from '../hooks/useRecommendations'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
+import SweatDropIcon from '../components/SweatDropIcon'
+import PressableScale from '../components/PressableScale'
+import StackedAvatars from '../components/StackedAvatars'
+import NewsSection from '../components/NewsSection'
+import Skeleton from '../components/Skeleton'
 
-// Gaming-themed welcome messages (same as web)
-const WELCOME_MESSAGES = [
-  { text: 'Press Start', isQuestion: false },
-  { text: 'Continue', isQuestion: true },
-  { text: 'New quest awaits', isQuestion: false },
-  { text: 'The hero returns', isQuestion: false },
-  { text: 'Quest log updated', isQuestion: false },
-  { text: "You've respawned", isQuestion: false },
-  { text: 'Ready to game', isQuestion: true },
-  { text: 'One more game', isQuestion: true },
-  { text: 'Touch grass later', isQuestion: false },
-]
-
-function getRandomWelcomeMessage() {
-  return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)]
-}
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
-  const { user, profile } = useAuth()
-  const { logs, isLoading: logsLoading, refetch: refetchLogs } = useGameLogs(user?.id)
+  const { user } = useAuth()
+  const { logs, refetch: refetchLogs } = useGameLogs(user?.id)
   const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
 
+  // Friends playing
+  const { games: friendsPlaying, isLoading: friendsLoading, refetch: refetchFriends } = useFriendsPlaying(user?.id)
+
+  // Personalized recommendations
+  const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id)
+  const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
+  const { studio, games: studioGames, isLoading: studioLoading, refetch: refetchStudio } = useMoreFromStudio(user?.id)
+
   const [refreshing, setRefreshing] = useState(false)
-  const [welcomeMessage] = useState(getRandomWelcomeMessage)
+  const [refreshCount, setRefreshCount] = useState(0)
 
   // Pulsing animation for "Currently Playing" indicator
   const pulseAnim = useRef(new Animated.Value(1)).current
@@ -73,12 +72,17 @@ export default function DashboardScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
+    setRefreshCount((prev) => prev + 1) // Trigger news shuffle
     await Promise.all([
       refetchLogs(),
       refetchLists(),
+      refetchFriends(),
+      refetchLoved(),
+      refetchFavorites(),
+      refetchStudio(),
     ])
     setRefreshing(false)
-  }, [refetchLogs, refetchLists])
+  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchStudio])
 
 
   // Currently playing games
@@ -88,11 +92,28 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
-  const displayName = profile?.display_name || profile?.username || 'Gamer'
+  // Get 2025 Essentials curated list (or first available)
+  const featuredCuratedList = useMemo(() => {
+    const essentials = curatedLists.find(list => list.slug === '2025-essentials')
+    return essentials || curatedLists[0] || null
+  }, [curatedLists])
 
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
   }
+
+  // Skeleton for horizontal game rows
+  const HorizontalSkeleton = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.horizontalScroll}
+    >
+      {[1, 2, 3, 4].map((i) => (
+        <Skeleton key={i} width={105} height={140} borderRadius={BorderRadius.md} />
+      ))}
+    </ScrollView>
+  )
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -109,36 +130,22 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.logo}>sweaty</Text>
-        </View>
+        {/* Header: Sweat drop icon centered - tap to open AI */}
+        <PressableScale
+          style={styles.header}
+          onPress={() => navigation.navigate('AIRecommend')}
+          haptic="light"
+          scale={0.9}
+        >
+          <SweatDropIcon size={40} isRefreshing={refreshing} />
+        </PressableScale>
 
-        {/* Welcome Section with Avatar */}
-        <View style={styles.welcomeSection}>
-          <TouchableOpacity onPress={() => navigation.navigate('Profile')} activeOpacity={0.7}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.headerAvatar} />
-            ) : (
-              <View style={[styles.headerAvatar, styles.headerAvatarFallback]}>
-                <Text style={styles.headerAvatarInitial}>
-                  {displayName.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <Text style={styles.welcomeText}>
-            {welcomeMessage.text}, {displayName}{welcomeMessage.isQuestion ? '?' : '!'}
-          </Text>
-        </View>
-
-
-        {/* Currently Playing */}
+        {/* NOW PLAYING Section */}
         {currentlyPlaying.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Currently Playing</Text>
+                <Text style={styles.sectionTitle}>Now Playing</Text>
                 <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
               </View>
             </View>
@@ -154,35 +161,176 @@ export default function DashboardScreen() {
                   ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
                   : null
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={log.id}
-                    style={styles.gameCard}
                     onPress={() => handleGamePress(game.id)}
-                    activeOpacity={0.7}
+                    haptic="light"
+                    scale={0.95}
                   >
                     {coverUrl ? (
                       <Image source={{ uri: coverUrl }} style={styles.gameCover} />
                     ) : (
-                      <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
+                      <View style={[styles.gameCover, styles.coverPlaceholder]}>
                         <Text style={styles.placeholderText}>?</Text>
                       </View>
                     )}
-                  </TouchableOpacity>
+                  </PressableScale>
                 )
               })}
             </ScrollView>
           </View>
         )}
 
-        {/* Curated Lists */}
+        {/* FRIENDS ARE PLAYING Section */}
+        {(friendsLoading || friendsPlaying.length > 0) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Friends Are Playing</Text>
+            </View>
+            {friendsLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {friendsPlaying.map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.friendsGameCard}
+                    onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.cover_url) }}
+                      style={styles.gameCover}
+                    />
+                    <StackedAvatars users={game.friends} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* FOR YOU: BECAUSE YOU LOVED [GAME] */}
+        {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.forYouTitle}>
+                Because You Loved{' '}
+                <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
+              </Text>
+            </View>
+            {lovedLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {becauseYouLovedGames.map((game) => (
+                  <PressableScale
+                    key={game.id}
+                    onPress={() => handleGamePress(game.id)}
+                    haptic="light"
+                    scale={0.95}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                      style={styles.gameCover}
+                    />
+                  </PressableScale>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* FOR YOU: POPULAR WITH YOUR FRIENDS */}
+        {(favoritesLoading || friendsFavorites.length > 0) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.forYouTitle}>Popular With Your Friends</Text>
+            </View>
+            {favoritesLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {friendsFavorites.map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.friendsFavoriteCard}
+                    onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.8}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                      style={styles.gameCover}
+                    />
+                    <View style={styles.friendCountBadge}>
+                      <Text style={styles.friendCountText}>
+                        ♥ {game.friendCount} {game.friendCount === 1 ? 'friend' : 'friends'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* FOR YOU: MORE FROM [STUDIO] */}
+        {(studioLoading || (studio && studioGames.length > 0)) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.forYouTitle}>
+                More From{' '}
+                <Text style={styles.accentText}>{studio || '...'}</Text>
+              </Text>
+            </View>
+            {studioLoading ? (
+              <HorizontalSkeleton />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {studioGames.map((game) => (
+                  <PressableScale
+                    key={game.id}
+                    onPress={() => handleGamePress(game.id)}
+                    haptic="light"
+                    scale={0.95}
+                  >
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                      style={styles.gameCover}
+                    />
+                  </PressableScale>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* Gaming News Section */}
+        <NewsSection refreshKey={refreshCount} />
+
+        {/* Featured Curated List (2025 Essentials) */}
         {listsLoading ? (
           <View style={styles.listsLoading}>
-            <ActivityIndicator size="large" color={Colors.accent} />
+            <LoadingSpinner size="large" />
           </View>
-        ) : curatedLists.length > 0 ? (
-          curatedLists.map((list) => (
-            <CuratedListRow key={list.id} list={list} />
-          ))
+        ) : featuredCuratedList ? (
+          <CuratedListRow list={featuredCuratedList} />
         ) : null}
       </ScrollView>
     </SafeAreaView>
@@ -198,92 +346,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.xxl,
+    paddingTop: Spacing.xl,      // 24px top padding
+    paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
   },
+  // Header
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xxl,  // 32px below header
   },
-  logo: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.xxl,
-    color: Colors.accentLight,
-  },
-  welcomeSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xl,
-  },
-  headerAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.surface,
-  },
-  headerAvatarFallback: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: Colors.accent,
-  },
-  headerAvatarInitial: {
-    fontFamily: Fonts.bodyBold,
-    color: Colors.background,
-    fontSize: 26,
-  },
-  welcomeText: {
-    fontFamily: Fonts.display,
-    fontSize: 26,
-    color: Colors.text,
-    flex: 1,
-  },
+  // Sections
   section: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxl,   // 32px between sections
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.sectionHeaderBelow, // 16px below header
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: Spacing.sm,
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.sm,       // Smaller, more subtle
     color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  forYouTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  accentText: {
+    color: Colors.cyanSoft,
   },
   pulsingDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: Colors.accent,
   },
+  // Horizontal scroll
   horizontalScroll: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,        // 12px gap between cards
   },
-  gameCard: {
-    width: 105,
-  },
+  // Game covers
   gameCover: {
     width: 105,
     height: 140,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
   },
-  gameCoverPlaceholder: {
-    backgroundColor: Colors.surface,
+  coverPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -291,8 +411,35 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxl,
     color: Colors.textDim,
   },
+  // Friends game card with avatar overlay
+  friendsGameCard: {
+    position: 'relative',
+    width: 105,
+  },
+  // Friends favorites card with count badge
+  friendsFavoriteCard: {
+    position: 'relative',
+    width: 105,
+  },
+  friendCountBadge: {
+    position: 'absolute',
+    bottom: 6,
+    left: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    paddingVertical: 3,
+    paddingHorizontal: 6,
+    borderRadius: BorderRadius.xs,
+  },
+  friendCountText: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  // Loading
   listsLoading: {
-    paddingVertical: Spacing.xxl,
+    paddingVertical: Spacing.xxxl,
     alignItems: 'center',
   },
 })

@@ -5,12 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   ImageBackground,
 } from 'react-native'
+import LoadingSpinner from '../components/LoadingSpinner'
 import { LinearGradient } from 'expo-linear-gradient'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
@@ -198,7 +198,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color={Colors.background} />
+                  <LoadingSpinner size="small" color={Colors.background} />
                 ) : (
                   <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
                 )}
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   logo: {
     fontFamily: Fonts.display,
     fontSize: 48,
-    color: Colors.accentLight,
+    color: Colors.accent,
     textAlign: 'center',
     marginBottom: Spacing.xs,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.accentLight,
+    color: Colors.accent,
     fontSize: FontSize.sm,
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },

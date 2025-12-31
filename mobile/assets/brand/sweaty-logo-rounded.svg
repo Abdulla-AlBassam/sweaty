@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Sweaty Logo - Rounded corners for app icons -->
+  <!-- Simple teardrop with RGB chromatic aberration glitch -->
+
+  <!-- Dark background with rounded corners -->
+  <rect width="512" height="512" rx="96" fill="#0f0f0f"/>
+
+  <!-- Cyan layer (offset left, behind) - GLITCH -->
+  <g transform="translate(-4, 0)" opacity="0.6">
+    <path
+      d="M256 56
+         C256 56 144 188 144 304
+         C144 365.856 194.144 416 256 416
+         C317.856 416 368 365.856 368 304
+         C368 188 256 56 256 56Z"
+      fill="#00ffff"
+    />
+  </g>
+
+  <!-- Green layer (offset right, behind) - GLITCH -->
+  <g transform="translate(4, 0)" opacity="0.6">
+    <path
+      d="M256 56
+         C256 56 144 188 144 304
+         C144 365.856 194.144 416 256 416
+         C317.856 416 368 365.856 368 304
+         C368 188 256 56 256 56Z"
+      fill="#22c55e"
+    />
+  </g>
+
+  <!-- Main white layer (front) -->
+  <path
+    d="M256 56
+       C256 56 144 188 144 304
+       C144 365.856 194.144 416 256 416
+       C317.856 416 368 365.856 368 304
+       C368 188 256 56 256 56Z"
+    fill="#ffffff"
+  />
+</svg>

@@ -24,7 +24,8 @@ export async function GET(
     const query = `
       fields name, slug, summary, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating,
-             videos.video_id, videos.name;
+             videos.video_id, videos.name,
+             similar_games.id, similar_games.name, similar_games.cover.image_id;
       where id = ${gameId};
     `
 
@@ -37,6 +38,11 @@ export async function GET(
       },
       body: query,
     })
+
+    if (!response.ok) {
+      console.error('IGDB API error:', response.status, await response.text())
+      return NextResponse.json({ error: 'IGDB API error' }, { status: 502 })
+    }
 
     const games = await response.json()
 
@@ -63,6 +69,13 @@ export async function GET(
       videos: game.videos?.map((v: any) => ({
         videoId: v.video_id,
         name: v.name || 'Trailer'
+      })) || [],
+      similarGames: game.similar_games?.slice(0, 10).map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        coverUrl: g.cover?.image_id
+          ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
+          : null
       })) || []
     })
   } catch (error) {

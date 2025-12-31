@@ -8,11 +8,12 @@ import {
   TextInput,
   FlatList,
   Image,
-  ActivityIndicator,
   Pressable,
   Keyboard,
 } from 'react-native'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from './SweatDropIcon'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
@@ -182,7 +183,7 @@ export default function EditFavoritesModal({
           <Image source={{ uri: coverUrl }} style={styles.resultCover} />
         ) : (
           <View style={[styles.resultCover, styles.resultCoverPlaceholder]}>
-            <Ionicons name="game-controller-outline" size={16} color={Colors.textDim} />
+            <SweatDropIcon size={16} variant="static" />
           </View>
         )}
         <Text style={styles.resultName} numberOfLines={1}>{item.name}</Text>
@@ -250,7 +251,7 @@ export default function EditFavoritesModal({
               <View style={styles.resultsContainer}>
                 {isSearching ? (
                   <View style={styles.centered}>
-                    <ActivityIndicator size="small" color={Colors.accent} />
+                    <LoadingSpinner size="small" color={Colors.accent} />
                   </View>
                 ) : searchResults.length > 0 ? (
                   <FlatList
@@ -291,7 +292,7 @@ export default function EditFavoritesModal({
                             <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
                           ) : (
                             <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                              <Ionicons name="game-controller-outline" size={20} color={Colors.textDim} />
+                              <SweatDropIcon size={20} variant="static" />
                             </View>
                           )}
                           <TouchableOpacity
@@ -331,7 +332,7 @@ export default function EditFavoritesModal({
                   disabled={isSaving}
                 >
                   {isSaving ? (
-                    <ActivityIndicator size="small" color={Colors.background} />
+                    <LoadingSpinner size="small" color={Colors.background} />
                   ) : (
                     <Text style={styles.saveButtonText}>Save Favorites</Text>
                   )}

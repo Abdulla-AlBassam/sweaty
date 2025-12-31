@@ -10,17 +10,21 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed } from '../hooks/useSupabase'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
+import AddToListModal from '../components/AddToListModal'
 import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
 import TrailerSection from '../components/TrailerSection'
+import TwitchStreamsSection from '../components/TwitchStreamsSection'
 import { GameDetailSkeleton } from '../components/skeletons'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
@@ -28,6 +32,12 @@ type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 interface GameVideo {
   videoId: string
   name: string
+}
+
+interface SimilarGame {
+  id: number
+  name: string
+  coverUrl: string | null
 }
 
 interface GameDetails {
@@ -43,6 +53,7 @@ interface GameDetails {
   platforms?: string[]
   rating?: number
   videos?: GameVideo[]
+  similarGames?: SimilarGame[]
 }
 
 interface UserGameLog {
@@ -61,8 +72,16 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
+  const [isAddToListVisible, setIsAddToListVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+
+  // Fetch ratings data
+  const { data: openCriticData } = useOpenCritic(gameId, game?.name || '')
+  const { stats: communityStats, refetch: refetchCommunityStats } = useCommunityStats(gameId)
+
+  // Fetch friends who played this game
+  const { friends: friendsWhoPlayed } = useFriendsWhoPlayed(gameId, user?.id)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
@@ -152,10 +171,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   }, [user, gameId])
 
   const handleLogSaveSuccess = useCallback(() => {
-    // Refresh the user's log and reviews after saving
+    // Refresh the user's log, reviews, and community stats after saving
     fetchUserLog()
     setReviewsRefreshKey(prev => prev + 1)
-  }, [fetchUserLog])
+    refetchCommunityStats()
+  }, [fetchUserLog, refetchCommunityStats])
 
   // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
@@ -165,8 +185,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
       fetchUserLog(),
     ])
     setReviewsRefreshKey(prev => prev + 1)
+    refetchCommunityStats()
     setRefreshing(false)
-  }, [fetchUserLog])
+  }, [fetchUserLog, refetchCommunityStats])
 
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
@@ -177,6 +198,17 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     const date = game?.firstReleaseDate || game?.first_release_date
     if (!date) return null
     return new Date(date).getFullYear()
+  }
+
+  // Get color based on OpenCritic tier
+  const getOpenCriticColor = (tier: string | null) => {
+    switch (tier) {
+      case 'Mighty': return '#66CC33' // Green
+      case 'Strong': return '#4A90D9' // Blue
+      case 'Fair': return '#FFCC33' // Amber/Yellow
+      case 'Weak': return '#FF6633' // Red/Orange
+      default: return Colors.textMuted
+    }
   }
 
   if (isLoading) {
@@ -205,7 +237,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <Text style={styles.headerTitle}>not found</Text>
         </View>
         <View style={styles.centered}>
-          <Ionicons name="game-controller-outline" size={64} color={Colors.textDim} />
+          <SweatDropIcon size={64} variant="static" />
           <Text style={styles.errorText}>game not found</Text>
         </View>
       </SafeAreaView>
@@ -243,7 +275,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Image source={{ uri: coverUrl }} style={styles.cover} />
           ) : (
             <View style={[styles.cover, styles.coverPlaceholder]}>
-              <Ionicons name="game-controller" size={40} color={Colors.textDim} />
+              <SweatDropIcon size={40} variant="static" />
             </View>
           )}
 
@@ -255,7 +287,58 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             {game.genres && game.genres.length > 0 && (
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
+
+            {/* Inline Ratings */}
+            {(openCriticData?.score || communityStats.averageRating) && (
+              <View style={styles.inlineRatings}>
+                {openCriticData?.score && (
+                  <View style={styles.ratingItem}>
+                    <Text style={styles.ratingLabel}>OpenCritic</Text>
+                    <Text style={[styles.ratingValue, { color: getOpenCriticColor(openCriticData.tier) }]}>
+                      {openCriticData.score}
+                    </Text>
+                  </View>
+                )}
+                {communityStats.averageRating && (
+                  <View style={styles.ratingItem}>
+                    <Text style={styles.ratingLabel}>Community</Text>
+                    <View style={styles.communityRating}>
+                      <Ionicons name="star" size={14} color="#FFD700" />
+                      <Text style={styles.ratingValue}>{communityStats.averageRating}</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
           </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtons}>
+          {/* Log/Edit Button with Chrome Aesthetic */}
+          <TouchableOpacity
+            style={styles.logButtonWrapper}
+            onPress={() => setIsModalVisible(true)}
+          >
+            <View style={[styles.logButtonLayer, styles.logButtonCyan]} />
+            <View style={[styles.logButtonLayer, styles.logButtonGreen]} />
+            <View style={styles.logButton}>
+              <Ionicons
+                name={userLog ? 'create-outline' : 'add'}
+                size={22}
+                color={Colors.background}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {user && (
+            <TouchableOpacity
+              style={styles.addToListButton}
+              onPress={() => setIsAddToListVisible(true)}
+            >
+              <Ionicons name="list-outline" size={22} color={Colors.text} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* User Status */}
@@ -274,17 +357,28 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Action Button */}
-        <TouchableOpacity
-          style={styles.logButton}
-          onPress={() => setIsModalVisible(true)}
-        >
-          <Ionicons
-            name={userLog ? 'create-outline' : 'add'}
-            size={userLog ? 24 : 28}
-            color={Colors.background}
-          />
-        </TouchableOpacity>
+        {/* Friends Who Played */}
+        {friendsWhoPlayed.length > 0 && (
+          <View style={styles.friendsSection}>
+            <Text style={styles.friendsSectionTitle}>Friends Who Played</Text>
+            <View style={styles.friendsRow}>
+              {friendsWhoPlayed.map((friend) => (
+                <TouchableOpacity
+                  key={friend.id}
+                  onPress={() => navigation.navigate('UserProfile', { username: friend.username })}
+                >
+                  {friend.avatar_url ? (
+                    <Image source={{ uri: friend.avatar_url }} style={styles.friendAvatar} />
+                  ) : (
+                    <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
+                      <Ionicons name="person" size={16} color={Colors.textMuted} />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Reviews */}
         <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
@@ -296,6 +390,9 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.summaryText}>{game.summary}</Text>
           </View>
         )}
+
+        {/* Live on Twitch */}
+        <TwitchStreamsSection gameName={game.name} />
 
         {/* Trailers */}
         {game.videos && game.videos.length > 0 && (
@@ -309,6 +406,34 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
           </View>
         )}
+
+        {/* Similar Games */}
+        {game.similarGames && game.similarGames.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Similar Games</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.similarGamesRow}
+            >
+              {game.similarGames.map((similarGame) => (
+                <TouchableOpacity
+                  key={similarGame.id}
+                  style={styles.similarGameCard}
+                  onPress={() => navigation.push('GameDetail', { gameId: similarGame.id })}
+                >
+                  {similarGame.coverUrl ? (
+                    <Image source={{ uri: similarGame.coverUrl }} style={styles.similarGameCover} />
+                  ) : (
+                    <View style={[styles.similarGameCover, styles.similarGamePlaceholder]}>
+                      <SweatDropIcon size={24} variant="static" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </ScrollView>
 
       {/* Log Game Modal */}
@@ -318,6 +443,14 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         game={game}
         existingLog={userLog}
         onSaveSuccess={handleLogSaveSuccess}
+      />
+
+      {/* Add to List Modal */}
+      <AddToListModal
+        visible={isAddToListVisible}
+        onClose={() => setIsAddToListVisible(false)}
+        gameId={gameId}
+        gameName={game.name}
       />
     </SafeAreaView>
   )
@@ -412,19 +545,60 @@ const styles = StyleSheet.create({
   statusText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   statusRating: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  logButtonWrapper: {
+    position: 'relative',
+    width: 44,
+    height: 44,
+  },
+  logButtonLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: BorderRadius.md,
+  },
+  logButtonCyan: {
+    backgroundColor: Colors.cyan,
+    opacity: 0.7,
+    transform: [{ translateX: -1.5 }],
+  },
+  logButtonGreen: {
     backgroundColor: Colors.accent,
+    opacity: 0.7,
+    transform: [{ translateX: 1.5 }],
+  },
+  logButton: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.text,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing.lg,
+  },
+  addToListButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
   },
   section: {
     marginBottom: Spacing.lg,
@@ -445,5 +619,70 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
+  },
+  inlineRatings: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
+  },
+  ratingItem: {
+    alignItems: 'flex-start',
+  },
+  ratingLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginBottom: 2,
+  },
+  ratingValue: {
+    fontFamily: Fonts.displayBold,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+  },
+  communityRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  // Friends Who Played styles
+  friendsSection: {
+    marginBottom: Spacing.lg,
+  },
+  friendsSectionTitle: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.sm,
+  },
+  friendsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  friendAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  friendAvatarPlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Similar Games styles
+  similarGamesRow: {
+    gap: Spacing.sm,
+  },
+  similarGameCard: {
+    width: 105,
+  },
+  similarGameCover: {
+    width: 105,
+    height: 140,
+    borderRadius: BorderRadius.sm,
+  },
+  similarGamePlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

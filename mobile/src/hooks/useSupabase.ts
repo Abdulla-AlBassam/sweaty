@@ -1,6 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { Game, GameLog, Profile, ActivityItem, CuratedList, CuratedListWithGames } from '../types'
+import { API_CONFIG } from '../constants'
+
+// OpenCritic data type
+export interface OpenCriticData {
+  score: number | null
+  tier: string | null
+  numReviews: number | null
+}
+
+// Community stats type
+export interface CommunityStats {
+  averageRating: number | null
+  totalLogs: number
+}
 
 export function useGameLogs(userId: string | undefined) {
   const [logs, setLogs] = useState<GameLog[]>([])
@@ -178,6 +192,76 @@ export function useActivityFeed(userId: string | undefined) {
   return { activities, isLoading, error, refetch: fetchActivities }
 }
 
+export function useOwnActivityFeed(userId: string | undefined) {
+  const [activities, setActivities] = useState<ActivityItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchActivities = async () => {
+    if (!userId) {
+      setActivities([])
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Get user's own recent game logs
+      const { data: logs, error: logsError } = await supabase
+        .from('game_logs')
+        .select(`
+          id,
+          status,
+          rating,
+          review,
+          created_at,
+          user_id,
+          game_id,
+          profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url),
+          games_cache!game_logs_game_id_fkey (id, name, cover_url)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (logsError) throw logsError
+
+      const formattedActivities: ActivityItem[] = (logs || []).map((log: any) => ({
+        id: log.id,
+        user: {
+          id: log.profiles.id,
+          username: log.profiles.username,
+          display_name: log.profiles.display_name,
+          avatar_url: log.profiles.avatar_url,
+        },
+        game: {
+          id: log.games_cache.id,
+          name: log.games_cache.name,
+          cover_url: log.games_cache.cover_url,
+        },
+        status: log.status,
+        rating: log.rating,
+        review: log.review,
+        created_at: log.created_at,
+      }))
+
+      setActivities(formattedActivities)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch activity')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchActivities()
+  }, [userId])
+
+  return { activities, isLoading, error, refetch: fetchActivities }
+}
+
 export function useGameSearch(query: string) {
   const [games, setGames] = useState<Game[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -216,64 +300,247 @@ export function useGameSearch(query: string) {
   return { games, isLoading, error }
 }
 
+// Fisher-Yates shuffle algorithm
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array]
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  }
+  return shuffled
+}
+
 export function useCuratedLists() {
   const [lists, setLists] = useState<CuratedListWithGames[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchLists = async () => {
-      setIsLoading(true)
-      setError(null)
+  const fetchLists = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
 
-      try {
-        // Fetch curated lists
-        const { data: listsData, error: listsError } = await supabase
-          .from('curated_lists')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true })
+    try {
+      // Fetch curated lists
+      const { data: listsData, error: listsError } = await supabase
+        .from('curated_lists')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
 
-        if (listsError) throw listsError
+      if (listsError) throw listsError
 
-        // Collect all game IDs from all lists
-        const allGameIds = new Set<number>()
-        ;(listsData as CuratedList[]).forEach((list) => {
-          list.game_ids.forEach((id) => allGameIds.add(id))
-        })
+      // Collect all game IDs from all lists
+      const allGameIds = new Set<number>()
+      ;(listsData as CuratedList[]).forEach((list) => {
+        list.game_ids.forEach((id) => allGameIds.add(id))
+      })
 
-        // Batch fetch all games
-        const { data: gamesData, error: gamesError } = await supabase
-          .from('games_cache')
-          .select('id, name, cover_url')
-          .in('id', Array.from(allGameIds))
+      // Batch fetch all games
+      const { data: gamesData, error: gamesError } = await supabase
+        .from('games_cache')
+        .select('id, name, cover_url')
+        .in('id', Array.from(allGameIds))
 
-        if (gamesError) throw gamesError
+      if (gamesError) throw gamesError
 
-        // Create a map of game ID to game data
-        const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null }>()
-        ;(gamesData || []).forEach((game: any) => {
-          gamesMap.set(game.id, game)
-        })
+      // Create a map of game ID to game data
+      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null }>()
+      ;(gamesData || []).forEach((game: any) => {
+        gamesMap.set(game.id, game)
+      })
 
-        // Build the lists with games (preserving order from game_ids)
-        const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => ({
-          ...list,
-          games: list.game_ids
+      // Build the lists with games, shuffling games within each list
+      const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => ({
+        ...list,
+        games: shuffleArray(
+          list.game_ids
             .map((id) => gamesMap.get(id))
-            .filter((game): game is { id: number; name: string; cover_url: string | null } => game !== undefined),
-        }))
+            .filter((game): game is { id: number; name: string; cover_url: string | null } => game !== undefined)
+        ),
+      }))
 
-        setLists(listsWithGames)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
+      // Shuffle the order of lists themselves
+      setLists(shuffleArray(listsWithGames))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchLists()
+  }, [fetchLists])
+
+  return { lists, isLoading, error, refetch: fetchLists }
+}
+
+// Hook to fetch OpenCritic score for a game
+export function useOpenCritic(gameId: number, gameName: string) {
+  const [data, setData] = useState<OpenCriticData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!gameId || !gameName) {
+      setData(null)
+      setIsLoading(false)
+      return
+    }
+
+    const fetchOpenCritic = async () => {
+      setIsLoading(true)
+      try {
+        const response = await fetch(
+          `${API_CONFIG.baseUrl}/api/opencritic/${gameId}?name=${encodeURIComponent(gameName)}`
+        )
+
+        if (response.ok) {
+          const result = await response.json()
+          setData({
+            score: result.score,
+            tier: result.tier,
+            numReviews: result.numReviews,
+          })
+        } else {
+          setData(null)
+        }
+      } catch (error) {
+        console.log('OpenCritic fetch error:', error)
+        setData(null)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchLists()
-  }, [])
+    fetchOpenCritic()
+  }, [gameId, gameName])
 
-  return { lists, isLoading, error }
+  return { data, isLoading }
+}
+
+// Type for friend who played a game
+export interface FriendWhoPlayed {
+  id: string
+  username: string
+  display_name: string | null
+  avatar_url: string | null
+  rating: number | null
+  status: string
+}
+
+// Hook to fetch friends who played a specific game
+export function useFriendsWhoPlayed(gameId: number, userId: string | undefined) {
+  const [friends, setFriends] = useState<FriendWhoPlayed[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    if (!gameId || !userId) {
+      setFriends([])
+      setIsLoading(false)
+      return
+    }
+
+    const fetchFriendsWhoPlayed = async () => {
+      setIsLoading(true)
+      try {
+        // Get users the current user follows
+        const { data: following, error: followError } = await supabase
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', userId)
+
+        if (followError) throw followError
+
+        if (!following || following.length === 0) {
+          setFriends([])
+          setIsLoading(false)
+          return
+        }
+
+        const followingIds = following.map((f) => f.following_id)
+
+        // Get game logs from followed users for this specific game
+        const { data: logs, error: logsError } = await supabase
+          .from('game_logs')
+          .select(`
+            status,
+            rating,
+            user_id,
+            profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url)
+          `)
+          .eq('game_id', gameId)
+          .in('user_id', followingIds)
+
+        if (logsError) throw logsError
+
+        const friendsList: FriendWhoPlayed[] = (logs || []).map((log: any) => ({
+          id: log.profiles.id,
+          username: log.profiles.username,
+          display_name: log.profiles.display_name,
+          avatar_url: log.profiles.avatar_url,
+          rating: log.rating,
+          status: log.status,
+        }))
+
+        setFriends(friendsList)
+      } catch (error) {
+        console.log('Friends who played error:', error)
+        setFriends([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchFriendsWhoPlayed()
+  }, [gameId, userId])
+
+  return { friends, isLoading }
+}
+
+// Hook to fetch community rating stats for a game
+export function useCommunityStats(gameId: number) {
+  const [stats, setStats] = useState<CommunityStats>({ averageRating: null, totalLogs: 0 })
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchStats = useCallback(async () => {
+    if (!gameId) {
+      setStats({ averageRating: null, totalLogs: 0 })
+      setIsLoading(false)
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      // Get all ratings for this game
+      const { data, error } = await supabase
+        .from('game_logs')
+        .select('rating')
+        .eq('game_id', gameId)
+        .not('rating', 'is', null)
+
+      if (error) throw error
+
+      const ratings = (data || []).map((d: { rating: number }) => d.rating).filter((r): r is number => r !== null)
+      const totalLogs = ratings.length
+
+      if (totalLogs === 0) {
+        setStats({ averageRating: null, totalLogs: 0 })
+      } else {
+        const sum = ratings.reduce((a, b) => a + b, 0)
+        const average = Math.round((sum / totalLogs) * 10) / 10 // Round to 1 decimal
+        setStats({ averageRating: average, totalLogs })
+      }
+    } catch (error) {
+      console.log('Community stats error:', error)
+      setStats({ averageRating: null, totalLogs: 0 })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [gameId])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
+
+  return { stats, isLoading, refetch: fetchStats }
 }

@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontFamily: Fonts.bodyBold,
-    color: Colors.accentLight,
+    color: Colors.accent,
   },
   extraBadge: {
     backgroundColor: Colors.surfaceLight,

@@ -1,17 +1,19 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   RefreshControl,
+  TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { useAuth } from '../contexts/AuthContext'
-import { useActivityFeed } from '../hooks/useSupabase'
+import { useActivityFeed, useOwnActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { MainStackParamList } from '../navigation'
@@ -19,18 +21,48 @@ import ActivityItem from '../components/ActivityItem'
 import { ActivitySkeletonList } from '../components/skeletons'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
+type TabType = 'friends' | 'you'
+type CategoryType = 'all' | 'reviews' | 'logs'
+
+const CATEGORIES = [
+  { key: 'all' as CategoryType, label: 'All' },
+  { key: 'reviews' as CategoryType, label: 'Reviews' },
+  { key: 'logs' as CategoryType, label: 'Logs' },
+]
 
 export default function ActivityScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user } = useAuth()
-  const { activities, isLoading, refetch } = useActivityFeed(user?.id)
+  const [activeTab, setActiveTab] = useState<TabType>('friends')
+  const [activeCategory, setActiveCategory] = useState<CategoryType>('all')
+  const { activities: friendsActivities, isLoading: friendsLoading, refetch: refetchFriends } = useActivityFeed(user?.id)
+  const { activities: ownActivities, isLoading: ownLoading, refetch: refetchOwn } = useOwnActivityFeed(user?.id)
   const [refreshing, setRefreshing] = useState(false)
+
+  const rawActivities = activeTab === 'friends' ? friendsActivities : ownActivities
+  const isLoading = activeTab === 'friends' ? friendsLoading : ownLoading
+
+  // Filter activities by category
+  const activities = useMemo(() => {
+    if (activeCategory === 'all') return rawActivities
+    if (activeCategory === 'reviews') {
+      return rawActivities.filter(a => a.review && a.review.trim().length > 0)
+    }
+    if (activeCategory === 'logs') {
+      return rawActivities.filter(a => !a.review || a.review.trim().length === 0)
+    }
+    return rawActivities
+  }, [rawActivities, activeCategory])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
-    await refetch()
+    if (activeTab === 'friends') {
+      await refetchFriends()
+    } else {
+      await refetchOwn()
+    }
     setRefreshing(false)
-  }, [refetch])
+  }, [activeTab, refetchFriends, refetchOwn])
 
   const handleUserPress = (userId: string, username: string) => {
     navigation.navigate('UserProfile', { username, userId })
@@ -40,10 +72,71 @@ export default function ActivityScreen() {
     navigation.navigate('GameDetail', { gameId })
   }
 
+  const getEmptyMessage = () => {
+    if (activeCategory === 'reviews') {
+      return activeTab === 'friends'
+        ? 'no reviews from friends yet'
+        : 'you haven\'t written any reviews yet'
+    }
+    if (activeCategory === 'logs') {
+      return activeTab === 'friends'
+        ? 'no logs from friends yet'
+        : 'you haven\'t logged any games yet'
+    }
+    return activeTab === 'friends'
+      ? 'follow other gamers to see what they\'re playing'
+      : 'start logging games to see your activity here'
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>activity</Text>
+      </View>
+
+      <View style={styles.tabContainer}>
+        {/* Friends/You Tabs */}
+        <View style={styles.tabsRow}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
+            onPress={() => setActiveTab('friends')}
+          >
+            <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
+              Friends
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'you' && styles.activeTab]}
+            onPress={() => setActiveTab('you')}
+          >
+            <Text style={[styles.tabText, activeTab === 'you' && styles.activeTabText]}>
+              You
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Category Pills */}
+        <View style={styles.categoryRow}>
+          {CATEGORIES.map((category) => (
+            <TouchableOpacity
+              key={category.key}
+              style={[
+                styles.categoryPill,
+                activeCategory === category.key && styles.categoryPillActive,
+              ]}
+              onPress={() => setActiveCategory(category.key)}
+            >
+              <Text
+                style={[
+                  styles.categoryText,
+                  activeCategory === category.key && styles.categoryTextActive,
+                ]}
+              >
+                {category.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <ScrollView
@@ -62,11 +155,17 @@ export default function ActivityScreen() {
           <ActivitySkeletonList count={6} />
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
+            {activeCategory === 'reviews' ? (
+              <Ionicons name="chatbubble-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
+            ) : activeTab === 'friends' && activeCategory === 'all' ? (
+              <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
+            ) : (
+              <View style={styles.emptyIcon}>
+                <SweatDropIcon size={48} variant="static" />
+              </View>
+            )}
             <Text style={styles.emptyTitle}>no activity yet</Text>
-            <Text style={styles.emptyText}>
-              follow other gamers to see what they're playing
-            </Text>
+            <Text style={styles.emptyText}>{getEmptyMessage()}</Text>
           </View>
         ) : (
           <View style={styles.activityList}>
@@ -91,21 +190,73 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.lg,
   },
   title: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.xxl,
+    fontSize: FontSize.xl,
     color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xl,            // 24px space below tabs
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    gap: Spacing.xl,
+  },
+  tab: {
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: Colors.accent,
+  },
+  tabText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
+  },
+  activeTabText: {
+    color: Colors.text,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  categoryPill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  categoryPillActive: {
+    backgroundColor: Colors.text,
+    borderColor: Colors.text,
+  },
+  categoryText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  categoryTextActive: {
+    color: Colors.background,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xxxl,          // 48px bottom padding
   },
   emptyState: {
     flex: 1,
