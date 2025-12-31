@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSmartSimilarGames } from '@/lib/igdb'
+import { getSmartSimilarGames, getGameById } from '@/lib/igdb'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,10 +22,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
     }
 
-    // Get user's highly rated games (4+ stars)
+    // Get user's highly rated games (4+ stars) - just get game_id and rating
     const { data: lovedGames, error: logsError } = await supabase
       .from('game_logs')
-      .select('game_id, rating, games_cache(id, name, cover_url)')
+      .select('game_id, rating')
       .eq('user_id', userId)
       .gte('rating', 4)
       .not('rating', 'is', null)
@@ -44,6 +44,8 @@ export async function GET(request: Request) {
       })
     }
 
+    console.log('[BecauseYouLoved] Found', lovedGames.length, 'games rated 4+ stars')
+
     // Get all game IDs in user's library (to exclude from recommendations)
     const { data: allLogs } = await supabase
       .from('game_logs')
@@ -52,37 +54,30 @@ export async function GET(request: Request) {
 
     const userGameIds = new Set(allLogs?.map(log => log.game_id) || [])
 
-    // Filter to only games that have cache data
-    const gamesWithCache = lovedGames.filter(log => {
-      const cache = log.games_cache as unknown as { id: number } | null
-      return cache !== null
-    })
-
-    if (gamesWithCache.length === 0) {
-      console.log('[BecauseYouLoved] No cached games found for user')
-      return NextResponse.json({
-        basedOnGame: null,
-        recommendations: [],
-        message: 'No cached game data found'
-      })
-    }
-
-    // Shuffle games and try each one until we find recommendations
-    const shuffled = [...gamesWithCache].sort(() => Math.random() - 0.5)
-    const gamesToTry = shuffled.slice(0, Math.min(shuffled.length, 10)) // Try up to 10 games
+    // Shuffle all loved games randomly for variety on each refresh
+    const shuffled = [...lovedGames].sort(() => Math.random() - 0.5)
+    const gamesToTry = shuffled.slice(0, Math.min(shuffled.length, 15)) // Try up to 15 games
 
     console.log('[BecauseYouLoved] Will try up to', gamesToTry.length, 'games to find recommendations')
 
     for (const selectedLog of gamesToTry) {
-      const gameCache = selectedLog.games_cache as unknown as { id: number; name: string; cover_url: string | null }
+      const gameId = selectedLog.game_id
 
-      const basedOnGame: Game = {
-        id: gameCache.id,
-        name: gameCache.name,
-        coverUrl: gameCache.cover_url
+      // Fetch game info from IGDB directly (not from cache)
+      const gameInfo = await getGameById(gameId)
+
+      if (!gameInfo) {
+        console.log('[BecauseYouLoved] Could not fetch game info for ID:', gameId)
+        continue
       }
 
-      console.log('[BecauseYouLoved] Trying game:', basedOnGame.name)
+      const basedOnGame: Game = {
+        id: gameInfo.id,
+        name: gameInfo.name,
+        coverUrl: gameInfo.coverUrl
+      }
+
+      console.log('[BecauseYouLoved] Trying game:', basedOnGame.name, '(rating:', selectedLog.rating, ')')
 
       // Get smart similar games from IGDB
       const similarGames = await getSmartSimilarGames(basedOnGame.id, 50)
@@ -97,7 +92,7 @@ export async function GET(request: Request) {
           coverUrl: game.coverUrl
         }))
 
-      // If we found recommendations, return them
+      // If we found at least 3 recommendations, return them
       if (recommendations.length >= 3) {
         console.log('[BecauseYouLoved] Found', recommendations.length, 'recommendations for', basedOnGame.name)
         return NextResponse.json({
@@ -110,7 +105,7 @@ export async function GET(request: Request) {
     }
 
     // If no game returned enough recommendations, return empty
-    console.log('[BecauseYouLoved] No games returned sufficient recommendations')
+    console.log('[BecauseYouLoved] No games returned sufficient recommendations after trying all')
     return NextResponse.json({
       basedOnGame: null,
       recommendations: [],
