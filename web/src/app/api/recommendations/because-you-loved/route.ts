@@ -13,6 +13,7 @@ interface Game {
   coverUrl: string | null
 }
 
+// API Version: 2 - Uses franchises for series recommendations
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -21,6 +22,8 @@ export async function GET(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
     }
+
+    console.log('[BecauseYouLoved] API v2 - Franchise-based recommendations')
 
     // Get user's highly rated games (4+ stars) - just get game_id and rating
     const { data: lovedGames, error: logsError } = await supabase
@@ -106,9 +109,14 @@ export async function GET(request: Request) {
         return NextResponse.json({
           basedOnGame,
           recommendations,
+          apiVersion: 2,
           debug: {
             gamesRated4Plus: lovedGames.length,
             gamesTried: gamesToTry.map(g => g.game_id).indexOf(selectedLog) + 1
+          }
+        }, {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
           }
         })
       }
