@@ -1,0 +1,172 @@
+=== Curated Lists CSV Processor ===
+API URL: https://sweaty-v1.vercel.app
+CSV File: /Users/abdullaalbassam/Desktop/sweaty/database/missing_games.csv
+
+Found 18 lists
+
+
+--- Processing: 2025-essentials (3 games) ---
+  Searching: Final Fantasy Tactics... Found: Final Fantasy Tactics (ID: 428)
+  Searching: The Legend of Heroes: Trails in the Sky... Found: The Legend of Heroes: Trails in the Sky (ID: 8986)
+  Searching: Deltarune... Found: Deltarune (ID: 171233)
+  Completed: 3/3 games found
+
+--- Processing: playstation-exclusives (7 games) ---
+  Searching: God of War... Found: God of War (ID: 19560)
+  Searching: Demon's Souls... Found: Demon's Souls (ID: 134606)
+  Searching: Shadow of the Colossus... Found: Shadow of the Colossus (ID: 37094)
+  Searching: Silent Hill 2... Found: Silent Hill 2 (ID: 222485)
+  Searching: The Last of Us Part I... Found: The Last of Us Part I (ID: 204350)
+  Searching: Ratchet & Clank... Found: Ratchet & Clank (ID: 11065)
+  Searching: MediEvil... Found: MediEvil (ID: 4000)
+  Completed: 7/7 games found
+
+--- Processing: pc-exclusives (1 games) ---
+  Searching: Sid Meier's Civilization VI... Found: Sid Meier's Civilization VI (ID: 19130)
+  Completed: 1/1 games found
+
+--- Processing: goated-remakes (16 games) ---
+  Searching: Resident Evil 4... Found: Resident Evil 4 (ID: 132181)
+  Searching: Resident Evil 2... Found: Resident Evil 2 (ID: 19686)
+  Searching: Final Fantasy VII Rebirth... Found: Final Fantasy VII Rebirth (ID: 133236)
+  Searching: Demon's Souls... Found: Demon's Souls (ID: 134606)
+  Searching: Shadow of the Colossus... Found: Shadow of the Colossus (ID: 37094)
+  Searching: Tony Hawk's Pro Skater 1 + 2... Found: Tony Hawk's Pro Skater 1+2 (ID: 133887)
+  Searching: Dead Space... Found: Dead Space (ID: 159119)
+  Searching: Pokemon HeartGold... Found: Pokémon HeartGold Version (ID: 1556)
+  Searching: Mass Effect Legendary Edition... Found: Mass Effect Legendary Edition (ID: 140839)
+  Searching: The Legend of Zelda: Link's Awakening... Found: The Legend of Zelda: Link's Awakening (ID: 115284)
+  Searching: Silent Hill 2... Found: Silent Hill 2 (ID: 222485)
+  Searching: Ratchet & Clank... Found: Ratchet & Clank (ID: 11065)
+  Searching: System Shock... Found: System Shock (ID: 23)
+  Searching: BioShock: The Collection... Found: BioShock: The Collection (ID: 19839)
+  Searching: Super Mario RPG... Found: Super Mario RPG (ID: 254327)
+  Searching: Sonic X Shadow Generations... Found: Sonic X Shadow Generations (ID: 284716)
+  Completed: 16/16 games found
+
+--- Processing: coop-must-haves (3 games) ---
+  Searching: Portal 2... Found: Portal 2 (ID: 72)
+  Searching: Deep Rock Galactic... Found: Deep Rock Galactic (ID: 27134)
+  Searching: Helldivers 2... Found: Helldivers 2 (ID: 250616)
+  Completed: 3/3 games found
+
+--- Processing: short-and-sweet (1 games) ---
+  Searching: Resident Evil 2... Found: Resident Evil 2 (ID: 19686)
+  Completed: 1/1 games found
+
+--- Processing: new-releases (3 games) ---
+  Searching: Silent Hill 2... Found: Silent Hill 2 (ID: 222485)
+  Searching: Resident Evil 4... Found: Resident Evil 4 (ID: 132181)
+  Searching: Dead Space... Found: Dead Space (ID: 159119)
+  Completed: 3/3 games found
+
+--- Processing: coming-soon (1 games) ---
+  Searching: Prince of Persia: The Sands of Time Remake...   No results for "Prince of Persia: The Sands of Time Remake"
+NOT FOUND
+  Completed: 0/1 games found
+
+--- Processing: timeless-classics (1 games) ---
+  Searching: God of War... Found: God of War (ID: 19560)
+  Completed: 1/1 games found
+
+--- Processing: story-driven (4 games) ---
+  Searching: Planescape Torment... Found: Planescape: Torment - Enhanced Edition (ID: 27988)
+  Searching: God of War... Found: God of War (ID: 19560)
+  Searching: The Last of Us Part II... Found: The Last of Us Part II (ID: 26192)
+  Searching: Danganronpa: Trigger Happy Havoc... Found: Danganronpa: Trigger Happy Havoc (ID: 7842)
+  Completed: 4/4 games found
+
+--- Processing: xbox-exclusives (1 games) ---
+  Searching: Forza Motorsport... Found: Forza Motorsport (ID: 3073)
+  Completed: 1/1 games found
+
+--- Processing: nintendo-exclusives (8 games) ---
+  Searching: Pokemon Gold... Found: Pokémon Gold Version (ID: 1558)
+  Searching: Pokemon HeartGold... Found: Pokémon HeartGold Version (ID: 1556)
+  Searching: Pokemon X... Found: Pokémon X (ID: 2286)
+  Searching: Pokemon Black... Found: Pokémon Black Version (ID: 1521)
+  Searching: Pokemon Diamond... Found: Pokémon Diamond Version (ID: 1560)
+  Searching: Pokemon Omega Ruby... Found: Pokémon Omega Ruby (ID: 6897)
+  Searching: Pokemon Ruby... Found: Pokémon Omega Ruby (ID: 6897)
+  Searching: Pokemon Sword... Found: Pokémon Sword (ID: 37382)
+  Completed: 8/8 games found
+
+--- Processing: gamepass-must-plays (7 games) ---
+  Searching: Resident Evil 4... Found: Resident Evil 4 (ID: 132181)
+  Searching: Diablo IV... Found: Diablo IV (ID: 125165)
+  Searching: Dishonored 2... Found: Dishonored 2 (ID: 11118)
+  Searching: Grounded... Found: Grounded (ID: 125624)
+  Searching: Avowed... Found: Avowed (ID: 135994)
+  Searching: Forza Motorsport... Found: Forza Motorsport (ID: 3073)
+  Searching: S.T.A.L.K.E.R. 2: Heart of Chornobyl... Found: S.T.A.L.K.E.R. 2: Heart of Chornobyl (ID: 101440)
+  Completed: 7/7 games found
+
+--- Processing: psplus-essentials (12 games) ---
+  Searching: God of War Ragnarok... Found: God of War Ragnarök (ID: 112875)
+  Searching: God of War... Found: God of War (ID: 19560)
+  Searching: The Witcher 3: Wild Hunt... Found: The Witcher 3: Wild Hunt (ID: 1942)
+  Searching: Uncharted 4: A Thief's End... Found: Uncharted 4: A Thief's End (ID: 7331)
+  Searching: Undertale... Found: Undertale (ID: 12517)
+  Searching: Celeste... Found: Celeste (ID: 26226)
+  Searching: Shadow of the Colossus... Found: Shadow of the Colossus (ID: 37094)
+  Searching: Hollow Knight... Found: Hollow Knight (ID: 14593)
+  Searching: The Last of Us Part II Remastered... Found: The Last of Us Part II Remastered (ID: 277143)
+  Searching: Final Fantasy VII Remake... Found: Final Fantasy VII Remake (ID: 11169)
+  Searching: Silent Hill 2... Found: Silent Hill 2 (ID: 222485)
+  Searching: Tomb Raider... Found: Tomb Raider (ID: 1164)
+  Completed: 12/12 games found
+
+--- Processing: soulslikes (1 games) ---
+  Searching: Demon's Souls... Found: Demon's Souls (ID: 134606)
+  Completed: 1/1 games found
+
+--- Processing: racing-essentials (3 games) ---
+  Searching: Forza Motorsport... Found: Forza Motorsport (ID: 3073)
+  Searching: Need for Speed: Hot Pursuit... Found: Need for Speed: Hot Pursuit (ID: 105)
+  Searching: Need for Speed... Found: Need for Speed (ID: 10965)
+  Completed: 3/3 games found
+
+--- Processing: sports-essentials (4 games) ---
+  Searching: Mario Golf... Found: Mario Golf (ID: 3401)
+  Searching: Mario Tennis... Found: Mario Tennis (ID: 3406)
+  Searching: Madden NFL 25... Found: Madden NFL 25 (ID: 243261)
+  Searching: SSX... Found: SSX (ID: 4179)
+  Completed: 4/4 games found
+
+--- Processing: goty-winners (2 games) ---
+  Searching: God of War... Found: God of War (ID: 19560)
+  Searching: God of War II... Found: God of War II (ID: 551)
+  Completed: 2/2 games found
+
+
+=== SQL UPDATE STATEMENTS ===
+
+-- Copy and paste these into Supabase SQL Editor
+
+UPDATE curated_lists SET game_ids = ARRAY[428, 8986, 171233]::BIGINT[] WHERE slug = '2025-essentials';
+UPDATE curated_lists SET game_ids = ARRAY[19560, 134606, 37094, 222485, 204350, 11065, 4000]::BIGINT[] WHERE slug = 'playstation-exclusives';
+UPDATE curated_lists SET game_ids = ARRAY[19130]::BIGINT[] WHERE slug = 'pc-exclusives';
+UPDATE curated_lists SET game_ids = ARRAY[132181, 19686, 133236, 134606, 37094, 133887, 159119, 1556, 140839, 115284, 222485, 11065, 23, 19839, 254327, 284716]::BIGINT[] WHERE slug = 'goated-remakes';
+UPDATE curated_lists SET game_ids = ARRAY[72, 27134, 250616]::BIGINT[] WHERE slug = 'coop-must-haves';
+UPDATE curated_lists SET game_ids = ARRAY[19686]::BIGINT[] WHERE slug = 'short-and-sweet';
+UPDATE curated_lists SET game_ids = ARRAY[222485, 132181, 159119]::BIGINT[] WHERE slug = 'new-releases';
+UPDATE curated_lists SET game_ids = ARRAY[19560]::BIGINT[] WHERE slug = 'timeless-classics';
+UPDATE curated_lists SET game_ids = ARRAY[27988, 19560, 26192, 7842]::BIGINT[] WHERE slug = 'story-driven';
+UPDATE curated_lists SET game_ids = ARRAY[3073]::BIGINT[] WHERE slug = 'xbox-exclusives';
+UPDATE curated_lists SET game_ids = ARRAY[1558, 1556, 2286, 1521, 1560, 6897, 6897, 37382]::BIGINT[] WHERE slug = 'nintendo-exclusives';
+UPDATE curated_lists SET game_ids = ARRAY[132181, 125165, 11118, 125624, 135994, 3073, 101440]::BIGINT[] WHERE slug = 'gamepass-must-plays';
+UPDATE curated_lists SET game_ids = ARRAY[112875, 19560, 1942, 7331, 12517, 26226, 37094, 14593, 277143, 11169, 222485, 1164]::BIGINT[] WHERE slug = 'psplus-essentials';
+UPDATE curated_lists SET game_ids = ARRAY[134606]::BIGINT[] WHERE slug = 'soulslikes';
+UPDATE curated_lists SET game_ids = ARRAY[3073, 105, 10965]::BIGINT[] WHERE slug = 'racing-essentials';
+UPDATE curated_lists SET game_ids = ARRAY[3401, 3406, 243261, 4179]::BIGINT[] WHERE slug = 'sports-essentials';
+UPDATE curated_lists SET game_ids = ARRAY[19560, 551]::BIGINT[] WHERE slug = 'goty-winners';
+
+
+=== GAMES NOT FOUND ===
+
+  coming-soon: "Prince of Persia: The Sands of Time Remake"
+
+
+=== SUMMARY ===
+Lists processed: 18
+Games not found: 1
