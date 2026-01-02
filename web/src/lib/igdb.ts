@@ -21,6 +21,7 @@ export interface IGDBGame {
   rating_count?: number
   total_rating?: number
   total_rating_count?: number // Number of ratings (for popularity filtering)
+  category?: number // Game type: 0=main, 1=dlc, 2=expansion, 8=remake, 9=remaster, 10=expanded, 11=port
   artworks?: { id: number; url: string; width: number; height: number; image_id: string }[]
   screenshots?: { id: number; url: string; width: number; height: number; image_id: string }[]
   videos?: { id: number; video_id: string; name?: string }[] // YouTube video IDs
