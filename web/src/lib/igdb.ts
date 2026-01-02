@@ -778,10 +778,10 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       similarGames.push(...simGames)
     }
 
-    // === TIER 3: SAME GENRES (High quality mainstream games only) ===
+    // === TIER 3: SAME GENRES (Quality games - relaxed filters per IGDB best practices) ===
     if (game.genres && game.genres.length > 0) {
       // Build query that requires ALL genres to match (more specific)
-      // Only include games with rating 80+ and released in last 10 years
+      // Rating 70+ and 20+ reviews - IGDB recommends rating_count > 10 as baseline
       const tenYearsAgo = Math.floor(Date.now() / 1000) - (10 * 365 * 24 * 60 * 60)
 
       // Use first 2 genres with AND logic for stricter matching
@@ -793,8 +793,8 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         where ${genreConditions}
           & id != ${gameId}
           & cover != null
-          & total_rating >= 80
-          & total_rating_count >= 100
+          & total_rating >= 70
+          & total_rating_count >= 20
           & first_release_date >= ${tenYearsAgo}
           & category = (0, 8, 9, 10);
         sort total_rating desc;
@@ -802,17 +802,17 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       `
       try {
         const genreResults = await igdbFetch('games', genreQuery) as IGDBGame[]
-        console.log('[getSmartSimilarGames] Got', genreResults.length, 'GENRE-based games (80+ rating, 100+ reviews)')
+        console.log('[getSmartSimilarGames] Got', genreResults.length, 'GENRE-based games (70+ rating, 20+ reviews)')
         genreGames.push(...genreResults)
       } catch (e) {
         console.log('[getSmartSimilarGames] Genre query failed:', e)
       }
     }
 
-    // === TIER 4: SAME THEMES (Last resort, very strict quality filters) ===
+    // === TIER 4: SAME THEMES (Fallback with reasonable quality filters) ===
     if (game.themes && game.themes.length > 0) {
-      // Use first theme only with very strict quality requirements
-      const fiveYearsAgo = Math.floor(Date.now() / 1000) - (5 * 365 * 24 * 60 * 60)
+      // Use first theme with relaxed filters - IGDB baseline is rating_count > 10
+      const tenYearsAgo = Math.floor(Date.now() / 1000) - (10 * 365 * 24 * 60 * 60)
 
       const themeQuery = `
         fields name, slug, summary, cover.image_id, first_release_date,
@@ -820,16 +820,16 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         where themes = ${game.themes[0]}
           & id != ${gameId}
           & cover != null
-          & total_rating >= 85
-          & total_rating_count >= 200
-          & first_release_date >= ${fiveYearsAgo}
+          & total_rating >= 70
+          & total_rating_count >= 10
+          & first_release_date >= ${tenYearsAgo}
           & category = (0, 8, 9, 10);
         sort total_rating desc;
         limit 20;
       `
       try {
         const themeResults = await igdbFetch('games', themeQuery) as IGDBGame[]
-        console.log('[getSmartSimilarGames] Got', themeResults.length, 'THEME-based games (85+ rating, 200+ reviews, last 5 years)')
+        console.log('[getSmartSimilarGames] Got', themeResults.length, 'THEME-based games (70+ rating, 10+ reviews)')
         themeGames.push(...themeResults)
       } catch (e) {
         console.log('[getSmartSimilarGames] Theme query failed:', e)
