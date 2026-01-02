@@ -648,8 +648,10 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     // Collect games by priority:
     // Tier 0: Same franchise OR same collection (series games - HIGHEST PRIORITY)
     // Tier 1: IGDB's similar_games (curated similar-but-different)
+    // Tier 2: Same themes + high rating + popular (theme-based recommendations)
     const seriesGames: IGDBGame[] = []
     const similarGames: IGDBGame[] = []
+    const themeGames: IGDBGame[] = []
 
     // PRIORITY 1: Games from the same FRANCHISE (most reliable for series)
     // Query the franchises endpoint directly to get all games in the franchise
@@ -748,14 +750,35 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       similarGames.push(...filteredSimGames)
     }
 
-    // NOTE: Removed genre fallback as it was adding low-quality unrelated games
-    // Only series games and IGDB's curated similar_games provide good recommendations
+    // PRIORITY 3: Theme-based recommendations (same themes + high rating + popular)
+    // For Resident Evil: recommend other Horror games like Outlast, Alien Isolation, etc.
+    if (game.themes && game.themes.length > 0) {
+      console.log('[getSmartSimilarGames] Themes:', game.themes)
 
-    // Step 2: Build final list - series games first, then similar games
+      // Get games with same themes, high rating, sorted by popularity
+      const themeQuery = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, total_rating_count, category;
+        where themes = (${game.themes.slice(0, 2).join(',')})
+          & id != ${gameId}
+          & cover != null
+          & total_rating >= 70
+          & total_rating_count >= 20
+          & category = (0, 8, 9, 10);
+        sort total_rating_count desc;
+        limit 50;
+      `
+      const themeResults = await igdbFetch('games', themeQuery) as (IGDBGame & { category?: number })[]
+      console.log('[getSmartSimilarGames] Got', themeResults.length, 'theme-based games (rating 70+, 20+ reviews)')
+      themeGames.push(...themeResults)
+    }
+
+    // Step 2: Build final list - series games first, then similar, then theme-based
     const seenIds = new Set<number>()
     const finalList: IGDBGame[] = []
     const seriesIds = new Set<number>()
     const similarIds = new Set<number>()
+    const themeIds = new Set<number>()
 
     // Add ALL series games first (franchise + collection - HIGHEST PRIORITY)
     // No cap - include all games from the same franchise/series
@@ -779,6 +802,17 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
     console.log('[getSmartSimilarGames] After similar:', finalList.length, 'unique games total')
 
+    // Add theme-based games (same themes, high rating, popular)
+    // These fill out recommendations with quality games in the same genre/theme
+    for (const g of themeGames) {
+      if (!seenIds.has(g.id)) {
+        seenIds.add(g.id)
+        themeIds.add(g.id)
+        finalList.push(g)
+      }
+    }
+    console.log('[getSmartSimilarGames] After theme-based:', finalList.length, 'unique games total')
+
     if (finalList.length === 0) {
       return []
     }
@@ -790,12 +824,16 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
 
     // Step 4: Score and sort - TIER is the primary sort key
     // Tier 0 = series games (franchise/collection) - ALWAYS FIRST
-    // Tier 1 = similar_games
+    // Tier 1 = similar_games (IGDB curated)
+    // Tier 2 = theme-based games (same themes, high rating, popular)
     const maxPopularity = Math.max(...Array.from(popularityMap.values()), 0.001)
 
     const scoredGames = finalList.map(g => {
-      // Determine tier: series = 0, similar = 1
-      const tier = seriesIds.has(g.id) ? 0 : 1
+      // Determine tier: series = 0, similar = 1, theme = 2
+      let tier = 2 // Default to theme
+      if (seriesIds.has(g.id)) tier = 0
+      else if (similarIds.has(g.id)) tier = 1
+
       const popularity = popularityMap.get(g.id) || 0
       const rating = g.total_rating || 0
       // Score is only used for sorting within the same tier
@@ -815,7 +853,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     // Log the final results with tier info
     console.log('[getSmartSimilarGames] Final', result.length, 'games:')
     result.forEach((g, i) => {
-      const tierLabel = g.tier === 0 ? 'SERIES' : 'SIMILAR'
+      const tierLabel = g.tier === 0 ? 'SERIES' : g.tier === 1 ? 'SIMILAR' : 'THEME'
       console.log(`  ${i + 1}. ${g.game.name} [${tierLabel}] (rating: ${g.rating.toFixed(0)})`)
     })
 

@@ -25,12 +25,12 @@ export async function GET(request: Request) {
 
     console.log('[BecauseYouLoved] API v2 - Franchise-based recommendations')
 
-    // Get user's highly rated games (4+ stars) - just get game_id and rating
+    // Get user's highly rated games (4.5+ stars) - just get game_id and rating
     const { data: lovedGames, error: logsError } = await supabase
       .from('game_logs')
       .select('game_id, rating')
       .eq('user_id', userId)
-      .gte('rating', 4)
+      .gte('rating', 4.5)
       .not('rating', 'is', null)
       .order('rating', { ascending: false })
 
@@ -87,12 +87,16 @@ export async function GET(request: Request) {
 
       console.log('[BecauseYouLoved] Trying:', basedOnGame.name, '(ID:', gameId, ', rating:', selectedLog.rating, '★)')
 
-      // Get smart similar games from IGDB - request 100 for comprehensive recommendations
-      const similarGames = await getSmartSimilarGames(basedOnGame.id, 100)
+      // Get smart similar games from IGDB - request 150 to have room after filtering
+      const similarGames = await getSmartSimilarGames(basedOnGame.id, 150)
       console.log('[BecauseYouLoved] IGDB returned', similarGames.length, 'similar games for', basedOnGame.name)
 
+      // Filter out games already in user's library
+      const filteredGames = similarGames.filter(game => !userGameIds.has(game.id))
+      console.log('[BecauseYouLoved] After filtering user library:', filteredGames.length, 'games remaining')
+
       // Return all recommendations (up to 100) - mobile app will show 10 with "See All"
-      const recommendations = similarGames
+      const recommendations = filteredGames
         .slice(0, 100)
         .map(game => ({
           id: game.id,
