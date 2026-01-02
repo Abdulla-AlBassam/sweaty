@@ -36,7 +36,7 @@ interface GameItem {
 export default function CuratedListDetailScreen() {
   const navigation = useNavigation()
   const route = useRoute<CuratedListDetailRouteProp>()
-  const { listTitle, gameIds } = route.params
+  const { listTitle, gameIds, games: passedGames } = route.params
 
   const [games, setGames] = useState<GameItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -44,6 +44,19 @@ export default function CuratedListDetailScreen() {
   useEffect(() => {
     const fetchGames = async () => {
       setIsLoading(true)
+
+      // If games were passed directly (e.g., from recommendations), use them
+      if (passedGames && passedGames.length > 0) {
+        setGames(passedGames.map(g => ({
+          id: g.id,
+          name: g.name,
+          cover_url: g.coverUrl,
+        })))
+        setIsLoading(false)
+        return
+      }
+
+      // Otherwise, fetch from games_cache
       try {
         const { data, error } = await supabase
           .from('games_cache')
@@ -71,7 +84,7 @@ export default function CuratedListDetailScreen() {
     }
 
     fetchGames()
-  }, [gameIds])
+  }, [gameIds, passedGames])
 
   const handleGamePress = (gameId: number) => {
     navigation.dispatch(

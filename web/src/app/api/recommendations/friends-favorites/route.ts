@@ -119,10 +119,10 @@ export async function GET(request: Request) {
       }
     }
 
-    // Sort by friend count and get top 15
+    // Sort by friend count and get top 20
     const games = Array.from(gameMap.values())
       .sort((a, b) => b.friendCount - a.friendCount)
-      .slice(0, 15)
+      .slice(0, 20)
 
     return NextResponse.json({ games })
   } catch (error) {

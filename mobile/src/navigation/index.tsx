@@ -31,7 +31,13 @@ export type MainStackParamList = {
   GameDetail: { gameId: number }
   UserProfile: { username: string; userId?: string }
   Settings: undefined
-  CuratedListDetail: { listSlug: string; listTitle: string; gameIds: number[] }
+  CuratedListDetail: {
+    listSlug: string
+    listTitle: string
+    gameIds: number[]
+    // Optional: pass full game data to skip games_cache fetch (for recommendations)
+    games?: Array<{ id: number; name: string; coverUrl: string | null }>
+  }
   ListDetail: { listId: string }
   AIRecommend: undefined
   PlatformConnections: undefined

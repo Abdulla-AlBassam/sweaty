@@ -43,26 +43,37 @@ export async function GET(request: Request) {
 
     // Get company info for user's games (sample up to 20 for performance)
     const sampleGameIds = userLogs.slice(0, 20).map(log => log.game_id)
-    console.log('[MoreFromStudio] Sampling', sampleGameIds.length, 'games for company info')
+    console.log('[MoreFromStudio] Sampling', sampleGameIds.length, 'game IDs:', sampleGameIds.slice(0, 5))
 
     // Track developers separately (they make better recommendations than publishers)
     const developerCount = new Map<string, number>()
 
-    // Fetch company info for each game
-    const companyPromises = sampleGameIds.map(id => getGameWithCompany(id))
-    const companyResults = await Promise.all(companyPromises)
+    // Fetch company info for each game - do them sequentially to avoid rate limits
+    let successCount = 0
+    let failCount = 0
 
-    // Count how many times we've seen each developer
-    for (const result of companyResults) {
-      if (result?.developers && result.developers.length > 0) {
-        console.log('[MoreFromStudio] Game:', result.game.name, '| Developers:', result.developers.join(', '))
-        for (const dev of result.developers) {
-          developerCount.set(dev, (developerCount.get(dev) || 0) + 1)
+    for (const gameId of sampleGameIds) {
+      try {
+        const result = await getGameWithCompany(gameId)
+        if (result?.developers && result.developers.length > 0) {
+          successCount++
+          console.log('[MoreFromStudio] Game:', result.game.name, '| Devs:', result.developers.slice(0, 2).join(', '))
+          for (const dev of result.developers) {
+            developerCount.set(dev, (developerCount.get(dev) || 0) + 1)
+          }
+        } else if (result) {
+          console.log('[MoreFromStudio] Game:', result.game.name, '| No developer info')
+        } else {
+          failCount++
+          console.log('[MoreFromStudio] Game ID', gameId, '| IGDB returned null')
         }
+      } catch (err) {
+        failCount++
+        console.error('[MoreFromStudio] Error fetching game', gameId, ':', err)
       }
     }
 
-    console.log('[MoreFromStudio] Found', developerCount.size, 'unique developers')
+    console.log('[MoreFromStudio] Results: success=', successCount, 'fail=', failCount, 'unique devs=', developerCount.size)
 
     if (developerCount.size === 0) {
       console.log('[MoreFromStudio] No developers found in user library')
@@ -85,13 +96,13 @@ export async function GET(request: Request) {
 
     for (const [studio] of sortedDevelopers.slice(0, 10)) {
       console.log('[MoreFromStudio] Trying studio:', studio)
-      const studioGames = await getGamesByCompany(studio, 30)
+      const studioGames = await getGamesByCompany(studio, 50)
       console.log('[MoreFromStudio] Got', studioGames.length, 'total games from', studio)
 
       // Filter out games already in user's library
       const filtered = studioGames
         .filter(game => !userGameIds.has(game.id))
-        .slice(0, 15)
+        .slice(0, 20)
         .map(game => ({
           id: game.id,
           name: game.name,

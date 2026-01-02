@@ -118,6 +118,7 @@ Extends Supabase auth.users with app-specific data.
 | banner_url | text | Profile banner URL |
 | bio | text | User bio |
 | favorite_games | bigint[] | Array of up to 3 favorite game IDs |
+| gaming_platforms | text[] | Array of platforms: playstation, xbox, pc, nintendo |
 | subscription_tier | text | free, trial, monthly, yearly, lifetime |
 | subscription_expires_at | timestamp | When subscription expires |
 | current_streak | integer | Current consecutive day streak (default 0) |
@@ -196,6 +197,17 @@ Stores curated game lists for the discover/search screen.
 9. Timeless Classics (`timeless-classics`)
 10. Story-Driven (`story-driven`)
 
+### opencritic_cache
+Caches OpenCritic scores to reduce API calls (7-day TTL).
+| Column | Type | Description |
+|--------|------|-------------|
+| igdb_game_id | bigint | Primary key (IGDB game ID) |
+| opencritic_id | integer | OpenCritic game ID |
+| score | integer | Top critic score (0-100) |
+| tier | text | Mighty, Strong, Fair, or Weak |
+| num_reviews | integer | Number of critic reviews |
+| cached_at | timestamptz | When cached |
+
 ## Project Structure (Monorepo)
 
 ```
@@ -210,7 +222,17 @@ sweaty/
 │   │   │   │   ├── users/
 │   │   │   │   │   └── search/route.ts  # GET /api/users/search?q=john
 │   │   │   │   ├── admin/
-│   │   │   │   │   └── cache-curated-games/route.ts  # POST - bulk cache curated list games
+│   │   │   │   │   ├── cache-curated-games/route.ts  # POST - bulk cache curated list games
+│   │   │   │   │   ├── list-cached-games/route.ts    # GET - list all cached games
+│   │   │   │   │   └── update-curated-list/route.ts  # POST - update curated list
+│   │   │   │   ├── twitch/
+│   │   │   │   │   └── streams/route.ts              # POST - get live Twitch streams for game
+│   │   │   │   ├── opencritic/
+│   │   │   │   │   └── [gameId]/route.ts             # GET - get OpenCritic score for game
+│   │   │   │   ├── recommendations/
+│   │   │   │   │   ├── because-you-loved/route.ts    # GET - personalized recommendations
+│   │   │   │   │   ├── friends-favorites/route.ts    # GET - friends' favorite games
+│   │   │   │   │   └── more-from-studio/route.ts     # GET - games from favorite studio
 │   │   │   │   └── auth/
 │   │   │   │       └── lookup-email/route.ts  # POST - get email from username
 │   │   │   ├── dashboard/page.tsx       # Protected dashboard with stats
@@ -281,6 +303,8 @@ sweaty/
 │   │   │   ├── ActivityItem.tsx     # Activity feed item
 │   │   │   ├── PremiumBadge.tsx     # Premium/Developer badge (gold/green variants)
 │   │   │   ├── StreakBadge.tsx      # Fire icon streak display
+│   │   │   ├── PlatformBadges.tsx   # Gaming platform icons (PS/Xbox/PC/Nintendo)
+│   │   │   ├── TwitchStreamsSection.tsx # Live Twitch streams display
 │   │   │   ├── LogGameModal.tsx     # Game logging modal
 │   │   │   ├── Skeleton.tsx         # Loading skeletons
 │   │   │   └── skeletons/           # Specialized skeleton components
@@ -288,7 +312,10 @@ sweaty/
 │   │   │   ├── AuthContext.tsx      # Auth state management + Google OAuth
 │   │   │   └── QuickLogContext.tsx  # Quick log modal state
 │   │   ├── hooks/
-│   │   │   ├── useSupabase.ts       # Data fetching hooks (includes useCuratedLists)
+│   │   │   ├── useSupabase.ts       # Data fetching (useCuratedLists, useOpenCritic, useFriendsWhoPlayed, useCommunityStats)
+│   │   │   ├── useRecommendations.ts # Recommendation hooks (useBecauseYouLoved, etc.)
+│   │   │   ├── useTwitchStreams.ts  # Twitch live streams hook
+│   │   │   ├── useFriendsPlaying.ts # Friends playing games hook
 │   │   │   ├── usePremium.ts        # Premium subscription status
 │   │   │   ├── useStreak.ts         # Streak tracking logic
 │   │   │   └── index.ts             # Hook exports
@@ -303,8 +330,9 @@ sweaty/
 │   │   │   ├── fonts.ts             # Font family definitions
 │   │   │   └── index.ts             # Status labels, platforms, API config
 │   │   └── types/
-│   │       └── index.ts             # Shared TypeScript types (Profile, GameLog, etc.)
-│   ├── assets/                      # App icons and images
+│   │       └── index.ts             # Shared TypeScript types (Profile, GameLog, GamingPlatform, etc.)
+│   ├── assets/
+│   │   └── brand/                   # Brand logo SVGs with RGB glitch effect
 │   ├── App.tsx                      # Root component with AuthProvider
 │   ├── app.json                     # Expo configuration
 │   ├── eas.json                     # EAS Build configuration
@@ -725,8 +753,10 @@ Lurker → Newcomer → Contributor → Reviewer → Critic → Voice → Influe
 ```
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # For admin endpoints
 TWITCH_CLIENT_ID=your-twitch-client-id
 TWITCH_CLIENT_SECRET=your-twitch-client-secret
+RAPIDAPI_KEY=your-rapidapi-key  # For OpenCritic API
 ```
 
 **Mobile (.env):**
@@ -873,6 +903,239 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_activity_at timestamptz;
 - `mobile/src/hooks/index.ts` - Export useStreak
 - `mobile/package.json` - Removed expo-web-browser, expo-auth-session, expo-linking
 
+### Session 10 (Dec 27, 2024 - Jan 2, 2025)
+
+This was a major session with many features added. Documenting comprehensively for context continuity.
+
+---
+
+#### Twitch Streams Integration
+Live Twitch streams displayed on Game Detail page.
+
+**API:** `POST /api/twitch/streams`
+- Input: `{ game_name: string }`
+- Returns: Top 5 live streams with viewer counts
+- Handles game name variations (Delta↔Δ, Roman numerals, Japanese romanization, edition suffixes)
+
+**Hook:** `useTwitchStreams(gameName)` in `mobile/src/hooks/useTwitchStreams.ts`
+- 5-minute in-memory cache
+- Returns: `{ streams, totalLive, isLoading, error, refetch }`
+
+**Component:** `TwitchStreamsSection` in `mobile/src/components/TwitchStreamsSection.tsx`
+- Horizontal scroll of stream cards
+- Pulsing red LIVE indicator
+- Taps open Twitch app or web
+- Shows "X people streaming this game"
+
+---
+
+#### OpenCritic Integration
+Critic scores displayed inline on Game Detail page.
+
+**API:** `GET /api/opencritic/[gameId]?name=GameName`
+- Uses RapidAPI OpenCritic API
+- 7-day cache in `opencritic_cache` table
+- Returns: `{ score, tier, numReviews }`
+
+**Database:** `opencritic_cache` table
+```sql
+CREATE TABLE opencritic_cache (
+  igdb_game_id BIGINT PRIMARY KEY,
+  opencritic_id INTEGER,
+  score INTEGER,
+  tier TEXT,  -- Mighty, Strong, Fair, Weak
+  num_reviews INTEGER,
+  cached_at TIMESTAMPTZ
+);
+```
+
+**Hook:** `useOpenCritic(gameId, gameName)` in `mobile/src/hooks/useSupabase.ts`
+
+**Display:** Color-coded by tier (Mighty=green, Strong=blue, Fair=amber, Weak=red)
+
+---
+
+#### Friends Who Played
+Shows avatars of friends who have logged this game.
+
+**Hook:** `useFriendsWhoPlayed(gameId, userId)` in `mobile/src/hooks/useSupabase.ts`
+- Queries `follows` table to get followed users
+- Queries `game_logs` for those users on this game
+- Returns: `{ friends: FriendWhoPlayed[], isLoading }`
+
+**Display:** Row of avatar circles, tappable to navigate to profile
+
+---
+
+#### Community Stats
+Aggregated Sweaty user ratings on Game Detail page.
+
+**Hook:** `useCommunityStats(gameId)` in `mobile/src/hooks/useSupabase.ts`
+- Returns: `{ averageRating, totalLogs }`
+- Displayed inline with OpenCritic score
+
+---
+
+#### Similar Games Section
+Horizontal scroll of similar games on Game Detail page.
+
+**API:** Extended `/api/games/[id]/details` to return `similarGames` array
+- Uses IGDB `similar_games` field
+- Each game has: `{ id, name, coverUrl }`
+
+**Display:** Horizontal scroll row, tappable game covers
+
+---
+
+#### Gaming Platform Badges
+Users can display their gaming platforms on profile.
+
+**Component:** `PlatformBadges` in `mobile/src/components/PlatformBadges.tsx`
+- Platforms: PlayStation (blue), Xbox (green), PC (orange), Nintendo (red)
+- Uses FontAwesome5 and MaterialCommunityIcons
+
+**Type:** `GamingPlatform = 'playstation' | 'xbox' | 'pc' | 'nintendo'`
+
+**Profile field:** `gaming_platforms: GamingPlatform[] | null`
+
+**Settings:** Added platform selection in SettingsScreen
+
+**Display:** Shown on ProfileScreen and UserProfileScreen after display name
+
+---
+
+#### Personalized Recommendations (3 Types)
+
+**1. Because You Loved [Game]**
+- API: `GET /api/recommendations/because-you-loved?user_id=`
+- Picks user's highest-rated game, finds similar games
+- Algorithm: Series games (franchise/collection) first, then IGDB similar_games
+- Shows 10 horizontally with "See All" for full grid (up to 100)
+
+**2. Friends' Favorites**
+- API: `GET /api/recommendations/friends-favorites?user_id=`
+- Games that multiple friends have highly rated
+- Shows friend count per game
+
+**3. More From [Studio]**
+- API: `GET /api/recommendations/more-from-studio?user_id=`
+- Identifies user's most-played developer/studio
+- Shows other games from that studio
+
+**Hooks:** All in `mobile/src/hooks/useRecommendations.ts`
+- `useBecauseYouLoved(userId)`
+- `useFriendsFavorites(userId)`
+- `useMoreFromStudio(userId)`
+
+---
+
+#### IGDB Query Improvements
+Major refactoring of recommendation algorithms.
+
+**`getSmartSimilarGames(gameId, limit)` in `web/src/lib/igdb.ts`:**
+- Queries `franchises` endpoint directly (not games with franchises field)
+- Queries `collections` endpoint directly
+- Uses PopScore (`popularity_primitives`) for sorting within tiers
+- Filters DLCs in JavaScript (IGDB WHERE clause was causing errors)
+- Valid categories: 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port
+
+**Other IGDB improvements:**
+- `getGamesByCompany(companyName)` - Games by developer/publisher
+- `getPopularityForGames(gameIds)` - PopScore data for sorting
+- Lowered rating thresholds for better results
+
+---
+
+#### Admin API Endpoints
+
+**`GET /api/admin/list-cached-games`**
+- Lists all games in games_cache table
+- Useful for debugging curated lists
+
+**`POST /api/admin/update-curated-list`**
+- Updates a curated list's game_ids
+- Auto-caches any missing games from IGDB
+
+**`POST /api/admin/cache-curated-games`**
+- Bulk caches all games from all curated lists
+
+---
+
+#### Curated Lists Tooling
+
+**Script:** `scripts/process-curated-csv.js`
+- Processes CSV of curated games
+- Searches IGDB for each game
+- Outputs SQL UPDATE statements
+
+**Data files:**
+- `database/sweaty_curated_lists.csv` - Source data
+- `database/final_curated_lists.sql` - Generated SQL
+- `database/missing_games.csv` - Games not found in IGDB
+
+---
+
+#### Brand Assets
+Created brand logo variants with RGB glitch effect.
+
+**Files in `mobile/assets/brand/`:**
+- `sweaty-logo.svg` - Base logo
+- `sweaty-logo-circle.svg` - Circular version
+- `sweaty-logo-dark-bg.svg` - For dark backgrounds
+- `sweaty-logo-rounded.svg` - Rounded corners
+- `sweaty-logo-white.svg` - White version
+
+**Design:** Plain teardrop with RGB color shift (glitch aesthetic)
+
+---
+
+#### Bug Fixes
+- Fixed Twitch streams for numbered sequels (Red Dead Redemption 2 → II)
+- Fixed Twitch streams for Japanese game names (Yōtei variants)
+- Fixed IGDB API query errors (category filter in WHERE clause)
+- Fixed "See All" button position in recommendations
+- Fixed EAS.json Apple credentials fields
+- Fixed TypeScript type casting for Supabase joins
+
+---
+
+#### New Files Created
+**Web API:**
+- `web/src/app/api/twitch/streams/route.ts`
+- `web/src/app/api/opencritic/[gameId]/route.ts`
+- `web/src/app/api/recommendations/because-you-loved/route.ts`
+- `web/src/app/api/recommendations/friends-favorites/route.ts`
+- `web/src/app/api/recommendations/more-from-studio/route.ts`
+- `web/src/app/api/admin/list-cached-games/route.ts`
+- `web/src/app/api/admin/update-curated-list/route.ts`
+
+**Mobile:**
+- `mobile/src/hooks/useTwitchStreams.ts`
+- `mobile/src/hooks/useRecommendations.ts`
+- `mobile/src/components/TwitchStreamsSection.tsx`
+- `mobile/src/components/PlatformBadges.tsx`
+
+**Database:**
+- `database/opencritic_cache.sql`
+
+**Scripts:**
+- `scripts/process-curated-csv.js`
+
+---
+
+#### Files Modified
+- `web/src/lib/igdb.ts` - Major refactoring with new functions
+- `web/src/app/api/games/[id]/details/route.ts` - Added similarGames
+- `mobile/src/screens/GameDetailScreen.tsx` - Added all new sections
+- `mobile/src/screens/DashboardScreen.tsx` - Added recommendation sections
+- `mobile/src/screens/ProfileScreen.tsx` - Added platform badges
+- `mobile/src/screens/UserProfileScreen.tsx` - Added platform badges
+- `mobile/src/screens/SettingsScreen.tsx` - Added platform selection
+- `mobile/src/hooks/useSupabase.ts` - Added new hooks
+- `mobile/src/types/index.ts` - Added GamingPlatform type
+
+---
+
 ## Upcoming Features (Backlog)
 
 Ideas ranked by implementation difficulty:
@@ -894,4 +1157,4 @@ Ideas ranked by implementation difficulty:
 **Very High:**
 9. Chapter/DLC progress tracking
 10. "Where to play" availability display (external API integrations)
-11. Personalized game recommendations engine
+~~11. Personalized game recommendations engine~~ ✅ Implemented (Session 10)

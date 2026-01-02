@@ -222,6 +222,19 @@ export default function DashboardScreen() {
                 Because You Loved{' '}
                 <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
               </Text>
+              {becauseYouLovedGames.length > 10 && (
+                <PressableScale
+                  onPress={() => navigation.navigate('CuratedListDetail', {
+                    listSlug: 'because-you-loved',
+                    listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
+                    gameIds: becauseYouLovedGames.map(g => g.id),
+                    games: becauseYouLovedGames,
+                  })}
+                  haptic="light"
+                >
+                  <Text style={styles.seeAllText}>See All</Text>
+                </PressableScale>
+              )}
             </View>
             {lovedLoading ? (
               <HorizontalSkeleton />
@@ -231,7 +244,7 @@ export default function DashboardScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScroll}
               >
-                {becauseYouLovedGames.map((game) => (
+                {becauseYouLovedGames.slice(0, 10).map((game) => (
                   <PressableScale
                     key={game.id}
                     onPress={() => handleGamePress(game.id)}
@@ -362,6 +375,9 @@ const styles = StyleSheet.create({
   sectionHeader: {
     paddingHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.sectionHeaderBelow, // 16px below header
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -384,6 +400,13 @@ const styles = StyleSheet.create({
   },
   accentText: {
     color: Colors.cyanSoft,
+  },
+  seeAllText: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   pulsingDot: {
     width: 6,

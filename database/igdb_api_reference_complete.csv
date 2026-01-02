@@ -1,0 +1,756 @@
+category,subcategory,key,value,description,example
+# ============================================
+# IGDB API COMPREHENSIVE REFERENCE FOR SWEATY
+# ============================================
+# This CSV contains everything Claude Code needs to work with IGDB API
+# Last updated: December 2025
+# ============================================
+
+# ============================================
+# SECTION 1: AUTHENTICATION
+# ============================================
+AUTHENTICATION,setup,twitch_token_url,https://id.twitch.tv/oauth2/token,POST request to get access token,"POST https://id.twitch.tv/oauth2/token?client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}&grant_type=client_credentials"
+AUTHENTICATION,setup,token_expiry,~60 days,Access tokens are valid for approximately 60 days before refresh needed,Check expires_in field in token response (seconds)
+AUTHENTICATION,setup,get_credentials,https://dev.twitch.tv/console,Create app in Twitch Developer Console,Register app to get Client ID and Secret
+AUTHENTICATION,headers,Client-ID,{your_client_id},Required header - case sensitive - from Twitch Developer Console,Client-ID: abcdefg12345
+AUTHENTICATION,headers,Authorization,Bearer {access_token},Required header - Bearer prefix required - space after Bearer,Authorization: Bearer access12345token
+AUTHENTICATION,headers,Accept,application/json,Optional but recommended for JSON responses,Accept: application/json
+AUTHENTICATION,response,access_token,string,The token to use in Authorization header,access12345token
+AUTHENTICATION,response,expires_in,integer,Seconds until token expires (~5 million seconds = ~60 days),5587808
+AUTHENTICATION,response,token_type,bearer,Always returns bearer,bearer
+
+# ============================================
+# SECTION 2: BASE URLs AND PATTERNS
+# ============================================
+BASE_URL,api,base_url,https://api.igdb.com/v4,Base URL for all API requests - append endpoint name,https://api.igdb.com/v4/games
+BASE_URL,api,request_method,POST,All IGDB API requests use POST method,POST https://api.igdb.com/v4/games
+BASE_URL,images,image_base_url,https://images.igdb.com/igdb/image/upload,Base URL for all images - hosted on Cloudinary,https://images.igdb.com/igdb/image/upload/t_cover_big/co1rba.jpg
+BASE_URL,images,image_url_pattern,https://images.igdb.com/igdb/image/upload/t_{size}/{image_id}.jpg,Pattern for constructing image URLs from image_id field,https://images.igdb.com/igdb/image/upload/t_1080p/abc123.jpg
+BASE_URL,images,no_cover_image,nocover_qhhlj6,Default image_id when game has no cover,https://images.igdb.com/igdb/image/upload/t_cover_big/nocover_qhhlj6.jpg
+BASE_URL,youtube,video_url_pattern,https://www.youtube.com/watch?v={video_id},YouTube video URL from game_videos.video_id,https://www.youtube.com/watch?v=dQw4w9WgXcQ
+BASE_URL,youtube,embed_pattern,https://www.youtube.com/embed/{video_id},YouTube embed URL for iframes,https://www.youtube.com/embed/dQw4w9WgXcQ
+BASE_URL,youtube,thumbnail_hq,https://img.youtube.com/vi/{video_id}/hqdefault.jpg,YouTube HQ thumbnail (480x360),https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg
+BASE_URL,youtube,thumbnail_maxres,https://img.youtube.com/vi/{video_id}/maxresdefault.jpg,YouTube max resolution thumbnail (1280x720),https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg
+BASE_URL,igdb_website,game_page,https://www.igdb.com/games/{slug},IGDB website game page URL,https://www.igdb.com/games/the-witcher-3-wild-hunt
+
+# ============================================
+# SECTION 3: RATE LIMITS
+# ============================================
+RATE_LIMITS,requests,requests_per_second,4,Maximum 4 requests per second,Implement rate limiting/throttling in your code
+RATE_LIMITS,requests,concurrent_connections,8,Maximum 8 concurrent/parallel requests,Use connection pooling
+RATE_LIMITS,results,default_limit,10,Default number of results returned if no limit specified,Always specify limit explicitly
+RATE_LIMITS,results,max_limit,500,Maximum results per single request,limit 500;
+RATE_LIMITS,commercial,free_tier,Non-commercial only,Free tier is for non-commercial use,Contact partner@igdb.com for commercial
+
+# ============================================
+# SECTION 4: IMAGE SIZES
+# ============================================
+IMAGE_SIZES,thumbnail,micro,35x35,Tiny square thumbnail - for compact lists,t_micro
+IMAGE_SIZES,thumbnail,thumb,90x90,Small square thumbnail - API default for url field,t_thumb
+IMAGE_SIZES,cover,cover_small,90x128,Small cover art - for small thumbnails,t_cover_small
+IMAGE_SIZES,cover,cover_big,264x374,Large cover art - RECOMMENDED FOR GAME CARDS,t_cover_big
+IMAGE_SIZES,screenshot,screenshot_med,569x320,Medium screenshot - good for thumbnails,t_screenshot_med
+IMAGE_SIZES,screenshot,screenshot_big,889x500,Large screenshot - good for galleries,t_screenshot_big
+IMAGE_SIZES,screenshot,screenshot_huge,1280x720,Huge screenshot (720p) - high quality,t_screenshot_huge
+IMAGE_SIZES,logo,logo_med,284x160,Medium logo - for company/engine logos,t_logo_med
+IMAGE_SIZES,hd,720p,1280x720,720p HD - good for backgrounds and banners,t_720p
+IMAGE_SIZES,hd,1080p,1920x1080,1080p Full HD - BEST FOR BANNERS/HERO IMAGES,t_1080p
+IMAGE_SIZES,retina,_2x suffix,double resolution,Append _2x to any size for retina/HiDPI displays,t_cover_big_2x (528x748)
+IMAGE_SIZES,retina,cover_small_2x,180x256,Retina small cover,t_cover_small_2x
+IMAGE_SIZES,retina,cover_big_2x,528x748,Retina large cover,t_cover_big_2x
+IMAGE_SIZES,retina,1080p_2x,3840x2160,4K resolution,t_1080p_2x
+
+# ============================================
+# SECTION 5: ALL ENDPOINTS WITH FIELDS
+# ============================================
+
+# ----- AGE RATING ENDPOINTS -----
+ENDPOINT,age_ratings,url,/age_ratings,Age ratings from various organizations (ESRB PEGI etc),fields rating_category.rating;
+ENDPOINT,age_ratings,fields,"id,category,content_descriptions,rating,rating_cover_url,synopsis,checksum,organization,rating_category,rating_content_descriptions",All available fields,Expand organization and rating_category for details
+ENDPOINT,age_rating_categories,url,/age_rating_categories,Rating categories within organizations,fields rating,organization.*;
+ENDPOINT,age_rating_categories,fields,"id,rating,organization,created_at,updated_at,checksum",Rating value and organization reference,Links to age_rating_organizations
+ENDPOINT,age_rating_content_descriptions,url,/age_rating_content_descriptions,Content descriptors (violence drugs etc),fields description;
+ENDPOINT,age_rating_content_descriptions,fields,"id,category,description,checksum",Why game received rating,ESRB_VIOLENCE etc
+ENDPOINT,age_rating_content_description_types,url,/age_rating_content_description_types,Types of content descriptions,fields slug,name;
+ENDPOINT,age_rating_content_description_types,fields,"id,slug,name,created_at,updated_at,checksum",Descriptor type metadata,Violence Sexual Content etc
+ENDPOINT,age_rating_content_descriptions_v2,url,/age_rating_content_descriptions_v2,Updated content descriptions,fields description,organization.*;
+ENDPOINT,age_rating_content_descriptions_v2,fields,"id,description,organization,created_at,updated_at,checksum,description_type",New format with type reference,Links to description_type
+ENDPOINT,age_rating_organizations,url,/age_rating_organizations,Rating organizations,fields name;
+ENDPOINT,age_rating_organizations,fields,"id,name,created_at,updated_at,checksum",Organization details,ESRB PEGI CERO etc
+
+# ----- ALTERNATIVE NAME -----
+ENDPOINT,alternative_names,url,/alternative_names,Alternative/localized game names,fields name,game;
+ENDPOINT,alternative_names,fields,"id,comment,game,name,checksum",Alternate titles for games,Japanese titles regional names etc
+
+# ----- ARTWORK ENDPOINTS -----
+ENDPOINT,artworks,url,/artworks,Official promotional artwork,fields image_id,game;
+ENDPOINT,artworks,fields,"id,alpha_channel,animated,game,height,image_id,url,width,checksum,artwork_type",High quality promotional images,Often better than screenshots for backgrounds
+ENDPOINT,artwork_types,url,/artwork_types,Types of artwork,fields name,slug;
+ENDPOINT,artwork_types,fields,"id,slug,name,created_at,updated_at,checksum",Artwork categorization,Promotional key art etc
+
+# ----- CHARACTER ENDPOINTS -----
+ENDPOINT,characters,url,/characters,Video game characters,fields name,games,mug_shot.*;
+ENDPOINT,characters,fields,"id,akas,country_name,created_at,description,games,gender,mug_shot,name,slug,species,updated_at,url,checksum,character_gender,character_species",Character details,Link Zelda Mario etc
+ENDPOINT,character_genders,url,/character_genders,Character gender options,fields name;
+ENDPOINT,character_genders,fields,"id,name,created_at,updated_at,checksum",Gender categorization,Male Female Other
+ENDPOINT,character_mug_shots,url,/character_mug_shots,Character portrait images,fields image_id;
+ENDPOINT,character_mug_shots,fields,"id,alpha_channel,animated,height,image_id,url,width,checksum",Character face/portrait images,Use same image URL pattern
+ENDPOINT,character_species,url,/character_species,Character species types,fields name;
+ENDPOINT,character_species,fields,"id,name,created_at,updated_at,checksum",Species categorization,Human Alien Android etc
+
+# ----- COLLECTION ENDPOINTS -----
+ENDPOINT,collections,url,/collections,Game series/collections,fields name,games;
+ENDPOINT,collections,fields,"id,created_at,games,name,slug,updated_at,url,checksum,type,as_parent_relations,as_child_relations",Game series groupings,Final Fantasy series Zelda series
+ENDPOINT,collection_memberships,url,/collection_memberships,Game membership in collections,fields game,collection;
+ENDPOINT,collection_memberships,fields,"id,game,collection,type,updated_at,created_at,checksum",Links games to collections,Membership details
+ENDPOINT,collection_membership_types,url,/collection_membership_types,Types of collection membership,fields name,description;
+ENDPOINT,collection_membership_types,fields,"id,name,description,allowed_collection_type,updated_at,created_at,checksum",Membership categorization,Main entry spin-off etc
+ENDPOINT,collection_relations,url,/collection_relations,Relations between collections,fields child_collection,parent_collection;
+ENDPOINT,collection_relations,fields,"id,child_collection,parent_collection,type,updated_at,created_at,checksum",Collection hierarchies,Sub-series relationships
+ENDPOINT,collection_relation_types,url,/collection_relation_types,Types of collection relations,fields name,description;
+ENDPOINT,collection_relation_types,fields,"id,name,description,allowed_child_type,allowed_parent_type,updated_at,created_at,checksum",Relation categorization,Parent-child series
+ENDPOINT,collection_types,url,/collection_types,Types of collections,fields name,description;
+ENDPOINT,collection_types,fields,"id,name,description,updated_at,created_at,checksum",Collection categorization,Franchise series etc
+
+# ----- COMPANY ENDPOINTS -----
+ENDPOINT,companies,url,/companies,Game developers and publishers,fields name,developed,published,logo.*;
+ENDPOINT,companies,fields,"id,change_date,change_date_category,changed_company_id,country,created_at,description,developed,logo,name,parent,published,slug,start_date,start_date_category,updated_at,url,websites,checksum,status,start_date_format,change_date_format",Company details,Nintendo Sony FromSoftware
+ENDPOINT,company_logos,url,/company_logos,Company logo images,fields image_id;
+ENDPOINT,company_logos,fields,"id,alpha_channel,animated,height,image_id,url,width,checksum",Company branding images,Use same image URL pattern
+ENDPOINT,company_statuses,url,/company_statuses,Company operational status,fields name;
+ENDPOINT,company_statuses,fields,"id,name,created_at,updated_at,checksum",Company status,Active Defunct Merged
+ENDPOINT,company_websites,url,/company_websites,Company website links,fields url,type.*;
+ENDPOINT,company_websites,fields,"id,category,trusted,url,checksum,type",Company external links,Official site social media
+
+# ----- CONTENT SAFETY -----
+ENDPOINT,content_safety_ratings,url,/content_safety_ratings,Content safety ratings,fields name;
+ENDPOINT,content_safety_ratings,fields,"id,name,created_at,updated_at,checksum",Safety rating system,Content warnings
+ENDPOINT,content_safety_rating_dimensions,url,/content_safety_rating_dimensions,Safety rating dimensions,fields content_safety_rating,value,description;
+ENDPOINT,content_safety_rating_dimensions,fields,"id,content_safety_rating,value,description,created_at,updated_at,checksum",Specific safety aspects,Violence level etc
+
+# ----- COVER -----
+ENDPOINT,covers,url,/covers,Game cover art images,fields image_id,game;
+ENDPOINT,covers,fields,"id,alpha_channel,animated,game,height,image_id,url,width,checksum,game_localization",Box art/cover images,Primary game image
+
+# ----- DATE FORMAT -----
+ENDPOINT,date_formats,url,/date_formats,Date precision formats,fields format;
+ENDPOINT,date_formats,fields,"id,format,created_at,updated_at,checksum",Date display format,YYYY YYYY-MM YYYY-MM-DD
+
+# ----- EVENT ENDPOINTS -----
+ENDPOINT,events,url,/events,Gaming events (E3 Gamescom etc),fields name,games,start_time;
+ENDPOINT,events,fields,"id,name,description,slug,event_logo,start_time,time_zone,end_time,live_stream_url,games,videos,event_networks,created_at,updated_at,checksum",Gaming conferences/events,E3 Gamescom TGA
+ENDPOINT,event_logos,url,/event_logos,Event logo images,fields image_id,event;
+ENDPOINT,event_logos,fields,"id,event,alpha_channel,animated,height,image_id,url,width,created_at,updated_at,checksum",Event branding images,Use same image URL pattern
+ENDPOINT,event_networks,url,/event_networks,Event streaming networks,fields url,network_type;
+ENDPOINT,event_networks,fields,"id,event,url,network_type,created_at,updated_at,checksum",Where event streams,Twitch YouTube etc
+
+# ----- EXTERNAL GAME ENDPOINTS -----
+ENDPOINT,external_games,url,/external_games,Links to external stores/services,fields uid,url,category;
+ENDPOINT,external_games,fields,"id,category,created_at,game,name,uid,updated_at,url,year,media,platform,countries,checksum,external_game_source,game_release_format",Store IDs and links,Steam GOG Epic IDs
+ENDPOINT,external_game_sources,url,/external_game_sources,External game source services,fields name;
+ENDPOINT,external_game_sources,fields,"id,name,created_at,updated_at,checksum",Source service info,Steam GOG Epic etc
+
+# ----- FRANCHISE -----
+ENDPOINT,franchises,url,/franchises,Game franchises,fields name,games;
+ENDPOINT,franchises,fields,"id,created_at,games,name,slug,updated_at,url,checksum",Franchise groupings,Mario Zelda Halo
+
+# ----- GAME (MAIN ENDPOINT) -----
+ENDPOINT,games,url,/games,MAIN GAMES ENDPOINT - Core of the API,fields *;
+ENDPOINT,games,searchable,true,Supports search queries,"search ""zelda"";"
+ENDPOINT,games,fields_core,"id,name,slug,summary,storyline,url,checksum",Basic game info,Essential fields
+ENDPOINT,games,fields_media,"cover,screenshots,artworks,videos",Visual media references,Expand with .* for details
+ENDPOINT,games,fields_ratings,"rating,rating_count,aggregated_rating,aggregated_rating_count,total_rating,total_rating_count",Rating data,User and critic scores
+ENDPOINT,games,fields_dates,"first_release_date,release_dates,created_at,updated_at",Date information,Timestamps
+ENDPOINT,games,fields_classification,"category,game_type,status,game_status",Game type and status,Main DLC Released etc
+ENDPOINT,games,fields_taxonomy,"genres,themes,keywords,game_modes,player_perspectives,platforms",Classification data,RPG Fantasy etc
+ENDPOINT,games,fields_relations,"involved_companies,franchises,collections,similar_games,parent_game,dlcs,expansions,remakes,remasters,ports,bundles,standalone_expansions,expanded_games,forks",Related games/companies,Expand for details
+ENDPOINT,games,fields_external,"websites,external_games",External links,Store and social links
+ENDPOINT,games,fields_other,"age_ratings,game_engines,multiplayer_modes,language_supports,game_localizations,hypes,follows",Additional data,Various metadata
+ENDPOINT,games,fields_all,"id,age_ratings,aggregated_rating,aggregated_rating_count,alternative_names,artworks,bundles,category,collection,cover,created_at,dlcs,expanded_games,expansions,external_games,first_release_date,follows,forks,franchise,franchises,game_engines,game_localizations,game_modes,game_status,game_type,genres,hypes,involved_companies,keywords,language_supports,multiplayer_modes,name,parent_game,platforms,player_perspectives,ports,rating,rating_count,release_dates,remakes,remasters,screenshots,similar_games,slug,standalone_expansions,status,storyline,summary,tags,themes,total_rating,total_rating_count,updated_at,url,version_parent,version_title,videos,websites,checksum,collections",Complete field list,All available game fields
+
+# ----- GAME CONTENT SAFETY -----
+ENDPOINT,game_content_safety_ratings,url,/game_content_safety_ratings,Game content safety ratings,fields game,content_safety_rating;
+ENDPOINT,game_content_safety_ratings,fields,"id,game,content_safety_rating_dimension,content_safety_rating,created_at,updated_at,checksum",Safety ratings per game,Content warnings
+
+# ----- GAME ENGINE ENDPOINTS -----
+ENDPOINT,game_engines,url,/game_engines,Game engines,fields name,companies;
+ENDPOINT,game_engines,fields,"id,companies,created_at,description,logo,name,platforms,slug,updated_at,url,checksum",Engine details,Unreal Unity Frostbite
+ENDPOINT,game_engine_logos,url,/game_engine_logos,Engine logo images,fields image_id;
+ENDPOINT,game_engine_logos,fields,"id,alpha_channel,animated,height,image_id,url,width,checksum",Engine branding images,Use same image URL pattern
+
+# ----- GAME LOCALIZATION -----
+ENDPOINT,game_localizations,url,/game_localizations,Regional game versions,fields name,game,region,cover.*;
+ENDPOINT,game_localizations,fields,"id,name,cover,game,region,created_at,updated_at,checksum",Localized versions,Japanese EU versions
+
+# ----- GAME MODE -----
+ENDPOINT,game_modes,url,/game_modes,Gameplay modes,fields name,slug;
+ENDPOINT,game_modes,fields,"id,created_at,name,slug,updated_at,url,checksum",Mode types,Single-player Multiplayer Co-op
+
+# ----- GAME RELEASE FORMAT -----
+ENDPOINT,game_release_formats,url,/game_release_formats,Release format types,fields format;
+ENDPOINT,game_release_formats,fields,"id,format,created_at,updated_at,checksum",Format categorization,Digital Physical
+
+# ----- GAME STATUS -----
+ENDPOINT,game_statuses,url,/game_statuses,Game release statuses,fields status;
+ENDPOINT,game_statuses,fields,"id,status,created_at,updated_at,checksum",Status values,Released Alpha Beta Cancelled
+
+# ----- GAME TIME TO BEAT -----
+ENDPOINT,game_time_to_beat,url,/game_time_to_beat,How Long To Beat data,fields game_id,normally,completely;
+ENDPOINT,game_time_to_beat,fields,"id,game_id,hastily,normally,completely,count,created_at,updated_at,checksum",Completion times in seconds,hastily=speedrun normally=main completely=100%
+
+# ----- GAME TYPE -----
+ENDPOINT,game_types,url,/game_types,Game type categories,fields type;
+ENDPOINT,game_types,fields,"id,type,created_at,updated_at,checksum",Type values,Main Game DLC Expansion
+
+# ----- GAME VERSION ENDPOINTS -----
+ENDPOINT,game_versions,url,/game_versions,Different game editions,fields game,features;
+ENDPOINT,game_versions,fields,"id,created_at,features,game,games,updated_at,url,checksum",Edition details,Standard Deluxe GOTY
+ENDPOINT,game_version_features,url,/game_version_features,Edition features,fields title,description;
+ENDPOINT,game_version_features,fields,"id,category,description,position,title,values,checksum",What editions include,Bonus content DLC
+ENDPOINT,game_version_feature_values,url,/game_version_feature_values,Feature values per edition,fields game,included_feature;
+ENDPOINT,game_version_feature_values,fields,"id,game,game_feature,included_feature,note,checksum",Whether feature included,INCLUDED NOT_INCLUDED
+
+# ----- GAME VIDEO -----
+ENDPOINT,game_videos,url,/game_videos,YouTube trailers/gameplay,fields video_id,name,game;
+ENDPOINT,game_videos,fields,"id,game,name,video_id,checksum",YouTube video references,video_id is YouTube ID
+
+# ----- GENRE -----
+ENDPOINT,genres,url,/genres,Game genres,fields name,slug;
+ENDPOINT,genres,fields,"id,created_at,name,slug,updated_at,url,checksum",Genre categories,RPG Action Shooter
+
+# ----- INVOLVED COMPANY -----
+ENDPOINT,involved_companies,url,/involved_companies,Companies linked to games,fields company.*,developer,publisher;
+ENDPOINT,involved_companies,fields,"id,company,created_at,developer,game,porting,publisher,supporting,updated_at,checksum",Company roles on games,Who made/published
+
+# ----- KEYWORD -----
+ENDPOINT,keywords,url,/keywords,Searchable game keywords/tags,fields name,slug;
+ENDPOINT,keywords,fields,"id,created_at,name,slug,updated_at,url,checksum",Descriptive tags,open-world souls-like
+
+# ----- LANGUAGE ENDPOINTS -----
+ENDPOINT,languages,url,/languages,Available languages,fields name,native_name,locale;
+ENDPOINT,languages,fields,"id,name,native_name,locale,created_at,updated_at,checksum",Language details,English Japanese etc
+ENDPOINT,language_supports,url,/language_supports,Languages supported per game,fields game,language.*,language_support_type.*;
+ENDPOINT,language_supports,fields,"id,game,language,language_support_type,created_at,updated_at,checksum",Game language support,Audio subtitles interface
+ENDPOINT,language_support_types,url,/language_support_types,Types of language support,fields name;
+ENDPOINT,language_support_types,fields,"id,name,created_at,updated_at,checksum",Support types,Audio Subtitles Interface
+
+# ----- MULTIPLAYER MODE -----
+ENDPOINT,multiplayer_modes,url,/multiplayer_modes,Detailed multiplayer info,fields *;
+ENDPOINT,multiplayer_modes,fields,"id,campaigncoop,dropin,game,lancoop,offlinecoop,offlinecoopmax,offlinemax,onlinecoop,onlinecoopmax,onlinemax,platform,splitscreen,splitscreenonline,checksum",MP capabilities,Co-op player counts
+
+# ----- NETWORK TYPE -----
+ENDPOINT,network_types,url,/network_types,Streaming network types,fields name;
+ENDPOINT,network_types,fields,"id,name,event_networks,created_at,updated_at,checksum",Network categorization,Twitch YouTube
+
+# ----- PLATFORM ENDPOINTS -----
+ENDPOINT,platforms,url,/platforms,Gaming platforms,fields name,abbreviation,platform_logo.*;
+ENDPOINT,platforms,fields,"id,abbreviation,alternative_name,category,created_at,generation,name,platform_logo,platform_family,slug,summary,updated_at,url,versions,websites,checksum,platform_type",Platform details,PS5 Xbox Switch PC
+ENDPOINT,platform_families,url,/platform_families,Platform brand families,fields name,slug;
+ENDPOINT,platform_families,fields,"id,name,slug,checksum",Brand groupings,PlayStation Xbox Nintendo
+ENDPOINT,platform_logos,url,/platform_logos,Platform logo images,fields image_id;
+ENDPOINT,platform_logos,fields,"id,alpha_channel,animated,height,image_id,url,width,checksum",Platform branding,Use same image URL pattern
+ENDPOINT,platform_types,url,/platform_types,Types of platforms,fields name;
+ENDPOINT,platform_types,fields,"id,name,created_at,updated_at,checksum",Platform categories,Console Handheld PC
+ENDPOINT,platform_versions,url,/platform_versions,Platform hardware versions,fields name,cpu,memory;
+ENDPOINT,platform_versions,fields,"id,companies,connectivity,cpu,graphics,main_manufacturer,media,memory,name,os,output,platform_logo,platform_version_release_dates,resolutions,slug,sound,storage,summary,url,checksum",Hardware specs,PS5 specs
+ENDPOINT,platform_version_companies,url,/platform_version_companies,Companies behind platform versions,fields company,developer,manufacturer;
+ENDPOINT,platform_version_companies,fields,"id,comment,company,developer,manufacturer,checksum",Who made hardware,Sony for PlayStation
+ENDPOINT,platform_version_release_dates,url,/platform_version_release_dates,Platform launch dates,fields date,region;
+ENDPOINT,platform_version_release_dates,fields,"id,category,created_at,date,human,m,platform_version,region,updated_at,y,checksum,date_format,release_region",Regional launch dates,Japan vs NA launch
+ENDPOINT,platform_websites,url,/platform_websites,Platform website links,fields url,type.*;
+ENDPOINT,platform_websites,fields,"id,category,trusted,url,checksum,type",Platform external links,Official sites
+
+# ----- PLAYER PERSPECTIVE -----
+ENDPOINT,player_perspectives,url,/player_perspectives,Camera/view perspectives,fields name,slug;
+ENDPOINT,player_perspectives,fields,"id,created_at,name,slug,updated_at,url,checksum",Viewpoint types,First-person Third-person
+
+# ----- POPULARITY ENDPOINTS -----
+ENDPOINT,popularity_primitives,url,/popularity_primitives,Popularity/trending data,fields game_id,value,popularity_type;
+ENDPOINT,popularity_primitives,fields,"id,game_id,popularity_type,popularity_source,value,calculated_at,created_at,updated_at,checksum,external_popularity_source",Trending scores,For popular games lists
+ENDPOINT,popularity_types,url,/popularity_types,Types of popularity metrics,fields name;
+ENDPOINT,popularity_types,fields,"id,popularity_source,name,created_at,updated_at,checksum,external_popularity_source",Metric types,Views plays etc
+
+# ----- REGION -----
+ENDPOINT,regions,url,/regions,Geographic regions,fields name,identifier;
+ENDPOINT,regions,fields,"id,name,category,identifier,created_at,updated_at,checksum",Region details,North America Europe Japan
+
+# ----- RELEASE DATE ENDPOINTS -----
+ENDPOINT,release_dates,url,/release_dates,Platform-specific release dates,fields game,platform,date,human;
+ENDPOINT,release_dates,fields,"id,category,created_at,date,game,human,m,platform,region,updated_at,y,checksum,status,date_format,release_region,d",Per-platform dates,PS5 vs PC release
+ENDPOINT,release_date_regions,url,/release_date_regions,Release date regions,fields region;
+ENDPOINT,release_date_regions,fields,"id,region,created_at,updated_at,checksum",Region values,Worldwide NA EU
+ENDPOINT,release_date_statuses,url,/release_date_statuses,Release date statuses,fields name,description;
+ENDPOINT,release_date_statuses,fields,"id,name,description,created_at,updated_at,checksum",Date precision,Confirmed Rumored TBD
+
+# ----- SCREENSHOT -----
+ENDPOINT,screenshots,url,/screenshots,In-game screenshots,fields image_id,game,width,height;
+ENDPOINT,screenshots,fields,"id,alpha_channel,animated,game,height,image_id,url,width,checksum",Gameplay images,Use same image URL pattern
+
+# ----- SEARCH -----
+ENDPOINT,search,url,/search,Multi-entity search endpoint,fields *;
+ENDPOINT,search,fields,"id,alternative_name,character,collection,company,description,game,name,platform,published_at,test_dummy,theme,checksum",Cross-entity search,Searches games characters companies
+ENDPOINT,search,searchable_entities,"Characters,Collections,Games,Platforms,Themes",What can be searched,Use search query
+
+# ----- THEME -----
+ENDPOINT,themes,url,/themes,Game themes,fields name,slug;
+ENDPOINT,themes,fields,"id,created_at,name,slug,updated_at,url,checksum",Theme categories,Fantasy Sci-Fi Horror
+
+# ----- WEBSITE ENDPOINTS -----
+ENDPOINT,websites,url,/websites,Game website links,fields url,category,game;
+ENDPOINT,websites,fields,"id,category,game,trusted,url,checksum,type",External game links,Steam official social
+ENDPOINT,website_types,url,/website_types,Types of websites,fields type;
+ENDPOINT,website_types,fields,"id,type,created_at,updated_at,checksum",Website categorization,Official Steam Wikipedia
+
+# ============================================
+# SECTION 6: GAME FIELDS DETAILED
+# ============================================
+GAME_FIELDS,core,id,integer,Unique IGDB identifier - store this in your DB,1942
+GAME_FIELDS,core,name,string,Game title - display name,The Witcher 3: Wild Hunt
+GAME_FIELDS,core,slug,string,URL-friendly identifier,the-witcher-3-wild-hunt
+GAME_FIELDS,core,summary,string,Short description (~300 chars),Brief game overview
+GAME_FIELDS,core,storyline,string,Detailed plot synopsis,Full story description
+GAME_FIELDS,core,url,string,IGDB website URL,https://www.igdb.com/games/the-witcher-3-wild-hunt
+GAME_FIELDS,core,checksum,string,Data integrity hash,UUID format
+GAME_FIELDS,media,cover,reference (Cover),Cover art reference - expand with cover.*,cover.image_id for URL
+GAME_FIELDS,media,screenshots,array[Screenshot],In-game screenshots,screenshots.image_id
+GAME_FIELDS,media,artworks,array[Artwork],Official promotional artwork,artworks.image_id - often best for banners
+GAME_FIELDS,media,videos,array[GameVideo],YouTube trailers/gameplay,videos.video_id for YouTube URL
+GAME_FIELDS,ratings,rating,float 0-100,User rating average,88.5
+GAME_FIELDS,ratings,rating_count,integer,Number of user ratings,1523
+GAME_FIELDS,ratings,aggregated_rating,float 0-100,Critic/external rating average,93.2
+GAME_FIELDS,ratings,aggregated_rating_count,integer,Number of critic reviews,45
+GAME_FIELDS,ratings,total_rating,float 0-100,Combined user + critic average,90.85
+GAME_FIELDS,ratings,total_rating_count,integer,Total ratings combined,1568
+GAME_FIELDS,dates,first_release_date,Unix timestamp,First release anywhere - seconds since 1970,1431993600 = May 19 2015
+GAME_FIELDS,dates,release_dates,array[ReleaseDate],Per-platform release dates,Expand for platform-specific dates
+GAME_FIELDS,dates,created_at,Unix timestamp,When added to IGDB,Database creation time
+GAME_FIELDS,dates,updated_at,Unix timestamp,Last IGDB update,Most recent edit
+GAME_FIELDS,classification,category,integer enum (DEPRECATED),Game type - use game_type instead,0=main_game 1=dlc 2=expansion
+GAME_FIELDS,classification,game_type,reference (GameType),Game type reference,Expand game_type.type
+GAME_FIELDS,classification,status,integer enum (DEPRECATED),Release status - use game_status,0=released 6=cancelled
+GAME_FIELDS,classification,game_status,reference (GameStatus),Release status reference,Expand game_status.status
+GAME_FIELDS,taxonomy,genres,array[Genre],Game genres,Expand genres.name - RPG Action etc
+GAME_FIELDS,taxonomy,themes,array[Theme],Game themes,Expand themes.name - Fantasy Horror etc
+GAME_FIELDS,taxonomy,keywords,array[Keyword],Searchable tags,Expand keywords.name - open-world etc
+GAME_FIELDS,taxonomy,game_modes,array[GameMode],Gameplay modes,Expand game_modes.name - Single Multi Co-op
+GAME_FIELDS,taxonomy,player_perspectives,array[PlayerPerspective],Camera views,Expand player_perspectives.name - FPS TPS
+GAME_FIELDS,taxonomy,platforms,array[Platform],Available platforms,Expand platforms.name platforms.abbreviation
+GAME_FIELDS,relations,involved_companies,array[InvolvedCompany],Developer/Publisher links,Expand involved_companies.company.name .developer .publisher
+GAME_FIELDS,relations,franchises,array[Franchise],Franchise membership,Expand franchises.name - Zelda Mario etc
+GAME_FIELDS,relations,collections,array[Collection],Series/collection membership,Expand collections.name
+GAME_FIELDS,relations,similar_games,array[Game],Similar game recommendations,Array of game references - great for discovery
+GAME_FIELDS,relations,parent_game,reference (Game),Parent if DLC/expansion,Reference to base game
+GAME_FIELDS,relations,dlcs,array[Game],DLC for this game,Array of DLC game references
+GAME_FIELDS,relations,expansions,array[Game],Expansions for this game,Array of expansion references
+GAME_FIELDS,relations,remakes,array[Game],Remakes of this game,RE4 Remake for RE4
+GAME_FIELDS,relations,remasters,array[Game],Remasters of this game,Updated re-releases
+GAME_FIELDS,relations,ports,array[Game],Ports of this game,Platform ports
+GAME_FIELDS,relations,bundles,array[Game],Bundles containing this game,Collection packs
+GAME_FIELDS,relations,standalone_expansions,array[Game],Standalone expansions,Far Cry Blood Dragon
+GAME_FIELDS,relations,expanded_games,array[Game],Expanded editions,Persona 5 Royal for Persona 5
+GAME_FIELDS,relations,forks,array[Game],Forked games,Derivative works
+GAME_FIELDS,external,websites,array[Website],External links,Expand websites.url .category for Steam/Epic/official
+GAME_FIELDS,external,external_games,array[ExternalGame],Store IDs,Expand external_games.uid for Steam/GOG IDs
+GAME_FIELDS,other,age_ratings,array[AgeRating],ESRB/PEGI ratings,Expand for rating details
+GAME_FIELDS,other,game_engines,array[GameEngine],Engine used,Unreal Unity etc
+GAME_FIELDS,other,multiplayer_modes,array[MultiplayerMode],Detailed MP info,onlinecoop offlinecoop player counts
+GAME_FIELDS,other,language_supports,array[LanguageSupport],Supported languages,Audio subtitles interface
+GAME_FIELDS,other,game_localizations,array[GameLocalization],Regional versions,Japanese editions etc
+GAME_FIELDS,other,alternative_names,array[AlternativeName],Other names,Regional titles translations
+GAME_FIELDS,other,tags,array[integer],Tag numbers for filtering,Advanced filtering
+GAME_FIELDS,other,hypes,integer (DEPRECATED),Pre-release follows,Interest before launch
+GAME_FIELDS,other,follows,integer (DEPRECATED),IGDB follows,User follows on IGDB
+GAME_FIELDS,other,version_parent,reference (Game),Parent version,For different editions
+GAME_FIELDS,other,version_title,string,Version name,GOTY Edition etc
+
+# ============================================
+# SECTION 7: ENUMS - GAME CATEGORY
+# ============================================
+GAME_CATEGORY,enum,0,main_game,Standard full game release,The Witcher 3
+GAME_CATEGORY,enum,1,dlc_addon,Downloadable content,Hearts of Stone DLC
+GAME_CATEGORY,enum,2,expansion,Major expansion pack,Blood and Wine
+GAME_CATEGORY,enum,3,bundle,Collection of games,Witcher Trilogy
+GAME_CATEGORY,enum,4,standalone_expansion,Expansion playable alone,Far Cry: Blood Dragon
+GAME_CATEGORY,enum,5,mod,Fan modification,Long War mod
+GAME_CATEGORY,enum,6,episode,Episodic release,Walking Dead Episode 1
+GAME_CATEGORY,enum,7,season,Season pass content,Season of games
+GAME_CATEGORY,enum,8,remake,Ground-up remake,RE4 Remake
+GAME_CATEGORY,enum,9,remaster,Updated re-release,The Last of Us Remastered
+GAME_CATEGORY,enum,10,expanded_game,Enhanced edition with new content,Persona 5 Royal
+GAME_CATEGORY,enum,11,port,Platform port,Witcher 3 Switch port
+GAME_CATEGORY,enum,12,fork,Forked/derivative game,Standalone fork
+GAME_CATEGORY,enum,13,pack,Content pack,Skin/item packs
+GAME_CATEGORY,enum,14,update,Major update,Title updates
+
+# ============================================
+# SECTION 8: ENUMS - GAME STATUS
+# ============================================
+GAME_STATUS,enum,0,released,Game is available,Out now
+GAME_STATUS,enum,2,alpha,Alpha testing phase,Early development
+GAME_STATUS,enum,3,beta,Beta testing phase,Pre-release testing
+GAME_STATUS,enum,4,early_access,Early access release,Steam Early Access
+GAME_STATUS,enum,5,offline,Servers offline/shut down,Online-only game ended
+GAME_STATUS,enum,6,cancelled,Development cancelled,Never releasing
+GAME_STATUS,enum,7,rumored,Unconfirmed/rumored,Not officially announced
+GAME_STATUS,enum,8,delisted,Removed from stores,Can't purchase anymore
+
+# ============================================
+# SECTION 9: PLATFORM IDs
+# ============================================
+PLATFORM_ID,sony,7,PlayStation,Original PlayStation,PS1/PSX 1994
+PLATFORM_ID,sony,8,PlayStation 2,PS2,2000-2013
+PLATFORM_ID,sony,9,PlayStation 3,PS3,2006-2017
+PLATFORM_ID,sony,48,PlayStation 4,PS4 - IMPORTANT,2013-present
+PLATFORM_ID,sony,167,PlayStation 5,PS5 - IMPORTANT,2020-present
+PLATFORM_ID,sony,38,PlayStation Portable,PSP,Handheld 2004
+PLATFORM_ID,sony,46,PlayStation Vita,PS Vita,Handheld 2011
+PLATFORM_ID,sony,165,PlayStation VR,PSVR,VR headset
+PLATFORM_ID,microsoft,11,Xbox,Original Xbox,2001-2009
+PLATFORM_ID,microsoft,12,Xbox 360,X360,2005-2016
+PLATFORM_ID,microsoft,49,Xbox One,XB1 - IMPORTANT,2013-present
+PLATFORM_ID,microsoft,169,Xbox Series X|S,XSX - IMPORTANT,2020-present
+PLATFORM_ID,microsoft,36,Xbox Live Arcade,XBLA,Digital store
+PLATFORM_ID,nintendo,18,Nintendo Entertainment System,NES,8-bit 1983
+PLATFORM_ID,nintendo,19,Super Nintendo,SNES,16-bit 1990
+PLATFORM_ID,nintendo,4,Nintendo 64,N64,64-bit 1996
+PLATFORM_ID,nintendo,21,Nintendo GameCube,GCN,2001-2007
+PLATFORM_ID,nintendo,5,Wii,Wii,2006-2013
+PLATFORM_ID,nintendo,41,Wii U,Wii U,2012-2017
+PLATFORM_ID,nintendo,130,Nintendo Switch,Switch - IMPORTANT,2017-present
+PLATFORM_ID,nintendo,508,Nintendo Switch 2,Switch 2,Upcoming 2025
+PLATFORM_ID,nintendo,33,Game Boy,GB,Handheld 1989
+PLATFORM_ID,nintendo,22,Game Boy Color,GBC,Handheld 1998
+PLATFORM_ID,nintendo,24,Game Boy Advance,GBA,Handheld 2001
+PLATFORM_ID,nintendo,20,Nintendo DS,NDS,Handheld 2004
+PLATFORM_ID,nintendo,37,Nintendo 3DS,3DS,Handheld 2011
+PLATFORM_ID,nintendo,137,New Nintendo 3DS,New 3DS,Handheld 2014
+PLATFORM_ID,nintendo,159,Nintendo DSi,DSi,Handheld 2008
+PLATFORM_ID,pc,6,PC (Microsoft Windows),PC - IMPORTANT,Windows gaming
+PLATFORM_ID,pc,14,Mac,macOS,Apple computers
+PLATFORM_ID,pc,3,Linux,Linux,Linux gaming
+PLATFORM_ID,pc,92,SteamOS,Steam Deck OS,Valve's Linux
+PLATFORM_ID,mobile,34,Android,Android - IMPORTANT,Mobile
+PLATFORM_ID,mobile,39,iOS,iPhone/iPad - IMPORTANT,Apple mobile
+PLATFORM_ID,mobile,55,Mobile,Generic mobile,Mobile games
+PLATFORM_ID,sega,29,Sega Genesis/Mega Drive,Genesis,16-bit 1988
+PLATFORM_ID,sega,23,Dreamcast,DC,1999-2001
+PLATFORM_ID,sega,32,Sega Saturn,Saturn,32-bit 1994
+PLATFORM_ID,sega,64,Sega Master System,SMS,8-bit 1985
+PLATFORM_ID,sega,35,Sega Game Gear,GG,Handheld 1990
+PLATFORM_ID,sega,78,Sega CD,Sega CD,CD add-on 1991
+PLATFORM_ID,sega,30,Sega 32X,32X,Add-on 1994
+PLATFORM_ID,other,52,Arcade,Arcade,Arcade cabinets
+PLATFORM_ID,other,82,Web browser,Browser,Browser games
+PLATFORM_ID,other,170,Google Stadia,Stadia,Cloud gaming (discontinued)
+PLATFORM_ID,other,72,Ouya,Ouya,Android console
+PLATFORM_ID,vr,162,Oculus VR,Oculus/Meta Quest,VR headset
+PLATFORM_ID,vr,163,SteamVR,SteamVR,VR platform
+PLATFORM_ID,vr,165,PlayStation VR,PSVR,Sony VR
+PLATFORM_ID,vr,161,Windows Mixed Reality,WMR,Microsoft VR
+PLATFORM_ID,retro,50,3DO,3DO Interactive,1993
+PLATFORM_ID,retro,59,Atari 2600,Atari 2600,1977
+PLATFORM_ID,retro,60,Atari 7800,Atari 7800,1986
+PLATFORM_ID,retro,62,Atari Jaguar,Jaguar,1993
+PLATFORM_ID,retro,61,Atari Lynx,Lynx,Handheld 1989
+PLATFORM_ID,retro,86,TurboGrafx-16/PC Engine,TG16/PCE,1987
+PLATFORM_ID,retro,87,Virtual Boy,Virtual Boy,1995
+PLATFORM_ID,retro,79,Neo Geo MVS,Neo Geo Arcade,1990
+PLATFORM_ID,retro,80,Neo Geo AES,Neo Geo Home,1990
+PLATFORM_ID,retro,117,Philips CD-i,CD-i,1991
+
+# ============================================
+# SECTION 10: GENRE IDs
+# ============================================
+GENRE_ID,action,4,Fighting,Fighting games - Street Fighter Tekken,Combat-focused
+GENRE_ID,action,5,Shooter,Shooting games - Call of Duty Doom,Gun-based
+GENRE_ID,action,25,Hack and slash/Beat 'em up,Brawlers - Devil May Cry God of War,Melee combat
+GENRE_ID,adventure,31,Adventure,Adventure games - Uncharted Zelda,Exploration story
+GENRE_ID,adventure,32,Indie,Independent games - Hollow Knight Celeste,Small studio
+GENRE_ID,adventure,34,Visual Novel,Story VN - Doki Doki Danganronpa,Text-heavy
+GENRE_ID,adventure,2,Point-and-click,Classic adventure - Monkey Island,Click to interact
+GENRE_ID,rpg,12,Role-playing (RPG),RPG games - Final Fantasy Witcher,Character progression
+GENRE_ID,strategy,15,Strategy,Strategy games - Civilization Age of Empires,Tactical thinking
+GENRE_ID,strategy,16,Turn-based strategy (TBS),Turn-based - XCOM Fire Emblem,Turn-by-turn
+GENRE_ID,strategy,11,Real Time Strategy (RTS),Real-time - StarCraft,Live strategy
+GENRE_ID,strategy,24,Tactical,Tactical games - Rainbow Six,Squad tactics
+GENRE_ID,simulation,13,Simulator,Simulation - Flight Sim Farming Sim,Realistic systems
+GENRE_ID,simulation,14,Sport,Sports games - FIFA Madden,Athletic competition
+GENRE_ID,simulation,10,Racing,Racing games - Forza Need for Speed,Vehicle racing
+GENRE_ID,other,8,Platform,Platformers - Mario Celeste,Jump and run
+GENRE_ID,other,9,Puzzle,Puzzle games - Tetris Portal,Problem solving
+GENRE_ID,other,26,Quiz/Trivia,Quiz games - Trivia games,Knowledge tests
+GENRE_ID,other,33,Arcade,Arcade-style - Pac-Man,Score-based
+GENRE_ID,other,35,Card & Board Game,Card/board - Hearthstone,Card/board mechanics
+GENRE_ID,other,36,MOBA,MOBA - League of Legends Dota 2,Team arena
+GENRE_ID,other,7,Music,Music/rhythm - Guitar Hero Beat Saber,Rhythm-based
+
+# ============================================
+# SECTION 11: THEME IDs
+# ============================================
+THEME_ID,common,1,Action,Action-oriented,Fast-paced gameplay
+THEME_ID,common,17,Fantasy,Fantasy setting,Dragons magic medieval
+THEME_ID,common,18,Science fiction,Sci-fi setting,Space future tech
+THEME_ID,common,19,Horror,Horror themes,Scary disturbing
+THEME_ID,common,20,Thriller,Thriller themes,Suspenseful tense
+THEME_ID,common,21,Survival,Survival mechanics,Resource management
+THEME_ID,common,22,Historical,Historical setting,Based on history
+THEME_ID,common,23,Stealth,Stealth gameplay,Sneaking hiding
+THEME_ID,common,27,Comedy,Comedic tone,Funny humorous
+THEME_ID,common,28,Business,Business simulation,Tycoon management
+THEME_ID,common,31,Drama,Dramatic story,Emotional narrative
+THEME_ID,common,32,Non-fiction,Educational/real,Based on reality
+THEME_ID,common,33,Sandbox,Open sandbox,Freedom creativity
+THEME_ID,common,34,Educational,Learning focused,Educational content
+THEME_ID,common,35,Kids,Kid-friendly,Family appropriate
+THEME_ID,common,38,Open world,Open world design,Large explorable
+THEME_ID,common,39,Warfare,War themes,Military conflict
+THEME_ID,common,40,Party,Party games,Social multiplayer
+THEME_ID,common,41,4X,4X strategy (explore expand exploit exterminate),Civ-like
+THEME_ID,common,42,Erotic,Adult content,18+ themes
+THEME_ID,common,43,Mystery,Mystery themes,Detective investigation
+THEME_ID,common,44,Romance,Romance elements,Love stories
+
+# ============================================
+# SECTION 12: GAME MODE IDs
+# ============================================
+GAME_MODE_ID,modes,1,Single player,Solo play,One player
+GAME_MODE_ID,modes,2,Multiplayer,Multiple players,Local or online
+GAME_MODE_ID,modes,3,Co-operative,Cooperative play,Work together
+GAME_MODE_ID,modes,4,Split screen,Same-screen multiplayer,Couch co-op
+GAME_MODE_ID,modes,5,Massively Multiplayer Online (MMO),MMO,Persistent online world
+GAME_MODE_ID,modes,6,Battle Royale,Battle royale mode,Last player standing
+
+# ============================================
+# SECTION 13: PLAYER PERSPECTIVE IDs
+# ============================================
+PLAYER_PERSPECTIVE_ID,views,1,First person,FPS view,Through character eyes
+PLAYER_PERSPECTIVE_ID,views,2,Third person,TPS view,Behind character
+PLAYER_PERSPECTIVE_ID,views,3,Bird view / Isometric,Top-down view,Strategy style
+PLAYER_PERSPECTIVE_ID,views,4,Side view,2D side view,Platformer style
+PLAYER_PERSPECTIVE_ID,views,5,Text,Text-based,Text adventures
+PLAYER_PERSPECTIVE_ID,views,6,Aural,Audio only,Audio games
+PLAYER_PERSPECTIVE_ID,views,7,Virtual Reality,VR,VR headset required
+
+# ============================================
+# SECTION 14: WEBSITE CATEGORY IDs
+# ============================================
+WEBSITE_CATEGORY,enum,1,official,Official website,Game's main site
+WEBSITE_CATEGORY,enum,2,wikia,Fandom/Wikia,Fan wiki
+WEBSITE_CATEGORY,enum,3,wikipedia,Wikipedia,Wikipedia article
+WEBSITE_CATEGORY,enum,4,facebook,Facebook,Facebook page
+WEBSITE_CATEGORY,enum,5,twitter,Twitter/X,Twitter account
+WEBSITE_CATEGORY,enum,6,twitch,Twitch,Twitch channel
+WEBSITE_CATEGORY,enum,8,instagram,Instagram,Instagram account
+WEBSITE_CATEGORY,enum,9,youtube,YouTube,YouTube channel
+WEBSITE_CATEGORY,enum,10,iphone,App Store (iPhone),iOS App Store
+WEBSITE_CATEGORY,enum,11,ipad,App Store (iPad),iPad App Store
+WEBSITE_CATEGORY,enum,12,android,Google Play,Android store
+WEBSITE_CATEGORY,enum,13,steam,Steam,Steam store - IMPORTANT
+WEBSITE_CATEGORY,enum,14,reddit,Reddit,Subreddit
+WEBSITE_CATEGORY,enum,15,itch,itch.io,Itch.io page
+WEBSITE_CATEGORY,enum,16,epicgames,Epic Games Store,Epic store - IMPORTANT
+WEBSITE_CATEGORY,enum,17,gog,GOG,GOG store - IMPORTANT
+WEBSITE_CATEGORY,enum,18,discord,Discord,Discord server
+WEBSITE_CATEGORY,enum,19,bluesky,Bluesky,Bluesky account
+
+# ============================================
+# SECTION 15: EXTERNAL GAME CATEGORY IDs
+# ============================================
+EXTERNAL_GAME_CATEGORY,enum,1,steam,Steam,Steam App ID - IMPORTANT
+EXTERNAL_GAME_CATEGORY,enum,5,gog,GOG,GOG product ID
+EXTERNAL_GAME_CATEGORY,enum,10,youtube,YouTube,YouTube channel/video
+EXTERNAL_GAME_CATEGORY,enum,11,microsoft,Microsoft Store,Microsoft product ID
+EXTERNAL_GAME_CATEGORY,enum,13,apple,Apple App Store,Apple app ID
+EXTERNAL_GAME_CATEGORY,enum,14,twitch,Twitch,Twitch game ID
+EXTERNAL_GAME_CATEGORY,enum,15,android,Google Play,Play Store package
+EXTERNAL_GAME_CATEGORY,enum,20,amazon_asin,Amazon,Amazon ASIN
+EXTERNAL_GAME_CATEGORY,enum,22,amazon_luna,Amazon Luna,Luna game ID
+EXTERNAL_GAME_CATEGORY,enum,23,amazon_adg,Amazon Games,Amazon Game ID
+EXTERNAL_GAME_CATEGORY,enum,26,epic_game_store,Epic Games Store,Epic product slug - IMPORTANT
+EXTERNAL_GAME_CATEGORY,enum,28,oculus,Oculus/Meta,Oculus app ID
+EXTERNAL_GAME_CATEGORY,enum,29,utomik,Utomik,Utomik ID
+EXTERNAL_GAME_CATEGORY,enum,30,itch_io,itch.io,Itch.io game ID
+EXTERNAL_GAME_CATEGORY,enum,31,xbox_marketplace,Xbox Marketplace,Xbox product ID
+EXTERNAL_GAME_CATEGORY,enum,32,kartridge,Kartridge,Kartridge ID
+EXTERNAL_GAME_CATEGORY,enum,36,playstation_store_us,PlayStation Store,PSN product ID
+EXTERNAL_GAME_CATEGORY,enum,37,focus_entertainment,Focus Entertainment,Focus ID
+EXTERNAL_GAME_CATEGORY,enum,54,xbox_game_pass_cloud,Xbox Game Pass Cloud,Cloud gaming ID
+EXTERNAL_GAME_CATEGORY,enum,55,gamejolt,GameJolt,GameJolt ID
+
+# ============================================
+# SECTION 16: AGE RATING IDs
+# ============================================
+AGE_RATING_ORG,enum,1,ESRB,North America,Entertainment Software Rating Board
+AGE_RATING_ORG,enum,2,PEGI,Europe,Pan European Game Information
+AGE_RATING_ORG,enum,3,CERO,Japan,Computer Entertainment Rating Organization
+AGE_RATING_ORG,enum,4,USK,Germany,Unterhaltungssoftware Selbstkontrolle
+AGE_RATING_ORG,enum,5,GRAC,South Korea,Game Rating and Administration Committee
+AGE_RATING_ORG,enum,6,CLASS_IND,Brazil,Classificação Indicativa
+AGE_RATING_ORG,enum,7,ACB,Australia,Australian Classification Board
+ESRB_RATING,enum,6,RP,Rating Pending,Not yet rated
+ESRB_RATING,enum,7,EC,Early Childhood,Ages 3+
+ESRB_RATING,enum,8,E,Everyone,Ages 6+
+ESRB_RATING,enum,9,E10,Everyone 10+,Ages 10+
+ESRB_RATING,enum,10,T,Teen,Ages 13+
+ESRB_RATING,enum,11,M,Mature,Ages 17+
+ESRB_RATING,enum,12,AO,Adults Only,Ages 18+
+PEGI_RATING,enum,1,PEGI 3,Ages 3+,Suitable for all ages
+PEGI_RATING,enum,2,PEGI 7,Ages 7+,Some scary scenes
+PEGI_RATING,enum,3,PEGI 12,Ages 12+,Mild violence
+PEGI_RATING,enum,4,PEGI 16,Ages 16+,Realistic violence
+PEGI_RATING,enum,5,PEGI 18,Ages 18+,Adult only content
+
+# ============================================
+# SECTION 17: REGION IDs
+# ============================================
+REGION_ID,enum,1,europe,Europe,EU region
+REGION_ID,enum,2,north_america,North America,NA region
+REGION_ID,enum,3,australia,Australia,AU region
+REGION_ID,enum,4,new_zealand,New Zealand,NZ region
+REGION_ID,enum,5,japan,Japan,JP region
+REGION_ID,enum,6,china,China,CN region
+REGION_ID,enum,7,asia,Asia,Asian region
+REGION_ID,enum,8,worldwide,Worldwide,Global release
+REGION_ID,enum,9,korea,South Korea,KR region
+REGION_ID,enum,10,brazil,Brazil,BR region
+
+# ============================================
+# SECTION 18: QUERY SYNTAX
+# ============================================
+QUERY_SYNTAX,basics,fields,fields name,cover;,Specify which fields to return,"fields name,summary,cover.*;"
+QUERY_SYNTAX,basics,fields_all,fields *;,Get all fields (avoid in production),Only for testing
+QUERY_SYNTAX,basics,where,where id = 1942;,Filter results,where rating > 80;
+QUERY_SYNTAX,basics,search,"search ""zelda"";",Text search on name field,"search ""witcher"";"
+QUERY_SYNTAX,basics,limit,limit 50;,Number of results (default 10 max 500),limit 100;
+QUERY_SYNTAX,basics,offset,offset 10;,Skip first N results for pagination,offset 50;
+QUERY_SYNTAX,basics,sort,sort rating desc;,Sort results ascending/descending,sort first_release_date desc;
+QUERY_SYNTAX,basics,exclude,exclude screenshots;,Exclude specific fields,exclude storyline;
+QUERY_SYNTAX,expansion,dot_notation,cover.*,Expand reference to get all subfields,"fields cover.*,genres.*;"
+QUERY_SYNTAX,expansion,specific_field,cover.image_id,Get specific subfield only,fields cover.image_id;
+QUERY_SYNTAX,expansion,nested,involved_companies.company.name,Multi-level expansion,Two levels deep
+QUERY_SYNTAX,expansion,array_expansion,genres.*,Expands each item in array,All genre details
+QUERY_SYNTAX,operators,equals,=,Exact match,where id = 1942;
+QUERY_SYNTAX,operators,not_equals,!=,Not equal to,where category != 1;
+QUERY_SYNTAX,operators,greater_than,>,Greater than,where rating > 80;
+QUERY_SYNTAX,operators,greater_or_equal,>=,Greater than or equal,where rating >= 90;
+QUERY_SYNTAX,operators,less_than,<,Less than,where first_release_date < 1609459200;
+QUERY_SYNTAX,operators,less_or_equal,<=,Less than or equal,where rating_count <= 100;
+QUERY_SYNTAX,operators,in_array,(x y z),Value in list - use parentheses,where platforms = (48 49 130);
+QUERY_SYNTAX,operators,contains_any,=,Array field contains value,where genres = 12;
+QUERY_SYNTAX,operators,like_case_insensitive,~,Fuzzy/partial match (case insensitive),"where name ~ *""zelda""*;"
+QUERY_SYNTAX,operators,starts_with,~,Starts with pattern,"where name ~ ""The""*;"
+QUERY_SYNTAX,operators,ends_with,~,Ends with pattern,"where name ~ *""3"";"
+QUERY_SYNTAX,operators,exact_match,"=",Case-sensitive exact match,"where slug = ""the-witcher-3-wild-hunt"";"
+QUERY_SYNTAX,operators,null_check,= null,Check if field is null/empty,where parent_game = null;
+QUERY_SYNTAX,operators,not_null,!= null,Check if field has value,where cover != null;
+QUERY_SYNTAX,logic,and,&,Combine conditions with AND,where rating > 80 & platforms = 48;
+QUERY_SYNTAX,logic,or,|,Combine conditions with OR,where platforms = 48 | platforms = 49;
+QUERY_SYNTAX,logic,parentheses,(),Group conditions for precedence,where (rating > 80 & rating_count > 100);
+QUERY_SYNTAX,logic,complex,(A & B) | (C & D),Complex condition grouping,"where (platforms = 48 & rating > 80) | (platforms = 130 & rating > 70);"
+
+# ============================================
+# SECTION 19: QUERY EXAMPLES
+# ============================================
+QUERY_EXAMPLE,search,by_name,"search ""The Witcher 3"";",Search games by name,"fields name,cover.image_id,rating; search ""The Witcher 3""; limit 10;"
+QUERY_EXAMPLE,search,by_id,where id = 1942;,Get specific game by ID,fields *; where id = 1942;
+QUERY_EXAMPLE,search,multiple_ids,"where id = (1942, 1020, 119171);",Get multiple games by ID,"fields name,rating; where id = (1942, 1020, 119171);"
+QUERY_EXAMPLE,search,fuzzy_name,"where name ~ *""zelda""*;",Fuzzy name search,"fields name,cover.image_id; where name ~ *""zelda""*; limit 20;"
+QUERY_EXAMPLE,filter,main_games_only,where category = 0;,Exclude DLC/expansions/mods,where category = 0 & cover != null;
+QUERY_EXAMPLE,filter,by_platform,where platforms = 48;,Games on specific platform (PS4),"fields name,cover.image_id; where platforms = 48 & category = 0; limit 50;"
+QUERY_EXAMPLE,filter,by_genre,where genres = 12;,Filter by genre (RPG),"fields name,rating; where genres = 12 & rating > 80;"
+QUERY_EXAMPLE,filter,by_theme,where themes = 17;,Filter by theme (Fantasy),"fields name,rating; where themes = 17 & category = 0;"
+QUERY_EXAMPLE,filter,highly_rated,where rating > 85 & rating_count > 100;,Popular well-rated games,"fields name,rating,rating_count; where rating > 85 & rating_count > 100; sort rating desc; limit 50;"
+QUERY_EXAMPLE,filter,recent_releases,"where first_release_date > 1672531200;",Games after Jan 1 2023,"fields name,first_release_date; where first_release_date > 1672531200 & category = 0; sort first_release_date desc;"
+QUERY_EXAMPLE,filter,upcoming,where first_release_date > {now};,Future releases,"fields name,first_release_date; where first_release_date > 1735689600 & category = 0; sort first_release_date asc;"
+QUERY_EXAMPLE,filter,with_cover,where cover != null;,Only games with cover art,Essential for display
+QUERY_EXAMPLE,filter,with_ratings,where rating != null & rating_count > 10;,Only rated games,Filter obscure entries
+QUERY_EXAMPLE,full_detail,game_page,Complete game data for detail page,"fields name,summary,storyline,rating,rating_count,aggregated_rating,total_rating,first_release_date,cover.image_id,screenshots.image_id,artworks.image_id,videos.video_id,genres.name,themes.name,platforms.name,platforms.abbreviation,game_modes.name,player_perspectives.name,involved_companies.company.name,involved_companies.developer,involved_companies.publisher,websites.category,websites.url,similar_games.name,similar_games.cover.image_id,age_ratings.rating,age_ratings.category,franchises.name,collection.name; where id = 1942;"
+QUERY_EXAMPLE,list,trending,"sort hypes desc;",Trending/anticipated games,"fields name,cover.image_id,hypes; where hypes > 50 & category = 0; sort hypes desc; limit 20;"
+QUERY_EXAMPLE,list,new_releases,Last 30 days releases,"fields name,cover.image_id,rating,first_release_date; where first_release_date > {30_days_ago} & first_release_date < {now} & category = 0; sort first_release_date desc; limit 50;"
+QUERY_EXAMPLE,list,top_rated,Best games all time,"fields name,cover.image_id,total_rating,total_rating_count; where total_rating > 90 & total_rating_count > 500 & category = 0; sort total_rating desc; limit 100;"
+QUERY_EXAMPLE,list,by_franchise,Games in franchise,"fields name,cover.image_id,first_release_date; where franchises.name ~ ""Zelda""; sort first_release_date asc;"
+QUERY_EXAMPLE,list,by_developer,Games by developer,"fields name,cover.image_id,rating; where involved_companies.company.name ~ ""FromSoftware"" & involved_companies.developer = true; sort first_release_date desc;"
+QUERY_EXAMPLE,list,multiplayer_coop,Co-op games,"fields name,cover.image_id,multiplayer_modes.*; where multiplayer_modes.onlinecoop = true & category = 0; limit 50;"
+QUERY_EXAMPLE,platform,ps5_games,PlayStation 5 games,"fields name,cover.image_id,rating; where platforms = 167 & category = 0 & rating > 70; sort rating desc; limit 50;"
+QUERY_EXAMPLE,platform,switch_games,Nintendo Switch games,"fields name,cover.image_id,rating; where platforms = 130 & category = 0; sort rating desc; limit 50;"
+QUERY_EXAMPLE,platform,pc_games,PC games,"fields name,cover.image_id,rating; where platforms = 6 & category = 0; sort rating desc; limit 50;"
+QUERY_EXAMPLE,platform,cross_platform,Multi-platform games,"fields name,cover.image_id,platforms.abbreviation; where platforms = (167, 169, 6) & category = 0; limit 50;"
+QUERY_EXAMPLE,media,screenshots,Get game screenshots,"fields image_id,width,height; where game = 1942; limit 10;"
+QUERY_EXAMPLE,media,artworks,Get game artworks,"fields image_id,width,height; where game = 1942;"
+QUERY_EXAMPLE,media,videos,Get game videos,"fields name,video_id; where game = 1942;"
+QUERY_EXAMPLE,media,cover,Get game cover,fields image_id; where game = 1942;
+QUERY_EXAMPLE,relations,similar_games,Get similar games,"fields similar_games.name,similar_games.cover.image_id,similar_games.rating; where id = 1942;"
+QUERY_EXAMPLE,relations,dlc_for_game,Get DLC for game,"fields name,cover.image_id; where parent_game = 1942 & category = 1;"
+QUERY_EXAMPLE,relations,game_series,Get games in series,"fields games.name,games.cover.image_id; where id = 596;"
+QUERY_EXAMPLE,special,time_to_beat,How long to beat,"fields hastily,normally,completely; where game_id = 1942;"
+QUERY_EXAMPLE,special,store_links,Get store URLs,"fields url,category; where game = 1942 & category = (13, 16, 17);"
+
+# ============================================
+# SECTION 20: MULTIQUERY
+# ============================================
+MULTIQUERY,syntax,basic,"query endpoint ""alias"" { query };",Run multiple queries in one request,"query games ""PS5Games"" { fields name; where platforms = 167; limit 5; };"
+MULTIQUERY,syntax,endpoint,/multiquery,POST to multiquery endpoint,POST https://api.igdb.com/v4/multiquery
+MULTIQUERY,syntax,response,Array of result objects,Returns array with name and results,"[{""name"": ""PS5Games"", ""result"": [...]}]"
+MULTIQUERY,syntax,multiple,"query endpoint ""alias1"" {}; query endpoint ""alias2"" {};",Semicolon separated,Chain multiple queries
+MULTIQUERY,example,homepage,Homepage data in one call,"query games ""Trending"" { fields name,cover.image_id; where hypes > 20; sort hypes desc; limit 10; }; query games ""NewReleases"" { fields name,cover.image_id; where first_release_date > 1700000000; sort first_release_date desc; limit 10; }; query games ""TopRated"" { fields name,cover.image_id,rating; where rating > 90; sort rating desc; limit 10; };"
+
+# ============================================
+# SECTION 21: BEST PRACTICES
+# ============================================
+BEST_PRACTICES,performance,use_specific_fields,Always specify exact fields needed,Never use fields * in production,Reduces payload improves speed
+BEST_PRACTICES,performance,use_multiquery,Combine related queries,Reduce API calls with multiquery,One request vs many
+BEST_PRACTICES,performance,cache_static,Cache genres/platforms/themes,These rarely change,Refresh weekly
+BEST_PRACTICES,performance,prefer_where,Use where over search when possible,Where is faster,Search only for user input
+BEST_PRACTICES,performance,limit_expansion,Don't over-expand references,Only expand what you need,"cover.image_id not cover.*"
+BEST_PRACTICES,filtering,main_games,category = 0,Filter to main games only,Excludes DLC mods etc
+BEST_PRACTICES,filtering,require_cover,cover != null,Ensure cover art exists,Better for display
+BEST_PRACTICES,filtering,require_ratings,rating_count > 10,Filter obscure entries,More reliable ratings
+BEST_PRACTICES,filtering,recent_quality,Combine date and rating,Recent AND good games,first_release_date > X & rating > Y
+BEST_PRACTICES,images,cover_big,t_cover_big,Best for game cards,264x374
+BEST_PRACTICES,images,1080p_backgrounds,t_1080p,Best for banners/heroes,1920x1080
+BEST_PRACTICES,images,lazy_load,Load on scroll,Don't load all at once,Better performance
+BEST_PRACTICES,images,fallback,Default image for missing,Some games lack covers,Use nocover_qhhlj6
+BEST_PRACTICES,timestamps,unix_seconds,Timestamps are Unix epoch seconds,Not milliseconds,new Date(timestamp * 1000)
+BEST_PRACTICES,timestamps,current_time,Math.floor(Date.now() / 1000),Get current Unix timestamp,For date comparisons
+BEST_PRACTICES,pagination,offset_limit,Use offset + limit,Proper pagination,"Page 2: offset 50; limit 50;"
+BEST_PRACTICES,pagination,max_500,Maximum 500 per request,Loop if more needed,Increment offset
+BEST_PRACTICES,errors,status_codes,Handle 400/401/429,400=bad query 401=auth 429=rate limit,Implement retry
+BEST_PRACTICES,errors,empty_results,Handle empty arrays,Query may return [],Check length
+
+# ============================================
+# SECTION 22: SWEATY-SPECIFIC GUIDANCE
+# ============================================
+SWEATY_SPECIFIC,game_logging,required_fields,"id,name,cover.image_id,first_release_date",Minimum for logging,Store IGDB ID
+SWEATY_SPECIFIC,game_logging,optional_fields,"rating,summary,genres.name,platforms.abbreviation",Extra context,Nice to have
+SWEATY_SPECIFIC,game_detail,full_fields,All fields for detail page,See QUERY_EXAMPLE full_detail,Complete game info
+SWEATY_SPECIFIC,search,autocomplete,"search ""{query}""; fields name,cover.image_id,first_release_date,platforms.abbreviation; where category = 0; limit 20;",User search,Fast responsive
+SWEATY_SPECIFIC,discovery,similar_games,Use similar_games field,Built-in recommendations,Expand with cover rating
+SWEATY_SPECIFIC,discovery,by_genre_theme,Filter genre + theme combos,Custom lists,where genres = X & themes = Y
+SWEATY_SPECIFIC,lists,curated,Combine multiple filters,Build your lists,Genre + rating + platform
+SWEATY_SPECIFIC,backlog,status_local,Track status in your DB,IGDB has no user data,playing/completed/backlog/wishlist
+SWEATY_SPECIFIC,stats,time_to_beat,game_time_to_beat endpoint,Completion times,"hastily,normally,completely"
+SWEATY_SPECIFIC,social,store_links,"websites category 13,16,17",Steam/Epic/GOG links,For buy buttons
+SWEATY_SPECIFIC,images,profile_banner,artworks or screenshots with t_1080p,Profile backgrounds,Crop client-side
+SWEATY_SPECIFIC,images,game_card,cover.image_id with t_cover_big,Standard cards,264x374
+
+# ============================================
+# SECTION 23: COMMON ISSUES
+# ============================================
+COMMON_ISSUES,cors,browser_blocked,Cannot call from browser directly,CORS policy,Use server-side/API routes
+COMMON_ISSUES,auth,401_unauthorized,Token invalid or expired,Re-authenticate,Get new token
+COMMON_ISSUES,query,400_bad_request,Query syntax error,Check syntax,Missing semicolons/operators
+COMMON_ISSUES,rate,429_too_many,Rate limit exceeded,Slow down,Max 4/second
+COMMON_ISSUES,results,empty_array,Query returns [],Filters too strict,Broaden criteria
+COMMON_ISSUES,images,404_not_found,Image URL broken,Invalid image_id,Use fallback
+COMMON_ISSUES,timestamps,wrong_dates,Dates show wrong,Unix seconds not ms,Multiply by 1000
+COMMON_ISSUES,expansion,null_field,Expanded field is null,Not all games have all data,Check for null
+
+# ============================================
+# SECTION 24: NEXT.JS / SUPABASE INTEGRATION
+# ============================================
+INTEGRATION,nextjs,api_route,Create /api/igdb route,Server-side proxy,Avoids CORS
+INTEGRATION,nextjs,env_vars,IGDB_CLIENT_ID and IGDB_CLIENT_SECRET,Store in .env.local,Never expose to client
+INTEGRATION,nextjs,token_cache,Cache token server-side,Don't fetch every request,Refresh when expired
+INTEGRATION,supabase,store_igdb_id,Save IGDB ID in games table,Foreign key to IGDB,integer column
+INTEGRATION,supabase,cache_game_data,Cache frequently accessed games,Reduce API calls,Store name/cover/rating
+INTEGRATION,supabase,user_games,Link users to games,Your backlog system,user_id + igdb_id + status
