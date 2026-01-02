@@ -873,6 +873,43 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS last_activity_at timestamptz;
 - `mobile/src/hooks/index.ts` - Export useStreak
 - `mobile/package.json` - Removed expo-web-browser, expo-auth-session, expo-linking
 
+### Session 10 (Dec 31, 2024 - Jan 2, 2025)
+**"Because You Loved" Recommendations Feature:**
+- Created personalized recommendation system based on user's highest-rated games
+- API endpoint: `/api/recommendations/because-you-loved?user_id=`
+- Smart algorithm queries IGDB for:
+  1. **Series games** (franchise + collection) - highest priority
+  2. **Similar games** (IGDB's curated similar_games field)
+- Removed genre fallback (was adding low-quality unrelated games)
+- Shows 10 games horizontally with "See All" button for full grid
+- "See All" navigates to CuratedListDetail with all recommendations
+
+**IGDB Query Improvements:**
+- Query `franchises` endpoint directly to get all games in a franchise
+- Query `collections` endpoint directly to get all games in a collection
+- Filter DLCs in JavaScript after fetch (IGDB WHERE clause was causing errors)
+- Valid categories: 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port
+
+**Mobile Hooks:**
+- `useBecauseYouLoved(userId)` - Fetches personalized recommendations
+- `useFriendsFavorites(userId)` - Fetches friends' favorite games
+- `useMoreFromStudio(userId)` - Fetches games from user's favorite studio
+
+**Files Created:**
+- `web/src/app/api/recommendations/because-you-loved/route.ts` - Recommendations API
+- `mobile/src/hooks/useRecommendations.ts` - Recommendation hooks
+
+**Files Modified:**
+- `web/src/lib/igdb.ts` - Added `getSmartSimilarGames()` function
+- `mobile/src/screens/DashboardScreen.tsx` - Added "Because You Loved" section with See All
+- `mobile/src/screens/CuratedListDetailScreen.tsx` - Accept optional `games` array param
+- `mobile/src/navigation/index.tsx` - Updated CuratedListDetail route params
+
+**Bug Fixes:**
+- Fixed IGDB API query errors by removing category filter from WHERE clause
+- Fixed "See All" button position (added flexDirection row to sectionHeader)
+- DLC filtering now done in JavaScript instead of IGDB query
+
 ## Upcoming Features (Backlog)
 
 Ideas ranked by implementation difficulty:
@@ -894,4 +931,4 @@ Ideas ranked by implementation difficulty:
 **Very High:**
 9. Chapter/DLC progress tracking
 10. "Where to play" availability display (external API integrations)
-11. Personalized game recommendations engine
+~~11. Personalized game recommendations engine~~ ✅ Implemented (Session 10)
