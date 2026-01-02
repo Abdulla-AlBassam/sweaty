@@ -792,58 +792,99 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       }
     }
 
-    // === TIER 3: SAME GENRES (Quality games with same genres) ===
+    // === TIER 3: SAME GENRES (Only AAA/popular games with verified ratings) ===
     if (game.genres && game.genres.length > 0) {
       try {
-        const tenYearsAgo = Math.floor(Date.now() / 1000) - (10 * 365 * 24 * 60 * 60)
+        const fiveYearsAgo = Math.floor(Date.now() / 1000) - (5 * 365 * 24 * 60 * 60)
 
-        // Use primary genre only for broader results
+        // Use primary genre only - but require high quality
         const primaryGenre = game.genres[0]
 
+        // Strict filters: 75+ rating, 50+ reviews, recent games, has rating
         const genreQuery = `
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, total_rating_count, category;
           where genres = ${primaryGenre}
             & id != ${gameId}
             & cover != null
-            & total_rating >= 70
-            & total_rating_count >= 10
-            & first_release_date >= ${tenYearsAgo};
+            & total_rating != null
+            & total_rating >= 75
+            & total_rating_count >= 50
+            & first_release_date >= ${fiveYearsAgo};
           sort total_rating desc;
           limit 30;
         `
         const genreResults = await igdbFetch('games', genreQuery) as IGDBGame[]
         const validGenreGames = (genreResults || []).filter(g => [0, 8, 9, 10].includes(g.category || 0))
-        console.log('[getSmartSimilarGames] Got', validGenreGames.length, 'GENRE-based games')
+        console.log('[getSmartSimilarGames] Got', validGenreGames.length, 'GENRE-based games (75+ rating, 50+ reviews)')
         genreGames.push(...validGenreGames)
       } catch (e) {
         console.log('[getSmartSimilarGames] Genre query failed:', e)
       }
     }
 
-    // === TIER 4: SAME THEMES (Fallback - e.g., Horror, Sci-Fi, Fantasy) ===
+    // === TIER 4: SAME THEMES (Last resort - only top-tier games) ===
     if (game.themes && game.themes.length > 0) {
       try {
-        const tenYearsAgo = Math.floor(Date.now() / 1000) - (10 * 365 * 24 * 60 * 60)
+        const fiveYearsAgo = Math.floor(Date.now() / 1000) - (5 * 365 * 24 * 60 * 60)
 
+        // Very strict: 80+ rating, 100+ reviews - only show critically acclaimed games
         const themeQuery = `
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, total_rating_count, category;
           where themes = ${game.themes[0]}
             & id != ${gameId}
             & cover != null
-            & total_rating >= 70
-            & total_rating_count >= 10
-            & first_release_date >= ${tenYearsAgo};
+            & total_rating != null
+            & total_rating >= 80
+            & total_rating_count >= 100
+            & first_release_date >= ${fiveYearsAgo};
           sort total_rating desc;
           limit 20;
         `
         const themeResults = await igdbFetch('games', themeQuery) as IGDBGame[]
         const validThemeGames = (themeResults || []).filter(g => [0, 8, 9, 10].includes(g.category || 0))
-        console.log('[getSmartSimilarGames] Got', validThemeGames.length, 'THEME-based games')
+        console.log('[getSmartSimilarGames] Got', validThemeGames.length, 'THEME-based games (80+ rating, 100+ reviews)')
         themeGames.push(...validThemeGames)
       } catch (e) {
         console.log('[getSmartSimilarGames] Theme query failed:', e)
+      }
+    }
+
+    // === FALLBACK: Name-based search if higher tiers are empty ===
+    // This helps find series games when franchise data isn't populated in IGDB
+    if (seriesGames.length === 0 && developerGames.length === 0 && similarGames.length === 0 && game.name) {
+      try {
+        // Extract base name (e.g., "The Last of Us" from "The Last of Us Part II")
+        // Remove common suffixes like Part II, 2, Remastered, etc.
+        const baseName = game.name
+          .replace(/\s+(Part\s+)?[IVX]+$/i, '')  // Roman numerals
+          .replace(/\s+\d+$/i, '')               // Numbers at end
+          .replace(/\s+(Remastered|Remake|Definitive|GOTY|Edition|Enhanced|Director's Cut)$/i, '')
+          .replace(/:\s+.*$/, '')                // Subtitles after colon
+          .trim()
+
+        if (baseName.length >= 4 && baseName !== game.name) {
+          console.log('[getSmartSimilarGames] FALLBACK: Searching for games matching:', baseName)
+
+          const searchQuery = `
+            search "${baseName}";
+            fields name, slug, summary, cover.image_id, first_release_date,
+                   genres.name, platforms.name, total_rating, category;
+            where cover != null & total_rating != null & total_rating >= 70;
+            limit 20;
+          `
+          const searchResults = await igdbFetch('games', searchQuery) as IGDBGame[]
+          const validSearchGames = (searchResults || [])
+            .filter(g => g.id !== gameId && [0, 8, 9, 10, 11].includes(g.category || 0))
+
+          console.log('[getSmartSimilarGames] FALLBACK search found', validSearchGames.length, 'games')
+
+          // Add to series games since they're from the same name/series
+          seriesGames.push(...validSearchGames)
+        }
+      } catch (e) {
+        console.log('[getSmartSimilarGames] Name search fallback failed:', e)
       }
     }
 
