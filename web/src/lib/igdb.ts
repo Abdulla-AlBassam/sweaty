@@ -626,7 +626,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     // Step 1: Get the base game's data including developer info
     const gameBody = `
       fields name, similar_games, genres, themes, franchises, collection,
-             involved_companies.company.name, involved_companies.developer;
+             involved_companies.company.id, involved_companies.company.name, involved_companies.developer;
       where id = ${gameId};
     `
     const gameData = await igdbFetch('games', gameBody) as Array<{
@@ -637,7 +637,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       franchises?: number[]
       collection?: number
       involved_companies?: Array<{
-        company: { name: string }
+        company: { id: number; name: string }
         developer: boolean
       }>
     }>
@@ -649,29 +649,28 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
 
     const game = gameData[0]
 
-    // Extract developer name(s)
-    const developers = game.involved_companies
-      ?.filter(ic => ic.developer)
-      .map(ic => ic.company.name) || []
-    const primaryDeveloper = developers[0] || null
+    // Extract developer info
+    const developerCompanies = game.involved_companies?.filter(ic => ic.developer) || []
+    const primaryDeveloper = developerCompanies[0]?.company || null
 
     console.log('[getSmartSimilarGames] Finding similar games for:', game.name)
-    console.log('[getSmartSimilarGames] Developer:', primaryDeveloper, '| Franchises:', game.franchises, '| Collection:', game.collection, '| Similar games:', game.similar_games?.length || 0)
+    console.log('[getSmartSimilarGames] Developer:', primaryDeveloper?.name, '| Franchises:', game.franchises, '| Collection:', game.collection)
+    console.log('[getSmartSimilarGames] Similar games:', game.similar_games?.length || 0, '| Genres:', game.genres, '| Themes:', game.themes)
 
-    // Collect games by priority:
-    // Tier 0: Same franchise OR same collection (series games - HIGHEST PRIORITY)
-    // Tier 0.5: Same developer (e.g., Hazelight → It Takes Two, A Way Out)
-    // Tier 1: IGDB's similar_games (curated similar-but-different)
-    // Tier 2: Same themes + high rating + popular (theme-based recommendations)
+    // Collect games by priority tiers:
+    // Tier 0: Same franchise/collection (series games)
+    // Tier 1: Same developer (studio games)
+    // Tier 2: IGDB similar_games (curated)
+    // Tier 3: Same genres (high quality only)
+    // Tier 4: Same themes (high quality only, last resort)
     const seriesGames: IGDBGame[] = []
     const developerGames: IGDBGame[] = []
     const similarGames: IGDBGame[] = []
+    const genreGames: IGDBGame[] = []
     const themeGames: IGDBGame[] = []
 
-    // PRIORITY 1: Games from the same FRANCHISE (most reliable for series)
-    // Query the franchises endpoint directly to get all games in the franchise
+    // === TIER 0: FRANCHISE/COLLECTION (Series games) ===
     if (game.franchises && game.franchises.length > 0) {
-      // First, get the franchise details which includes the games array
       const franchiseQuery = `
         fields name, games;
         where id = (${game.franchises.join(',')});
@@ -681,7 +680,6 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         games?: number[]
       }>
 
-      // Collect all game IDs from all franchises
       const franchiseGameIds: number[] = []
       for (const franchise of franchiseData) {
         console.log('[getSmartSimilarGames] Franchise:', franchise.name, 'has', franchise.games?.length || 0, 'games')
@@ -690,7 +688,6 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         }
       }
 
-      // Remove the current game and fetch details for franchise games
       const uniqueFranchiseIds = [...new Set(franchiseGameIds)].filter(id => id !== gameId)
 
       if (uniqueFranchiseIds.length > 0) {
@@ -698,19 +695,16 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, category;
           where id = (${uniqueFranchiseIds.slice(0, 50).join(',')})
-            & cover != null;
+            & cover != null
+            & category = (0, 8, 9, 10, 11);
           limit 50;
         `
         const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
-        console.log('[getSmartSimilarGames] Got', franGames.length, 'games from same FRANCHISE (series)')
+        console.log('[getSmartSimilarGames] Got', franGames.length, 'games from FRANCHISE')
         seriesGames.push(...franGames)
-      } else {
-        console.log('[getSmartSimilarGames] No other games in franchise')
       }
     }
 
-    // PRIORITY 1B: Also check collection field (some games use this instead)
-    // Query the collections endpoint directly to get all games in the collection
     if (game.collection) {
       const collectionQuery = `
         fields name, games;
@@ -730,182 +724,200 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             fields name, slug, summary, cover.image_id, first_release_date,
                    genres.name, platforms.name, total_rating, category;
             where id = (${collectionGameIds.slice(0, 50).join(',')})
-              & cover != null;
+              & cover != null
+              & category = (0, 8, 9, 10, 11);
             limit 50;
           `
           const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
-          console.log('[getSmartSimilarGames] Got', colGames.length, 'games from same COLLECTION')
+          console.log('[getSmartSimilarGames] Got', colGames.length, 'games from COLLECTION')
           seriesGames.push(...colGames)
         }
       }
     }
 
-    // PRIORITY 1.5: Games from the SAME DEVELOPER (e.g., Hazelight → It Takes Two, A Way Out)
-    // This catches cases where games aren't in the same franchise but share the studio
+    // === TIER 1: SAME DEVELOPER (Fetch directly from IGDB) ===
     if (primaryDeveloper) {
-      const devGames = await getGamesByCompany(primaryDeveloper, 20)
-      // Filter out the current game
-      const filteredDevGames = devGames.filter(g => g.id !== gameId)
-      console.log('[getSmartSimilarGames] Got', filteredDevGames.length, 'games from same DEVELOPER:', primaryDeveloper)
+      // Use involved_companies endpoint to find games by this developer
+      const devQuery = `
+        fields game;
+        where company = ${primaryDeveloper.id} & developer = true;
+        limit 100;
+      `
+      const devInvolvedData = await igdbFetch('involved_companies', devQuery) as Array<{ game: number }>
+      const devGameIds = [...new Set(devInvolvedData.map(ic => ic.game))].filter(id => id !== gameId)
 
-      // Convert to IGDBGame format for consistency
-      for (const g of filteredDevGames) {
-        developerGames.push({
-          id: g.id,
-          name: g.name,
-          slug: g.slug || undefined,
-          summary: g.summary || undefined,
-          cover: g.coverUrl ? { id: 0, image_id: g.coverUrl.split('/').pop()?.replace('.jpg', '') || '' } : undefined,
-          first_release_date: g.firstReleaseDate ? Math.floor(new Date(g.firstReleaseDate).getTime() / 1000) : undefined,
-          genres: g.genres.map((name, i) => ({ id: i, name })),
-          platforms: g.platforms.map((name, i) => ({ id: i, name })),
-          total_rating: g.rating || undefined,
-        } as IGDBGame)
+      if (devGameIds.length > 0) {
+        const devGamesBody = `
+          fields name, slug, summary, cover.image_id, first_release_date,
+                 genres.name, platforms.name, total_rating, category;
+          where id = (${devGameIds.slice(0, 30).join(',')})
+            & cover != null
+            & category = (0, 8, 9, 10, 11);
+          limit 30;
+        `
+        const devGames = await igdbFetch('games', devGamesBody) as IGDBGame[]
+        console.log('[getSmartSimilarGames] Got', devGames.length, 'games from DEVELOPER:', primaryDeveloper.name)
+        developerGames.push(...devGames)
       }
     }
 
-    // PRIORITY 2: IGDB's similar_games (curated similar-but-different games)
-    // These are games like Tomb Raider for Uncharted, Batman Arkham for Spider-Man
+    // === TIER 2: IGDB SIMILAR_GAMES (Curated by IGDB) ===
     if (game.similar_games && game.similar_games.length > 0) {
-      // Get ALL similar games from IGDB (they curate this list)
-      const similarIdsToFetch = game.similar_games
-      console.log('[getSmartSimilarGames] Fetching', similarIdsToFetch.length, 'similar_games from IGDB')
+      console.log('[getSmartSimilarGames] Fetching', game.similar_games.length, 'similar_games from IGDB')
 
       const similarBody = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, category;
-        where id = (${similarIdsToFetch.join(',')})
-          & cover != null;
+        where id = (${game.similar_games.join(',')})
+          & cover != null
+          & category = (0, 8, 9, 10, 11);
         limit 100;
       `
-      const simGames = await igdbFetch('games', similarBody) as (IGDBGame & { category?: number })[]
-      // Filter out DLCs (category 1) and other non-main game types
-      const filteredSimGames = simGames.filter(g => {
-        // Include: 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port, undefined=assume main
-        const validCategories = new Set([0, 8, 9, 10, 11, undefined])
-        return validCategories.has(g.category)
-      })
-      console.log('[getSmartSimilarGames] Got', filteredSimGames.length, 'from similar_games (after filtering DLCs)')
-      similarGames.push(...filteredSimGames)
+      const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
+      console.log('[getSmartSimilarGames] Got', simGames.length, 'from SIMILAR_GAMES')
+      similarGames.push(...simGames)
     }
 
-    // PRIORITY 3: Theme-based recommendations (same themes + high rating + popular)
-    // For Resident Evil: recommend other Horror games like Outlast, Alien Isolation, etc.
-    if (game.themes && game.themes.length > 0) {
-      console.log('[getSmartSimilarGames] Themes:', game.themes)
+    // === TIER 3: SAME GENRES (High quality mainstream games only) ===
+    if (game.genres && game.genres.length > 0) {
+      // Build query that requires ALL genres to match (more specific)
+      // Only include games with rating 80+ and released in last 10 years
+      const tenYearsAgo = Math.floor(Date.now() / 1000) - (10 * 365 * 24 * 60 * 60)
 
-      // Get games with same themes, high rating, sorted by popularity
+      // Use first 2 genres with AND logic for stricter matching
+      const genreConditions = game.genres.slice(0, 2).map(g => `genres = ${g}`).join(' & ')
+
+      const genreQuery = `
+        fields name, slug, summary, cover.image_id, first_release_date,
+               genres.name, platforms.name, total_rating, total_rating_count, category;
+        where ${genreConditions}
+          & id != ${gameId}
+          & cover != null
+          & total_rating >= 80
+          & total_rating_count >= 100
+          & first_release_date >= ${tenYearsAgo}
+          & category = (0, 8, 9, 10);
+        sort total_rating desc;
+        limit 30;
+      `
+      try {
+        const genreResults = await igdbFetch('games', genreQuery) as IGDBGame[]
+        console.log('[getSmartSimilarGames] Got', genreResults.length, 'GENRE-based games (80+ rating, 100+ reviews)')
+        genreGames.push(...genreResults)
+      } catch (e) {
+        console.log('[getSmartSimilarGames] Genre query failed:', e)
+      }
+    }
+
+    // === TIER 4: SAME THEMES (Last resort, very strict quality filters) ===
+    if (game.themes && game.themes.length > 0) {
+      // Use first theme only with very strict quality requirements
+      const fiveYearsAgo = Math.floor(Date.now() / 1000) - (5 * 365 * 24 * 60 * 60)
+
       const themeQuery = `
         fields name, slug, summary, cover.image_id, first_release_date,
                genres.name, platforms.name, total_rating, total_rating_count, category;
-        where themes = (${game.themes.slice(0, 2).join(',')})
+        where themes = ${game.themes[0]}
           & id != ${gameId}
           & cover != null
-          & total_rating >= 70
-          & total_rating_count >= 20
+          & total_rating >= 85
+          & total_rating_count >= 200
+          & first_release_date >= ${fiveYearsAgo}
           & category = (0, 8, 9, 10);
-        sort total_rating_count desc;
-        limit 50;
+        sort total_rating desc;
+        limit 20;
       `
-      const themeResults = await igdbFetch('games', themeQuery) as (IGDBGame & { category?: number })[]
-      console.log('[getSmartSimilarGames] Got', themeResults.length, 'theme-based games (rating 70+, 20+ reviews)')
-      themeGames.push(...themeResults)
+      try {
+        const themeResults = await igdbFetch('games', themeQuery) as IGDBGame[]
+        console.log('[getSmartSimilarGames] Got', themeResults.length, 'THEME-based games (85+ rating, 200+ reviews, last 5 years)')
+        themeGames.push(...themeResults)
+      } catch (e) {
+        console.log('[getSmartSimilarGames] Theme query failed:', e)
+      }
     }
 
-    // Step 2: Build final list - series first, then developer, then similar, then theme-based
+    // Step 2: Build final list with tier assignments
     const seenIds = new Set<number>()
     const finalList: IGDBGame[] = []
-    const seriesIds = new Set<number>()
-    const developerIds = new Set<number>()
-    const similarIds = new Set<number>()
-    const themeIds = new Set<number>()
+    const tierMap = new Map<number, number>() // gameId -> tier
 
-    // Add ALL series games first (franchise + collection - HIGHEST PRIORITY)
-    // No cap - include all games from the same franchise/series
+    // Add series games (Tier 0)
     for (const g of seriesGames) {
       if (!seenIds.has(g.id)) {
         seenIds.add(g.id)
-        seriesIds.add(g.id)
+        tierMap.set(g.id, 0)
         finalList.push(g)
       }
     }
-    console.log('[getSmartSimilarGames] After series (franchise+collection):', finalList.length, 'games')
+    console.log('[getSmartSimilarGames] After SERIES:', finalList.length, 'games')
 
-    // Add developer games (same studio - e.g., It Takes Two for Split Fiction)
+    // Add developer games (Tier 1)
     for (const g of developerGames) {
       if (!seenIds.has(g.id)) {
         seenIds.add(g.id)
-        developerIds.add(g.id)
+        tierMap.set(g.id, 1)
         finalList.push(g)
       }
     }
-    console.log('[getSmartSimilarGames] After developer:', finalList.length, 'unique games total')
+    console.log('[getSmartSimilarGames] After DEVELOPER:', finalList.length, 'games')
 
-    // Add ALL similar games - these are curated by IGDB and include games like
-    // Batman Arkham for Spider-Man, Tomb Raider for Uncharted, etc.
+    // Add similar games (Tier 2)
     for (const g of similarGames) {
       if (!seenIds.has(g.id)) {
         seenIds.add(g.id)
-        similarIds.add(g.id)
+        tierMap.set(g.id, 2)
         finalList.push(g)
       }
     }
-    console.log('[getSmartSimilarGames] After similar:', finalList.length, 'unique games total')
+    console.log('[getSmartSimilarGames] After SIMILAR:', finalList.length, 'games')
 
-    // Add theme-based games (same themes, high rating, popular)
-    // These fill out recommendations with quality games in the same genre/theme
+    // Add genre games (Tier 3)
+    for (const g of genreGames) {
+      if (!seenIds.has(g.id)) {
+        seenIds.add(g.id)
+        tierMap.set(g.id, 3)
+        finalList.push(g)
+      }
+    }
+    console.log('[getSmartSimilarGames] After GENRE:', finalList.length, 'games')
+
+    // Add theme games (Tier 4)
     for (const g of themeGames) {
       if (!seenIds.has(g.id)) {
         seenIds.add(g.id)
-        themeIds.add(g.id)
+        tierMap.set(g.id, 4)
         finalList.push(g)
       }
     }
-    console.log('[getSmartSimilarGames] After theme-based:', finalList.length, 'unique games total')
+    console.log('[getSmartSimilarGames] After THEME:', finalList.length, 'games total')
 
     if (finalList.length === 0) {
       return []
     }
 
-    // Step 3: Get PopScore popularity data for sorting WITHIN each tier
-    const gameIds = finalList.map(g => g.id)
-    const popularityMap = await getPopularityForGames(gameIds)
-    console.log('[getSmartSimilarGames] Got popularity data for', popularityMap.size, 'games')
+    // Step 3: Sort - TIER first, then RELEASE DATE (newer first)
+    const scoredGames = finalList.map(g => ({
+      game: g,
+      tier: tierMap.get(g.id) ?? 4,
+      releaseDate: g.first_release_date || 0,
+      rating: g.total_rating || 0
+    }))
 
-    // Step 4: Score and sort - TIER first, then RELEASE DATE (newer first)
-    // Tier 0 = series games (franchise/collection) - ALWAYS FIRST
-    // Tier 1 = same developer (e.g., Hazelight games)
-    // Tier 2 = similar_games (IGDB curated)
-    // Tier 3 = theme-based games (same themes, high rating, popular)
-
-    const scoredGames = finalList.map(g => {
-      // Determine tier: series = 0, developer = 1, similar = 2, theme = 3
-      let tier = 3 // Default to theme
-      if (seriesIds.has(g.id)) tier = 0
-      else if (developerIds.has(g.id)) tier = 1
-      else if (similarIds.has(g.id)) tier = 2
-
-      const releaseDate = g.first_release_date || 0
-      const rating = g.total_rating || 0
-
-      return { game: g, tier, rating, releaseDate }
-    })
-
-    // SORT: tier first (ascending), then release date (descending - newer first)
     scoredGames.sort((a, b) => {
+      // Primary: tier (lower is better)
       if (a.tier !== b.tier) return a.tier - b.tier
-      return b.releaseDate - a.releaseDate // Newer games first
+      // Secondary: release date (newer first)
+      return b.releaseDate - a.releaseDate
     })
 
     const result = scoredGames.slice(0, limit)
 
-    // Log the final results with tier info
+    // Log final results
     console.log('[getSmartSimilarGames] Final', result.length, 'games:')
+    const tierLabels = ['SERIES', 'DEVELOPER', 'SIMILAR', 'GENRE', 'THEME']
     result.forEach((g, i) => {
-      const tierLabels = ['SERIES', 'DEVELOPER', 'SIMILAR', 'THEME']
-      const tierLabel = tierLabels[g.tier] || 'UNKNOWN'
       const year = g.releaseDate ? new Date(g.releaseDate * 1000).getFullYear() : '?'
-      console.log(`  ${i + 1}. ${g.game.name} [${tierLabel}] (${year}, rating: ${g.rating.toFixed(0)})`)
+      console.log(`  ${i + 1}. ${g.game.name} [${tierLabels[g.tier]}] (${year}, ${g.rating.toFixed(0)})`)
     })
 
     return result.map(g => transformGame(g.game))
