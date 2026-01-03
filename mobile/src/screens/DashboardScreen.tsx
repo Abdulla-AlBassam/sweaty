@@ -330,105 +330,93 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* FOR YOU Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0) || studioLoading || (studio && studioGames.length > 0)) && (
-          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base }]}>
-            <SectionGroupHeader title="For You" />
+        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base }]}>
+          <SectionGroupHeader title="For You" />
 
-            {/* BECAUSE YOU LOVED */}
-            {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.forYouTitle}>
-                    Because You Loved{' '}
-                    <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
-                  </Text>
-                  {becauseYouLovedGames.length > 10 && (
+          {/* BECAUSE YOU LOVED */}
+          {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.forYouTitle}>
+                  Because You Loved{' '}
+                  <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
+                </Text>
+                {becauseYouLovedGames.length > 10 && (
+                  <PressableScale
+                    onPress={() => navigation.navigate('CuratedListDetail', {
+                      listSlug: 'because-you-loved',
+                      listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
+                      gameIds: becauseYouLovedGames.map(g => g.id),
+                      games: becauseYouLovedGames,
+                    })}
+                    haptic="light"
+                  >
+                    <Text style={styles.seeAllText}>See All</Text>
+                  </PressableScale>
+                )}
+              </View>
+              {lovedLoading ? (
+                <HorizontalSkeleton />
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalScroll}
+                >
+                  {becauseYouLovedGames.slice(0, 10).map((game) => (
                     <PressableScale
-                      onPress={() => navigation.navigate('CuratedListDetail', {
-                        listSlug: 'because-you-loved',
-                        listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
-                        gameIds: becauseYouLovedGames.map(g => g.id),
-                        games: becauseYouLovedGames,
-                      })}
+                      key={game.id}
+                      onPress={() => handleGamePress(game.id)}
                       haptic="light"
+                      scale={0.95}
                     >
-                      <Text style={styles.seeAllText}>See All</Text>
+                      <Image
+                        source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                        style={styles.gameCover}
+                      />
                     </PressableScale>
-                  )}
-                </View>
-                {lovedLoading ? (
-                  <HorizontalSkeleton />
-                ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalScroll}
-                  >
-                    {becauseYouLovedGames.slice(0, 10).map((game) => (
-                      <PressableScale
-                        key={game.id}
-                        onPress={() => handleGamePress(game.id)}
-                        haptic="light"
-                        scale={0.95}
-                      >
-                        <Image
-                          source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                          style={styles.gameCover}
-                        />
-                      </PressableScale>
-                    ))}
-                  </ScrollView>
-                )}
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )}
+
+          {/* MORE FROM STUDIO */}
+          {(studioLoading || (studio && studioGames.length > 0)) && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.forYouTitle}>
+                  More From{' '}
+                  <Text style={styles.accentText}>{studio || '...'}</Text>
+                </Text>
               </View>
-            )}
+              {studioLoading ? (
+                <HorizontalSkeleton />
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalScroll}
+                >
+                  {studioGames.map((game) => (
+                    <PressableScale
+                      key={game.id}
+                      onPress={() => handleGamePress(game.id)}
+                      haptic="light"
+                      scale={0.95}
+                    >
+                      <Image
+                        source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                        style={styles.gameCover}
+                      />
+                    </PressableScale>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )}
 
-            {/* MORE FROM STUDIO */}
-            {(studioLoading || (studio && studioGames.length > 0)) && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.forYouTitle}>
-                    More From{' '}
-                    <Text style={styles.accentText}>{studio || '...'}</Text>
-                  </Text>
-                </View>
-                {studioLoading ? (
-                  <HorizontalSkeleton />
-                ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalScroll}
-                  >
-                    {studioGames.map((game) => (
-                      <PressableScale
-                        key={game.id}
-                        onPress={() => handleGamePress(game.id)}
-                        haptic="light"
-                        scale={0.95}
-                      >
-                        <Image
-                          source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                          style={styles.gameCover}
-                        />
-                      </PressableScale>
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* ═══════════════════════════════════════════════ */}
-        {/* NEWS & DISCOVER Section Group */}
-        {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
-          <SectionGroupHeader title="News & Discover" />
-
-          {/* Gaming News */}
-          <NewsSection refreshKey={refreshCount} />
-
-          {/* Featured Curated List */}
+          {/* 2025 ESSENTIALS */}
           {listsLoading ? (
             <View style={styles.listsLoading}>
               <LoadingSpinner size="large" />
@@ -436,6 +424,16 @@ export default function DashboardScreen() {
           ) : featuredCuratedList ? (
             <CuratedListRow list={featuredCuratedList} />
           ) : null}
+        </View>
+
+        {/* ═══════════════════════════════════════════════ */}
+        {/* NEWS Section Group */}
+        {/* ═══════════════════════════════════════════════ */}
+        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+          <SectionGroupHeader title="News" />
+
+          {/* Gaming News */}
+          <NewsSection refreshKey={refreshCount} />
         </View>
       </ScrollView>
     </SafeAreaView>
