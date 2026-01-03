@@ -822,21 +822,29 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
 
     // === TIER 2: IGDB SIMILAR_GAMES (Curated by IGDB editors) ===
+    // Filter out obscure games by requiring minimum rating count
     if (game.similar_games && game.similar_games.length > 0) {
       try {
         console.log('[getSmartSimilarGames] Fetching', game.similar_games.length, 'similar_games from IGDB')
 
         const similarBody = `
           fields name, slug, summary, cover.image_id, first_release_date,
-                 genres.name, platforms.name, total_rating, category;
+                 genres.name, platforms.name, total_rating, total_rating_count, category;
           where id = (${game.similar_games.join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
           limit 100;
         `
         const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
-        const validSimGames = (simGames || []).filter(g =>
-          VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
-        )
-        console.log('[getSmartSimilarGames] Got', validSimGames.length, 'from SIMILAR_GAMES')
+
+        // Filter: valid category, not special edition, AND has at least 20 ratings (not obscure)
+        const validSimGames = (simGames || []).filter(g => {
+          if (!VALID_CATEGORIES.includes(g.category || 0)) return false
+          if (isSpecialEdition(g.name || '')) return false
+          // Require minimum ratings to filter out obscure indie games
+          if ((g.total_rating_count || 0) < 20) return false
+          return true
+        })
+
+        console.log('[getSmartSimilarGames] Got', validSimGames.length, 'from SIMILAR_GAMES (filtered obscure)')
         similarGames.push(...validSimGames)
       } catch (e) {
         console.log('[getSmartSimilarGames] Similar games query failed:', e)
