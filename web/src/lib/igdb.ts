@@ -594,7 +594,7 @@ export async function getGamesByCompany(companyName: string, limit: number = 15)
 
 // Fetch popularity data from IGDB PopScore API
 // popularity_type: 1=Visits, 2=Want to Play, 3=Playing, 4=Played, 5=Steam Peak, 6=Positive Reviews
-async function getPopularityForGames(gameIds: number[]): Promise<Map<number, number>> {
+export async function getPopularityForGames(gameIds: number[]): Promise<Map<number, number>> {
   const popularityMap = new Map<number, number>()
 
   if (gameIds.length === 0) return popularityMap

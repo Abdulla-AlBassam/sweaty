@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSmartSimilarGames, getGameById } from '@/lib/igdb'
+import { getSmartSimilarGames, getGameById, getPopularityForGames } from '@/lib/igdb'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -95,8 +95,20 @@ export async function GET(request: Request) {
       const filteredGames = similarGames.filter(game => !userGameIds.has(game.id))
       console.log('[BecauseYouLoved] After filtering user library:', filteredGames.length, 'games remaining')
 
+      // Fetch PopScore (popularity) data for the filtered games
+      const gameIds = filteredGames.map(g => g.id)
+      const popularityMap = await getPopularityForGames(gameIds)
+      console.log('[BecauseYouLoved] Got PopScore data for', popularityMap.size, 'games')
+
+      // Sort by PopScore (most popular first), then by original order for games without PopScore
+      const sortedGames = [...filteredGames].sort((a, b) => {
+        const aPopularity = popularityMap.get(a.id) || 0
+        const bPopularity = popularityMap.get(b.id) || 0
+        return bPopularity - aPopularity
+      })
+
       // Return all recommendations (up to 100) - mobile app will show 10 with "See All"
-      const recommendations = filteredGames
+      const recommendations = sortedGames
         .slice(0, 100)
         .map(game => ({
           id: game.id,
@@ -109,13 +121,16 @@ export async function GET(request: Request) {
       // If we found at least 3 recommendations, return them
       if (recommendations.length >= 3) {
         console.log('[BecauseYouLoved] SUCCESS! Returning', recommendations.length, 'recs for', basedOnGame.name)
+        console.log('[BecauseYouLoved] Top 5 by PopScore:', recommendations.slice(0, 5).map(r => r.name).join(', '))
         return NextResponse.json({
           basedOnGame,
           recommendations,
-          apiVersion: 2,
+          apiVersion: 3, // v3: Now sorted by PopScore
           debug: {
             gamesRated4Plus: lovedGames.length,
-            gamesTried: gamesToTry.map(g => g.game_id).indexOf(selectedLog) + 1
+            gamesTried: gamesToTry.map(g => g.game_id).indexOf(selectedLog) + 1,
+            gamesWithPopScore: popularityMap.size,
+            sortedByPopScore: true
           }
         }, {
           headers: {
