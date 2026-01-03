@@ -20,7 +20,7 @@ import { Ionicons } from '@expo/vector-icons'
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists, useCommunityReviews } from '../hooks/useSupabase'
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
-import { useBecauseYouLoved, useFriendsFavorites, useMoreFromStudio } from '../hooks/useRecommendations'
+import { useBecauseYouLoved, useFriendsFavorites } from '../hooks/useRecommendations'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
@@ -58,7 +58,6 @@ export default function DashboardScreen() {
   // Personalized recommendations
   const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id)
   const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
-  const { studio, games: studioGames, isLoading: studioLoading, refetch: refetchStudio } = useMoreFromStudio(user?.id)
 
   // Community activity (recent reviews)
   const { reviews: communityReviews, isLoading: communityLoading, refetch: refetchCommunity } = useCommunityReviews()
@@ -97,11 +96,10 @@ export default function DashboardScreen() {
       refetchFriends(),
       refetchLoved(),
       refetchFavorites(),
-      refetchStudio(),
       refetchCommunity(),
     ])
     setRefreshing(false)
-  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchStudio, refetchCommunity])
+  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchCommunity])
 
 
   // Currently playing games
@@ -424,41 +422,6 @@ export default function DashboardScreen() {
                   contentContainerStyle={styles.horizontalScroll}
                 >
                   {becauseYouLovedGames.slice(0, 10).map((game) => (
-                    <PressableScale
-                      key={game.id}
-                      onPress={() => handleGamePress(game.id)}
-                      haptic="light"
-                      scale={0.95}
-                    >
-                      <Image
-                        source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                        style={styles.gameCover}
-                      />
-                    </PressableScale>
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-          )}
-
-          {/* MORE FROM STUDIO */}
-          {(studioLoading || (studio && studioGames.length > 0)) && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.forYouTitle}>
-                  More From{' '}
-                  <Text style={styles.accentText}>{studio || '...'}</Text>
-                </Text>
-              </View>
-              {studioLoading ? (
-                <HorizontalSkeleton />
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalScroll}
-                >
-                  {studioGames.map((game) => (
                     <PressableScale
                       key={game.id}
                       onPress={() => handleGamePress(game.id)}

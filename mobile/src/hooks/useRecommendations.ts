@@ -31,11 +31,6 @@ interface FriendsFavoritesData {
   games: GameWithFriends[]
 }
 
-interface MoreFromStudioData {
-  studio: string | null
-  games: Game[]
-}
-
 // ============================================
 // BECAUSE YOU LOVED HOOK
 // ============================================
@@ -138,63 +133,6 @@ export function useFriendsFavorites(userId: string | undefined) {
   }, [fetch_])
 
   return {
-    games,
-    isLoading,
-    error,
-    refetch: fetch_
-  }
-}
-
-// ============================================
-// MORE FROM STUDIO HOOK
-// ============================================
-
-export function useMoreFromStudio(userId: string | undefined) {
-  const [studio, setStudio] = useState<string | null>(null)
-  const [games, setGames] = useState<Game[]>([])
-  const [isLoading, setIsLoading] = useState(!!userId) // Start loading if we have userId
-  const [error, setError] = useState<string | null>(null)
-
-  const fetch_ = useCallback(async () => {
-    if (!userId) {
-      setIsLoading(false)
-      setStudio(null)
-      setGames([])
-      return
-    }
-
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}/api/recommendations/more-from-studio?user_id=${userId}`
-      )
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch studio games')
-      }
-
-      const data: MoreFromStudioData = await response.json()
-      console.log('[MoreFromStudio] API Response:', JSON.stringify(data, null, 2))
-      setStudio(data.studio)
-      setGames(data.games || [])
-    } catch (err) {
-      console.error('[MoreFromStudio] Error:', err)
-      setError('Failed to load studio games')
-      setStudio(null)
-      setGames([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [userId])
-
-  useEffect(() => {
-    fetch_()
-  }, [fetch_])
-
-  return {
-    studio,
     games,
     isLoading,
     error,

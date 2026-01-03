@@ -106,19 +106,14 @@ export default function SearchScreen() {
     }
   }
 
-  // Load community popular games from local database (what Sweaty users like)
+  // Load community popular games - most logged games by Sweaty users, sorted by PopScore
   const loadCommunityGames = async () => {
     try {
       setIsLoadingCommunity(true)
-      const { data, error } = await supabase
-        .from('games_cache')
-        .select('id, name, cover_url')
-        .not('cover_url', 'is', null)
-        .order('rating', { ascending: false, nullsFirst: false })
-        .limit(15)
-
-      if (error) throw error
-      setCommunityGames(data || [])
+      const response = await fetch(`${API_CONFIG.baseUrl}/api/community/popular?limit=15`)
+      if (!response.ok) throw new Error('Failed to fetch community games')
+      const data = await response.json()
+      setCommunityGames(data.games || [])
     } catch (err) {
       console.error('Failed to load community games:', err)
     } finally {

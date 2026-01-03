@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getPopularityForGames } from '@/lib/igdb'
 
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID!
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET!
@@ -52,6 +53,29 @@ export async function GET(
 
     const game = games[0]
 
+    // Process similar games with PopScore sorting
+    let similarGames: Array<{ id: number; name: string; coverUrl: string | null }> = []
+
+    if (game.similar_games && game.similar_games.length > 0) {
+      // Get similar game IDs and fetch PopScore
+      const similarGameIds = game.similar_games.map((g: any) => g.id)
+      const popularityMap = await getPopularityForGames(similarGameIds)
+
+      // Transform and sort by PopScore
+      similarGames = game.similar_games
+        .map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          coverUrl: g.cover?.image_id
+            ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
+            : null,
+          popScore: popularityMap.get(g.id) || 0
+        }))
+        .sort((a: any, b: any) => b.popScore - a.popScore)
+        .slice(0, 10)
+        .map(({ id, name, coverUrl }: any) => ({ id, name, coverUrl }))
+    }
+
     return NextResponse.json({
       id: game.id,
       name: game.name,
@@ -70,13 +94,7 @@ export async function GET(
         videoId: v.video_id,
         name: v.name || 'Trailer'
       })) || [],
-      similarGames: game.similar_games?.slice(0, 10).map((g: any) => ({
-        id: g.id,
-        name: g.name,
-        coverUrl: g.cover?.image_id
-          ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
-          : null
-      })) || []
+      similarGames
     })
   } catch (error) {
     console.error('Error fetching game details:', error)
