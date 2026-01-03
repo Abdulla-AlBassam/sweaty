@@ -780,8 +780,11 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
 
     // === TIER 1: SAME DEVELOPER (e.g., Hazelight for Split Fiction -> It Takes Two) ===
-    if (primaryDeveloper?.id) {
+    // Only include developer games that share at least one genre (avoid PES showing for MGS)
+    if (primaryDeveloper?.id && game.genres && game.genres.length > 0) {
       try {
+        const baseGenreIds = new Set(game.genres)
+
         const devQuery = `
           fields game;
           where company = ${primaryDeveloper.id} & developer = true;
@@ -793,15 +796,24 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         if (devGameIds.length > 0) {
           const devGamesBody = `
             fields name, slug, summary, cover.image_id, first_release_date,
-                   genres.name, platforms.name, total_rating, category;
+                   genres.id, genres.name, platforms.name, total_rating, category;
             where id = (${devGameIds.slice(0, 30).join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
             limit 30;
           `
           const devGames = await igdbFetch('games', devGamesBody) as IGDBGame[]
-          const validDevGames = (devGames || []).filter(g =>
-            VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
-          )
-          console.log('[getSmartSimilarGames] Got', validDevGames.length, 'games from DEVELOPER:', primaryDeveloper.name)
+
+          // Filter: valid category, not special edition, AND shares at least one genre
+          const validDevGames = (devGames || []).filter(g => {
+            if (!VALID_CATEGORIES.includes(g.category || 0)) return false
+            if (isSpecialEdition(g.name || '')) return false
+
+            // Check genre overlap - must share at least one genre with base game
+            const devGenreIds = g.genres?.map(genre => genre.id) || []
+            const hasGenreOverlap = devGenreIds.some(id => baseGenreIds.has(id))
+            return hasGenreOverlap
+          })
+
+          console.log('[getSmartSimilarGames] Got', validDevGames.length, 'games from DEVELOPER:', primaryDeveloper.name, '(filtered by genre overlap)')
           developerGames.push(...validDevGames)
         }
       } catch (e) {
