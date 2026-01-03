@@ -10,9 +10,23 @@
 const MAJOR_PLATFORMS = [6, 48, 167, 49, 169, 130]
 const MAJOR_PLATFORMS_FILTER = `platforms = (${MAJOR_PLATFORMS.join(',')})`
 
-// Valid game categories (exclude DLCs, mods, episodes, bundles)
-// 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port
-const VALID_CATEGORIES = [0, 8, 9, 10, 11]
+// Valid game categories (exclude DLCs, mods, episodes, bundles, seasons)
+// 0=Main, 4=Standalone Expansion, 8=Remake, 9=Remaster
+const VALID_CATEGORIES = [0, 4, 8, 9]
+
+// Edition keywords to filter out (Ultimate Edition, GOTY, Deluxe, etc.)
+const EDITION_KEYWORDS = [
+  'edition', 'ultimate', 'deluxe', 'gold', 'goty', 'game of the year',
+  'complete', 'definitive', 'premium', 'collector', 'special', 'enhanced',
+  'director\'s cut', 'extended', 'anniversary', 'legendary', 'royal',
+  'season pass', 'bundle', 'pack'
+]
+
+// Check if a game name contains edition keywords (case-insensitive)
+function isSpecialEdition(name: string): boolean {
+  const lowerName = name.toLowerCase()
+  return EDITION_KEYWORDS.some(keyword => lowerName.includes(keyword))
+}
 
 // ============================================
 // TYPES
@@ -717,8 +731,10 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             limit 50;
           `
           const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
-          // Filter valid categories in JS (main game, remake, remaster, expanded, port)
-          const validFranGames = (franGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
+          // Filter valid categories and exclude special editions
+          const validFranGames = (franGames || []).filter(g =>
+            VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
+          )
           console.log('[getSmartSimilarGames] Got', validFranGames.length, 'games from FRANCHISE')
           seriesGames.push(...validFranGames)
         }
@@ -751,7 +767,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
               limit 50;
             `
             const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
-            const validColGames = (colGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
+            const validColGames = (colGames || []).filter(g =>
+              VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
+            )
             console.log('[getSmartSimilarGames] Got', validColGames.length, 'games from COLLECTION')
             seriesGames.push(...validColGames)
           }
@@ -780,7 +798,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             limit 30;
           `
           const devGames = await igdbFetch('games', devGamesBody) as IGDBGame[]
-          const validDevGames = (devGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
+          const validDevGames = (devGames || []).filter(g =>
+            VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
+          )
           console.log('[getSmartSimilarGames] Got', validDevGames.length, 'games from DEVELOPER:', primaryDeveloper.name)
           developerGames.push(...validDevGames)
         }
@@ -801,7 +821,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           limit 100;
         `
         const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
-        const validSimGames = (simGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
+        const validSimGames = (simGames || []).filter(g =>
+          VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
+        )
         console.log('[getSmartSimilarGames] Got', validSimGames.length, 'from SIMILAR_GAMES')
         similarGames.push(...validSimGames)
       } catch (e) {
@@ -833,7 +855,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           limit 30;
         `
         const genreResults = await igdbFetch('games', genreQuery) as IGDBGame[]
-        const validGenreGames = (genreResults || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
+        const validGenreGames = (genreResults || []).filter(g =>
+          VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
+        )
         console.log('[getSmartSimilarGames] Got', validGenreGames.length, 'GENRE-based games (75+ rating, 50+ reviews)')
         genreGames.push(...validGenreGames)
       } catch (e) {
@@ -862,7 +886,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           limit 20;
         `
         const themeResults = await igdbFetch('games', themeQuery) as IGDBGame[]
-        const validThemeGames = (themeResults || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
+        const validThemeGames = (themeResults || []).filter(g =>
+          VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
+        )
         console.log('[getSmartSimilarGames] Got', validThemeGames.length, 'THEME-based games (80+ rating, 100+ reviews)')
         themeGames.push(...validThemeGames)
       } catch (e) {
@@ -895,7 +921,10 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           `
           const searchResults = await igdbFetch('games', searchQuery) as IGDBGame[]
           const validSearchGames = (searchResults || [])
-            .filter(g => g.id !== gameId && VALID_CATEGORIES.includes(g.category || 0))
+            .filter(g => g.id !== gameId &&
+              VALID_CATEGORIES.includes(g.category || 0) &&
+              !isSpecialEdition(g.name || '')
+            )
 
           console.log('[getSmartSimilarGames] FALLBACK search found', validSearchGames.length, 'games')
 
