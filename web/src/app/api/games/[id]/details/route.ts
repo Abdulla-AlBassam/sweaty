@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPopularityForGames } from '@/lib/igdb'
 
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID!
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET!
 
-// Minimum PopScore threshold to filter out obscure games
-// Games below this are considered too niche/unknown to recommend
-const MIN_POPSCORE_THRESHOLD = 5
-
 // Major platforms only (no mobile, no old consoles)
 const MAJOR_PLATFORMS = [6, 48, 167, 49, 169, 130] // PC, PS4, PS5, Xbox One, Xbox Series, Switch
+
+// Current timestamp for filtering unreleased games
+const NOW_UNIX = Math.floor(Date.now() / 1000)
 
 async function getAccessToken(): Promise<string> {
   const response = await fetch(
@@ -20,7 +18,8 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
-// Fetch popular games by genre as fallback when similar_games has too few quality results
+// Fetch popular games by genre as fallback when similar_games has too few results
+// Only returns RELEASED games with good ratings to avoid unreleased hype games
 async function getPopularGamesByGenre(
   token: string,
   genreIds: number[],
@@ -36,9 +35,11 @@ async function getPopularGamesByGenre(
       & cover != null
       & category = (0, 8, 9, 10, 11)
       & platforms = (${MAJOR_PLATFORMS.join(',')})
-      & total_rating_count > 50;
+      & first_release_date < ${NOW_UNIX}
+      & total_rating_count > 100
+      & total_rating > 70;
     sort total_rating_count desc;
-    limit ${limit * 2};
+    limit ${limit};
   `
 
   try {
@@ -56,23 +57,13 @@ async function getPopularGamesByGenre(
 
     const games = await response.json()
 
-    // Get PopScore and filter
-    const gameIds = games.map((g: any) => g.id)
-    const popularityMap = await getPopularityForGames(gameIds)
-
-    return games
-      .map((g: any) => ({
-        id: g.id,
-        name: g.name,
-        coverUrl: g.cover?.image_id
-          ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
-          : null,
-        popScore: popularityMap.get(g.id) || 0
-      }))
-      .filter((g: any) => g.popScore >= MIN_POPSCORE_THRESHOLD)
-      .sort((a: any, b: any) => b.popScore - a.popScore)
-      .slice(0, limit)
-      .map(({ id, name, coverUrl }: any) => ({ id, name, coverUrl }))
+    return games.map((g: any) => ({
+      id: g.id,
+      name: g.name,
+      coverUrl: g.cover?.image_id
+        ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
+        : null
+    }))
   } catch (error) {
     console.error('Genre fallback error:', error)
     return []
@@ -119,49 +110,30 @@ export async function GET(
 
     const game = games[0]
 
-    // Process similar games with PopScore filtering and sorting
+    // Process similar games - trust IGDB's order, just filter games with covers
     let similarGames: Array<{ id: number; name: string; coverUrl: string | null }> = []
 
     if (game.similar_games && game.similar_games.length > 0) {
-      // Get similar game IDs and fetch PopScore
-      const similarGameIds = game.similar_games.map((g: any) => g.id)
-      const popularityMap = await getPopularityForGames(similarGameIds)
-
-      // Transform, filter obscure games, and sort by PopScore
+      // Keep IGDB's original order - they've already curated these as similar
+      // Only filter out games without covers
       similarGames = game.similar_games
+        .filter((g: any) => g.cover?.image_id) // Must have cover art
+        .slice(0, 10)
         .map((g: any) => ({
           id: g.id,
           name: g.name,
-          coverUrl: g.cover?.image_id
-            ? `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
-            : null,
-          popScore: popularityMap.get(g.id) || 0
+          coverUrl: `https://images.igdb.com/igdb/image/upload/t_cover_big/${g.cover.image_id}.jpg`
         }))
-        .filter((g: any) => g.popScore >= MIN_POPSCORE_THRESHOLD) // Filter out obscure games
-        .sort((a: any, b: any) => b.popScore - a.popScore)
-        .slice(0, 10)
-        .map(({ id, name, coverUrl }: any) => ({ id, name, coverUrl }))
 
-      console.log(`[SimilarGames] Filtered from ${game.similar_games.length} to ${similarGames.length} games (threshold: ${MIN_POPSCORE_THRESHOLD})`)
+      console.log(`[SimilarGames] Using ${similarGames.length} of ${game.similar_games.length} IGDB similar games`)
     }
 
-    // If we have too few quality similar games, fall back to genre-based recommendations
-    if (similarGames.length < 5 && game.genres && game.genres.length > 0) {
-      console.log(`[SimilarGames] Only ${similarGames.length} quality results, fetching genre fallback`)
+    // Only fall back to genre if IGDB has NO similar games at all
+    if (similarGames.length === 0 && game.genres && game.genres.length > 0) {
+      console.log(`[SimilarGames] No IGDB similar games, using genre fallback`)
       const genreIds = game.genres.map((g: any) => g.id)
-      const existingIds = new Set(similarGames.map(g => g.id))
-
-      const genreFallback = await getPopularGamesByGenre(token, genreIds, parseInt(gameId), 10 - similarGames.length)
-
-      // Add fallback games that aren't already in the list
-      for (const fallbackGame of genreFallback) {
-        if (!existingIds.has(fallbackGame.id) && similarGames.length < 10) {
-          similarGames.push(fallbackGame)
-          existingIds.add(fallbackGame.id)
-        }
-      }
-
-      console.log(`[SimilarGames] After genre fallback: ${similarGames.length} games`)
+      similarGames = await getPopularGamesByGenre(token, genreIds, parseInt(gameId), 10)
+      console.log(`[SimilarGames] Genre fallback returned ${similarGames.length} games`)
     }
 
     return NextResponse.json({
