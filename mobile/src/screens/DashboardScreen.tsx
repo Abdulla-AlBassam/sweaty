@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { MainStackParamList } from '../navigation'
+import { Ionicons } from '@expo/vector-icons'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
@@ -30,10 +31,24 @@ import StackedAvatars from '../components/StackedAvatars'
 import NewsSection from '../components/NewsSection'
 import Skeleton from '../components/Skeleton'
 
+// Background colors for section groups
+const SectionBg = {
+  base: Colors.background,        // #0f0f0f
+  alternate: '#131315',           // Slightly lighter
+}
+
+// Get time-based greeting
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Morning'
+  if (hour < 17) return 'Afternoon'
+  if (hour < 21) return 'Evening'
+  return 'Night'
+}
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { logs, refetch: refetchLogs } = useGameLogs(user?.id)
   const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
 
@@ -92,6 +107,17 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
+  // Quick stats
+  const stats = useMemo(() => {
+    const totalGames = logs.length
+    const completedGames = logs.filter(l => l.status === 'completed').length
+    const ratedLogs = logs.filter(l => l.rating != null && l.rating > 0)
+    const avgRating = ratedLogs.length > 0
+      ? (ratedLogs.reduce((sum, l) => sum + (l.rating || 0), 0) / ratedLogs.length).toFixed(1)
+      : '—'
+    return { totalGames, completedGames, avgRating }
+  }, [logs])
+
   // Get 2025 Essentials curated list (or first available)
   const featuredCuratedList = useMemo(() => {
     const essentials = curatedLists.find(list => list.slug === '2025-essentials')
@@ -113,6 +139,13 @@ export default function DashboardScreen() {
         <Skeleton key={i} width={105} height={140} borderRadius={BorderRadius.md} />
       ))}
     </ScrollView>
+  )
+
+  // Section Group Header
+  const SectionGroupHeader = ({ title }: { title: string }) => (
+    <View style={styles.groupHeader}>
+      <Text style={styles.groupHeaderText}>{title}</Text>
+    </View>
   )
 
   return (
@@ -140,211 +173,270 @@ export default function DashboardScreen() {
           <SweatDropIcon size={40} isRefreshing={refreshing} />
         </PressableScale>
 
-        {/* NOW PLAYING Section */}
-        {currentlyPlaying.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>Now Playing</Text>
-                <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
+        {/* Personalized Greeting + Quick Stats */}
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greetingText}>
+            {getGreeting()}, <Text style={styles.greetingName}>{profile?.display_name || profile?.username || 'Gamer'}</Text>
+          </Text>
+          <View style={styles.statsRow}>
+            {profile?.current_streak && profile.current_streak > 0 ? (
+              <View style={styles.statItem}>
+                <Ionicons name="flame" size={16} color="#FF6B35" />
+                <Text style={styles.statValue}>{profile.current_streak}</Text>
               </View>
+            ) : null}
+            <View style={styles.statItem}>
+              <Ionicons name="game-controller" size={16} color={Colors.textSecondary} />
+              <Text style={styles.statValue}>{stats.totalGames}</Text>
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScroll}
-            >
-              {currentlyPlaying.map((log: any) => {
-                const game = log.games_cache
-                if (!game) return null
-                const coverUrl = game.cover_url
-                  ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
-                  : null
-                return (
-                  <PressableScale
-                    key={log.id}
-                    onPress={() => handleGamePress(game.id)}
-                    haptic="light"
-                    scale={0.95}
-                  >
-                    {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.gameCover} />
-                    ) : (
-                      <View style={[styles.gameCover, styles.coverPlaceholder]}>
-                        <Text style={styles.placeholderText}>?</Text>
-                      </View>
-                    )}
-                  </PressableScale>
-                )
-              })}
-            </ScrollView>
+            <View style={styles.statItem}>
+              <Ionicons name="checkmark-circle" size={16} color={Colors.accent} />
+              <Text style={styles.statValue}>{stats.completedGames}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Ionicons name="star" size={16} color="#FFD700" />
+              <Text style={styles.statValue}>{stats.avgRating}</Text>
+            </View>
           </View>
-        )}
+        </View>
 
-        {/* FRIENDS ARE PLAYING Section */}
-        {(friendsLoading || friendsPlaying.length > 0) && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Friends Are Playing</Text>
-            </View>
-            {friendsLoading ? (
-              <HorizontalSkeleton />
-            ) : (
+        {/* ═══════════════════════════════════════════════ */}
+        {/* YOUR GAMES Section Group */}
+        {/* ═══════════════════════════════════════════════ */}
+        {currentlyPlaying.length > 0 && (
+          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base }]}>
+            <SectionGroupHeader title="Your Games" />
+
+            {/* NOW PLAYING */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionTitleRow}>
+                  <Text style={styles.sectionTitle}>Now Playing</Text>
+                  <Animated.View style={[styles.pulsingDot, { opacity: pulseAnim }]} />
+                </View>
+              </View>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScroll}
               >
-                {friendsPlaying.map((game) => (
-                  <TouchableOpacity
-                    key={game.id}
-                    style={styles.friendsGameCard}
-                    onPress={() => handleGamePress(game.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Image
-                      source={{ uri: getIGDBImageUrl(game.cover_url) }}
-                      style={styles.gameCover}
-                    />
-                    <StackedAvatars users={game.friends} />
-                  </TouchableOpacity>
-                ))}
+                {currentlyPlaying.map((log: any) => {
+                  const game = log.games_cache
+                  if (!game) return null
+                  const coverUrl = game.cover_url
+                    ? getIGDBImageUrl(game.cover_url, 'coverBig2x')
+                    : null
+                  return (
+                    <PressableScale
+                      key={log.id}
+                      onPress={() => handleGamePress(game.id)}
+                      haptic="light"
+                      scale={0.95}
+                    >
+                      {coverUrl ? (
+                        <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+                      ) : (
+                        <View style={[styles.gameCover, styles.coverPlaceholder]}>
+                          <Text style={styles.placeholderText}>?</Text>
+                        </View>
+                      )}
+                    </PressableScale>
+                  )
+                })}
               </ScrollView>
-            )}
-          </View>
-        )}
-
-        {/* FOR YOU: BECAUSE YOU LOVED [GAME] */}
-        {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.forYouTitle}>
-                Because You Loved{' '}
-                <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
-              </Text>
-              {becauseYouLovedGames.length > 10 && (
-                <PressableScale
-                  onPress={() => navigation.navigate('CuratedListDetail', {
-                    listSlug: 'because-you-loved',
-                    listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
-                    gameIds: becauseYouLovedGames.map(g => g.id),
-                    games: becauseYouLovedGames,
-                  })}
-                  haptic="light"
-                >
-                  <Text style={styles.seeAllText}>See All</Text>
-                </PressableScale>
-              )}
             </View>
-            {lovedLoading ? (
-              <HorizontalSkeleton />
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {becauseYouLovedGames.slice(0, 10).map((game) => (
-                  <PressableScale
-                    key={game.id}
-                    onPress={() => handleGamePress(game.id)}
-                    haptic="light"
-                    scale={0.95}
+          </View>
+        )}
+
+        {/* ═══════════════════════════════════════════════ */}
+        {/* SOCIAL Section Group */}
+        {/* ═══════════════════════════════════════════════ */}
+        {(friendsLoading || friendsPlaying.length > 0 || favoritesLoading || friendsFavorites.length > 0) && (
+          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+            <SectionGroupHeader title="Social" />
+
+            {/* FRIENDS ARE PLAYING */}
+            {(friendsLoading || friendsPlaying.length > 0) && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Friends Are Playing</Text>
+                </View>
+                {friendsLoading ? (
+                  <HorizontalSkeleton />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScroll}
                   >
-                    <Image
-                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                      style={styles.gameCover}
-                    />
-                  </PressableScale>
-                ))}
-              </ScrollView>
+                    {friendsPlaying.map((game) => (
+                      <TouchableOpacity
+                        key={game.id}
+                        style={styles.friendsGameCard}
+                        onPress={() => handleGamePress(game.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Image
+                          source={{ uri: getIGDBImageUrl(game.cover_url) }}
+                          style={styles.gameCover}
+                        />
+                        <StackedAvatars users={game.friends} />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+
+            {/* POPULAR WITH YOUR FRIENDS */}
+            {(favoritesLoading || friendsFavorites.length > 0) && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Popular With Friends</Text>
+                </View>
+                {favoritesLoading ? (
+                  <HorizontalSkeleton />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScroll}
+                  >
+                    {friendsFavorites.map((game) => (
+                      <TouchableOpacity
+                        key={game.id}
+                        style={styles.friendsFavoriteCard}
+                        onPress={() => handleGamePress(game.id)}
+                        activeOpacity={0.8}
+                      >
+                        <Image
+                          source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                          style={styles.gameCover}
+                        />
+                        <View style={styles.friendCountBadge}>
+                          <Text style={styles.friendCountText}>
+                            ♥ {game.friendCount}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
             )}
           </View>
         )}
 
-        {/* FOR YOU: POPULAR WITH YOUR FRIENDS */}
-        {(favoritesLoading || friendsFavorites.length > 0) && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.forYouTitle}>Popular With Your Friends</Text>
+        {/* ═══════════════════════════════════════════════ */}
+        {/* FOR YOU Section Group */}
+        {/* ═══════════════════════════════════════════════ */}
+        {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0) || studioLoading || (studio && studioGames.length > 0)) && (
+          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base }]}>
+            <SectionGroupHeader title="For You" />
+
+            {/* BECAUSE YOU LOVED */}
+            {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.forYouTitle}>
+                    Because You Loved{' '}
+                    <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
+                  </Text>
+                  {becauseYouLovedGames.length > 10 && (
+                    <PressableScale
+                      onPress={() => navigation.navigate('CuratedListDetail', {
+                        listSlug: 'because-you-loved',
+                        listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
+                        gameIds: becauseYouLovedGames.map(g => g.id),
+                        games: becauseYouLovedGames,
+                      })}
+                      haptic="light"
+                    >
+                      <Text style={styles.seeAllText}>See All</Text>
+                    </PressableScale>
+                  )}
+                </View>
+                {lovedLoading ? (
+                  <HorizontalSkeleton />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScroll}
+                  >
+                    {becauseYouLovedGames.slice(0, 10).map((game) => (
+                      <PressableScale
+                        key={game.id}
+                        onPress={() => handleGamePress(game.id)}
+                        haptic="light"
+                        scale={0.95}
+                      >
+                        <Image
+                          source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                          style={styles.gameCover}
+                        />
+                      </PressableScale>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+
+            {/* MORE FROM STUDIO */}
+            {(studioLoading || (studio && studioGames.length > 0)) && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.forYouTitle}>
+                    More From{' '}
+                    <Text style={styles.accentText}>{studio || '...'}</Text>
+                  </Text>
+                </View>
+                {studioLoading ? (
+                  <HorizontalSkeleton />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScroll}
+                  >
+                    {studioGames.map((game) => (
+                      <PressableScale
+                        key={game.id}
+                        onPress={() => handleGamePress(game.id)}
+                        haptic="light"
+                        scale={0.95}
+                      >
+                        <Image
+                          source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                          style={styles.gameCover}
+                        />
+                      </PressableScale>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ═══════════════════════════════════════════════ */}
+        {/* NEWS & DISCOVER Section Group */}
+        {/* ═══════════════════════════════════════════════ */}
+        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+          <SectionGroupHeader title="News & Discover" />
+
+          {/* Gaming News */}
+          <NewsSection refreshKey={refreshCount} />
+
+          {/* Featured Curated List */}
+          {listsLoading ? (
+            <View style={styles.listsLoading}>
+              <LoadingSpinner size="large" />
             </View>
-            {favoritesLoading ? (
-              <HorizontalSkeleton />
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {friendsFavorites.map((game) => (
-                  <TouchableOpacity
-                    key={game.id}
-                    style={styles.friendsFavoriteCard}
-                    onPress={() => handleGamePress(game.id)}
-                    activeOpacity={0.8}
-                  >
-                    <Image
-                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                      style={styles.gameCover}
-                    />
-                    <View style={styles.friendCountBadge}>
-                      <Text style={styles.friendCountText}>
-                        ♥ {game.friendCount} {game.friendCount === 1 ? 'friend' : 'friends'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        )}
-
-        {/* FOR YOU: MORE FROM [STUDIO] */}
-        {(studioLoading || (studio && studioGames.length > 0)) && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.forYouTitle}>
-                More From{' '}
-                <Text style={styles.accentText}>{studio || '...'}</Text>
-              </Text>
-            </View>
-            {studioLoading ? (
-              <HorizontalSkeleton />
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.horizontalScroll}
-              >
-                {studioGames.map((game) => (
-                  <PressableScale
-                    key={game.id}
-                    onPress={() => handleGamePress(game.id)}
-                    haptic="light"
-                    scale={0.95}
-                  >
-                    <Image
-                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                      style={styles.gameCover}
-                    />
-                  </PressableScale>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        )}
-
-        {/* Gaming News Section */}
-        <NewsSection refreshKey={refreshCount} />
-
-        {/* Featured Curated List (2025 Essentials) */}
-        {listsLoading ? (
-          <View style={styles.listsLoading}>
-            <LoadingSpinner size="large" />
-          </View>
-        ) : featuredCuratedList ? (
-          <CuratedListRow list={featuredCuratedList} />
-        ) : null}
+          ) : featuredCuratedList ? (
+            <CuratedListRow list={featuredCuratedList} />
+          ) : null}
+        </View>
       </ScrollView>
     </SafeAreaView>
   )
@@ -359,22 +451,70 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: Spacing.xl,      // 24px top padding
     paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
   },
   // Header
   header: {
     alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
-    paddingBottom: Spacing.xxl,  // 32px below header
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
+  },
+  // Greeting + Stats
+  greetingContainer: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.xl,
+    alignItems: 'center',
+  },
+  greetingText: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.sm,
+  },
+  greetingName: {
+    color: Colors.text,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statValue: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  // Section Groups
+  sectionGroup: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  groupHeader: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    marginBottom: Spacing.md,
+  },
+  groupHeaderText: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   // Sections
   section: {
-    marginBottom: Spacing.xxl,   // 32px between sections
+    marginBottom: Spacing.xl,
   },
   sectionHeader: {
     paddingHorizontal: Spacing.screenPadding,
-    marginBottom: Spacing.sectionHeaderBelow, // 16px below header
+    marginBottom: Spacing.sectionHeaderBelow,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -386,7 +526,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.sm,       // Smaller, more subtle
+    fontSize: FontSize.sm,
     color: Colors.text,
     textTransform: 'uppercase',
     letterSpacing: 2,
@@ -417,7 +557,7 @@ const styles = StyleSheet.create({
   // Horizontal scroll
   horizontalScroll: {
     paddingHorizontal: Spacing.screenPadding,
-    gap: Spacing.cardGap,        // 12px gap between cards
+    gap: Spacing.cardGap,
   },
   // Game covers
   gameCover: {
