@@ -2,6 +2,19 @@
 // IGDB is owned by Twitch, so we authenticate via Twitch OAuth
 
 // ============================================
+// CONSTANTS
+// ============================================
+
+// Major gaming platforms (modern consoles + PC)
+// PC=6, PS4=48, PS5=167, XboxOne=49, XboxSeriesX=169, Switch=130
+const MAJOR_PLATFORMS = [6, 48, 167, 49, 169, 130]
+const MAJOR_PLATFORMS_FILTER = `platforms = (${MAJOR_PLATFORMS.join(',')})`
+
+// Valid game categories (exclude DLCs, mods, episodes, bundles)
+// 0=Main, 8=Remake, 9=Remaster, 10=Expanded, 11=Port
+const VALID_CATEGORIES = [0, 8, 9, 10, 11]
+
+// ============================================
 // TYPES
 // ============================================
 
@@ -700,12 +713,12 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           const franchiseBody = `
             fields name, slug, summary, cover.image_id, first_release_date,
                    genres.name, platforms.name, total_rating, category;
-            where id = (${uniqueFranchiseIds.slice(0, 50).join(',')}) & cover != null;
+            where id = (${uniqueFranchiseIds.slice(0, 50).join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
             limit 50;
           `
           const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
           // Filter valid categories in JS (main game, remake, remaster, expanded, port)
-          const validFranGames = (franGames || []).filter(g => [0, 8, 9, 10, 11].includes(g.category || 0))
+          const validFranGames = (franGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
           console.log('[getSmartSimilarGames] Got', validFranGames.length, 'games from FRANCHISE')
           seriesGames.push(...validFranGames)
         }
@@ -734,11 +747,11 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             const collectionBody = `
               fields name, slug, summary, cover.image_id, first_release_date,
                      genres.name, platforms.name, total_rating, category;
-              where id = (${collectionGameIds.slice(0, 50).join(',')}) & cover != null;
+              where id = (${collectionGameIds.slice(0, 50).join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
               limit 50;
             `
             const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
-            const validColGames = (colGames || []).filter(g => [0, 8, 9, 10, 11].includes(g.category || 0))
+            const validColGames = (colGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
             console.log('[getSmartSimilarGames] Got', validColGames.length, 'games from COLLECTION')
             seriesGames.push(...validColGames)
           }
@@ -763,11 +776,11 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           const devGamesBody = `
             fields name, slug, summary, cover.image_id, first_release_date,
                    genres.name, platforms.name, total_rating, category;
-            where id = (${devGameIds.slice(0, 30).join(',')}) & cover != null;
+            where id = (${devGameIds.slice(0, 30).join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
             limit 30;
           `
           const devGames = await igdbFetch('games', devGamesBody) as IGDBGame[]
-          const validDevGames = (devGames || []).filter(g => [0, 8, 9, 10, 11].includes(g.category || 0))
+          const validDevGames = (devGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
           console.log('[getSmartSimilarGames] Got', validDevGames.length, 'games from DEVELOPER:', primaryDeveloper.name)
           developerGames.push(...validDevGames)
         }
@@ -784,11 +797,11 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         const similarBody = `
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, category;
-          where id = (${game.similar_games.join(',')}) & cover != null;
+          where id = (${game.similar_games.join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
           limit 100;
         `
         const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
-        const validSimGames = (simGames || []).filter(g => [0, 8, 9, 10, 11].includes(g.category || 0))
+        const validSimGames = (simGames || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
         console.log('[getSmartSimilarGames] Got', validSimGames.length, 'from SIMILAR_GAMES')
         similarGames.push(...validSimGames)
       } catch (e) {
@@ -804,7 +817,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
         // Use primary genre only - but require high quality
         const primaryGenre = game.genres[0]
 
-        // Strict filters: 75+ rating, 50+ reviews, recent games, has rating
+        // Strict filters: 75+ rating, 50+ reviews, recent games, has rating, major platforms
         const genreQuery = `
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, total_rating_count, category;
@@ -814,12 +827,13 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             & total_rating != null
             & total_rating >= 75
             & total_rating_count >= 50
-            & first_release_date >= ${fiveYearsAgo};
+            & first_release_date >= ${fiveYearsAgo}
+            & ${MAJOR_PLATFORMS_FILTER};
           sort total_rating desc;
           limit 30;
         `
         const genreResults = await igdbFetch('games', genreQuery) as IGDBGame[]
-        const validGenreGames = (genreResults || []).filter(g => [0, 8, 9, 10].includes(g.category || 0))
+        const validGenreGames = (genreResults || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
         console.log('[getSmartSimilarGames] Got', validGenreGames.length, 'GENRE-based games (75+ rating, 50+ reviews)')
         genreGames.push(...validGenreGames)
       } catch (e) {
@@ -832,7 +846,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       try {
         const fiveYearsAgo = Math.floor(Date.now() / 1000) - (5 * 365 * 24 * 60 * 60)
 
-        // Very strict: 80+ rating, 100+ reviews - only show critically acclaimed games
+        // Very strict: 80+ rating, 100+ reviews - only show critically acclaimed games, major platforms
         const themeQuery = `
           fields name, slug, summary, cover.image_id, first_release_date,
                  genres.name, platforms.name, total_rating, total_rating_count, category;
@@ -842,12 +856,13 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             & total_rating != null
             & total_rating >= 80
             & total_rating_count >= 100
-            & first_release_date >= ${fiveYearsAgo};
+            & first_release_date >= ${fiveYearsAgo}
+            & ${MAJOR_PLATFORMS_FILTER};
           sort total_rating desc;
           limit 20;
         `
         const themeResults = await igdbFetch('games', themeQuery) as IGDBGame[]
-        const validThemeGames = (themeResults || []).filter(g => [0, 8, 9, 10].includes(g.category || 0))
+        const validThemeGames = (themeResults || []).filter(g => VALID_CATEGORIES.includes(g.category || 0))
         console.log('[getSmartSimilarGames] Got', validThemeGames.length, 'THEME-based games (80+ rating, 100+ reviews)')
         themeGames.push(...validThemeGames)
       } catch (e) {
@@ -880,7 +895,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           `
           const searchResults = await igdbFetch('games', searchQuery) as IGDBGame[]
           const validSearchGames = (searchResults || [])
-            .filter(g => g.id !== gameId && [0, 8, 9, 10, 11].includes(g.category || 0))
+            .filter(g => g.id !== gameId && VALID_CATEGORIES.includes(g.category || 0))
 
           console.log('[getSmartSimilarGames] FALLBACK search found', validSearchGames.length, 'games')
 
