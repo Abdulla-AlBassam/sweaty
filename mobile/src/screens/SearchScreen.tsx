@@ -31,6 +31,8 @@ import { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 import { GlitchHeader } from '../components/GlitchText'
 
+type SearchFilter = 'games' | 'users' | 'lists'
+
 interface SearchGame {
   id: number
   name: string
@@ -60,6 +62,7 @@ export default function SearchScreen() {
   const { user } = useAuth()
   const { lists: curatedLists, refetch: refetchLists } = useCuratedLists()
   const [query, setQuery] = useState('')
+  const [searchFilter, setSearchFilter] = useState<SearchFilter>('games')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])
   const [userResults, setUserResults] = useState<SearchUser[]>([])
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
@@ -239,6 +242,7 @@ export default function SearchScreen() {
 
   const clearSearch = () => {
     setQuery('')
+    setSearchFilter('games')
     setGameResults([])
     setUserResults([])
     Keyboard.dismiss()
@@ -253,34 +257,57 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Chrome Glitch Search Header */}
+      {/* Search Header */}
       <View style={styles.header}>
-        <View style={styles.searchContainer}>
-          {/* RGB Glitch Border Layers */}
-          <View style={[styles.searchBorderLayer, styles.searchBorderCyan]} />
-          <View style={[styles.searchBorderLayer, styles.searchBorderGreen]} />
-          <View style={[styles.searchBorderLayer, styles.searchBorderPink]} />
-
-          {/* Main Search Bar */}
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Search games..."
-              placeholderTextColor={Colors.textDim}
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={18} color={Colors.pink} />
-              </TouchableOpacity>
-            )}
-          </View>
+        {/* Search Bar */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Search games, users, lists..."
+            placeholderTextColor={Colors.textDim}
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="search"
+          />
+          {query.length > 0 && (
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={18} color={Colors.textDim} />
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* Filter Pills */}
+        {query.length >= 2 && (
+          <View style={styles.filterPills}>
+            <TouchableOpacity
+              style={[styles.filterPill, searchFilter === 'games' && styles.filterPillActive]}
+              onPress={() => setSearchFilter('games')}
+            >
+              <Text style={[styles.filterPillText, searchFilter === 'games' && styles.filterPillTextActive]}>
+                Games
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterPill, searchFilter === 'users' && styles.filterPillActive]}
+              onPress={() => setSearchFilter('users')}
+            >
+              <Text style={[styles.filterPillText, searchFilter === 'users' && styles.filterPillTextActive]}>
+                Users
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterPill, searchFilter === 'lists' && styles.filterPillActive]}
+              onPress={() => setSearchFilter('lists')}
+            >
+              <Text style={[styles.filterPillText, searchFilter === 'lists' && styles.filterPillTextActive]}>
+                Lists
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Content */}
@@ -311,8 +338,8 @@ export default function SearchScreen() {
         </View>
       ) : hasResults ? (
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
-          {/* Users Section */}
-          {userResults.length > 0 && (
+          {/* Users Section - show when filter is 'users' */}
+          {searchFilter === 'users' && userResults.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Users</Text>
               {userResults.map((userProfile) => (
@@ -342,8 +369,8 @@ export default function SearchScreen() {
             </View>
           )}
 
-          {/* Games Section */}
-          {gameResults.length > 0 && (
+          {/* Games Section - show when filter is 'games' */}
+          {searchFilter === 'games' && gameResults.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Games</Text>
               <View style={styles.gamesGrid}>
@@ -353,6 +380,28 @@ export default function SearchScreen() {
                   </View>
                 ))}
               </View>
+            </View>
+          )}
+
+          {/* Lists Section - show when filter is 'lists' */}
+          {searchFilter === 'lists' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Lists</Text>
+              <View style={styles.listsEmptyState}>
+                <Text style={styles.emptyText}>List search coming soon</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Empty state for current filter */}
+          {searchFilter === 'games' && gameResults.length === 0 && (
+            <View style={styles.centered}>
+              <Text style={styles.emptyText}>No games found</Text>
+            </View>
+          )}
+          {searchFilter === 'users' && userResults.length === 0 && (
+            <View style={styles.centered}>
+              <Text style={styles.emptyText}>No users found</Text>
             </View>
           )}
         </ScrollView>
@@ -462,33 +511,6 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.lg,
-  },
-  searchContainer: {
-    position: 'relative',
-  },
-  searchBorderLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 2,
-  },
-  searchBorderCyan: {
-    borderColor: Colors.cyan,
-    opacity: 0.5,
-    transform: [{ translateX: -1.5 }],
-  },
-  searchBorderGreen: {
-    borderColor: Colors.accent,
-    opacity: 0.5,
-    transform: [{ translateX: 1.5 }],
-  },
-  searchBorderPink: {
-    borderColor: Colors.pink,
-    opacity: 0.4,
-    transform: [{ translateY: 0.5 }],
   },
   searchBar: {
     flexDirection: 'row',
@@ -662,13 +684,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxl,          // 32px between rows
   },
   discoveryRowTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    fontFamily: Fonts.display,
+    fontSize: FontSize.sm,
+    color: Colors.text,
     marginLeft: Spacing.screenPadding,
     marginBottom: Spacing.sectionHeaderBelow,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
@@ -688,5 +710,35 @@ const styles = StyleSheet.create({
   userInfoSkeleton: {
     flex: 1,
     marginLeft: Spacing.md,
+  },
+  // Filter Pills
+  filterPills: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  filterPill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  filterPillActive: {
+    backgroundColor: Colors.surfaceLight,
+    borderColor: Colors.textSecondary,
+  },
+  filterPillText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+  },
+  filterPillTextActive: {
+    color: Colors.text,
+  },
+  listsEmptyState: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.xl,
   },
 })
