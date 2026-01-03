@@ -210,40 +210,57 @@ export async function searchGames(query: string, limit: number = 50): Promise<Ga
   // IGDB uses a custom query language called "Apicalypse"
   // search "query" - fuzzy searches game names (relevance-based)
   // fields - which fields to return
-  // limit - max results (we fetch more and filter client-side)
+  // limit - fetch extra to have room after filtering
   const body = `search "${query}";
 fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, category;
-limit ${limit};`
+limit ${Math.min(limit * 2, 100)};`
 
   // Log the query for debugging
   console.log('IGDB Query:', body)
 
   const games = await igdbFetch('games', body) as (IGDBGame & { category?: number })[]
 
-  // Filter and sort results:
-  // - Category 0 = Main Game, 4 = Expansion, 8 = Remake, 9 = Remaster, 10 = Expanded Game, 11 = Port
-  // - Exclude: 1 = DLC, 2 = Expansion (old), 3 = Bundle, 5 = Standalone Expansion, 6 = Mod, 7 = Episode
-  const validCategories = new Set([0, 4, 8, 9, 10, 11])
+  // Category definitions:
+  // Main games: 0=Main Game, 8=Remake, 9=Remaster, 10=Expanded Game, 11=Port
+  // Secondary: 4=Expansion, 5=Standalone Expansion
+  // Excluded: 1=DLC, 2=Expansion(old), 3=Bundle, 6=Mod, 7=Episode
+  const mainGameCategories = new Set([0, 8, 9, 10, 11])
+  const excludedCategories = new Set([1, 2, 3, 6, 7])
 
+  // Filter out mods, episodes, bundles, and DLCs
   const filtered = games.filter(game => {
-    // Include if category is valid or undefined (assume main game)
-    return game.category === undefined || validCategories.has(game.category)
+    if (game.category === undefined) return true // Assume main game
+    return !excludedCategories.has(game.category)
   })
 
-  // Sort by rating (popular games first), then by name
+  // Sort results:
+  // 1. Main games first (category 0, 8, 9, 10, 11), sorted by release date DESC (newest first)
+  // 2. Then expansions/standalone (4, 5), sorted by release date DESC
+  // 3. Games without release dates come after those with dates
   const sorted = filtered.sort((a, b) => {
-    // Games with ratings come first
-    if (a.total_rating && !b.total_rating) return -1
-    if (!a.total_rating && b.total_rating) return 1
-    // Then sort by rating descending
-    if (a.total_rating && b.total_rating) {
-      return b.total_rating - a.total_rating
-    }
-    // Finally by name
+    const aIsMain = a.category === undefined || mainGameCategories.has(a.category)
+    const bIsMain = b.category === undefined || mainGameCategories.has(b.category)
+
+    // Main games come first
+    if (aIsMain && !bIsMain) return -1
+    if (!aIsMain && bIsMain) return 1
+
+    // Within same category tier, sort by release date (newest first)
+    const aDate = a.first_release_date || 0
+    const bDate = b.first_release_date || 0
+
+    // Games with release dates come before those without
+    if (aDate && !bDate) return -1
+    if (!aDate && bDate) return 1
+
+    // Sort by date descending (newest first)
+    if (aDate !== bDate) return bDate - aDate
+
+    // Finally by name alphabetically
     return a.name.localeCompare(b.name)
   })
 
-  return sorted.map(game => transformGame(game))
+  return sorted.slice(0, limit).map(game => transformGame(game))
 }
 
 // Get a single game by ID

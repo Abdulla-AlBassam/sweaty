@@ -619,9 +619,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: Spacing.screenPadding,
     gap: Spacing.cardGap,               // 12px gap
+    justifyContent: 'flex-start',
   },
   gridItem: {
-    width: '30%',
+    width: 105,                         // Fixed width for consistent sizing
     marginBottom: Spacing.cardGap,
   },
   recentSection: {
