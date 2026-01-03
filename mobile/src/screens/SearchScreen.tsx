@@ -618,11 +618,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: Spacing.cardGap,               // 12px gap
+    gap: Spacing.sm,                    // 8px gap for tighter grid
   },
   gridItem: {
-    width: 105,                         // Fixed width for consistent sizing
-    marginBottom: Spacing.cardGap,
+    width: 120,                         // Larger posters
+    marginBottom: Spacing.sm,
   },
   recentSection: {
     paddingTop: Spacing.xl,
