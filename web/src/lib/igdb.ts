@@ -207,60 +207,23 @@ function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
 
 // Search for games by name
 export async function searchGames(query: string, limit: number = 50): Promise<Game[]> {
-  // IGDB uses a custom query language called "Apicalypse"
-  // search "query" - fuzzy searches game names (relevance-based)
-  // fields - which fields to return (include total_rating_count for popularity sorting)
-  // limit - fetch extra to have room after filtering
-  const body = `search "${query}";
-fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, total_rating_count, category;
-limit ${Math.min(limit * 2, 100)};`
+  // Use fuzzy name matching with popularity sorting
+  // The `search` command doesn't support `sort`, but `where name ~` does
+  // This allows us to sort by total_rating_count (popularity) descending
+  // Escape quotes in query to prevent injection
+  const escapedQuery = query.replace(/"/g, '\\"')
+
+  const body = `fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, total_rating_count, category;
+where name ~ *"${escapedQuery}"* & category = (0,8,9,10,11) & cover != null;
+sort total_rating_count desc;
+limit ${limit};`
 
   // Log the query for debugging
   console.log('IGDB Query:', body)
 
   const games = await igdbFetch('games', body) as (IGDBGame & { category?: number })[]
 
-  // Category definitions:
-  // Main games: 0=Main Game, 8=Remake, 9=Remaster, 10=Expanded Game, 11=Port
-  // Secondary: 4=Expansion, 5=Standalone Expansion
-  // Excluded: 1=DLC, 2=Expansion(old), 3=Bundle, 6=Mod, 7=Episode
-  const mainGameCategories = new Set([0, 8, 9, 10, 11])
-  const excludedCategories = new Set([1, 2, 3, 6, 7])
-
-  // Filter out mods, episodes, bundles, and DLCs
-  const filtered = games.filter(game => {
-    if (game.category === undefined) return true // Assume main game
-    return !excludedCategories.has(game.category)
-  })
-
-  // Sort results:
-  // 1. Main games first (category 0, 8, 9, 10, 11)
-  // 2. Then by popularity (total_rating_count) - most rated games first
-  // 3. Games without ratings come after rated games
-  const sorted = filtered.sort((a, b) => {
-    const aIsMain = a.category === undefined || mainGameCategories.has(a.category)
-    const bIsMain = b.category === undefined || mainGameCategories.has(b.category)
-
-    // Main games come first
-    if (aIsMain && !bIsMain) return -1
-    if (!aIsMain && bIsMain) return 1
-
-    // Within same category tier, sort by popularity (total_rating_count descending)
-    const aPopularity = a.total_rating_count || 0
-    const bPopularity = b.total_rating_count || 0
-
-    // Games with ratings come before those without
-    if (aPopularity && !bPopularity) return -1
-    if (!aPopularity && bPopularity) return 1
-
-    // Sort by popularity descending (most rated first)
-    if (aPopularity !== bPopularity) return bPopularity - aPopularity
-
-    // Finally by name alphabetically
-    return a.name.localeCompare(b.name)
-  })
-
-  return sorted.slice(0, limit).map(game => transformGame(game))
+  return games.map(game => transformGame(game))
 }
 
 // Get a single game by ID
