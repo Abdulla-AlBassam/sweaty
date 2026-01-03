@@ -983,25 +983,37 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
     console.log('[getSmartSimilarGames] After SIMILAR:', finalList.length, 'games')
 
-    // Add genre games (Tier 3)
-    for (const g of genreGames) {
-      if (!seenIds.has(g.id)) {
-        seenIds.add(g.id)
-        tierMap.set(g.id, 3)
-        finalList.push(g)
-      }
-    }
-    console.log('[getSmartSimilarGames] After GENRE:', finalList.length, 'games')
+    // Only add genre/theme games if we have fewer than 10 games from better tiers
+    // This prevents generic "same genre" games from polluting results when we have good matches
+    const MIN_GAMES_BEFORE_FALLBACK = 10
 
-    // Add theme games (Tier 4)
-    for (const g of themeGames) {
-      if (!seenIds.has(g.id)) {
-        seenIds.add(g.id)
-        tierMap.set(g.id, 4)
-        finalList.push(g)
+    // Add genre games (Tier 3) - only if needed
+    if (finalList.length < MIN_GAMES_BEFORE_FALLBACK) {
+      for (const g of genreGames) {
+        if (!seenIds.has(g.id)) {
+          seenIds.add(g.id)
+          tierMap.set(g.id, 3)
+          finalList.push(g)
+        }
       }
+      console.log('[getSmartSimilarGames] After GENRE fallback:', finalList.length, 'games')
+    } else {
+      console.log('[getSmartSimilarGames] Skipping GENRE fallback (already have', finalList.length, 'games)')
     }
-    console.log('[getSmartSimilarGames] After THEME:', finalList.length, 'games total')
+
+    // Add theme games (Tier 4) - only if needed
+    if (finalList.length < MIN_GAMES_BEFORE_FALLBACK) {
+      for (const g of themeGames) {
+        if (!seenIds.has(g.id)) {
+          seenIds.add(g.id)
+          tierMap.set(g.id, 4)
+          finalList.push(g)
+        }
+      }
+      console.log('[getSmartSimilarGames] After THEME fallback:', finalList.length, 'games total')
+    } else {
+      console.log('[getSmartSimilarGames] Skipping THEME fallback (already have', finalList.length, 'games)')
+    }
 
     if (finalList.length === 0) {
       return []
