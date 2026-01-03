@@ -108,9 +108,10 @@ function NewsCardSkeleton() {
 
 interface NewsSectionProps {
   refreshKey?: number  // Changes trigger re-shuffle
+  showHeader?: boolean // Whether to show the "Gaming News" header
 }
 
-export default function NewsSection({ refreshKey = 0 }: NewsSectionProps) {
+export default function NewsSection({ refreshKey = 0, showHeader = true }: NewsSectionProps) {
   const navigation = useNavigation()
   const { articles, isLoading, error, refetch } = useNews(20) // Fetch more to filter
   const [shuffleKey, setShuffleKey] = useState(0)
@@ -123,9 +124,28 @@ export default function NewsSection({ refreshKey = 0 }: NewsSectionProps) {
     }
   }, [refreshKey, refetch])
 
-  // Filter to only recent articles (last 24 hours) and shuffle
+  // Gaming-related keywords to filter articles
+  const gamingKeywords = [
+    'game', 'gaming', 'playstation', 'xbox', 'nintendo', 'steam', 'pc gaming',
+    'esports', 'rpg', 'fps', 'mmorpg', 'indie', 'console', 'gamer', 'gameplay',
+    'dlc', 'expansion', 'patch', 'update', 'release', 'launch', 'trailer',
+    'developer', 'studio', 'publisher', 'bethesda', 'ubisoft', 'ea', 'activision',
+    'blizzard', 'rockstar', 'sony', 'microsoft', 'sega', 'capcom', 'square enix',
+    'fromsoftware', 'naughty dog', 'insomniac', 'bungie', 'valve', 'epic games',
+    'ps5', 'ps4', 'switch', 'series x', 'gpu', 'rtx', 'geforce', 'radeon',
+  ]
+
+  // Check if article is gaming-related
+  const isGamingRelated = (article: NewsArticle): boolean => {
+    const text = `${article.title} ${article.source}`.toLowerCase()
+    return gamingKeywords.some(keyword => text.includes(keyword))
+  }
+
+  // Filter to only recent articles (last 24 hours), gaming-related, and shuffle
   const recentArticles = useMemo(() => {
-    const filtered = articles.filter((article) => isRecent(article.publishedAt)).slice(0, 10)
+    const filtered = articles
+      .filter((article) => isRecent(article.publishedAt) && isGamingRelated(article))
+      .slice(0, 10)
     return shuffleArray(filtered)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [articles, shuffleKey])
@@ -157,16 +177,18 @@ export default function NewsSection({ refreshKey = 0 }: NewsSectionProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <GlitchText
-          text="Gaming News"
-          style={styles.title}
-          intensity="subtle"
-        />
-        <PressableScale onPress={handleSeeAll} haptic="light">
-          <Text style={styles.seeAll}>See All</Text>
-        </PressableScale>
-      </View>
+      {showHeader && (
+        <View style={styles.header}>
+          <GlitchText
+            text="Gaming News"
+            style={styles.title}
+            intensity="subtle"
+          />
+          <PressableScale onPress={handleSeeAll} haptic="light">
+            <Text style={styles.seeAll}>See All</Text>
+          </PressableScale>
+        </View>
+      )}
 
       {isLoading ? (
         <ScrollView

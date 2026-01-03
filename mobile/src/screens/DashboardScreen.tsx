@@ -18,7 +18,7 @@ import { MainStackParamList } from '../navigation'
 import { Ionicons } from '@expo/vector-icons'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
-import { useGameLogs, useCuratedLists } from '../hooks/useSupabase'
+import { useGameLogs, useCuratedLists, useCommunityReviews } from '../hooks/useSupabase'
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import { useBecauseYouLoved, useFriendsFavorites, useMoreFromStudio } from '../hooks/useRecommendations'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -34,7 +34,7 @@ import Skeleton from '../components/Skeleton'
 // Background colors for section groups
 const SectionBg = {
   base: Colors.background,        // #0f0f0f
-  alternate: '#131315',           // Slightly lighter
+  alternate: '#111112',           // Subtle, blends with base
 }
 
 // Get time-based greeting
@@ -59,6 +59,9 @@ export default function DashboardScreen() {
   const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id)
   const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
   const { studio, games: studioGames, isLoading: studioLoading, refetch: refetchStudio } = useMoreFromStudio(user?.id)
+
+  // Community activity (recent reviews)
+  const { reviews: communityReviews, isLoading: communityLoading, refetch: refetchCommunity } = useCommunityReviews()
 
   const [refreshing, setRefreshing] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
@@ -95,9 +98,10 @@ export default function DashboardScreen() {
       refetchLoved(),
       refetchFavorites(),
       refetchStudio(),
+      refetchCommunity(),
     ])
     setRefreshing(false)
-  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchStudio])
+  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchStudio, refetchCommunity])
 
 
   // Currently playing games
@@ -251,7 +255,7 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* SOCIAL Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        {(friendsLoading || friendsPlaying.length > 0 || favoritesLoading || friendsFavorites.length > 0) && (
+        {(friendsLoading || friendsPlaying.length > 0 || favoritesLoading || friendsFavorites.length > 0 || communityLoading || communityReviews.length > 0) && (
           <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
             <SectionGroupHeader title="Social" />
 
@@ -319,6 +323,68 @@ export default function DashboardScreen() {
                           </Text>
                         </View>
                       </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )}
+
+            {/* COMMUNITY ACTIVITY */}
+            {(communityLoading || communityReviews.length > 0) && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Community Activity</Text>
+                </View>
+                {communityLoading ? (
+                  <HorizontalSkeleton />
+                ) : (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalScroll}
+                  >
+                    {communityReviews.slice(0, 10).map((review) => (
+                      <PressableScale
+                        key={review.id}
+                        onPress={() => handleGamePress(review.game.id)}
+                        haptic="light"
+                        scale={0.95}
+                        style={styles.communityCard}
+                      >
+                        <Image
+                          source={{ uri: getIGDBImageUrl(review.game.cover_url) }}
+                          style={styles.communityCover}
+                        />
+                        <View style={styles.communityContent}>
+                          <View style={styles.communityHeader}>
+                            {review.user.avatar_url ? (
+                              <Image
+                                source={{ uri: review.user.avatar_url }}
+                                style={styles.communityAvatar}
+                              />
+                            ) : (
+                              <View style={[styles.communityAvatar, styles.avatarPlaceholder]}>
+                                <Ionicons name="person" size={10} color={Colors.textDim} />
+                              </View>
+                            )}
+                            <Text style={styles.communityUsername} numberOfLines={1}>
+                              {review.user.display_name || review.user.username}
+                            </Text>
+                            {review.rating && (
+                              <View style={styles.communityRating}>
+                                <Ionicons name="star" size={10} color="#FFD700" />
+                                <Text style={styles.communityRatingText}>{review.rating}</Text>
+                              </View>
+                            )}
+                          </View>
+                          <Text style={styles.communityReviewText} numberOfLines={2}>
+                            {review.review}
+                          </Text>
+                          <Text style={styles.communityGameName} numberOfLines={1}>
+                            {review.game.name}
+                          </Text>
+                        </View>
+                      </PressableScale>
                     ))}
                   </ScrollView>
                 )}
@@ -432,8 +498,8 @@ export default function DashboardScreen() {
         <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
           <SectionGroupHeader title="News" />
 
-          {/* Gaming News */}
-          <NewsSection refreshKey={refreshCount} />
+          {/* Gaming News (header hidden - parent group says "News") */}
+          <NewsSection refreshKey={refreshCount} showHeader={false} />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -602,5 +668,66 @@ const styles = StyleSheet.create({
   listsLoading: {
     paddingVertical: Spacing.xxxl,
     alignItems: 'center',
+  },
+  // Community Activity Cards
+  communityCard: {
+    width: 220,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+  },
+  communityCover: {
+    width: '100%',
+    height: 80,
+    backgroundColor: Colors.surfaceLight,
+  },
+  communityContent: {
+    padding: Spacing.sm,
+  },
+  communityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  communityAvatar: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    marginRight: 6,
+  },
+  avatarPlaceholder: {
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  communityUsername: {
+    flex: 1,
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: Colors.textSecondary,
+  },
+  communityRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 4,
+  },
+  communityRatingText: {
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: '#FFD700',
+  },
+  communityReviewText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.text,
+    lineHeight: 16,
+    marginBottom: 4,
+  },
+  communityGameName: {
+    fontFamily: Fonts.mono,
+    fontSize: 9,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
   },
 })

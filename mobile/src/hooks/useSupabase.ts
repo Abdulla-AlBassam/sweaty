@@ -497,6 +497,91 @@ export function useFriendsWhoPlayed(gameId: number, userId: string | undefined) 
   return { friends, isLoading }
 }
 
+// Type for community activity item (recent reviews)
+export interface CommunityReview {
+  id: string
+  user: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+  game: {
+    id: number
+    name: string
+    cover_url: string | null
+  }
+  rating: number | null
+  review: string
+  created_at: string
+}
+
+// Hook to fetch recent community reviews (global activity with reviews)
+export function useCommunityReviews() {
+  const [reviews, setReviews] = useState<CommunityReview[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchReviews = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      // Get recent game logs that have reviews
+      const { data: logs, error: logsError } = await supabase
+        .from('game_logs')
+        .select(`
+          id,
+          rating,
+          review,
+          created_at,
+          user_id,
+          game_id,
+          profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url),
+          games_cache!game_logs_game_id_fkey (id, name, cover_url)
+        `)
+        .not('review', 'is', null)
+        .neq('review', '')
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (logsError) throw logsError
+
+      const formattedReviews: CommunityReview[] = (logs || [])
+        .filter((log: any) => log.profiles && log.games_cache && log.review && log.review.trim().length > 0)
+        .map((log: any) => ({
+          id: log.id,
+          user: {
+            id: log.profiles.id,
+            username: log.profiles.username,
+            display_name: log.profiles.display_name,
+            avatar_url: log.profiles.avatar_url,
+          },
+          game: {
+            id: log.games_cache.id,
+            name: log.games_cache.name,
+            cover_url: log.games_cache.cover_url,
+          },
+          rating: log.rating,
+          review: log.review,
+          created_at: log.created_at,
+        }))
+
+      setReviews(formattedReviews)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch community reviews')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchReviews()
+  }, [fetchReviews])
+
+  return { reviews, isLoading, error, refetch: fetchReviews }
+}
+
 // Hook to fetch community rating stats for a game
 export function useCommunityStats(gameId: number) {
   const [stats, setStats] = useState<CommunityStats>({ averageRating: null, totalLogs: 0 })
