@@ -9,6 +9,7 @@ import {
   Keyboard,
   Image,
   RefreshControl,
+  Dimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -30,6 +31,13 @@ import PressableScale from '../components/PressableScale'
 import { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
 import { GlitchHeader } from '../components/GlitchText'
+
+// Calculate card width to match CuratedListDetailScreen grid
+const SCREEN_WIDTH = Dimensions.get('window').width
+const GRID_PADDING = Spacing.lg * 2 // padding on both sides
+const GAP = Spacing.md
+const NUM_COLUMNS = 3
+const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS
 
 type SearchFilter = 'games' | 'users' | 'lists'
 
@@ -374,11 +382,30 @@ export default function SearchScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Games</Text>
               <View style={styles.gamesGrid}>
-                {gameResults.map((game) => (
-                  <View key={game.id} style={styles.gridItem}>
-                    <GameCard game={game} onPress={handleGamePress} size="medium" />
-                  </View>
-                ))}
+                {gameResults.map((game) => {
+                  const coverUrl = game.coverUrl || game.cover_url
+                  return (
+                    <TouchableOpacity
+                      key={game.id}
+                      style={styles.gridItem}
+                      onPress={() => handleGamePress(game.id)}
+                      activeOpacity={0.7}
+                    >
+                      {coverUrl ? (
+                        <Image
+                          source={{ uri: getIGDBImageUrl(coverUrl, 'coverBig') }}
+                          style={styles.gridCover}
+                        />
+                      ) : (
+                        <View style={[styles.gridCover, styles.gridPlaceholder]}>
+                          <Text style={styles.gridPlaceholderText} numberOfLines={2}>
+                            {game.name}
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  )
+                })}
               </View>
             </View>
           )}
@@ -617,12 +644,29 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: Spacing.sm,                    // 8px gap for tighter grid
+    paddingHorizontal: Spacing.lg,
+    gap: GAP,
   },
   gridItem: {
-    width: 120,                         // Larger posters
-    marginBottom: Spacing.sm,
+    width: CARD_WIDTH,
+    marginBottom: GAP,
+  },
+  gridCover: {
+    width: CARD_WIDTH,
+    height: CARD_WIDTH * (4 / 3), // 3:4 aspect ratio
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+  },
+  gridPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.sm,
+  },
+  gridPlaceholderText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
   recentSection: {
     paddingTop: Spacing.xl,
