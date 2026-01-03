@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSmartSimilarGames, getPopularityForGames } from '@/lib/igdb'
+import { getSmartSimilarGames } from '@/lib/igdb'
 
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID!
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET!
@@ -53,29 +53,25 @@ export async function GET(
     const game = games[0]
 
     // Use the same smart similar games logic as "Because You Loved" recommendations
-    // This gets games from: franchise, collection, developer, IGDB similar_games, genre, theme
+    // This gets games from (in priority order):
+    //   Tier 0: Franchise/Collection (same series - e.g., Uncharted games)
+    //   Tier 1: Same developer (e.g., It Takes Two -> Split Fiction)
+    //   Tier 2: IGDB similar_games
+    //   Tier 3: Same genres (75+ rating)
+    //   Tier 4: Same themes (80+ rating)
+    // Within each tier, sorted by release date (newer first)
     console.log(`[GameDetails] Fetching smart similar games for: ${game.name}`)
     const smartSimilarGames = await getSmartSimilarGames(parseInt(gameId), 100)
 
-    // Get PopScore for sorting (same as "Because You Loved")
-    const gameIds = smartSimilarGames.map(g => g.id)
-    const popularityMap = await getPopularityForGames(gameIds)
-
-    // Sort by PopScore (most popular first)
-    const sortedSimilarGames = [...smartSimilarGames].sort((a, b) => {
-      const aPopularity = popularityMap.get(a.id) || 0
-      const bPopularity = popularityMap.get(b.id) || 0
-      return bPopularity - aPopularity
-    })
-
-    // Return all similar games - let the mobile app decide how many to display
-    const similarGames = sortedSimilarGames.map(g => ({
+    // Keep the tier-based ordering (series first, then developer, then similar, etc.)
+    // Don't re-sort by PopScore as it would put popular unrelated games above series/developer games
+    const similarGames = smartSimilarGames.map(g => ({
       id: g.id,
       name: g.name,
       coverUrl: g.coverUrl
     }))
 
-    console.log(`[GameDetails] Returning ${similarGames.length} similar games sorted by PopScore`)
+    console.log(`[GameDetails] Returning ${similarGames.length} similar games (tier-ordered)`)
 
     return NextResponse.json({
       id: game.id,
