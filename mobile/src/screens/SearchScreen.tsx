@@ -617,9 +617,8 @@ const styles = StyleSheet.create({
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: Spacing.screenPadding,
+    justifyContent: 'center',
     gap: Spacing.cardGap,               // 12px gap
-    justifyContent: 'flex-start',
   },
   gridItem: {
     width: 105,                         // Fixed width for consistent sizing
