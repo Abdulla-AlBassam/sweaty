@@ -209,10 +209,10 @@ function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
 export async function searchGames(query: string, limit: number = 50): Promise<Game[]> {
   // IGDB uses a custom query language called "Apicalypse"
   // search "query" - fuzzy searches game names (relevance-based)
-  // fields - which fields to return
+  // fields - which fields to return (include total_rating_count for popularity sorting)
   // limit - fetch extra to have room after filtering
   const body = `search "${query}";
-fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, category;
+fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, total_rating_count, category;
 limit ${Math.min(limit * 2, 100)};`
 
   // Log the query for debugging
@@ -234,9 +234,9 @@ limit ${Math.min(limit * 2, 100)};`
   })
 
   // Sort results:
-  // 1. Main games first (category 0, 8, 9, 10, 11), sorted by release date DESC (newest first)
-  // 2. Then expansions/standalone (4, 5), sorted by release date DESC
-  // 3. Games without release dates come after those with dates
+  // 1. Main games first (category 0, 8, 9, 10, 11)
+  // 2. Then by popularity (total_rating_count) - most rated games first
+  // 3. Games without ratings come after rated games
   const sorted = filtered.sort((a, b) => {
     const aIsMain = a.category === undefined || mainGameCategories.has(a.category)
     const bIsMain = b.category === undefined || mainGameCategories.has(b.category)
@@ -245,16 +245,16 @@ limit ${Math.min(limit * 2, 100)};`
     if (aIsMain && !bIsMain) return -1
     if (!aIsMain && bIsMain) return 1
 
-    // Within same category tier, sort by release date (newest first)
-    const aDate = a.first_release_date || 0
-    const bDate = b.first_release_date || 0
+    // Within same category tier, sort by popularity (total_rating_count descending)
+    const aPopularity = a.total_rating_count || 0
+    const bPopularity = b.total_rating_count || 0
 
-    // Games with release dates come before those without
-    if (aDate && !bDate) return -1
-    if (!aDate && bDate) return 1
+    // Games with ratings come before those without
+    if (aPopularity && !bPopularity) return -1
+    if (!aPopularity && bPopularity) return 1
 
-    // Sort by date descending (newest first)
-    if (aDate !== bDate) return bDate - aDate
+    // Sort by popularity descending (most rated first)
+    if (aPopularity !== bPopularity) return bPopularity - aPopularity
 
     // Finally by name alphabetically
     return a.name.localeCompare(b.name)
