@@ -224,79 +224,105 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* SOCIAL Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        {(friendsLoading || friendsPlaying.length > 0 || favoritesLoading || friendsFavorites.length > 0 || communityLoading || communityReviews.length > 0) && (
-          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
-            <SectionGroupHeader title="Social" />
+        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+          <SectionGroupHeader title="Social" />
 
-            {/* FRIENDS ARE PLAYING */}
-            {(friendsLoading || friendsPlaying.length > 0) && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Friends Are Playing</Text>
-                </View>
-                {friendsLoading ? (
-                  <HorizontalSkeleton />
-                ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalScroll}
+          {/* FRIENDS ARE PLAYING */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Friends Are Playing</Text>
+            </View>
+            {friendsLoading ? (
+              <HorizontalSkeleton />
+            ) : friendsPlaying.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {friendsPlaying.map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.friendsGameCard}
+                    onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.8}
                   >
-                    {friendsPlaying.map((game) => (
-                      <TouchableOpacity
-                        key={game.id}
-                        style={styles.friendsGameCard}
-                        onPress={() => handleGamePress(game.id)}
-                        activeOpacity={0.8}
-                      >
-                        <Image
-                          source={{ uri: getIGDBImageUrl(game.cover_url) }}
-                          style={styles.gameCover}
-                        />
-                        <StackedAvatars users={game.friends} />
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.cover_url) }}
+                      style={styles.gameCover}
+                    />
+                    <StackedAvatars users={game.friends} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>
+                  None of your friends are playing right now.{'\n'}
+                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')}>
+                    Find people to follow
+                  </Text>
+                </Text>
               </View>
             )}
+          </View>
 
-            {/* POPULAR WITH YOUR FRIENDS */}
-            {(favoritesLoading || friendsFavorites.length > 0) && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Popular With Friends</Text>
-                </View>
-                {favoritesLoading ? (
-                  <HorizontalSkeleton />
-                ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalScroll}
+          {/* FRIENDS' FAVORITES */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Friends' Favorites</Text>
+              {friendsFavorites.length > 10 && (
+                <PressableScale
+                  onPress={() => navigation.navigate('CuratedListDetail', {
+                    listSlug: 'friends-favorites',
+                    listTitle: "Friends' Favorites",
+                    gameIds: friendsFavorites.map(g => g.id),
+                    games: friendsFavorites.map(g => ({
+                      id: g.id,
+                      name: g.name,
+                      cover_url: g.coverUrl,
+                    })),
+                  })}
+                  haptic="light"
+                >
+                  <Text style={styles.seeAllText}>See All</Text>
+                </PressableScale>
+              )}
+            </View>
+            {favoritesLoading ? (
+              <HorizontalSkeleton />
+            ) : friendsFavorites.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScroll}
+              >
+                {friendsFavorites.slice(0, 10).map((game) => (
+                  <TouchableOpacity
+                    key={game.id}
+                    style={styles.friendsGameCard}
+                    onPress={() => handleGamePress(game.id)}
+                    activeOpacity={0.8}
                   >
-                    {friendsFavorites.map((game) => (
-                      <TouchableOpacity
-                        key={game.id}
-                        style={styles.friendsFavoriteCard}
-                        onPress={() => handleGamePress(game.id)}
-                        activeOpacity={0.8}
-                      >
-                        <Image
-                          source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                          style={styles.gameCover}
-                        />
-                        <View style={styles.friendCountBadge}>
-                          <Text style={styles.friendCountText}>
-                            ♥ {game.friendCount}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                )}
+                    <Image
+                      source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                      style={styles.gameCover}
+                    />
+                    <StackedAvatars users={game.friends} />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>
+                  Follow people to see their favorite games here.{'\n'}
+                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')}>
+                    Find people to follow
+                  </Text>
+                </Text>
               </View>
             )}
+          </View>
 
             {/* COMMUNITY ACTIVITY */}
             {(communityLoading || communityReviews.length > 0) && (
@@ -359,8 +385,7 @@ export default function DashboardScreen() {
                 )}
               </View>
             )}
-          </View>
-        )}
+        </View>
 
         {/* ═══════════════════════════════════════════════ */}
         {/* FOR YOU Section Group */}
@@ -598,26 +623,20 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: 105,
   },
-  // Friends favorites card with count badge
-  friendsFavoriteCard: {
-    position: 'relative',
-    width: 105,
+  // Empty state for sections
+  emptyStateContainer: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingVertical: Spacing.lg,
   },
-  friendCountBadge: {
-    position: 'absolute',
-    bottom: 6,
-    left: 6,
-    right: 6,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    borderRadius: BorderRadius.xs,
-  },
-  friendCountText: {
-    fontFamily: Fonts.mono,
-    fontSize: 10,
-    color: Colors.text,
+  emptyStateText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
     textAlign: 'center',
+  },
+  emptyStateLink: {
+    color: Colors.accent,
+    fontFamily: Fonts.bodyMedium,
   },
   // Loading
   listsLoading: {
