@@ -1027,19 +1027,25 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       return []
     }
 
-    // Step 3: Sort - TIER first, then RELEASE DATE (newer first)
+    // Step 3: Fetch PopScore for all games to sort within tiers
+    const allGameIds = finalList.map(g => g.id)
+    const popularityMap = await getPopularityForGames(allGameIds)
+    console.log('[getSmartSimilarGames] Got PopScore for', popularityMap.size, 'games')
+
+    // Step 4: Sort - TIER first, then POPSCORE within each tier (most popular first)
     const scoredGames = finalList.map(g => ({
       game: g,
       tier: tierMap.get(g.id) ?? 4,
+      popScore: popularityMap.get(g.id) || 0,
       releaseDate: g.first_release_date || 0,
       rating: g.total_rating || 0
     }))
 
     scoredGames.sort((a, b) => {
-      // Primary: tier (lower is better)
+      // Primary: tier (lower is better - series first, then developer, etc.)
       if (a.tier !== b.tier) return a.tier - b.tier
-      // Secondary: release date (newer first)
-      return b.releaseDate - a.releaseDate
+      // Secondary: PopScore within tier (higher is better - most popular first)
+      return b.popScore - a.popScore
     })
 
     const result = scoredGames.slice(0, limit)
@@ -1048,8 +1054,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     console.log('[getSmartSimilarGames] Final', result.length, 'games:')
     const tierLabels = ['SERIES', 'DEVELOPER', 'SIMILAR', 'GENRE', 'THEME']
     result.forEach((g, i) => {
-      const year = g.releaseDate ? new Date(g.releaseDate * 1000).getFullYear() : '?'
-      console.log(`  ${i + 1}. ${g.game.name} [${tierLabels[g.tier]}] (${year}, ${g.rating.toFixed(0)})`)
+      console.log(`  ${i + 1}. ${g.game.name} [${tierLabels[g.tier]}] (pop: ${g.popScore})`)
     })
 
     return result.map(g => transformGame(g.game))
