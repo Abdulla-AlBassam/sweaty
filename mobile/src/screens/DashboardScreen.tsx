@@ -111,17 +111,6 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
-  // Quick stats
-  const stats = useMemo(() => {
-    const totalGames = logs.length
-    const completedGames = logs.filter(l => l.status === 'completed').length
-    const ratedLogs = logs.filter(l => l.rating != null && l.rating > 0)
-    const avgRating = ratedLogs.length > 0
-      ? (ratedLogs.reduce((sum, l) => sum + (l.rating || 0), 0) / ratedLogs.length).toFixed(1)
-      : '—'
-    return { totalGames, completedGames, avgRating }
-  }, [logs])
-
   // Get 2025 Essentials curated list (or first available)
   const featuredCuratedList = useMemo(() => {
     const essentials = curatedLists.find(list => list.slug === '2025-essentials')
@@ -177,31 +166,11 @@ export default function DashboardScreen() {
           <SweatDropIcon size={40} isRefreshing={refreshing} />
         </PressableScale>
 
-        {/* Personalized Greeting + Quick Stats */}
+        {/* Personalized Greeting */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greetingText}>
             {getGreeting()}, <Text style={styles.greetingName}>{profile?.display_name || profile?.username || 'Gamer'}</Text>
           </Text>
-          <View style={styles.statsRow}>
-            {profile?.current_streak && profile.current_streak > 0 ? (
-              <View style={styles.statItem}>
-                <Ionicons name="flame" size={16} color="#FF6B35" />
-                <Text style={styles.statValue}>{profile.current_streak}</Text>
-              </View>
-            ) : null}
-            <View style={styles.statItem}>
-              <Ionicons name="game-controller" size={16} color={Colors.textSecondary} />
-              <Text style={styles.statValue}>{stats.totalGames}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="checkmark-circle" size={16} color={Colors.accent} />
-              <Text style={styles.statValue}>{stats.completedGames}</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Ionicons name="star" size={16} color="#FFD700" />
-              <Text style={styles.statValue}>{stats.avgRating}</Text>
-            </View>
-          </View>
         </View>
 
         {/* ═══════════════════════════════════════════════ */}
@@ -537,20 +506,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   greetingName: {
-    color: Colors.text,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.lg,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statValue: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.sm,
     color: Colors.text,
   },
   // Section Groups
