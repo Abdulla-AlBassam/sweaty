@@ -207,23 +207,47 @@ function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
 
 // Search for games by name
 export async function searchGames(query: string, limit: number = 50): Promise<Game[]> {
-  // Use fuzzy name matching with popularity sorting
-  // The `search` command doesn't support `sort`, but `where name ~` does
-  // This allows us to sort by total_rating_count (popularity) descending
-  // Escape quotes in query to prevent injection
+  // Use IGDB search command for fuzzy name matching
+  // Then sort results client-side by popularity (total_rating_count)
   const escapedQuery = query.replace(/"/g, '\\"')
 
-  const body = `fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, total_rating_count, category;
-where name ~ *"${escapedQuery}"* & category = (0,8,9,10,11) & cover != null;
-sort total_rating_count desc;
-limit ${limit};`
+  const body = `search "${escapedQuery}";
+fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, total_rating_count, category;
+limit ${Math.min(limit * 2, 100)};`
 
-  // Log the query for debugging
   console.log('IGDB Query:', body)
 
   const games = await igdbFetch('games', body) as (IGDBGame & { category?: number })[]
 
-  return games.map(game => transformGame(game))
+  // Category definitions:
+  // Main games: 0=Main Game, 8=Remake, 9=Remaster, 10=Expanded Game, 11=Port
+  // Excluded: 1=DLC, 2=Expansion(old), 3=Bundle, 6=Mod, 7=Episode
+  const mainGameCategories = new Set([0, 8, 9, 10, 11])
+  const excludedCategories = new Set([1, 2, 3, 6, 7])
+
+  // Filter out DLCs, mods, bundles, episodes
+  const filtered = games.filter(game => {
+    if (game.category === undefined) return true
+    return !excludedCategories.has(game.category)
+  })
+
+  // Sort by popularity (total_rating_count) - most popular first
+  const sorted = filtered.sort((a, b) => {
+    const aIsMain = a.category === undefined || mainGameCategories.has(a.category)
+    const bIsMain = b.category === undefined || mainGameCategories.has(b.category)
+
+    // Main games come first
+    if (aIsMain && !bIsMain) return -1
+    if (!aIsMain && bIsMain) return 1
+
+    // Sort by popularity (total_rating_count descending)
+    const aPopularity = a.total_rating_count || 0
+    const bPopularity = b.total_rating_count || 0
+
+    return bPopularity - aPopularity
+  })
+
+  return sorted.slice(0, limit).map(game => transformGame(game))
 }
 
 // Get a single game by ID
