@@ -29,7 +29,6 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
-import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
 import StackedAvatars from '../components/StackedAvatars'
 import NewsSection from '../components/NewsSection'
@@ -41,15 +40,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const SectionBg = {
   base: Colors.background,        // #0f0f0f
   alternate: '#111112',           // Subtle, blends with base
-}
-
-// Get time-based greeting
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Morning'
-  if (hour < 17) return 'Afternoon'
-  if (hour < 21) return 'Evening'
-  return 'Night'
 }
 
 export default function DashboardScreen() {
@@ -201,33 +191,11 @@ export default function DashboardScreen() {
               colors={['transparent', 'rgba(15,15,15,0.95)']}
               style={styles.heroBannerGradient}
             />
-            {/* Sweaty logo top left */}
-            <PressableScale
-              style={styles.heroBannerLogo}
-              onPress={() => navigation.navigate('AIRecommend')}
-              haptic="light"
-              scale={0.9}
-            >
-              <SweatDropIcon size={28} isRefreshing={refreshing} />
-            </PressableScale>
             {/* Game name - subtle, bottom right */}
             <View style={styles.heroBannerContent}>
               <Text style={styles.heroBannerGameName}>{currentBanner.game_name}</Text>
             </View>
           </PressableScale>
-        )}
-
-        {/* Fallback header when no banner */}
-        {!currentBanner && (
-          <View style={styles.headerFallback}>
-            <PressableScale
-              onPress={() => navigation.navigate('AIRecommend')}
-              haptic="light"
-              scale={0.9}
-            >
-              <SweatDropIcon size={32} isRefreshing={refreshing} />
-            </PressableScale>
-          </View>
         )}
 
         {/* ═══════════════════════════════════════════════ */}
@@ -533,12 +501,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
   },
-  // Fallback header when no banner
-  headerFallback: {
-    paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xl,
-  },
   // Hero Banner - Cinematic full-width at top
   heroBannerContainer: {
     height: 220,
@@ -561,11 +523,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '40%',
-  },
-  heroBannerLogo: {
-    position: 'absolute',
-    top: Spacing.md,
-    left: Spacing.screenPadding,
   },
   heroBannerContent: {
     position: 'absolute',

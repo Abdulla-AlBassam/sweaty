@@ -369,7 +369,7 @@ export default function AdminCuratedListsScreen() {
         ) : (
           <FlatList
             data={listGames}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
             renderItem={renderGameItem}
             contentContainerStyle={styles.gamesContent}
           />
