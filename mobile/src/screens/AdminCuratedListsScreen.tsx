@@ -9,6 +9,7 @@ import {
   FlatList,
   TextInput,
   Image,
+  Modal,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -57,6 +58,14 @@ export default function AdminCuratedListsScreen() {
   const [isSearching, setIsSearching] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
+  // Create/Edit list modal state
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingListMeta, setEditingListMeta] = useState(false)
+  const [newListTitle, setNewListTitle] = useState('')
+  const [newListSlug, setNewListSlug] = useState('')
+  const [newListDescription, setNewListDescription] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+
   // Fetch all curated lists
   const fetchLists = useCallback(async () => {
     setIsLoading(true)
@@ -80,6 +89,12 @@ export default function AdminCuratedListsScreen() {
   const fetchListGames = useCallback(async (list: CuratedList) => {
     setIsLoadingGames(true)
     try {
+      if (list.game_ids.length === 0) {
+        setListGames([])
+        setIsLoadingGames(false)
+        return
+      }
+
       const { data, error } = await supabase
         .from('games_cache')
         .select('id, name, cover_url')
@@ -221,21 +236,213 @@ export default function AdminCuratedListsScreen() {
     }
   }, [])
 
+  // Move list up/down in order
+  const handleMoveList = useCallback(async (list: CuratedList, direction: 'up' | 'down') => {
+    const currentIndex = lists.findIndex(l => l.id === list.id)
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+
+    if (targetIndex < 0 || targetIndex >= lists.length) return
+
+    const targetList = lists[targetIndex]
+
+    try {
+      // Swap display_order values
+      const [{ error: error1 }, { error: error2 }] = await Promise.all([
+        supabase
+          .from('curated_lists')
+          .update({ display_order: targetList.display_order })
+          .eq('id', list.id),
+        supabase
+          .from('curated_lists')
+          .update({ display_order: list.display_order })
+          .eq('id', targetList.id),
+      ])
+
+      if (error1 || error2) throw error1 || error2
+
+      // Update local state
+      const newLists = [...lists]
+      newLists[currentIndex] = { ...targetList, display_order: list.display_order }
+      newLists[targetIndex] = { ...list, display_order: targetList.display_order }
+      newLists.sort((a, b) => a.display_order - b.display_order)
+      setLists(newLists)
+    } catch (err) {
+      console.error('[MoveList] Error:', err)
+      Alert.alert('Error', 'Failed to reorder list')
+    }
+  }, [lists])
+
+  // Create new list
+  const handleCreateList = useCallback(async () => {
+    if (!newListTitle.trim() || !newListSlug.trim()) {
+      Alert.alert('Error', 'Title and slug are required')
+      return
+    }
+
+    // Validate slug format
+    const slugRegex = /^[a-z0-9-]+$/
+    if (!slugRegex.test(newListSlug)) {
+      Alert.alert('Error', 'Slug must be lowercase letters, numbers, and hyphens only')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      // Get max display_order
+      const maxOrder = lists.reduce((max, l) => Math.max(max, l.display_order), 0)
+
+      const { data, error } = await supabase
+        .from('curated_lists')
+        .insert({
+          title: newListTitle.trim(),
+          slug: newListSlug.trim(),
+          description: newListDescription.trim() || null,
+          game_ids: [],
+          display_order: maxOrder + 1,
+          is_active: true,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setLists([...lists, data as CuratedList])
+      setShowCreateModal(false)
+      setNewListTitle('')
+      setNewListSlug('')
+      setNewListDescription('')
+      Alert.alert('Success', 'List created!')
+    } catch (err: any) {
+      console.error('[CreateList] Error:', err)
+      if (err.code === '23505') {
+        Alert.alert('Error', 'A list with this slug already exists')
+      } else {
+        Alert.alert('Error', 'Failed to create list')
+      }
+    } finally {
+      setIsSaving(false)
+    }
+  }, [newListTitle, newListSlug, newListDescription, lists])
+
+  // Update list metadata (title, description)
+  const handleUpdateListMeta = useCallback(async () => {
+    if (!selectedList || !newListTitle.trim()) {
+      Alert.alert('Error', 'Title is required')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const { error } = await supabase
+        .from('curated_lists')
+        .update({
+          title: newListTitle.trim(),
+          description: newListDescription.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', selectedList.id)
+
+      if (error) throw error
+
+      setSelectedList({
+        ...selectedList,
+        title: newListTitle.trim(),
+        description: newListDescription.trim() || null,
+      })
+      setLists(prev => prev.map(l =>
+        l.id === selectedList.id
+          ? { ...l, title: newListTitle.trim(), description: newListDescription.trim() || null }
+          : l
+      ))
+      setEditingListMeta(false)
+      Alert.alert('Success', 'List updated!')
+    } catch (err) {
+      console.error('[UpdateListMeta] Error:', err)
+      Alert.alert('Error', 'Failed to update list')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [selectedList, newListTitle, newListDescription])
+
+  // Delete list
+  const handleDeleteList = useCallback(async (list: CuratedList) => {
+    Alert.alert(
+      'Delete List',
+      `Are you sure you want to delete "${list.title}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('curated_lists')
+                .delete()
+                .eq('id', list.id)
+
+              if (error) throw error
+
+              setLists(prev => prev.filter(l => l.id !== list.id))
+              Alert.alert('Success', 'List deleted')
+            } catch (err) {
+              console.error('[DeleteList] Error:', err)
+              Alert.alert('Error', 'Failed to delete list')
+            }
+          },
+        },
+      ]
+    )
+  }, [])
+
+  // Open edit metadata modal
+  const handleEditListMeta = useCallback(() => {
+    if (!selectedList) return
+    setNewListTitle(selectedList.title)
+    setNewListDescription(selectedList.description || '')
+    setEditingListMeta(true)
+  }, [selectedList])
+
   useEffect(() => {
     fetchLists()
   }, [fetchLists])
 
-  // Render list item
-  const renderListItem = ({ item }: { item: CuratedList }) => (
-    <TouchableOpacity
-      style={[styles.listCard, !item.is_active && styles.listCardInactive]}
-      onPress={() => handleSelectList(item)}
-    >
-      <View style={styles.listInfo}>
-        <Text style={styles.listTitle}>{item.title}</Text>
-        <Text style={styles.listSlug}>/{item.slug}</Text>
-        <Text style={styles.listCount}>{item.game_ids.length} games</Text>
+  // Render list item with reorder controls
+  const renderListItem = ({ item, index }: { item: CuratedList; index: number }) => (
+    <View style={[styles.listCard, !item.is_active && styles.listCardInactive]}>
+      {/* Reorder buttons */}
+      <View style={styles.reorderButtons}>
+        <TouchableOpacity
+          style={[styles.reorderButton, index === 0 && styles.reorderButtonDisabled]}
+          onPress={() => handleMoveList(item, 'up')}
+          disabled={index === 0}
+        >
+          <Ionicons name="chevron-up" size={18} color={index === 0 ? Colors.textDim : Colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.reorderButton, index === lists.length - 1 && styles.reorderButtonDisabled]}
+          onPress={() => handleMoveList(item, 'down')}
+          disabled={index === lists.length - 1}
+        >
+          <Ionicons name="chevron-down" size={18} color={index === lists.length - 1 ? Colors.textDim : Colors.text} />
+        </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        style={styles.listCardContent}
+        onPress={() => handleSelectList(item)}
+      >
+        <View style={styles.listInfo}>
+          <Text style={styles.listTitle}>{item.title}</Text>
+          {item.description && (
+            <Text style={styles.listDescription} numberOfLines={1}>{item.description}</Text>
+          )}
+          <Text style={styles.listCount}>{item.game_ids.length} games</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+      </TouchableOpacity>
+
+      {/* Actions */}
       <View style={styles.listActions}>
         <TouchableOpacity
           style={[styles.actionButton, !item.is_active && styles.actionButtonInactive]}
@@ -243,13 +450,18 @@ export default function AdminCuratedListsScreen() {
         >
           <Ionicons
             name={item.is_active ? 'eye' : 'eye-off'}
-            size={18}
+            size={16}
             color={item.is_active ? Colors.accent : Colors.textDim}
           />
         </TouchableOpacity>
-        <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => handleDeleteList(item)}
+        >
+          <Ionicons name="trash-outline" size={16} color={Colors.error} />
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   )
 
   // Render game item in edit mode
@@ -323,13 +535,29 @@ export default function AdminCuratedListsScreen() {
           {mode === 'edit' && selectedList?.title.toUpperCase()}
           {mode === 'search' && 'ADD GAME'}
         </Text>
-        {mode === 'edit' && (
+        {mode === 'list' && (
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setMode('search')}
+            onPress={() => setShowCreateModal(true)}
           >
             <Ionicons name="add" size={24} color={Colors.accent} />
           </TouchableOpacity>
+        )}
+        {mode === 'edit' && (
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={handleEditListMeta}
+            >
+              <Ionicons name="pencil" size={20} color={Colors.text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => setMode('search')}
+            >
+              <Ionicons name="add" size={24} color={Colors.accent} />
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -338,6 +566,17 @@ export default function AdminCuratedListsScreen() {
         isLoading ? (
           <View style={styles.centered}>
             <LoadingSpinner size="large" />
+          </View>
+        ) : lists.length === 0 ? (
+          <View style={styles.centered}>
+            <Ionicons name="list-outline" size={48} color={Colors.textDim} />
+            <Text style={styles.emptyText}>No lists yet</Text>
+            <TouchableOpacity
+              style={styles.emptyButton}
+              onPress={() => setShowCreateModal(true)}
+            >
+              <Text style={styles.emptyButtonText}>Create First List</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <FlatList
@@ -351,29 +590,38 @@ export default function AdminCuratedListsScreen() {
 
       {/* Edit Mode */}
       {mode === 'edit' && (
-        isLoadingGames ? (
-          <View style={styles.centered}>
-            <LoadingSpinner size="large" />
-          </View>
-        ) : listGames.length === 0 ? (
-          <View style={styles.centered}>
-            <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
-            <Text style={styles.emptyText}>No games in this list</Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => setMode('search')}
-            >
-              <Text style={styles.emptyButtonText}>Add First Game</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <FlatList
-            data={listGames}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
-            renderItem={renderGameItem}
-            contentContainerStyle={styles.gamesContent}
-          />
-        )
+        <>
+          {/* List info header */}
+          {selectedList?.description && (
+            <View style={styles.listMetaHeader}>
+              <Text style={styles.listMetaDescription}>{selectedList.description}</Text>
+            </View>
+          )}
+
+          {isLoadingGames ? (
+            <View style={styles.centered}>
+              <LoadingSpinner size="large" />
+            </View>
+          ) : listGames.length === 0 ? (
+            <View style={styles.centered}>
+              <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+              <Text style={styles.emptyText}>No games in this list</Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => setMode('search')}
+              >
+                <Text style={styles.emptyButtonText}>Add First Game</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <FlatList
+              data={listGames}
+              keyExtractor={(item, index) => `${item.id}-${index}`}
+              renderItem={renderGameItem}
+              contentContainerStyle={styles.gamesContent}
+            />
+          )}
+        </>
       )}
 
       {/* Search Mode */}
@@ -420,6 +668,122 @@ export default function AdminCuratedListsScreen() {
           )}
         </View>
       )}
+
+      {/* Create List Modal */}
+      <Modal
+        visible={showCreateModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>CREATE NEW LIST</Text>
+              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.inputLabel}>Title</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g., Best RPGs"
+                placeholderTextColor={Colors.textDim}
+                value={newListTitle}
+                onChangeText={setNewListTitle}
+              />
+
+              <Text style={styles.inputLabel}>Slug (URL-friendly)</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g., best-rpgs"
+                placeholderTextColor={Colors.textDim}
+                value={newListSlug}
+                onChangeText={(text) => setNewListSlug(text.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.inputLabel}>Description (optional)</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalTextArea]}
+                placeholder="A short description for this list..."
+                placeholderTextColor={Colors.textDim}
+                value={newListDescription}
+                onChangeText={setNewListDescription}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.modalButton, isSaving && styles.modalButtonDisabled]}
+              onPress={handleCreateList}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <LoadingSpinner size="small" />
+              ) : (
+                <Text style={styles.modalButtonText}>Create List</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Edit List Meta Modal */}
+      <Modal
+        visible={editingListMeta}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setEditingListMeta(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>EDIT LIST</Text>
+              <TouchableOpacity onPress={() => setEditingListMeta(false)}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.inputLabel}>Title</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="List title"
+                placeholderTextColor={Colors.textDim}
+                value={newListTitle}
+                onChangeText={setNewListTitle}
+              />
+
+              <Text style={styles.inputLabel}>Description (optional)</Text>
+              <TextInput
+                style={[styles.modalInput, styles.modalTextArea]}
+                placeholder="A short description for this list..."
+                placeholderTextColor={Colors.textDim}
+                value={newListDescription}
+                onChangeText={setNewListDescription}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.modalButton, isSaving && styles.modalButtonDisabled]}
+              onPress={handleUpdateListMeta}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <LoadingSpinner size="small" />
+              ) : (
+                <Text style={styles.modalButtonText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -450,6 +814,14 @@ const styles = StyleSheet.create({
   addButton: {
     padding: Spacing.sm,
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  headerButton: {
+    padding: Spacing.sm,
+  },
   centered: {
     flex: 1,
     alignItems: 'center',
@@ -465,12 +837,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
   },
   listCardInactive: {
     opacity: 0.5,
+  },
+  reorderButtons: {
+    paddingVertical: Spacing.sm,
+    paddingLeft: Spacing.sm,
+    gap: 2,
+  },
+  reorderButton: {
+    padding: 4,
+  },
+  reorderButtonDisabled: {
+    opacity: 0.3,
+  },
+  listCardContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
   },
   listInfo: {
     flex: 1,
@@ -480,33 +870,45 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text,
   },
-  listSlug: {
+  listDescription: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.textDim,
     marginTop: 2,
   },
   listCount: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: 4,
   },
   listActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    paddingRight: Spacing.sm,
+    gap: Spacing.xs,
   },
   actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   actionButtonInactive: {
     opacity: 0.5,
+  },
+  listMetaHeader: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  listMetaDescription: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
   },
   gamesContent: {
     padding: Spacing.lg,
@@ -603,6 +1005,68 @@ const styles = StyleSheet.create({
   searchName: {
     flex: 1,
     fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxxl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
+  },
+  modalTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+  },
+  modalBody: {
+    gap: Spacing.md,
+  },
+  inputLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginBottom: Spacing.xs,
+  },
+  modalInput: {
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalTextArea: {
+    height: 80,
+    textAlignVertical: 'top',
+  },
+  modalButton: {
+    backgroundColor: Colors.accent,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+  },
+  modalButtonDisabled: {
+    opacity: 0.5,
+  },
+  modalButtonText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.text,
   },

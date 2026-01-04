@@ -48,11 +48,16 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <GlitchText
-          text={list.title}
-          style={styles.title}
-          intensity="subtle"
-        />
+        <View style={styles.headerLeft}>
+          <GlitchText
+            text={list.title}
+            style={styles.title}
+            intensity="subtle"
+          />
+          {list.description && (
+            <Text style={styles.description} numberOfLines={1}>{list.description}</Text>
+          )}
+        </View>
         <PressableScale onPress={handleSeeAll} haptic="light">
           <Text style={styles.seeAll}>See All</Text>
         </PressableScale>
@@ -99,6 +104,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.sectionHeaderBelow, // 16px below header
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: Spacing.md,
+  },
+  description: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,               // 12px - smaller than title
+    color: Colors.textDim,               // Gray color
+    marginTop: 2,
   },
   title: {
     fontFamily: Fonts.display,

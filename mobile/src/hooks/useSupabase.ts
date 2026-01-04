@@ -397,8 +397,8 @@ export function useCuratedLists(excludePcOnly: boolean = false) {
         }
       })
 
-      // Shuffle the order of lists themselves
-      setLists(shuffleArray(listsWithGames))
+      // Use display_order (no shuffling - developer controls order)
+      setLists(listsWithGames)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
     } finally {
