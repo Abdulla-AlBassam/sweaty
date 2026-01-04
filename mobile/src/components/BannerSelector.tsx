@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -8,25 +8,39 @@ import {
   Image,
   FlatList,
   Dimensions,
+  TextInput,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
-import { BlurView } from 'expo-blur'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { BANNER_OPTIONS, BannerOption } from '../constants/banners'
+import { API_CONFIG } from '../constants'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const BANNER_WIDTH = (SCREEN_WIDTH - Spacing.lg * 2 - Spacing.sm) / 2
-const BANNER_HEIGHT = BANNER_WIDTH * 0.5  // 2:1 aspect ratio
+const SCREENSHOT_WIDTH = SCREEN_WIDTH - Spacing.lg * 2
+const SCREENSHOT_HEIGHT = SCREENSHOT_WIDTH * 0.56  // 16:9 aspect ratio
+
+interface Screenshot {
+  url: string
+  width: number
+  height: number
+}
+
+interface SearchGame {
+  id: number
+  name: string
+  coverUrl?: string | null
+}
 
 interface BannerSelectorProps {
   visible: boolean
   onClose: () => void
-  onSelect: (banner: BannerOption) => void
+  onSelect: (banner: { url: string; gameName: string }) => void
   currentBannerUrl?: string | null
   isLoading?: boolean
 }
+
+type Step = 'search' | 'screenshots'
 
 export default function BannerSelector({
   visible,
@@ -35,34 +49,135 @@ export default function BannerSelector({
   currentBannerUrl,
   isLoading = false,
 }: BannerSelectorProps) {
-  const [selectedBanner, setSelectedBanner] = useState<BannerOption | null>(null)
+  const [step, setStep] = useState<Step>('search')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<SearchGame[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [selectedGame, setSelectedGame] = useState<SearchGame | null>(null)
+  const [screenshots, setScreenshots] = useState<Screenshot[]>([])
+  const [isLoadingScreenshots, setIsLoadingScreenshots] = useState(false)
+  const [selectedScreenshot, setSelectedScreenshot] = useState<Screenshot | null>(null)
+  const [screenshotError, setScreenshotError] = useState<string | null>(null)
 
-  const handleSelect = (banner: BannerOption) => {
-    setSelectedBanner(banner)
+  // Reset state when modal closes
+  const handleClose = () => {
+    setStep('search')
+    setSearchQuery('')
+    setSearchResults([])
+    setSelectedGame(null)
+    setScreenshots([])
+    setSelectedScreenshot(null)
+    setScreenshotError(null)
+    onClose()
   }
 
+  // Search for games
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim() || searchQuery.length < 2) return
+
+    setIsSearching(true)
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(searchQuery)}`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setSearchResults(data.games || [])
+      }
+    } catch (err) {
+      console.error('Search error:', err)
+    } finally {
+      setIsSearching(false)
+    }
+  }, [searchQuery])
+
+  // Select a game and fetch its screenshots
+  const handleSelectGame = useCallback(async (game: SearchGame) => {
+    setSelectedGame(game)
+    setStep('screenshots')
+    setIsLoadingScreenshots(true)
+    setScreenshotError(null)
+    setScreenshots([])
+    setSelectedScreenshot(null)
+
+    try {
+      const response = await fetch(
+        `${API_CONFIG.baseUrl}/api/games/${game.id}/screenshots`
+      )
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch screenshots')
+      }
+
+      const data = await response.json()
+
+      if (!data.screenshots || data.screenshots.length === 0) {
+        setScreenshotError('No screenshots available for this game')
+      } else {
+        setScreenshots(data.screenshots)
+      }
+    } catch (err) {
+      console.error('Error fetching screenshots:', err)
+      setScreenshotError('Failed to load screenshots')
+    } finally {
+      setIsLoadingScreenshots(false)
+    }
+  }, [])
+
+  // Go back to search
+  const handleBack = () => {
+    setStep('search')
+    setSelectedGame(null)
+    setScreenshots([])
+    setSelectedScreenshot(null)
+    setScreenshotError(null)
+  }
+
+  // Confirm selection
   const handleConfirm = () => {
-    if (selectedBanner) {
-      onSelect(selectedBanner)
+    if (selectedScreenshot && selectedGame) {
+      onSelect({
+        url: selectedScreenshot.url,
+        gameName: selectedGame.name,
+      })
     }
   }
 
-  const renderBannerItem = ({ item }: { item: BannerOption }) => {
-    const isSelected = selectedBanner?.id === item.id
+  // Render game search result
+  const renderGameItem = ({ item }: { item: SearchGame }) => (
+    <TouchableOpacity
+      style={styles.gameItem}
+      onPress={() => handleSelectGame(item)}
+      activeOpacity={0.7}
+    >
+      {item.coverUrl ? (
+        <Image source={{ uri: item.coverUrl }} style={styles.gameCover} />
+      ) : (
+        <View style={[styles.gameCover, styles.coverPlaceholder]}>
+          <Ionicons name="game-controller" size={20} color={Colors.textDim} />
+        </View>
+      )}
+      <View style={styles.gameInfo}>
+        <Text style={styles.gameName} numberOfLines={2}>{item.name}</Text>
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+    </TouchableOpacity>
+  )
+
+  // Render screenshot item
+  const renderScreenshotItem = ({ item, index }: { item: Screenshot; index: number }) => {
+    const isSelected = selectedScreenshot?.url === item.url
     const isCurrent = currentBannerUrl === item.url
 
     return (
       <TouchableOpacity
-        style={[
-          styles.bannerItem,
-          isSelected && styles.bannerItemSelected,
-        ]}
-        onPress={() => handleSelect(item)}
+        style={[styles.screenshotItem, isSelected && styles.screenshotItemSelected]}
+        onPress={() => setSelectedScreenshot(item)}
         activeOpacity={0.8}
       >
         <Image
           source={{ uri: item.url }}
-          style={styles.bannerImage}
+          style={styles.screenshotImage}
           resizeMode="cover"
         />
         {isCurrent && (
@@ -72,13 +187,11 @@ export default function BannerSelector({
         )}
         {isSelected && (
           <View style={styles.selectedOverlay}>
-            <Ionicons name="checkmark-circle" size={32} color={Colors.accent} />
+            <Ionicons name="checkmark-circle" size={48} color={Colors.accent} />
           </View>
         )}
-        <View style={styles.bannerNameContainer}>
-          <Text style={styles.bannerName} numberOfLines={1}>
-            {item.name}
-          </Text>
+        <View style={styles.screenshotNumber}>
+          <Text style={styles.screenshotNumberText}>{index + 1}</Text>
         </View>
       </TouchableOpacity>
     )
@@ -89,42 +202,134 @@ export default function BannerSelector({
       visible={visible}
       animationType="slide"
       transparent={true}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color={Colors.text} />
-            </TouchableOpacity>
-            <Text style={styles.title}>Choose Banner</Text>
-            <TouchableOpacity
-              onPress={handleConfirm}
-              disabled={!selectedBanner || isLoading}
-              style={[
-                styles.confirmButton,
-                (!selectedBanner || isLoading) && styles.confirmButtonDisabled,
-              ]}
-            >
-              {isLoading ? (
-                <LoadingSpinner size="small" color={Colors.text} />
-              ) : (
-                <Text style={styles.confirmText}>Save</Text>
-              )}
-            </TouchableOpacity>
+            {step === 'screenshots' ? (
+              <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
+                <Ionicons name="arrow-back" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            )}
+
+            <Text style={styles.title} numberOfLines={1}>
+              {step === 'search' ? 'Choose a Game' : selectedGame?.name || 'Screenshots'}
+            </Text>
+
+            {step === 'screenshots' ? (
+              <TouchableOpacity
+                onPress={handleConfirm}
+                disabled={!selectedScreenshot || isLoading}
+                style={[
+                  styles.confirmButton,
+                  (!selectedScreenshot || isLoading) && styles.confirmButtonDisabled,
+                ]}
+              >
+                {isLoading ? (
+                  <LoadingSpinner size="small" color={Colors.text} />
+                ) : (
+                  <Text style={styles.confirmText}>Save</Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.headerButton} />
+            )}
           </View>
 
-          {/* Banner Grid */}
-          <FlatList
-            data={BANNER_OPTIONS}
-            renderItem={renderBannerItem}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.row}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
+          {/* Search Step */}
+          {step === 'search' && (
+            <>
+              {/* Search Bar */}
+              <View style={styles.searchContainer}>
+                <View style={styles.searchBar}>
+                  <Ionicons name="search" size={18} color={Colors.textDim} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search for a game..."
+                    placeholderTextColor={Colors.textDim}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    onSubmitEditing={handleSearch}
+                    returnKeyType="search"
+                    autoFocus
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                      <Ionicons name="close-circle" size={18} color={Colors.textDim} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+
+              {/* Search Results */}
+              {isSearching ? (
+                <View style={styles.centered}>
+                  <LoadingSpinner size="large" />
+                </View>
+              ) : searchResults.length > 0 ? (
+                <FlatList
+                  data={searchResults}
+                  renderItem={renderGameItem}
+                  keyExtractor={(item) => item.id.toString()}
+                  contentContainerStyle={styles.listContent}
+                  showsVerticalScrollIndicator={false}
+                />
+              ) : searchQuery.length >= 2 ? (
+                <View style={styles.centered}>
+                  <Ionicons name="game-controller-outline" size={48} color={Colors.textDim} />
+                  <Text style={styles.emptyText}>No games found</Text>
+                  <Text style={styles.hintText}>Try a different search term</Text>
+                </View>
+              ) : (
+                <View style={styles.centered}>
+                  <Ionicons name="images-outline" size={48} color={Colors.textDim} />
+                  <Text style={styles.emptyText}>Search for a game</Text>
+                  <Text style={styles.hintText}>
+                    Find a game to use its screenshots as your banner
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
+
+          {/* Screenshots Step */}
+          {step === 'screenshots' && (
+            <>
+              {isLoadingScreenshots ? (
+                <View style={styles.centered}>
+                  <LoadingSpinner size="large" />
+                  <Text style={styles.loadingText}>Loading screenshots...</Text>
+                </View>
+              ) : screenshotError ? (
+                <View style={styles.centered}>
+                  <Ionicons name="images-outline" size={48} color={Colors.textDim} />
+                  <Text style={styles.emptyText}>{screenshotError}</Text>
+                  <TouchableOpacity style={styles.retryButton} onPress={handleBack}>
+                    <Text style={styles.retryButtonText}>Try another game</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <FlatList
+                  data={screenshots}
+                  renderItem={renderScreenshotItem}
+                  keyExtractor={(item, index) => `${item.url}-${index}`}
+                  contentContainerStyle={styles.screenshotListContent}
+                  showsVerticalScrollIndicator={false}
+                  ListHeaderComponent={
+                    <Text style={styles.screenshotHint}>
+                      {screenshots.length} screenshot{screenshots.length !== 1 ? 's' : ''} available
+                    </Text>
+                  }
+                />
+              )}
+            </>
+          )}
         </View>
       </View>
     </Modal>
@@ -142,7 +347,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: BorderRadius.lg,
     borderTopRightRadius: BorderRadius.lg,
     maxHeight: '90%',
-    paddingBottom: Spacing.xl,
+    minHeight: '70%',
   },
   header: {
     flexDirection: 'row',
@@ -153,16 +358,19 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  closeButton: {
+  headerButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
+    flex: 1,
     fontFamily: Fonts.display,
     fontSize: FontSize.lg,
     color: Colors.text,
+    textAlign: 'center',
+    marginHorizontal: Spacing.sm,
   },
   confirmButton: {
     backgroundColor: Colors.accent,
@@ -178,56 +386,155 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.background,
   },
+  searchContainer: {
+    padding: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    paddingVertical: Spacing.sm,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.xl,
+  },
+  emptyText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
+    marginTop: Spacing.md,
+    textAlign: 'center',
+  },
+  hintText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  loadingText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginTop: Spacing.md,
+  },
   listContent: {
     padding: Spacing.md,
   },
-  row: {
-    justifyContent: 'space-between',
+  gameItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
     marginBottom: Spacing.sm,
+    gap: Spacing.md,
   },
-  bannerItem: {
-    width: BANNER_WIDTH,
+  gameCover: {
+    width: 50,
+    height: 67,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surfaceLight,
+  },
+  coverPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gameInfo: {
+    flex: 1,
+  },
+  gameName: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  screenshotListContent: {
+    padding: Spacing.md,
+    paddingBottom: Spacing.xxxl,
+  },
+  screenshotHint: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  screenshotItem: {
+    width: SCREENSHOT_WIDTH,
+    height: SCREENSHOT_HEIGHT,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
+    marginBottom: Spacing.md,
+    borderWidth: 3,
     borderColor: 'transparent',
   },
-  bannerItemSelected: {
+  screenshotItemSelected: {
     borderColor: Colors.accent,
   },
-  bannerImage: {
+  screenshotImage: {
     width: '100%',
-    height: BANNER_HEIGHT,
+    height: '100%',
     backgroundColor: Colors.surfaceLight,
   },
   currentBadge: {
     position: 'absolute',
-    top: Spacing.xs,
-    left: Spacing.xs,
+    top: Spacing.sm,
+    left: Spacing.sm,
     backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.xs,
-    paddingVertical: 2,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
     borderRadius: BorderRadius.sm,
   },
   currentBadgeText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: FontSize.xs,
     color: Colors.background,
   },
   selectedOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bannerNameContainer: {
-    padding: Spacing.xs,
+  screenshotNumber: {
+    position: 'absolute',
+    bottom: Spacing.sm,
+    right: Spacing.sm,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
   },
-  bannerName: {
-    fontFamily: Fonts.body,
+  screenshotNumberText: {
+    fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'center',
+    color: Colors.text,
+  },
+  retryButton: {
+    marginTop: Spacing.lg,
+    backgroundColor: Colors.accent,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  retryButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.background,
   },
 })

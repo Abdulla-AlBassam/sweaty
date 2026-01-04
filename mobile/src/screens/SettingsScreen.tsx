@@ -30,7 +30,6 @@ import { usePremium } from '../hooks/usePremium'
 import BannerSelector from '../components/BannerSelector'
 import PremiumBadge from '../components/PremiumBadge'
 import PlatformBadges from '../components/PlatformBadges'
-import { BannerOption } from '../constants/banners'
 import { GamingPlatform } from '../types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -254,7 +253,7 @@ export default function SettingsScreen() {
     )
   }
 
-  const handleBannerSelect = async (banner: BannerOption) => {
+  const handleBannerSelect = async (banner: { url: string; gameName: string }) => {
     if (!user) return
 
     setIsSavingBanner(true)
@@ -272,7 +271,7 @@ export default function SettingsScreen() {
       setBannerUrl(banner.url)
       setBannerSelectorVisible(false)
       await refreshProfile()
-      Alert.alert('Success', 'Banner updated successfully')
+      Alert.alert('Success', `Banner set to ${banner.gameName}`)
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to update banner')
     } finally {
