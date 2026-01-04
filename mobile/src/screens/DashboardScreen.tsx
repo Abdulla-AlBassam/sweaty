@@ -192,15 +192,37 @@ export default function DashboardScreen() {
             style={styles.heroBannerContainer}
             onPress={() => handleGamePress(currentBanner.game_id)}
             haptic="light"
-            scale={0.98}
+            scale={0.99}
           >
             <Image
               source={{ uri: currentBanner.screenshot_url }}
               style={styles.heroBannerImage}
               resizeMode="cover"
             />
+            {/* Left edge fade */}
             <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.8)']}
+              colors={['rgba(15,15,15,0.9)', 'rgba(15,15,15,0.4)', 'transparent']}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 0.3, y: 0.5 }}
+              style={styles.heroBannerEdgeFade}
+            />
+            {/* Right edge fade */}
+            <LinearGradient
+              colors={['transparent', 'rgba(15,15,15,0.4)', 'rgba(15,15,15,0.9)']}
+              start={{ x: 0.7, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={styles.heroBannerEdgeFade}
+            />
+            {/* Top fade for seamless blend */}
+            <LinearGradient
+              colors={['rgba(15,15,15,0.7)', 'transparent']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 0.3 }}
+              style={styles.heroBannerTopFade}
+            />
+            {/* Bottom gradient for text */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.9)']}
               style={styles.heroBannerGradient}
             />
             <View style={styles.heroBannerContent}>
@@ -534,38 +556,54 @@ const styles = StyleSheet.create({
   greetingName: {
     color: Colors.text,
   },
-  // Hero Banner
+  // Hero Banner - Cinematic full-width style
   heroBannerContainer: {
-    marginHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.xl,
-    borderRadius: BorderRadius.lg,
-    overflow: 'hidden',
-    height: 180,
+    height: 200,
+    position: 'relative',
   },
   heroBannerImage: {
     width: '100%',
     height: '100%',
+  },
+  heroBannerEdgeFade: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  heroBannerTopFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
   },
   heroBannerGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '60%',
+    height: '50%',
   },
   heroBannerContent: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.lg,
   },
   heroBannerGameName: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.md,
+    fontSize: FontSize.lg,
     color: Colors.text,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   // Section Groups
   sectionGroup: {
