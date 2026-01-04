@@ -618,7 +618,7 @@ export default function PlayStationImportScreen() {
 
             {expandedSection === 'howto' && (
               <View style={styles.howToAccordionContent}>
-                <Text style={styles.timeEstimate}>⏱️ Only takes 2-3 minutes!</Text>
+                <Text style={styles.timeEstimate}>Import all your games in less than 5 minutes and save yourself the hassle of manually logging</Text>
 
                 <View style={styles.optionContainer}>
                   <Text style={styles.optionTitle}>Step 1: Install the Chrome Extension</Text>
