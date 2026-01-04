@@ -417,14 +417,6 @@ export default function PlatformConnectionsScreen() {
             <Text style={styles.comingSoonText}>COMING SOON</Text>
           </View>
         </View>
-
-        {/* Info */}
-        <View style={styles.infoContainer}>
-          <Ionicons name="information-circle-outline" size={20} color={Colors.textDim} />
-          <Text style={styles.infoText}>
-            Imported games are separate from your game logs. Use them to track your full gaming history across platforms.
-          </Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   )
@@ -656,21 +648,5 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.xs,
     color: Colors.textDim,
-  },
-  infoContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.sm,
-    marginTop: Spacing.lg,
-    padding: Spacing.md,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-  },
-  infoText: {
-    flex: 1,
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-    lineHeight: 20,
   },
 })
