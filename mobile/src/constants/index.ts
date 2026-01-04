@@ -47,6 +47,29 @@ export const API_CONFIG = {
   baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://sweaty-v1.vercel.app',
 }
 
+// IGDB Platform ID mapping
+// Used for filtering games by platform
+export const IGDB_PLATFORM_IDS: Record<string, number[]> = {
+  playstation: [48, 167],     // PS4, PS5
+  xbox: [49, 169],            // Xbox One, Xbox Series X|S
+  pc: [6],                    // PC (Windows)
+  nintendo: [130],            // Nintendo Switch
+}
+
+// Helper to convert user's gaming platforms to IGDB platform IDs
+export function getIGDBPlatformIds(platforms: string[] | null): number[] {
+  if (!platforms || platforms.length === 0) return []
+
+  const ids: number[] = []
+  for (const platform of platforms) {
+    const platformIds = IGDB_PLATFORM_IDS[platform]
+    if (platformIds) {
+      ids.push(...platformIds)
+    }
+  }
+  return [...new Set(ids)] // Remove duplicates
+}
+
 // Image sizes for IGDB
 export const IGDB_IMAGE_SIZES = {
   thumb: 't_thumb',

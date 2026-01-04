@@ -18,6 +18,7 @@ import { getIGDBImageUrl, STATUS_LABELS, API_CONFIG } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed } from '../hooks/useSupabase'
+import { usePlatformFilter } from '../hooks/usePlatformFilter'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import AddToListModal from '../components/AddToListModal'
@@ -67,6 +68,7 @@ interface UserGameLog {
 export default function GameDetailScreen({ navigation, route }: Props) {
   const { gameId } = route.params
   const { user } = useAuth()
+  const { platformsParam } = usePlatformFilter()
 
   const [game, setGame] = useState<GameDetails | null>(null)
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
@@ -123,9 +125,14 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         setIsLoading(false)
       }
 
-      // Always fetch from API to get videos (cache doesn't store them)
+      // Always fetch from API to get videos and similar games (cache doesn't store them)
       try {
-        const response = await fetch(`${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
+        let detailsUrl = `${API_CONFIG.baseUrl}/api/games/${gameId}/details`
+        // Add platform filter for similar games
+        if (platformsParam) {
+          detailsUrl += `?platforms=${encodeURIComponent(platformsParam)}`
+        }
+        const response = await fetch(detailsUrl)
         console.log('API Response status:', response.status)
 
         if (response.ok) {

@@ -426,7 +426,9 @@ export default function SettingsScreen() {
           {/* Gaming Platforms */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>gaming platforms</Text>
-            <Text style={styles.platformSubtitle}>Select the platforms you play on</Text>
+            <Text style={styles.platformSubtitle}>
+              Select your platforms to filter game recommendations and content
+            </Text>
 
             <View style={styles.platformsGrid}>
               {PLATFORM_OPTIONS.map((platform) => {

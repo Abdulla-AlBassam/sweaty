@@ -13,11 +13,20 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
+// GET /api/games/[id]/details?platforms=playstation,pc
+// Optional platforms param filters similar games (e.g., 'playstation,pc,xbox,nintendo')
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: gameId } = await params
+
+  // Parse platforms param for filtering similar games
+  const searchParams = request.nextUrl.searchParams
+  const platformsParam = searchParams.get('platforms')
+  const platforms = platformsParam
+    ? platformsParam.split(',').map(p => p.trim().toLowerCase()).filter(Boolean)
+    : undefined
 
   try {
     const token = await getAccessToken()
@@ -60,8 +69,8 @@ export async function GET(
     //   Tier 3: Same genres (75+ rating)
     //   Tier 4: Same themes (80+ rating)
     // Within each tier, sorted by release date (newer first)
-    console.log(`[GameDetails] Fetching smart similar games for: ${game.name}`)
-    const smartSimilarGames = await getSmartSimilarGames(parseInt(gameId), 100)
+    console.log(`[GameDetails] Fetching smart similar games for: ${game.name}`, platforms ? `(platforms: ${platforms.join(',')})` : '(all platforms)')
+    const smartSimilarGames = await getSmartSimilarGames(parseInt(gameId), 100, platforms)
 
     // Keep the tier-based ordering (series first, then developer, then similar, etc.)
     // Don't re-sort by PopScore as it would put popular unrelated games above series/developer games

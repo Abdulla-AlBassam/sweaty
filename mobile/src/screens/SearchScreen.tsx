@@ -23,6 +23,7 @@ import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useCuratedLists } from '../hooks/useSupabase'
+import { usePlatformFilter } from '../hooks/usePlatformFilter'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import CuratedListRow from '../components/CuratedListRow'
@@ -69,6 +70,7 @@ export default function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
   const { lists: curatedLists, refetch: refetchLists } = useCuratedLists()
+  const { platforms, platformsParam } = usePlatformFilter()
   const [query, setQuery] = useState('')
   const [searchFilter, setSearchFilter] = useState<SearchFilter>('games')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])
@@ -193,9 +195,15 @@ export default function SearchScreen() {
       setError(null)
 
       try {
+        // Build search URL with optional platform filter
+        let searchUrl = `${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`
+        if (platformsParam) {
+          searchUrl += `&platforms=${encodeURIComponent(platformsParam)}`
+        }
+
         // Search games and users in parallel
         const [gamesResponse, users] = await Promise.all([
-          fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`),
+          fetch(searchUrl),
           searchUsers(query),
         ])
 
@@ -216,7 +224,7 @@ export default function SearchScreen() {
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [query])
+  }, [query, platformsParam])
 
   const handleGamePress = (gameId: number) => {
     const game = gameResults.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)

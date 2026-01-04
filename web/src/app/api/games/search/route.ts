@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchGames } from '@/lib/igdb'
 
-// GET /api/games/search?q=zelda&limit=10
+// GET /api/games/search?q=zelda&limit=10&platforms=playstation,pc
 // Searches IGDB for games matching the query
+// Optional platforms param filters results (e.g., 'playstation,pc,xbox,nintendo')
 export async function GET(request: NextRequest) {
   // Get query parameters from the URL
   const searchParams = request.nextUrl.searchParams
   const query = searchParams.get('q')
   const limit = parseInt(searchParams.get('limit') || '20')
+  const platformsParam = searchParams.get('platforms')
+
+  // Parse platforms param (comma-separated string -> array)
+  const platforms = platformsParam
+    ? platformsParam.split(',').map(p => p.trim().toLowerCase()).filter(Boolean)
+    : undefined
 
   // Validate the query
   if (!query || query.trim().length === 0) {
@@ -26,7 +33,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const games = await searchGames(query, limit)
+    const games = await searchGames(query, limit, platforms)
     return NextResponse.json({ games })
   } catch (error) {
     console.error('IGDB search error:', error)

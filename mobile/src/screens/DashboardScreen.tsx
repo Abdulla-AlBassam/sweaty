@@ -21,6 +21,7 @@ type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists, useCommunityReviews } from '../hooks/useSupabase'
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import { useBecauseYouLoved, useFriendsFavorites } from '../hooks/useRecommendations'
+import { usePlatformFilter } from '../hooks/usePlatformFilter'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
@@ -52,11 +53,14 @@ export default function DashboardScreen() {
   const { logs, refetch: refetchLogs } = useGameLogs(user?.id)
   const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
 
+  // Platform filter for content filtering
+  const { platforms } = usePlatformFilter()
+
   // Friends playing
   const { games: friendsPlaying, isLoading: friendsLoading, refetch: refetchFriends } = useFriendsPlaying(user?.id)
 
-  // Personalized recommendations
-  const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id)
+  // Personalized recommendations (filtered by user's platform preferences)
+  const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id, platforms)
   const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
 
   // Community activity (recent reviews)

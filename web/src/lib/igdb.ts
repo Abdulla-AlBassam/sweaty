@@ -10,6 +10,34 @@
 const MAJOR_PLATFORMS = [6, 48, 167, 49, 169, 130]
 const MAJOR_PLATFORMS_FILTER = `platforms = (${MAJOR_PLATFORMS.join(',')})`
 
+// User-selectable platform mapping (name -> IGDB IDs)
+export const PLATFORM_ID_MAP: Record<string, number[]> = {
+  playstation: [48, 167],     // PS4, PS5
+  xbox: [49, 169],            // Xbox One, Xbox Series X|S
+  pc: [6],                    // PC (Windows)
+  nintendo: [130],            // Nintendo Switch
+}
+
+// Convert platform names to IGDB platform IDs
+export function getPlatformIds(platforms: string[] | null | undefined): number[] {
+  if (!platforms || platforms.length === 0) return MAJOR_PLATFORMS
+
+  const ids: number[] = []
+  for (const platform of platforms) {
+    const platformIds = PLATFORM_ID_MAP[platform.toLowerCase()]
+    if (platformIds) {
+      ids.push(...platformIds)
+    }
+  }
+  return ids.length > 0 ? [...new Set(ids)] : MAJOR_PLATFORMS
+}
+
+// Build IGDB WHERE clause for platform filter
+function buildPlatformFilter(platforms?: string[] | null): string {
+  const ids = getPlatformIds(platforms)
+  return `platforms = (${ids.join(',')})`
+}
+
 // Valid game categories (exclude DLCs, mods, episodes, bundles, seasons)
 // 0=Main, 4=Standalone Expansion, 8=Remake, 9=Remaster
 const VALID_CATEGORIES = [0, 4, 8, 9]
@@ -233,13 +261,16 @@ function transformGame(game: IGDBGame, options: TransformOptions = {}): Game {
 // ============================================
 
 // Search for games by name
-export async function searchGames(query: string, limit: number = 50): Promise<Game[]> {
+// Optional platforms param filters to specific platforms (e.g., ['playstation', 'pc'])
+export async function searchGames(query: string, limit: number = 50, platforms?: string[]): Promise<Game[]> {
   // Use IGDB search command for fuzzy name matching
   // Then sort results client-side by popularity (total_rating_count)
   const escapedQuery = query.replace(/"/g, '\\"')
+  const platformFilter = buildPlatformFilter(platforms)
 
   const body = `search "${escapedQuery}";
 fields name, slug, summary, cover.image_id, first_release_date, genres.name, platforms.name, total_rating, total_rating_count, category;
+where ${platformFilter};
 limit ${Math.min(limit * 2, 100)};`
 
   console.log('IGDB Query:', body)
@@ -653,7 +684,9 @@ export async function getPopularityForGames(gameIds: number[]): Promise<Map<numb
 // For Uncharted 3: returns Uncharted 1,2,4 (franchise) + Tomb Raider, Last of Us (similar)
 // For MGS V: returns other MGS games (franchise) + stealth action games (similar)
 // For Split Fiction: returns It Takes Two, A Way Out (same developer Hazelight)
-export async function getSmartSimilarGames(gameId: number, limit: number = 15): Promise<Game[]> {
+// Optional platforms param filters to specific platforms (e.g., ['playstation', 'pc'])
+export async function getSmartSimilarGames(gameId: number, limit: number = 15, platforms?: string[]): Promise<Game[]> {
+  const platformFilter = buildPlatformFilter(platforms)
   try {
     // Step 1: Get the base game's data including developer info
     const gameBody = `
@@ -720,7 +753,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           const franchiseBody = `
             fields name, slug, summary, cover.image_id, first_release_date,
                    genres.name, platforms.name, total_rating, category;
-            where id = (${uniqueFranchiseIds.slice(0, 50).join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
+            where id = (${uniqueFranchiseIds.slice(0, 50).join(',')}) & cover != null & ${platformFilter};
             limit 50;
           `
           const franGames = await igdbFetch('games', franchiseBody) as IGDBGame[]
@@ -756,7 +789,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
             const collectionBody = `
               fields name, slug, summary, cover.image_id, first_release_date,
                      genres.name, platforms.name, total_rating, category;
-              where id = (${collectionGameIds.slice(0, 50).join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
+              where id = (${collectionGameIds.slice(0, 50).join(',')}) & cover != null & ${platformFilter};
               limit 50;
             `
             const colGames = await igdbFetch('games', collectionBody) as IGDBGame[]
@@ -790,7 +823,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
           const devGamesBody = `
             fields name, slug, summary, cover.image_id, first_release_date,
                    genres.id, genres.name, platforms.name, total_rating, category;
-            where id = (${devGameIds.slice(0, 30).join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
+            where id = (${devGameIds.slice(0, 30).join(',')}) & cover != null & ${platformFilter};
             limit 30;
           `
           const devGames = await igdbFetch('games', devGamesBody) as IGDBGame[]

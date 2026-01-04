@@ -14,16 +14,23 @@ interface Game {
 }
 
 // API Version: 2 - Uses franchises for series recommendations
+// GET /api/recommendations/because-you-loved?user_id=xxx&platforms=playstation,pc
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('user_id')
+    const platformsParam = searchParams.get('platforms')
+
+    // Parse platforms param for filtering recommendations
+    const platforms = platformsParam
+      ? platformsParam.split(',').map(p => p.trim().toLowerCase()).filter(Boolean)
+      : undefined
 
     if (!userId) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
     }
 
-    console.log('[BecauseYouLoved] API v2 - Franchise-based recommendations')
+    console.log('[BecauseYouLoved] API v2 - Franchise-based recommendations', platforms ? `(platforms: ${platforms.join(',')})` : '(all platforms)')
 
     // Get user's highly rated games (4.5+ stars) - just get game_id and rating
     const { data: lovedGames, error: logsError } = await supabase
@@ -88,7 +95,7 @@ export async function GET(request: Request) {
       console.log('[BecauseYouLoved] Trying:', basedOnGame.name, '(ID:', gameId, ', rating:', selectedLog.rating, '★)')
 
       // Get smart similar games from IGDB - request 150 to have room after filtering
-      const similarGames = await getSmartSimilarGames(basedOnGame.id, 150)
+      const similarGames = await getSmartSimilarGames(basedOnGame.id, 150, platforms)
       console.log('[BecauseYouLoved] IGDB returned', similarGames.length, 'similar games for', basedOnGame.name)
 
       // Filter out games already in user's library

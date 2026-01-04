@@ -35,7 +35,8 @@ interface FriendsFavoritesData {
 // BECAUSE YOU LOVED HOOK
 // ============================================
 
-export function useBecauseYouLoved(userId: string | undefined) {
+// platforms: optional array of platform names like ['playstation', 'pc']
+export function useBecauseYouLoved(userId: string | undefined, platforms?: string[] | null) {
   const [basedOnGame, setBasedOnGame] = useState<Game | null>(null)
   const [recommendations, setRecommendations] = useState<Game[]>([])
   const [isLoading, setIsLoading] = useState(!!userId) // Start loading if we have userId
@@ -53,9 +54,14 @@ export function useBecauseYouLoved(userId: string | undefined) {
     setError(null)
 
     try {
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}/api/recommendations/because-you-loved?user_id=${userId}`
-      )
+      let url = `${API_CONFIG.baseUrl}/api/recommendations/because-you-loved?user_id=${userId}`
+
+      // Add platform filter if provided
+      if (platforms && platforms.length > 0) {
+        url += '&platforms=' + encodeURIComponent(platforms.join(','))
+      }
+
+      const response = await fetch(url)
 
       if (!response.ok) {
         throw new Error('Failed to fetch recommendations')
@@ -73,7 +79,7 @@ export function useBecauseYouLoved(userId: string | undefined) {
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [userId, platforms?.join(',')])
 
   useEffect(() => {
     fetch_()

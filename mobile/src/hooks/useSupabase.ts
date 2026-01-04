@@ -262,7 +262,9 @@ export function useOwnActivityFeed(userId: string | undefined) {
   return { activities, isLoading, error, refetch: fetchActivities }
 }
 
-export function useGameSearch(query: string) {
+// Search games with optional platform filter
+// platforms: array of platform names like ['playstation', 'pc']
+export function useGameSearch(query: string, platforms?: string[] | null) {
   const [games, setGames] = useState<Game[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -280,7 +282,14 @@ export function useGameSearch(query: string) {
       try {
         const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000'
         const encodedQuery = encodeURIComponent(query)
-        const response = await fetch(apiUrl + '/api/games/search?q=' + encodedQuery)
+        let url = apiUrl + '/api/games/search?q=' + encodedQuery
+
+        // Add platform filter if provided
+        if (platforms && platforms.length > 0) {
+          url += '&platforms=' + encodeURIComponent(platforms.join(','))
+        }
+
+        const response = await fetch(url)
 
         if (!response.ok) throw new Error('Failed to search games')
 
@@ -295,7 +304,7 @@ export function useGameSearch(query: string) {
 
     const timeoutId = setTimeout(searchGames, 300)
     return () => clearTimeout(timeoutId)
-  }, [query])
+  }, [query, platforms?.join(',')])
 
   return { games, isLoading, error }
 }
