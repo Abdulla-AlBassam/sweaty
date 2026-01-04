@@ -689,17 +689,12 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     console.log('[getSmartSimilarGames] Developer:', primaryDeveloper?.name || 'none', '| Franchises:', game.franchises?.length || 0, '| Collection:', game.collection || 'none')
     console.log('[getSmartSimilarGames] Similar games:', game.similar_games?.length || 0, '| Genres:', game.genres?.length || 0, '| Themes:', game.themes?.length || 0)
 
-    // Collect games by priority tiers:
+    // Collect games by priority tiers (only using reliable sources):
     // Tier 0: Same franchise/collection (series games)
-    // Tier 1: Same developer (studio games)
-    // Tier 2: IGDB similar_games (curated by IGDB)
-    // Tier 3: Same genres (quality filter)
-    // Tier 4: Same themes (fallback)
+    // Tier 1: Same developer with genre overlap (studio games)
+    // Note: Removed IGDB similar_games, genre, and theme tiers due to unreliable data
     const seriesGames: IGDBGame[] = []
     const developerGames: IGDBGame[] = []
-    const similarGames: IGDBGame[] = []
-    const genreGames: IGDBGame[] = []
-    const themeGames: IGDBGame[] = []
 
     // === TIER 0: FRANCHISE (Series games like FIFA, Resident Evil, etc.) ===
     if (game.franchises && game.franchises.length > 0) {
@@ -821,104 +816,13 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       }
     }
 
-    // === TIER 2: IGDB SIMILAR_GAMES (Curated by IGDB editors) ===
-    // Filter out obscure games by requiring minimum rating count
-    if (game.similar_games && game.similar_games.length > 0) {
-      try {
-        console.log('[getSmartSimilarGames] Fetching', game.similar_games.length, 'similar_games from IGDB')
-
-        const similarBody = `
-          fields name, slug, summary, cover.image_id, first_release_date,
-                 genres.name, platforms.name, total_rating, total_rating_count, category;
-          where id = (${game.similar_games.join(',')}) & cover != null & ${MAJOR_PLATFORMS_FILTER};
-          limit 100;
-        `
-        const simGames = await igdbFetch('games', similarBody) as IGDBGame[]
-
-        // Filter: valid category, not special edition, AND has at least 20 ratings (not obscure)
-        const validSimGames = (simGames || []).filter(g => {
-          if (!VALID_CATEGORIES.includes(g.category || 0)) return false
-          if (isSpecialEdition(g.name || '')) return false
-          // Require minimum ratings to filter out obscure indie games
-          if ((g.total_rating_count || 0) < 20) return false
-          return true
-        })
-
-        console.log('[getSmartSimilarGames] Got', validSimGames.length, 'from SIMILAR_GAMES (filtered obscure)')
-        similarGames.push(...validSimGames)
-      } catch (e) {
-        console.log('[getSmartSimilarGames] Similar games query failed:', e)
-      }
-    }
-
-    // === TIER 3: SAME GENRES (Only AAA/popular games with verified ratings) ===
-    if (game.genres && game.genres.length > 0) {
-      try {
-        const fiveYearsAgo = Math.floor(Date.now() / 1000) - (5 * 365 * 24 * 60 * 60)
-
-        // Use primary genre only - but require high quality
-        const primaryGenre = game.genres[0]
-
-        // Strict filters: 75+ rating, 50+ reviews, recent games, has rating, major platforms
-        const genreQuery = `
-          fields name, slug, summary, cover.image_id, first_release_date,
-                 genres.name, platforms.name, total_rating, total_rating_count, category;
-          where genres = ${primaryGenre}
-            & id != ${gameId}
-            & cover != null
-            & total_rating != null
-            & total_rating >= 75
-            & total_rating_count >= 50
-            & first_release_date >= ${fiveYearsAgo}
-            & ${MAJOR_PLATFORMS_FILTER};
-          sort total_rating desc;
-          limit 30;
-        `
-        const genreResults = await igdbFetch('games', genreQuery) as IGDBGame[]
-        const validGenreGames = (genreResults || []).filter(g =>
-          VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
-        )
-        console.log('[getSmartSimilarGames] Got', validGenreGames.length, 'GENRE-based games (75+ rating, 50+ reviews)')
-        genreGames.push(...validGenreGames)
-      } catch (e) {
-        console.log('[getSmartSimilarGames] Genre query failed:', e)
-      }
-    }
-
-    // === TIER 4: SAME THEMES (Last resort - only top-tier games) ===
-    if (game.themes && game.themes.length > 0) {
-      try {
-        const fiveYearsAgo = Math.floor(Date.now() / 1000) - (5 * 365 * 24 * 60 * 60)
-
-        // Very strict: 80+ rating, 100+ reviews - only show critically acclaimed games, major platforms
-        const themeQuery = `
-          fields name, slug, summary, cover.image_id, first_release_date,
-                 genres.name, platforms.name, total_rating, total_rating_count, category;
-          where themes = ${game.themes[0]}
-            & id != ${gameId}
-            & cover != null
-            & total_rating != null
-            & total_rating >= 80
-            & total_rating_count >= 100
-            & first_release_date >= ${fiveYearsAgo}
-            & ${MAJOR_PLATFORMS_FILTER};
-          sort total_rating desc;
-          limit 20;
-        `
-        const themeResults = await igdbFetch('games', themeQuery) as IGDBGame[]
-        const validThemeGames = (themeResults || []).filter(g =>
-          VALID_CATEGORIES.includes(g.category || 0) && !isSpecialEdition(g.name || '')
-        )
-        console.log('[getSmartSimilarGames] Got', validThemeGames.length, 'THEME-based games (80+ rating, 100+ reviews)')
-        themeGames.push(...validThemeGames)
-      } catch (e) {
-        console.log('[getSmartSimilarGames] Theme query failed:', e)
-      }
-    }
+    // NOTE: Removed Tier 2 (IGDB similar_games), Tier 3 (Genre), Tier 4 (Theme)
+    // IGDB's similar_games data is unreliable and returns random unrelated games
+    // Only using Franchise/Collection and Same Developer for quality results
 
     // === FALLBACK: Name-based search if higher tiers are empty ===
     // This helps find series games when franchise data isn't populated in IGDB
-    if (seriesGames.length === 0 && developerGames.length === 0 && similarGames.length === 0 && game.name) {
+    if (seriesGames.length === 0 && developerGames.length === 0 && game.name) {
       try {
         // Extract base name (e.g., "The Last of Us" from "The Last of Us Part II")
         // Remove common suffixes like Part II, 2, Remastered, etc.
@@ -956,7 +860,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       }
     }
 
-    // Step 2: Build final list with tier assignments
+    // Step 2: Build final list with tier assignments (only Tier 0 and Tier 1)
     const seenIds = new Set<number>()
     const finalList: IGDBGame[] = []
     const tierMap = new Map<number, number>() // gameId -> tier
@@ -981,49 +885,8 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
     console.log('[getSmartSimilarGames] After DEVELOPER:', finalList.length, 'games')
 
-    // Add similar games (Tier 2)
-    for (const g of similarGames) {
-      if (!seenIds.has(g.id)) {
-        seenIds.add(g.id)
-        tierMap.set(g.id, 2)
-        finalList.push(g)
-      }
-    }
-    console.log('[getSmartSimilarGames] After SIMILAR:', finalList.length, 'games')
-
-    // Only add genre/theme games if we have fewer than 10 games from better tiers
-    // This prevents generic "same genre" games from polluting results when we have good matches
-    const MIN_GAMES_BEFORE_FALLBACK = 10
-
-    // Add genre games (Tier 3) - only if needed
-    if (finalList.length < MIN_GAMES_BEFORE_FALLBACK) {
-      for (const g of genreGames) {
-        if (!seenIds.has(g.id)) {
-          seenIds.add(g.id)
-          tierMap.set(g.id, 3)
-          finalList.push(g)
-        }
-      }
-      console.log('[getSmartSimilarGames] After GENRE fallback:', finalList.length, 'games')
-    } else {
-      console.log('[getSmartSimilarGames] Skipping GENRE fallback (already have', finalList.length, 'games)')
-    }
-
-    // Add theme games (Tier 4) - only if needed
-    if (finalList.length < MIN_GAMES_BEFORE_FALLBACK) {
-      for (const g of themeGames) {
-        if (!seenIds.has(g.id)) {
-          seenIds.add(g.id)
-          tierMap.set(g.id, 4)
-          finalList.push(g)
-        }
-      }
-      console.log('[getSmartSimilarGames] After THEME fallback:', finalList.length, 'games total')
-    } else {
-      console.log('[getSmartSimilarGames] Skipping THEME fallback (already have', finalList.length, 'games)')
-    }
-
     if (finalList.length === 0) {
+      console.log('[getSmartSimilarGames] No similar games found')
       return []
     }
 
@@ -1035,14 +898,12 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     // Step 4: Sort - TIER first, then POPSCORE within each tier (most popular first)
     const scoredGames = finalList.map(g => ({
       game: g,
-      tier: tierMap.get(g.id) ?? 4,
-      popScore: popularityMap.get(g.id) || 0,
-      releaseDate: g.first_release_date || 0,
-      rating: g.total_rating || 0
+      tier: tierMap.get(g.id) ?? 1,
+      popScore: popularityMap.get(g.id) || 0
     }))
 
     scoredGames.sort((a, b) => {
-      // Primary: tier (lower is better - series first, then developer, etc.)
+      // Primary: tier (lower is better - series first, then developer)
       if (a.tier !== b.tier) return a.tier - b.tier
       // Secondary: PopScore within tier (higher is better - most popular first)
       return b.popScore - a.popScore
@@ -1052,7 +913,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
 
     // Log final results
     console.log('[getSmartSimilarGames] Final', result.length, 'games:')
-    const tierLabels = ['SERIES', 'DEVELOPER', 'SIMILAR', 'GENRE', 'THEME']
+    const tierLabels = ['SERIES', 'DEVELOPER']
     result.forEach((g, i) => {
       console.log(`  ${i + 1}. ${g.game.name} [${tierLabels[g.tier]}] (pop: ${g.popScore})`)
     })
