@@ -131,6 +131,7 @@ export default function LogGameModal({
   const [error, setError] = useState<string | null>(null)
   const [statusPickerVisible, setStatusPickerVisible] = useState(false)
   const [platformPickerVisible, setPlatformPickerVisible] = useState(false)
+  const [listsPickerVisible, setListsPickerVisible] = useState(false)
   const [showCreateListModal, setShowCreateListModal] = useState(false)
 
   // Lists functionality
@@ -630,61 +631,24 @@ export default function LogGameModal({
             {user && (
               <>
                 <Text style={styles.sectionLabel}>Add to Lists</Text>
-                <View style={styles.listsContainer}>
-                  {listsLoading ? (
-                    <View style={styles.listsLoadingContainer}>
-                      <LoadingSpinner size="small" color={Colors.accent} />
-                    </View>
-                  ) : lists.length === 0 ? (
-                    <TouchableOpacity
-                      style={styles.createListButton}
-                      onPress={() => setShowCreateListModal(true)}
-                    >
-                      <Ionicons name="add" size={18} color={Colors.accent} />
-                      <Text style={styles.createListButtonText}>Create your first list</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <>
-                      {lists.slice(0, 4).map((list) => {
-                        const isInList = gameInLists.has(list.id)
-                        const isLoadingItem = loadingLists.has(list.id)
-
-                        return (
-                          <TouchableOpacity
-                            key={list.id}
-                            style={styles.listRow}
-                            onPress={() => handleToggleList(list.id)}
-                            disabled={isLoadingItem}
-                            activeOpacity={0.7}
-                          >
-                            <View style={styles.listInfo}>
-                              <Text style={styles.listTitle} numberOfLines={1}>
-                                {list.title}
-                              </Text>
-                            </View>
-
-                            {isLoadingItem ? (
-                              <LoadingSpinner size="small" color={Colors.accent} />
-                            ) : isInList ? (
-                              <View style={styles.listCheckmark}>
-                                <Ionicons name="checkmark" size={14} color={Colors.background} />
-                              </View>
-                            ) : (
-                              <View style={styles.listEmptyCheck} />
-                            )}
-                          </TouchableOpacity>
-                        )
-                      })}
-                      <TouchableOpacity
-                        style={styles.createListButton}
-                        onPress={() => setShowCreateListModal(true)}
-                      >
-                        <Ionicons name="add" size={18} color={Colors.accent} />
-                        <Text style={styles.createListButtonText}>New list</Text>
-                      </TouchableOpacity>
-                    </>
-                  )}
-                </View>
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setListsPickerVisible(true)}
+                  disabled={listsLoading}
+                >
+                  <View style={styles.dropdownContent}>
+                    {listsLoading ? (
+                      <Text style={styles.dropdownPlaceholder}>Loading lists...</Text>
+                    ) : gameInLists.size > 0 ? (
+                      <Text style={styles.dropdownText} numberOfLines={1}>
+                        {gameInLists.size} {gameInLists.size === 1 ? 'list' : 'lists'} selected
+                      </Text>
+                    ) : (
+                      <Text style={styles.dropdownPlaceholder}>Select Lists</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+                </TouchableOpacity>
               </>
             )}
 
@@ -752,6 +716,83 @@ export default function LogGameModal({
         onSelect={setPlatform}
         showIcons={false}
       />
+
+      {/* Lists Picker Modal - Multi-select with New List option */}
+      <Modal
+        visible={listsPickerVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setListsPickerVisible(false)}
+      >
+        <Pressable style={styles.pickerOverlay} onPress={() => setListsPickerVisible(false)}>
+          <Pressable style={styles.pickerContainer} onPress={(e) => e.stopPropagation()}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Add to Lists</Text>
+              <TouchableOpacity onPress={() => setListsPickerVisible(false)} style={styles.pickerCloseButton}>
+                <Ionicons name="close" size={24} color={Colors.text} />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={lists}
+              keyExtractor={(item) => item.id}
+              ListEmptyComponent={
+                <View style={styles.listsEmptyContainer}>
+                  <Text style={styles.listsEmptyText}>No lists yet</Text>
+                </View>
+              }
+              ListFooterComponent={
+                <TouchableOpacity
+                  style={styles.newListButton}
+                  onPress={() => {
+                    setListsPickerVisible(false)
+                    setShowCreateListModal(true)
+                  }}
+                >
+                  <Ionicons name="add" size={22} color={Colors.accent} />
+                  <Text style={styles.newListButtonText}>New list</Text>
+                </TouchableOpacity>
+              }
+              renderItem={({ item }) => {
+                const isInList = gameInLists.has(item.id)
+                const isLoadingItem = loadingLists.has(item.id)
+
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.pickerItem,
+                      isInList && styles.pickerItemSelected,
+                    ]}
+                    onPress={() => handleToggleList(item.id)}
+                    disabled={isLoadingItem}
+                  >
+                    <View style={styles.listPickerInfo}>
+                      <Text
+                        style={[
+                          styles.pickerItemText,
+                          isInList && styles.pickerItemTextSelected,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {item.title}
+                      </Text>
+                      {!item.is_public && (
+                        <Ionicons name="lock-closed" size={12} color={Colors.textMuted} style={{ marginLeft: 6 }} />
+                      )}
+                    </View>
+                    {isLoadingItem ? (
+                      <LoadingSpinner size="small" color={Colors.accent} />
+                    ) : isInList ? (
+                      <Ionicons name="checkmark" size={22} color={Colors.accent} />
+                    ) : (
+                      <View style={styles.listEmptyCheckPicker} />
+                    )}
+                  </TouchableOpacity>
+                )
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Create List Modal */}
       <CreateListModal
@@ -1060,5 +1101,41 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.accent,
     marginLeft: Spacing.xs,
+  },
+  // Lists picker styles
+  listsEmptyContainer: {
+    padding: Spacing.xl,
+    alignItems: 'center',
+  },
+  listsEmptyText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  newListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  newListButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.accent,
+  },
+  listPickerInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  listEmptyCheckPicker: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: Colors.border,
   },
 })

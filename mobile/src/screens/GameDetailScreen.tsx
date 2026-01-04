@@ -273,7 +273,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           onPress={() => setIsModalVisible(true)}
         >
           <Ionicons
-            name={userLog ? 'create-outline' : 'add'}
+            name={userLog ? 'pencil' : 'add'}
             size={20}
             color={Colors.background}
           />
@@ -358,7 +358,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               {friendsWhoPlayed.map((friend) => (
                 <TouchableOpacity
                   key={friend.id}
-                  style={styles.friendItem}
                   onPress={() => navigation.navigate('UserProfile', { username: friend.username })}
                 >
                   {friend.avatar_url ? (
@@ -368,12 +367,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                       <Ionicons name="person" size={14} color={Colors.textMuted} />
                     </View>
                   )}
-                  <Text style={styles.friendName} numberOfLines={1}>
-                    {friend.display_name || friend.username}
-                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
+            <View style={styles.sectionSeparator} />
           </View>
         )}
 
@@ -385,6 +382,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>About</Text>
             <Text style={styles.summaryText}>{game.summary}</Text>
+            <View style={styles.sectionSeparator} />
           </View>
         )}
 
@@ -394,14 +392,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         {/* Trailers */}
         {game.videos && game.videos.length > 0 && (
           <TrailerSection videos={game.videos} />
-        )}
-
-        {/* Platforms */}
-        {game.platforms && game.platforms.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Platforms</Text>
-            <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
-          </View>
         )}
 
         {/* Similar games */}
@@ -429,6 +419,15 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                 </TouchableOpacity>
               ))}
             </ScrollView>
+            <View style={styles.sectionSeparator} />
+          </View>
+        )}
+
+        {/* Platforms */}
+        {game.platforms && game.platforms.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Platforms</Text>
+            <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
           </View>
         )}
       </ScrollView>
@@ -598,34 +597,28 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
   },
+  sectionSeparator: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginTop: Spacing.lg,
+  },
   // Friends who played styles
   friendsSection: {
     marginBottom: Spacing.lg,
   },
   friendsRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  friendItem: {
-    alignItems: 'center',
-    width: 56,
+    gap: Spacing.sm,
   },
   friendAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginBottom: 4,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   friendAvatarPlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  friendName: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-    textAlign: 'center',
   },
   // Similar Games styles
   similarGamesRow: {
