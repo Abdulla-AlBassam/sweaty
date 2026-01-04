@@ -69,6 +69,10 @@ interface SearchCuratedList {
   title: string
   description: string | null
   game_count: number
+  preview_games: Array<{
+    id: number
+    cover_url: string | null
+  }>
 }
 
 interface SearchUserList {
@@ -222,13 +226,36 @@ export default function SearchScreen() {
 
       if (error) throw error
 
-      return (data || []).map((list: any) => ({
-        id: list.id,
-        slug: list.slug,
-        title: list.title,
-        description: list.description,
-        game_count: list.game_ids?.length || 0,
-      }))
+      // For each list, get first 3 game covers for preview
+      const listsWithPreviews = await Promise.all(
+        (data || []).map(async (list: any) => {
+          const gameIds = list.game_ids?.slice(0, 3) || []
+          let preview_games: Array<{ id: number; cover_url: string | null }> = []
+
+          if (gameIds.length > 0) {
+            const { data: gamesData } = await supabase
+              .from('games_cache')
+              .select('id, cover_url')
+              .in('id', gameIds)
+
+            // Maintain order from game_ids
+            preview_games = gameIds
+              .map((id: number) => gamesData?.find((g: any) => g.id === id))
+              .filter(Boolean)
+          }
+
+          return {
+            id: list.id,
+            slug: list.slug,
+            title: list.title,
+            description: list.description,
+            game_count: list.game_ids?.length || 0,
+            preview_games,
+          }
+        })
+      )
+
+      return listsWithPreviews
     } catch (err) {
       console.error('Curated list search error:', err)
       return []
@@ -583,15 +610,30 @@ export default function SearchScreen() {
                       style={styles.listRow}
                       onPress={() => handleCuratedListPress(list)}
                     >
-                      <View style={styles.listIconContainer}>
-                        <Ionicons name="star" size={20} color={Colors.accent} />
+                      {/* Preview game covers */}
+                      <View style={styles.listPreviewCovers}>
+                        {list.preview_games.length > 0 ? (
+                          list.preview_games.slice(0, 3).map((game, index) => (
+                            <Image
+                              key={game.id}
+                              source={{ uri: getIGDBImageUrl(game.cover_url, 'coverSmall') }}
+                              style={[
+                                styles.listPreviewCover,
+                                { marginLeft: index > 0 ? -10 : 0, zIndex: 3 - index },
+                              ]}
+                            />
+                          ))
+                        ) : (
+                          <View style={[styles.listPreviewCover, styles.listPreviewPlaceholder]}>
+                            <Ionicons name="list" size={16} color={Colors.textDim} />
+                          </View>
+                        )}
                       </View>
                       <View style={styles.listInfo}>
                         <Text style={styles.listTitle}>{list.title}</Text>
                         {list.description && (
                           <Text style={styles.listDescription} numberOfLines={1}>{list.description}</Text>
                         )}
-                        <Text style={styles.listMeta}>{list.game_count} games</Text>
                       </View>
                       <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
                     </TouchableOpacity>
@@ -1019,24 +1061,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  listIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   listPreviewCovers: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: 60,
+    width: 76,                           // Space for 3 covers (32*3 - 10*2 overlap)
   },
   listPreviewCover: {
     width: 32,
     height: 44,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.background,      // Border to separate overlapping covers
   },
   listPreviewPlaceholder: {
     alignItems: 'center',
