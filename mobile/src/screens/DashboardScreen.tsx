@@ -51,16 +51,18 @@ export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user, profile } = useAuth()
   const { logs, refetch: refetchLogs } = useGameLogs(user?.id)
-  const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists()
 
   // Platform filter for content filtering
-  const { platforms } = usePlatformFilter()
+  const { platforms, excludePcOnly } = usePlatformFilter()
+
+  // Curated lists with PC-only filter
+  const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists(excludePcOnly)
 
   // Friends playing
   const { games: friendsPlaying, isLoading: friendsLoading, refetch: refetchFriends } = useFriendsPlaying(user?.id)
 
-  // Personalized recommendations (filtered by user's platform preferences)
-  const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id, platforms)
+  // Personalized recommendations (filtered by user's platform preferences and PC-only setting)
+  const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id, platforms, excludePcOnly)
   const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
 
   // Community activity (recent reviews)

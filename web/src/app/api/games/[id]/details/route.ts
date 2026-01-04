@@ -13,8 +13,9 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
-// GET /api/games/[id]/details?platforms=playstation,pc
+// GET /api/games/[id]/details?platforms=playstation,pc&exclude_pc_only=true
 // Optional platforms param filters similar games (e.g., 'playstation,pc,xbox,nintendo')
+// Optional exclude_pc_only param removes games that are ONLY available on PC
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -27,6 +28,9 @@ export async function GET(
   const platforms = platformsParam
     ? platformsParam.split(',').map(p => p.trim().toLowerCase()).filter(Boolean)
     : undefined
+
+  // Parse exclude_pc_only param
+  const excludePcOnly = searchParams.get('exclude_pc_only') === 'true'
 
   try {
     const token = await getAccessToken()
@@ -69,8 +73,8 @@ export async function GET(
     //   Tier 3: Same genres (75+ rating)
     //   Tier 4: Same themes (80+ rating)
     // Within each tier, sorted by release date (newer first)
-    console.log(`[GameDetails] Fetching smart similar games for: ${game.name}`, platforms ? `(platforms: ${platforms.join(',')})` : '(all platforms)')
-    const smartSimilarGames = await getSmartSimilarGames(parseInt(gameId), 100, platforms)
+    console.log(`[GameDetails] Fetching smart similar games for: ${game.name}`, platforms ? `(platforms: ${platforms.join(',')})` : '(all platforms)', excludePcOnly ? '(excluding PC-only)' : '')
+    const smartSimilarGames = await getSmartSimilarGames(parseInt(gameId), 100, platforms, excludePcOnly)
 
     // Keep the tier-based ordering (series first, then developer, then similar, etc.)
     // Don't re-sort by PopScore as it would put popular unrelated games above series/developer games

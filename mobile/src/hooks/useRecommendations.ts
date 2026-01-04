@@ -36,7 +36,8 @@ interface FriendsFavoritesData {
 // ============================================
 
 // platforms: optional array of platform names like ['playstation', 'pc']
-export function useBecauseYouLoved(userId: string | undefined, platforms?: string[] | null) {
+// excludePcOnly: if true, excludes games that are ONLY available on PC
+export function useBecauseYouLoved(userId: string | undefined, platforms?: string[] | null, excludePcOnly: boolean = false) {
   const [basedOnGame, setBasedOnGame] = useState<Game | null>(null)
   const [recommendations, setRecommendations] = useState<Game[]>([])
   const [isLoading, setIsLoading] = useState(!!userId) // Start loading if we have userId
@@ -61,6 +62,11 @@ export function useBecauseYouLoved(userId: string | undefined, platforms?: strin
         url += '&platforms=' + encodeURIComponent(platforms.join(','))
       }
 
+      // Add exclude PC-only filter
+      if (excludePcOnly) {
+        url += '&exclude_pc_only=true'
+      }
+
       const response = await fetch(url)
 
       if (!response.ok) {
@@ -79,7 +85,7 @@ export function useBecauseYouLoved(userId: string | undefined, platforms?: strin
     } finally {
       setIsLoading(false)
     }
-  }, [userId, platforms?.join(',')])
+  }, [userId, platforms?.join(','), excludePcOnly])
 
   useEffect(() => {
     fetch_()

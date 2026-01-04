@@ -319,7 +319,29 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled
 }
 
-export function useCuratedLists() {
+// PC platform names that indicate a game is on PC
+const PC_PLATFORM_NAMES = [
+  'pc',
+  'windows',
+  'mac',
+  'linux',
+  'pc (microsoft windows)',
+  'macos',
+  'classic mac os',
+  'steam',
+  'dos',
+]
+
+// Check if a game is PC-only based on its platforms array
+function isPcOnlyGame(platforms: string[] | null | undefined): boolean {
+  if (!platforms || platforms.length === 0) return false
+  const normalizedPlatforms = platforms.map(p => p.toLowerCase().trim())
+  return normalizedPlatforms.every(platform =>
+    PC_PLATFORM_NAMES.some(pcName => platform.includes(pcName))
+  )
+}
+
+export function useCuratedLists(excludePcOnly: boolean = false) {
   const [lists, setLists] = useState<CuratedListWithGames[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -344,29 +366,36 @@ export function useCuratedLists() {
         list.game_ids.forEach((id) => allGameIds.add(id))
       })
 
-      // Batch fetch all games
+      // Batch fetch all games (include platforms for PC-only filtering)
       const { data: gamesData, error: gamesError } = await supabase
         .from('games_cache')
-        .select('id, name, cover_url')
+        .select('id, name, cover_url, platforms')
         .in('id', Array.from(allGameIds))
 
       if (gamesError) throw gamesError
 
       // Create a map of game ID to game data
-      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null }>()
+      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null; platforms: string[] | null }>()
       ;(gamesData || []).forEach((game: any) => {
         gamesMap.set(game.id, game)
       })
 
       // Build the lists with games, shuffling games within each list
-      const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => ({
-        ...list,
-        games: shuffleArray(
-          list.game_ids
-            .map((id) => gamesMap.get(id))
-            .filter((game): game is { id: number; name: string; cover_url: string | null } => game !== undefined)
-        ),
-      }))
+      const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => {
+        let games = list.game_ids
+          .map((id) => gamesMap.get(id))
+          .filter((game): game is { id: number; name: string; cover_url: string | null; platforms: string[] | null } => game !== undefined)
+
+        // Filter out PC-only games if excludePcOnly is enabled
+        if (excludePcOnly) {
+          games = games.filter(game => !isPcOnlyGame(game.platforms))
+        }
+
+        return {
+          ...list,
+          games: shuffleArray(games),
+        }
+      })
 
       // Shuffle the order of lists themselves
       setLists(shuffleArray(listsWithGames))
@@ -375,7 +404,7 @@ export function useCuratedLists() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [excludePcOnly])
 
   useEffect(() => {
     fetchLists()

@@ -69,8 +69,8 @@ const MAX_RECENT_SEARCHES = 5
 export default function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
   const { user } = useAuth()
-  const { lists: curatedLists, refetch: refetchLists } = useCuratedLists()
-  const { platforms, platformsParam } = usePlatformFilter()
+  const { platforms, platformsParam, excludePcOnly } = usePlatformFilter()
+  const { lists: curatedLists, refetch: refetchLists } = useCuratedLists(excludePcOnly)
   const [query, setQuery] = useState('')
   const [searchFilter, setSearchFilter] = useState<SearchFilter>('games')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])

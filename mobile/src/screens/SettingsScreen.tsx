@@ -56,6 +56,7 @@ export default function SettingsScreen() {
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [gamingPlatforms, setGamingPlatforms] = useState<GamingPlatform[]>([])
+  const [excludePcOnly, setExcludePcOnly] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [isSavingBanner, setIsSavingBanner] = useState(false)
@@ -71,6 +72,7 @@ export default function SettingsScreen() {
       setUsername(profile.username || '')
       setBio(profile.bio || '')
       setGamingPlatforms(profile.gaming_platforms || [])
+      setExcludePcOnly(profile.exclude_pc_only || false)
     }
   }, [profile])
 
@@ -80,6 +82,7 @@ export default function SettingsScreen() {
     const originalUsername = profile?.username || ''
     const originalAvatar = profile?.avatar_url || null
     const originalPlatforms = profile?.gaming_platforms || []
+    const originalExcludePcOnly = profile?.exclude_pc_only || false
 
     // Check if platforms arrays are different
     const platformsChanged =
@@ -91,9 +94,10 @@ export default function SettingsScreen() {
       bio !== originalBio ||
       username !== originalUsername ||
       avatarUrl !== originalAvatar ||
-      platformsChanged
+      platformsChanged ||
+      excludePcOnly !== originalExcludePcOnly
     )
-  }, [displayName, bio, username, avatarUrl, gamingPlatforms, profile])
+  }, [displayName, bio, username, avatarUrl, gamingPlatforms, excludePcOnly, profile])
 
   const validateUsername = (value: string): boolean => {
     if (value.length < 3) {
@@ -223,6 +227,7 @@ export default function SettingsScreen() {
           username: username,
           bio: bio.trim() || null,
           gaming_platforms: gamingPlatforms,
+          exclude_pc_only: excludePcOnly,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -462,6 +467,36 @@ export default function SettingsScreen() {
                 )
               })}
             </View>
+
+            {/* Exclude PC-only toggle */}
+            <TouchableOpacity
+              style={styles.excludePcToggle}
+              onPress={() => setExcludePcOnly(!excludePcOnly)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.excludePcContent}>
+                <MaterialCommunityIcons
+                  name="desktop-tower-monitor"
+                  size={20}
+                  color={excludePcOnly ? Colors.error : Colors.textDim}
+                />
+                <View style={styles.excludePcTextContainer}>
+                  <Text style={styles.excludePcLabel}>Hide PC-only games</Text>
+                  <Text style={styles.excludePcDescription}>
+                    Remove games that are only available on PC from all lists
+                  </Text>
+                </View>
+              </View>
+              <View style={[
+                styles.toggleSwitch,
+                excludePcOnly && styles.toggleSwitchActive
+              ]}>
+                <View style={[
+                  styles.toggleKnob,
+                  excludePcOnly && styles.toggleKnobActive
+                ]} />
+              </View>
+            </TouchableOpacity>
           </View>
 
           {/* Account Info */}
@@ -804,6 +839,58 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: Spacing.xs,
+  },
+  excludePcToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  excludePcContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: Spacing.sm,
+  },
+  excludePcTextContainer: {
+    flex: 1,
+  },
+  excludePcLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  excludePcDescription: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginTop: 2,
+  },
+  toggleSwitch: {
+    width: 44,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceLight,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  toggleSwitchActive: {
+    backgroundColor: Colors.accent,
+  },
+  toggleKnob: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.textDim,
+  },
+  toggleKnobActive: {
+    backgroundColor: Colors.text,
+    alignSelf: 'flex-end',
   },
   infoRow: {
     flexDirection: 'row',

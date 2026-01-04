@@ -27,6 +27,7 @@ export interface Profile {
   bio: string | null
   favorite_games: number[] | null
   gaming_platforms: GamingPlatform[] | null
+  exclude_pc_only: boolean | null  // Hide games that are ONLY on PC
   subscription_tier: SubscriptionTier
   subscription_expires_at: string | null
   trial_started_at: string | null

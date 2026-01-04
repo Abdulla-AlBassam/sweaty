@@ -68,7 +68,7 @@ interface UserGameLog {
 export default function GameDetailScreen({ navigation, route }: Props) {
   const { gameId } = route.params
   const { user } = useAuth()
-  const { platformsParam } = usePlatformFilter()
+  const { platformsParam, excludePcOnly } = usePlatformFilter()
 
   const [game, setGame] = useState<GameDetails | null>(null)
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
@@ -128,9 +128,17 @@ export default function GameDetailScreen({ navigation, route }: Props) {
       // Always fetch from API to get videos and similar games (cache doesn't store them)
       try {
         let detailsUrl = `${API_CONFIG.baseUrl}/api/games/${gameId}/details`
+        const params: string[] = []
         // Add platform filter for similar games
         if (platformsParam) {
-          detailsUrl += `?platforms=${encodeURIComponent(platformsParam)}`
+          params.push(`platforms=${encodeURIComponent(platformsParam)}`)
+        }
+        // Add exclude PC-only filter
+        if (excludePcOnly) {
+          params.push('exclude_pc_only=true')
+        }
+        if (params.length > 0) {
+          detailsUrl += `?${params.join('&')}`
         }
         const response = await fetch(detailsUrl)
         console.log('API Response status:', response.status)

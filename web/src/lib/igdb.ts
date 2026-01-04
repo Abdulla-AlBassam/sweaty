@@ -56,6 +56,28 @@ function isSpecialEdition(name: string): boolean {
   return EDITION_KEYWORDS.some(keyword => lowerName.includes(keyword))
 }
 
+// PC platform names that indicate a game is on PC
+const PC_PLATFORM_NAMES = [
+  'pc',
+  'windows',
+  'mac',
+  'linux',
+  'pc (microsoft windows)',
+  'macos',
+  'classic mac os',
+  'steam',
+  'dos',
+]
+
+// Check if a game is PC-only based on its platforms array
+export function isPcOnlyGame(platforms: string[] | null | undefined): boolean {
+  if (!platforms || platforms.length === 0) return false
+  const normalizedPlatforms = platforms.map(p => p.toLowerCase().trim())
+  return normalizedPlatforms.every(platform =>
+    PC_PLATFORM_NAMES.some(pcName => platform.includes(pcName))
+  )
+}
+
 // ============================================
 // TYPES
 // ============================================
@@ -685,7 +707,7 @@ export async function getPopularityForGames(gameIds: number[]): Promise<Map<numb
 // For MGS V: returns other MGS games (franchise) + stealth action games (similar)
 // For Split Fiction: returns It Takes Two, A Way Out (same developer Hazelight)
 // Optional platforms param filters to specific platforms (e.g., ['playstation', 'pc'])
-export async function getSmartSimilarGames(gameId: number, limit: number = 15, platforms?: string[]): Promise<Game[]> {
+export async function getSmartSimilarGames(gameId: number, limit: number = 15, platforms?: string[], excludePcOnly: boolean = false): Promise<Game[]> {
   const platformFilter = buildPlatformFilter(platforms)
   try {
     // Step 1: Get the base game's data including developer info
@@ -936,16 +958,26 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
       return b.popScore - a.popScore
     })
 
-    const result = scoredGames.slice(0, limit)
+    // Transform to final Game format
+    let games = scoredGames.map(g => transformGame(g.game))
+
+    // Filter out PC-only games if requested
+    if (excludePcOnly) {
+      const beforeCount = games.length
+      games = games.filter(g => !isPcOnlyGame(g.platforms))
+      console.log(`[getSmartSimilarGames] Filtered ${beforeCount - games.length} PC-only games`)
+    }
+
+    const result = games.slice(0, limit)
 
     // Log final results
     console.log('[getSmartSimilarGames] Final', result.length, 'games:')
     const tierLabels = ['SERIES', 'DEVELOPER']
-    result.forEach((g, i) => {
+    scoredGames.slice(0, limit).forEach((g, i) => {
       console.log(`  ${i + 1}. ${g.game.name} [${tierLabels[g.tier] || 'UNKNOWN'}] (pop: ${g.popScore})`)
     })
 
-    return result.map(g => transformGame(g.game))
+    return result
   } catch (error) {
     console.error('[getSmartSimilarGames] Error:', error)
     return []
