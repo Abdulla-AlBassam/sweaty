@@ -109,9 +109,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
     marginBottom: Spacing.sm,
   },
   playerContainer: {

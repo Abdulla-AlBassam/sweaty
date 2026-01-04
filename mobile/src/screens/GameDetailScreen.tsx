@@ -315,30 +315,27 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             {game.genres && game.genres.length > 0 && (
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
-          </View>
-        </View>
 
-        {/* Rating Pills */}
-        <View style={styles.ratingPills}>
-          {openCriticData?.score && (
-            <View style={[styles.ratingPill, { borderColor: getOpenCriticColor(openCriticData.tier) }]}>
-              <Text style={[styles.ratingPillScore, { color: getOpenCriticColor(openCriticData.tier) }]}>
-                {openCriticData.score}
-              </Text>
-              <Text style={[styles.ratingPillLabel, { color: getOpenCriticColor(openCriticData.tier) }]}>
-                {openCriticData.tier}
-              </Text>
+            {/* Rating Pills */}
+            <View style={styles.ratingPills}>
+              {openCriticData?.score && (
+                <View style={[styles.ratingPill, { borderColor: getOpenCriticColor(openCriticData.tier) }]}>
+                  <Text style={[styles.ratingPillScore, { color: getOpenCriticColor(openCriticData.tier) }]}>
+                    {openCriticData.score}
+                  </Text>
+                </View>
+              )}
+              {communityStats.averageRating ? (
+                <View style={styles.ratingPill}>
+                  <Ionicons name="star" size={14} color="#FFD700" />
+                  <Text style={styles.ratingPillText}>{communityStats.averageRating}</Text>
+                </View>
+              ) : null}
+              <View style={styles.ratingPill}>
+                <SweatDropIcon size={14} variant="static" />
+                <Text style={styles.ratingPillText}>{communityStats.totalLogs || 0} logs</Text>
+              </View>
             </View>
-          )}
-          {communityStats.averageRating ? (
-            <View style={styles.ratingPill}>
-              <Ionicons name="star" size={14} color="#FFD700" />
-              <Text style={styles.ratingPillText}>{communityStats.averageRating}</Text>
-            </View>
-          ) : null}
-          <View style={styles.ratingPill}>
-            <Ionicons name="game-controller-outline" size={14} color={Colors.textMuted} />
-            <Text style={styles.ratingPillText}>{communityStats.totalLogs || 0} logs</Text>
           </View>
         </View>
 
@@ -619,14 +616,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.sm,
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.sm,
   },
   ratingPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -634,24 +631,22 @@ const styles = StyleSheet.create({
   },
   ratingPillScore: {
     fontFamily: Fonts.bodyBold,
-    fontSize: FontSize.md,
-  },
-  ratingPillLabel: {
-    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
   },
   ratingPillText: {
     fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.text,
   },
   section: {
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
     marginBottom: Spacing.sm,
   },
   summaryText: {

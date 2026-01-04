@@ -174,9 +174,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error,
   },
   sectionTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   totalText: {
     fontFamily: Fonts.body,
