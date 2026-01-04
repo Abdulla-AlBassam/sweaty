@@ -8,7 +8,9 @@ import {
   Image,
   Animated,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
@@ -22,6 +24,7 @@ import { useGameLogs, useCuratedLists, useCommunityReviews } from '../hooks/useS
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import { useBecauseYouLoved, useFriendsFavorites } from '../hooks/useRecommendations'
 import { usePlatformFilter } from '../hooks/usePlatformFilter'
+import { useHeroBanners } from '../hooks/useHeroBanners'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
@@ -31,6 +34,8 @@ import PressableScale from '../components/PressableScale'
 import StackedAvatars from '../components/StackedAvatars'
 import NewsSection from '../components/NewsSection'
 import Skeleton from '../components/Skeleton'
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 // Background colors for section groups
 const SectionBg = {
@@ -68,6 +73,9 @@ export default function DashboardScreen() {
   // Community activity (recent reviews)
   const { reviews: communityReviews, isLoading: communityLoading, refetch: refetchCommunity } = useCommunityReviews()
 
+  // Hero banners for featured screenshots
+  const { currentBanner, shuffleBanner, refetch: refetchBanners } = useHeroBanners()
+
   const [refreshing, setRefreshing] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
 
@@ -96,6 +104,7 @@ export default function DashboardScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     setRefreshCount((prev) => prev + 1) // Trigger news shuffle
+    shuffleBanner() // Show a different hero banner
     await Promise.all([
       refetchLogs(),
       refetchLists(),
@@ -105,7 +114,7 @@ export default function DashboardScreen() {
       refetchCommunity(),
     ])
     setRefreshing(false)
-  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchCommunity])
+  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchCommunity, shuffleBanner])
 
 
   // Currently playing games
@@ -176,6 +185,29 @@ export default function DashboardScreen() {
             {getGreeting()}, <Text style={styles.greetingName}>{profile?.display_name || profile?.username || 'Gamer'}</Text>
           </Text>
         </View>
+
+        {/* Hero Banner - Featured Game Screenshot */}
+        {currentBanner && (
+          <PressableScale
+            style={styles.heroBannerContainer}
+            onPress={() => handleGamePress(currentBanner.game_id)}
+            haptic="light"
+            scale={0.98}
+          >
+            <Image
+              source={{ uri: currentBanner.screenshot_url }}
+              style={styles.heroBannerImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.8)']}
+              style={styles.heroBannerGradient}
+            />
+            <View style={styles.heroBannerContent}>
+              <Text style={styles.heroBannerGameName}>{currentBanner.game_name}</Text>
+            </View>
+          </PressableScale>
+        )}
 
         {/* ═══════════════════════════════════════════════ */}
         {/* YOUR GAMES Section Group */}
@@ -501,6 +533,39 @@ const styles = StyleSheet.create({
   },
   greetingName: {
     color: Colors.text,
+  },
+  // Hero Banner
+  heroBannerContainer: {
+    marginHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.xl,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    height: 180,
+  },
+  heroBannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroBannerGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+  },
+  heroBannerContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: Spacing.md,
+  },
+  heroBannerGameName: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   // Section Groups
   sectionGroup: {

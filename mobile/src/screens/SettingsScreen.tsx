@@ -499,6 +499,44 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Developer Tools - Only visible to developer */}
+          {profile?.username === 'abdulla' && (
+            <View style={styles.section}>
+              <View style={styles.sectionTitleRow}>
+                <Text style={styles.sectionTitle}>developer tools</Text>
+                <PremiumBadge size="small" variant="developer" />
+              </View>
+
+              <TouchableOpacity
+                style={styles.devToolButton}
+                onPress={() => navigation.navigate('AdminHeroBanners')}
+              >
+                <View style={styles.devToolContent}>
+                  <Ionicons name="images-outline" size={24} color={Colors.accent} />
+                  <View style={styles.devToolText}>
+                    <Text style={styles.devToolTitle}>Hero Banners</Text>
+                    <Text style={styles.devToolSubtitle}>Manage homepage featured banners</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.devToolButton, { marginTop: Spacing.sm }]}
+                onPress={() => navigation.navigate('AdminCuratedLists')}
+              >
+                <View style={styles.devToolContent}>
+                  <Ionicons name="list-outline" size={24} color={Colors.accent} />
+                  <View style={styles.devToolText}>
+                    <Text style={styles.devToolTitle}>Curated Lists</Text>
+                    <Text style={styles.devToolSubtitle}>Manage discovery lists</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Account Info */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>account</Text>
@@ -910,6 +948,34 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,
+  },
+  devToolButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  devToolContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  devToolText: {
+    gap: 2,
+  },
+  devToolTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  devToolSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
   },
   importGamesButton: {
     flexDirection: 'row',

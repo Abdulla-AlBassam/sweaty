@@ -19,6 +19,8 @@ import PlatformConnectionsScreen from '../screens/PlatformConnectionsScreen'
 import PlayStationImportScreen from '../screens/PlayStationImportScreen'
 import NewsScreen from '../screens/NewsScreen'
 import WebViewScreen from '../screens/WebViewScreen'
+import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
+import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -44,6 +46,9 @@ export type MainStackParamList = {
   PlayStationImport: undefined
   News: undefined
   WebView: { url: string; title: string }
+  // Admin routes (developer only)
+  AdminHeroBanners: undefined
+  AdminCuratedLists: undefined
 }
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -142,6 +147,21 @@ function MainNavigator() {
         options={{
           animation: 'slide_from_bottom',
           presentation: 'modal',
+        }}
+      />
+      {/* Admin screens (developer only) */}
+      <MainStack.Screen
+        name="AdminHeroBanners"
+        component={AdminHeroBannersScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="AdminCuratedLists"
+        component={AdminCuratedListsScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
     </MainStack.Navigator>
