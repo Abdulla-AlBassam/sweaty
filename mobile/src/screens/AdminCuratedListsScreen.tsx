@@ -157,6 +157,21 @@ export default function AdminCuratedListsScreen() {
 
     setIsAdding(true)
     try {
+      // First, ensure the game is cached in games_cache
+      const { error: cacheError } = await supabase
+        .from('games_cache')
+        .upsert({
+          id: game.id,
+          name: game.name,
+          cover_url: game.coverUrl || null,
+          cached_at: new Date().toISOString(),
+        }, { onConflict: 'id' })
+
+      if (cacheError) {
+        console.error('[AddGame] Cache error:', cacheError)
+        // Continue anyway - game might already be cached
+      }
+
       const newGameIds = [...selectedList.game_ids, game.id]
 
       const { error } = await supabase

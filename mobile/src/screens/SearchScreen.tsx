@@ -514,7 +514,7 @@ export default function SearchScreen() {
 
             {/* Community Popular Games (what Sweaty users like) */}
             <View style={styles.discoveryRow}>
-              <Text style={styles.discoveryRowTitle}>Popular in Community</Text>
+              <Text style={styles.discoveryRowTitle}>Popular on Sweaty</Text>
               <HorizontalGameList
                 games={communityGames}
                 onGamePress={(game) => handleGamePress(game.id)}
