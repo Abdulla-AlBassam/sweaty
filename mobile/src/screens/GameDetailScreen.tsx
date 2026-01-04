@@ -7,8 +7,6 @@ import {
   Image,
   TouchableOpacity,
   RefreshControl,
-  Modal,
-  Pressable,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -23,7 +21,6 @@ import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed } from '../hooks/
 import { usePlatformFilter } from '../hooks/usePlatformFilter'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
-import AddToListModal from '../components/AddToListModal'
 import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
 import TrailerSection from '../components/TrailerSection'
@@ -76,8 +73,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
-  const [isAddToListVisible, setIsAddToListVisible] = useState(false)
-  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -275,7 +270,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         <Text style={styles.headerTitle} numberOfLines={1}>{game.name}</Text>
         <TouchableOpacity
           style={styles.headerFab}
-          onPress={() => setIsActionSheetVisible(true)}
+          onPress={() => setIsModalVisible(true)}
         >
           <Ionicons
             name={userLog ? 'create-outline' : 'add'}
@@ -447,63 +442,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         onSaveSuccess={handleLogSaveSuccess}
       />
 
-      {/* Add to List Modal */}
-      <AddToListModal
-        visible={isAddToListVisible}
-        onClose={() => setIsAddToListVisible(false)}
-        gameId={gameId}
-        gameName={game.name}
-      />
-
-      {/* Action Sheet */}
-      <Modal
-        visible={isActionSheetVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsActionSheetVisible(false)}
-      >
-        <Pressable
-          style={styles.actionSheetOverlay}
-          onPress={() => setIsActionSheetVisible(false)}
-        >
-          <View style={styles.actionSheet}>
-            <TouchableOpacity
-              style={styles.actionSheetItem}
-              onPress={() => {
-                setIsActionSheetVisible(false)
-                setIsModalVisible(true)
-              }}
-            >
-              <Ionicons
-                name={userLog ? 'create-outline' : 'add-circle-outline'}
-                size={24}
-                color={Colors.text}
-              />
-              <Text style={styles.actionSheetText}>
-                {userLog ? 'Edit log' : 'Log game'}
-              </Text>
-            </TouchableOpacity>
-            {user && (
-              <TouchableOpacity
-                style={styles.actionSheetItem}
-                onPress={() => {
-                  setIsActionSheetVisible(false)
-                  setIsAddToListVisible(true)
-                }}
-              >
-                <Ionicons name="list-outline" size={24} color={Colors.text} />
-                <Text style={styles.actionSheetText}>Add to list</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              style={[styles.actionSheetItem, styles.actionSheetCancel]}
-              onPress={() => setIsActionSheetVisible(false)}
-            >
-              <Text style={styles.actionSheetCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </Pressable>
-      </Modal>
     </SafeAreaView>
   )
 }
@@ -705,42 +643,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  // Action Sheet styles
-  actionSheetOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'flex-end',
-  },
-  actionSheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: BorderRadius.lg,
-    borderTopRightRadius: BorderRadius.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xl,
-  },
-  actionSheetItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  actionSheetText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.md,
-    color: Colors.text,
-  },
-  actionSheetCancel: {
-    marginTop: Spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: Spacing.lg,
-    justifyContent: 'center',
-  },
-  actionSheetCancelText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
   },
 })

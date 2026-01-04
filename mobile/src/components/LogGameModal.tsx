@@ -26,9 +26,11 @@ import { useCelebration } from '../contexts/CelebrationContext'
 import { supabase } from '../lib/supabase'
 import { getGamerLevel, getSocialLevel } from '../lib/xp'
 import { useStreak } from '../hooks/useStreak'
+import { useUserLists, addGameToList, removeGameFromList } from '../hooks/useLists'
 import { haptics } from '../hooks/useHaptics'
 import PressableScale from './PressableScale'
 import SweatDropIcon from './SweatDropIcon'
+import CreateListModal from './CreateListModal'
 
 // XP values for different statuses
 const GAMER_XP_VALUES: Record<string, number> = {
@@ -129,6 +131,96 @@ export default function LogGameModal({
   const [error, setError] = useState<string | null>(null)
   const [statusPickerVisible, setStatusPickerVisible] = useState(false)
   const [platformPickerVisible, setPlatformPickerVisible] = useState(false)
+  const [showCreateListModal, setShowCreateListModal] = useState(false)
+
+  // Lists functionality
+  const { lists, isLoading: listsLoading, refetch: refetchLists } = useUserLists(user?.id)
+  const [gameInLists, setGameInLists] = useState<Set<string>>(new Set())
+  const [loadingLists, setLoadingLists] = useState<Set<string>>(new Set())
+
+  // Check which lists contain this game
+  useEffect(() => {
+    const checkGameInLists = async () => {
+      if (!lists.length || !visible) return
+
+      const inLists = new Set<string>()
+
+      // Check each list's preview games for this game
+      lists.forEach((list) => {
+        const hasGame = list.preview_games?.some((g) => g.id === game.id)
+        if (hasGame) {
+          inLists.add(list.id)
+        }
+      })
+
+      // For more accurate results, check the database
+      const { data } = await supabase
+        .from('list_items')
+        .select('list_id')
+        .eq('game_id', game.id)
+        .in('list_id', lists.map((l) => l.id))
+
+      if (data) {
+        data.forEach((item: any) => {
+          inLists.add(item.list_id)
+        })
+      }
+
+      setGameInLists(inLists)
+    }
+
+    if (visible) {
+      checkGameInLists()
+    }
+  }, [lists, game.id, visible])
+
+  const handleToggleList = async (listId: string) => {
+    const isInList = gameInLists.has(listId)
+
+    setLoadingLists((prev) => new Set(prev).add(listId))
+
+    if (isInList) {
+      const { error } = await removeGameFromList(listId, game.id)
+      if (!error) {
+        setGameInLists((prev) => {
+          const next = new Set(prev)
+          next.delete(listId)
+          return next
+        })
+      }
+    } else {
+      const { error } = await addGameToList(listId, game.id)
+      if (!error) {
+        setGameInLists((prev) => new Set(prev).add(listId))
+      }
+    }
+
+    setLoadingLists((prev) => {
+      const next = new Set(prev)
+      next.delete(listId)
+      return next
+    })
+
+    refetchLists()
+  }
+
+  const handleListCreated = async (newList: any) => {
+    setShowCreateListModal(false)
+    refetchLists()
+
+    // Auto-add game to the newly created list
+    setLoadingLists((prev) => new Set(prev).add(newList.id))
+    const { error } = await addGameToList(newList.id, game.id)
+    if (!error) {
+      setGameInLists((prev) => new Set(prev).add(newList.id))
+    }
+    setLoadingLists((prev) => {
+      const next = new Set(prev)
+      next.delete(newList.id)
+      return next
+    })
+    refetchLists()
+  }
 
   // Initialize with existing log data
   useEffect(() => {
@@ -534,6 +626,68 @@ export default function LogGameModal({
               </Text>
             </View>
 
+            {/* Add to Lists */}
+            {user && (
+              <>
+                <Text style={styles.sectionLabel}>Add to Lists</Text>
+                <View style={styles.listsContainer}>
+                  {listsLoading ? (
+                    <View style={styles.listsLoadingContainer}>
+                      <LoadingSpinner size="small" color={Colors.accent} />
+                    </View>
+                  ) : lists.length === 0 ? (
+                    <TouchableOpacity
+                      style={styles.createListButton}
+                      onPress={() => setShowCreateListModal(true)}
+                    >
+                      <Ionicons name="add" size={18} color={Colors.accent} />
+                      <Text style={styles.createListButtonText}>Create your first list</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      {lists.slice(0, 4).map((list) => {
+                        const isInList = gameInLists.has(list.id)
+                        const isLoadingItem = loadingLists.has(list.id)
+
+                        return (
+                          <TouchableOpacity
+                            key={list.id}
+                            style={styles.listRow}
+                            onPress={() => handleToggleList(list.id)}
+                            disabled={isLoadingItem}
+                            activeOpacity={0.7}
+                          >
+                            <View style={styles.listInfo}>
+                              <Text style={styles.listTitle} numberOfLines={1}>
+                                {list.title}
+                              </Text>
+                            </View>
+
+                            {isLoadingItem ? (
+                              <LoadingSpinner size="small" color={Colors.accent} />
+                            ) : isInList ? (
+                              <View style={styles.listCheckmark}>
+                                <Ionicons name="checkmark" size={14} color={Colors.background} />
+                              </View>
+                            ) : (
+                              <View style={styles.listEmptyCheck} />
+                            )}
+                          </TouchableOpacity>
+                        )
+                      })}
+                      <TouchableOpacity
+                        style={styles.createListButton}
+                        onPress={() => setShowCreateListModal(true)}
+                      >
+                        <Ionicons name="add" size={18} color={Colors.accent} />
+                        <Text style={styles.createListButtonText}>New list</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+              </>
+            )}
+
             {/* Error */}
             {error && (
               <View style={styles.errorContainer}>
@@ -597,6 +751,13 @@ export default function LogGameModal({
         selectedValue={platform}
         onSelect={setPlatform}
         showIcons={false}
+      />
+
+      {/* Create List Modal */}
+      <CreateListModal
+        visible={showCreateListModal}
+        onClose={() => setShowCreateListModal(false)}
+        onCreated={handleListCreated}
       />
     </Modal>
   )
@@ -844,5 +1005,60 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
+  },
+  // Lists styles
+  listsContainer: {
+    marginBottom: Spacing.xl,
+  },
+  listsLoadingContainer: {
+    padding: Spacing.md,
+    alignItems: 'center',
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  listInfo: {
+    flex: 1,
+  },
+  listTitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  listCheckmark: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listEmptyCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.border,
+  },
+  createListButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+  },
+  createListButtonText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.accent,
+    marginLeft: Spacing.xs,
   },
 })
