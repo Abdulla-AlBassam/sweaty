@@ -272,12 +272,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.display,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.textMuted,
-    paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    marginBottom: Spacing.sm,
   },
   loadingContainer: {
     padding: Spacing.xl,

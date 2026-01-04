@@ -7,6 +7,8 @@ import {
   Image,
   TouchableOpacity,
   RefreshControl,
+  Modal,
+  Pressable,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -75,6 +77,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [isAddToListVisible, setIsAddToListVisible] = useState(false)
+  const [isActionSheetVisible, setIsActionSheetVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
 
@@ -270,6 +273,16 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{game.name}</Text>
+        <TouchableOpacity
+          style={styles.headerFab}
+          onPress={() => setIsActionSheetVisible(true)}
+        >
+          <Ionicons
+            name={userLog ? 'create-outline' : 'add'}
+            size={20}
+            color={Colors.background}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -302,58 +315,31 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             {game.genres && game.genres.length > 0 && (
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
-
-            {/* Inline Ratings */}
-            {(openCriticData?.score || communityStats.averageRating) && (
-              <View style={styles.inlineRatings}>
-                {openCriticData?.score && (
-                  <View style={styles.ratingItem}>
-                    <Text style={styles.ratingLabel}>OpenCritic</Text>
-                    <Text style={[styles.ratingValue, { color: getOpenCriticColor(openCriticData.tier) }]}>
-                      {openCriticData.score}
-                    </Text>
-                  </View>
-                )}
-                {communityStats.averageRating && (
-                  <View style={styles.ratingItem}>
-                    <Text style={styles.ratingLabel}>Community</Text>
-                    <View style={styles.communityRating}>
-                      <Ionicons name="star" size={14} color="#FFD700" />
-                      <Text style={styles.ratingValue}>{communityStats.averageRating}</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            )}
           </View>
         </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          {/* Log/Edit Button with Chrome Aesthetic */}
-          <TouchableOpacity
-            style={styles.logButtonWrapper}
-            onPress={() => setIsModalVisible(true)}
-          >
-            <View style={[styles.logButtonLayer, styles.logButtonCyan]} />
-            <View style={[styles.logButtonLayer, styles.logButtonGreen]} />
-            <View style={styles.logButton}>
-              <Ionicons
-                name={userLog ? 'create-outline' : 'add'}
-                size={22}
-                color={Colors.background}
-              />
+        {/* Rating Pills */}
+        <View style={styles.ratingPills}>
+          {openCriticData?.score && (
+            <View style={[styles.ratingPill, { borderColor: getOpenCriticColor(openCriticData.tier) }]}>
+              <Text style={[styles.ratingPillScore, { color: getOpenCriticColor(openCriticData.tier) }]}>
+                {openCriticData.score}
+              </Text>
+              <Text style={[styles.ratingPillLabel, { color: getOpenCriticColor(openCriticData.tier) }]}>
+                {openCriticData.tier}
+              </Text>
             </View>
-          </TouchableOpacity>
-
-          {user && (
-            <TouchableOpacity
-              style={styles.addToListButton}
-              onPress={() => setIsAddToListVisible(true)}
-            >
-              <Ionicons name="list-outline" size={22} color={Colors.text} />
-            </TouchableOpacity>
           )}
+          {communityStats.averageRating ? (
+            <View style={styles.ratingPill}>
+              <Ionicons name="star" size={14} color="#FFD700" />
+              <Text style={styles.ratingPillText}>{communityStats.averageRating}</Text>
+            </View>
+          ) : null}
+          <View style={styles.ratingPill}>
+            <Ionicons name="game-controller-outline" size={14} color={Colors.textMuted} />
+            <Text style={styles.ratingPillText}>{communityStats.totalLogs || 0} logs</Text>
+          </View>
         </View>
 
         {/* User Status */}
@@ -372,23 +358,27 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Friends Who Played */}
+        {/* Friends who played */}
         {friendsWhoPlayed.length > 0 && (
           <View style={styles.friendsSection}>
-            <Text style={styles.friendsSectionTitle}>Friends Who Played</Text>
+            <Text style={styles.sectionTitle}>Friends who played</Text>
             <View style={styles.friendsRow}>
               {friendsWhoPlayed.map((friend) => (
                 <TouchableOpacity
                   key={friend.id}
+                  style={styles.friendItem}
                   onPress={() => navigation.navigate('UserProfile', { username: friend.username })}
                 >
                   {friend.avatar_url ? (
                     <Image source={{ uri: friend.avatar_url }} style={styles.friendAvatar} />
                   ) : (
                     <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
-                      <Ionicons name="person" size={16} color={Colors.textMuted} />
+                      <Ionicons name="person" size={14} color={Colors.textMuted} />
                     </View>
                   )}
+                  <Text style={styles.friendName} numberOfLines={1}>
+                    {friend.display_name || friend.username}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -422,10 +412,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Similar Games */}
+        {/* Similar games */}
         {game.similarGames && game.similarGames.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Similar Games</Text>
+            <Text style={styles.sectionTitle}>Similar games</Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -467,6 +457,56 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         gameId={gameId}
         gameName={game.name}
       />
+
+      {/* Action Sheet */}
+      <Modal
+        visible={isActionSheetVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsActionSheetVisible(false)}
+      >
+        <Pressable
+          style={styles.actionSheetOverlay}
+          onPress={() => setIsActionSheetVisible(false)}
+        >
+          <View style={styles.actionSheet}>
+            <TouchableOpacity
+              style={styles.actionSheetItem}
+              onPress={() => {
+                setIsActionSheetVisible(false)
+                setIsModalVisible(true)
+              }}
+            >
+              <Ionicons
+                name={userLog ? 'create-outline' : 'add-circle-outline'}
+                size={24}
+                color={Colors.text}
+              />
+              <Text style={styles.actionSheetText}>
+                {userLog ? 'Edit log' : 'Log game'}
+              </Text>
+            </TouchableOpacity>
+            {user && (
+              <TouchableOpacity
+                style={styles.actionSheetItem}
+                onPress={() => {
+                  setIsActionSheetVisible(false)
+                  setIsAddToListVisible(true)
+                }}
+              >
+                <Ionicons name="list-outline" size={24} color={Colors.text} />
+                <Text style={styles.actionSheetText}>Add to list</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.actionSheetItem, styles.actionSheetCancel]}
+              onPress={() => setIsActionSheetVisible(false)}
+            >
+              <Text style={styles.actionSheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -493,6 +533,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
     color: Colors.text,
+  },
+  headerFab: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.text,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   centered: {
     flex: 1,
@@ -566,60 +614,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  actionButtons: {
+  // Rating Pills
+  ratingPills: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
-  logButtonWrapper: {
-    position: 'relative',
-    width: 44,
-    height: 44,
-  },
-  logButtonLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: BorderRadius.md,
-  },
-  logButtonCyan: {
-    backgroundColor: Colors.cyan,
-    opacity: 0.7,
-    transform: [{ translateX: -1.5 }],
-  },
-  logButtonGreen: {
-    backgroundColor: Colors.accent,
-    opacity: 0.7,
-    transform: [{ translateX: 1.5 }],
-  },
-  logButton: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: Colors.text,
+  ratingPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: BorderRadius.md,
-  },
-  addToListButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
+    gap: 6,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
+  },
+  ratingPillScore: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSize.md,
+  },
+  ratingPillLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+  },
+  ratingPillText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
   },
   section: {
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.display,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginBottom: Spacing.sm,
@@ -635,53 +665,34 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
   },
-  inlineRatings: {
-    flexDirection: 'row',
-    gap: Spacing.lg,
-    marginTop: Spacing.sm,
-  },
-  ratingItem: {
-    alignItems: 'flex-start',
-  },
-  ratingLabel: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    marginBottom: 2,
-  },
-  ratingValue: {
-    fontFamily: Fonts.displayBold,
-    fontSize: FontSize.lg,
-    color: Colors.text,
-  },
-  communityRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  // Friends Who Played styles
+  // Friends who played styles
   friendsSection: {
     marginBottom: Spacing.lg,
   },
-  friendsSectionTitle: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginBottom: Spacing.sm,
-  },
   friendsRow: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.md,
+  },
+  friendItem: {
+    alignItems: 'center',
+    width: 56,
   },
   friendAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 4,
   },
   friendAvatarPlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  friendName: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
   // Similar Games styles
   similarGamesRow: {
@@ -699,5 +710,42 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Action Sheet styles
+  actionSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  actionSheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: BorderRadius.lg,
+    borderTopRightRadius: BorderRadius.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xl,
+  },
+  actionSheetItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  actionSheetText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  actionSheetCancel: {
+    marginTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: Spacing.lg,
+    justifyContent: 'center',
+  },
+  actionSheetCancelText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
   },
 })

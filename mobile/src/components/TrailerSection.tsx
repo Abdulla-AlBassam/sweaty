@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.display,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginBottom: Spacing.sm,

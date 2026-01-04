@@ -132,7 +132,7 @@ export default function TwitchStreamsSection({ gameName }: TwitchStreamsSectionP
       {/* Header with pulsing live dot */}
       <View style={styles.headerRow}>
         <Animated.View style={[styles.liveDot, { opacity: pulseAnim }]} />
-        <Text style={styles.sectionTitle}>LIVE ON TWITCH</Text>
+        <Text style={styles.sectionTitle}>Live on Twitch</Text>
       </View>
 
       {/* Total streaming count */}
@@ -174,10 +174,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.error,
   },
   sectionTitle: {
-    fontFamily: Fonts.display,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.textMuted,
-    letterSpacing: 1,
   },
   totalText: {
     fontFamily: Fonts.body,
