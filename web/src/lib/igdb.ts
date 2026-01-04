@@ -653,11 +653,13 @@ export async function getPopularityForGames(gameIds: number[]): Promise<Map<numb
 // For Uncharted 3: returns Uncharted 1,2,4 (franchise) + Tomb Raider, Last of Us (similar)
 // For MGS V: returns other MGS games (franchise) + stealth action games (similar)
 // For Split Fiction: returns It Takes Two, A Way Out (same developer Hazelight)
+// For Resident Evil Village: returns other survival horror with vampires, gothic settings (keywords)
 export async function getSmartSimilarGames(gameId: number, limit: number = 15): Promise<Game[]> {
   try {
-    // Step 1: Get the base game's data including developer info
+    // Step 1: Get the base game's data including developer info and keywords
     const gameBody = `
       fields name, similar_games, genres, themes, franchises, collection,
+             keywords.id, keywords.name,
              involved_companies.company.id, involved_companies.company.name, involved_companies.developer;
       where id = ${gameId};
     `
@@ -668,6 +670,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       themes?: number[]
       franchises?: number[]
       collection?: number
+      keywords?: Array<{ id: number; name: string }>
       involved_companies?: Array<{
         company: { id: number; name: string }
         developer: boolean
@@ -687,14 +690,18 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
 
     console.log('[getSmartSimilarGames] Finding similar games for:', game.name)
     console.log('[getSmartSimilarGames] Developer:', primaryDeveloper?.name || 'none', '| Franchises:', game.franchises?.length || 0, '| Collection:', game.collection || 'none')
-    console.log('[getSmartSimilarGames] Similar games:', game.similar_games?.length || 0, '| Genres:', game.genres?.length || 0, '| Themes:', game.themes?.length || 0)
+    console.log('[getSmartSimilarGames] Keywords:', game.keywords?.length || 0, '| Genres:', game.genres?.length || 0, '| Themes:', game.themes?.length || 0)
+    if (game.keywords && game.keywords.length > 0) {
+      console.log('[getSmartSimilarGames] Top keywords:', game.keywords.slice(0, 10).map(k => k.name).join(', '))
+    }
 
-    // Collect games by priority tiers (only using reliable sources):
+    // Collect games by priority tiers:
     // Tier 0: Same franchise/collection (series games)
     // Tier 1: Same developer with genre overlap (studio games)
-    // Note: Removed IGDB similar_games, genre, and theme tiers due to unreliable data
+    // Tier 2: Shared keywords (3+ common keywords for ultra-specific matches)
     const seriesGames: IGDBGame[] = []
     const developerGames: IGDBGame[] = []
+    const keywordGames: IGDBGame[] = []
 
     // === TIER 0: FRANCHISE (Series games like FIFA, Resident Evil, etc.) ===
     if (game.franchises && game.franchises.length > 0) {
@@ -816,13 +823,52 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       }
     }
 
-    // NOTE: Removed Tier 2 (IGDB similar_games), Tier 3 (Genre), Tier 4 (Theme)
-    // IGDB's similar_games data is unreliable and returns random unrelated games
-    // Only using Franchise/Collection and Same Developer for quality results
+    // === TIER 2: SHARED KEYWORDS (ultra-specific matching) ===
+    // Keywords are very specific tags like "survival horror", "boss fight", "vampires", "crafting"
+    // Require 3+ shared keywords for ultra-specific matches
+    const MIN_SHARED_KEYWORDS = 3
+    if (game.keywords && game.keywords.length >= MIN_SHARED_KEYWORDS) {
+      try {
+        const keywordIds = game.keywords.map(k => k.id)
+        const baseKeywordSet = new Set(keywordIds)
+
+        // Find games that have at least one of our keywords
+        // We'll filter for 3+ matches in JavaScript after
+        const keywordQuery = `
+          fields name, slug, summary, cover.image_id, first_release_date,
+                 genres.name, platforms.name, total_rating, category, keywords.id;
+          where keywords = (${keywordIds.slice(0, 10).join(',')})
+            & id != ${gameId}
+            & cover != null
+            & total_rating != null
+            & total_rating >= 70
+            & ${MAJOR_PLATFORMS_FILTER};
+          sort total_rating desc;
+          limit 100;
+        `
+        const keywordResults = await igdbFetch('games', keywordQuery) as (IGDBGame & { keywords?: Array<{ id: number }> })[]
+
+        // Filter: must share 3+ keywords, valid category, not special edition
+        const validKeywordGames = (keywordResults || []).filter(g => {
+          if (!VALID_CATEGORIES.includes(g.category || 0)) return false
+          if (isSpecialEdition(g.name || '')) return false
+
+          // Count shared keywords
+          const gameKeywordIds = g.keywords?.map(k => k.id) || []
+          const sharedCount = gameKeywordIds.filter(id => baseKeywordSet.has(id)).length
+          return sharedCount >= MIN_SHARED_KEYWORDS
+        })
+
+        console.log('[getSmartSimilarGames] Got', validKeywordGames.length, 'games from KEYWORDS (3+ shared)')
+        keywordGames.push(...validKeywordGames)
+      } catch (e) {
+        console.log('[getSmartSimilarGames] Keyword query failed:', e)
+      }
+    }
 
     // === FALLBACK: Name-based search if higher tiers are empty ===
     // This helps find series games when franchise data isn't populated in IGDB
-    if (seriesGames.length === 0 && developerGames.length === 0 && game.name) {
+    if (seriesGames.length === 0 && developerGames.length === 0 && keywordGames.length === 0 && game.name) {
       try {
         // Extract base name (e.g., "The Last of Us" from "The Last of Us Part II")
         // Remove common suffixes like Part II, 2, Remastered, etc.
@@ -860,7 +906,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
       }
     }
 
-    // Step 2: Build final list with tier assignments (only Tier 0 and Tier 1)
+    // Step 2: Build final list with tier assignments
     const seenIds = new Set<number>()
     const finalList: IGDBGame[] = []
     const tierMap = new Map<number, number>() // gameId -> tier
@@ -885,6 +931,16 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }
     console.log('[getSmartSimilarGames] After DEVELOPER:', finalList.length, 'games')
 
+    // Add keyword games (Tier 2)
+    for (const g of keywordGames) {
+      if (!seenIds.has(g.id)) {
+        seenIds.add(g.id)
+        tierMap.set(g.id, 2)
+        finalList.push(g)
+      }
+    }
+    console.log('[getSmartSimilarGames] After KEYWORDS:', finalList.length, 'games')
+
     if (finalList.length === 0) {
       console.log('[getSmartSimilarGames] No similar games found')
       return []
@@ -903,7 +959,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
     }))
 
     scoredGames.sort((a, b) => {
-      // Primary: tier (lower is better - series first, then developer)
+      // Primary: tier (lower is better - series first, then developer, then keywords)
       if (a.tier !== b.tier) return a.tier - b.tier
       // Secondary: PopScore within tier (higher is better - most popular first)
       return b.popScore - a.popScore
@@ -913,9 +969,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15): 
 
     // Log final results
     console.log('[getSmartSimilarGames] Final', result.length, 'games:')
-    const tierLabels = ['SERIES', 'DEVELOPER']
+    const tierLabels = ['SERIES', 'DEVELOPER', 'KEYWORDS']
     result.forEach((g, i) => {
-      console.log(`  ${i + 1}. ${g.game.name} [${tierLabels[g.tier]}] (pop: ${g.popScore})`)
+      console.log(`  ${i + 1}. ${g.game.name} [${tierLabels[g.tier] || 'UNKNOWN'}] (pop: ${g.popScore})`)
     })
 
     return result.map(g => transformGame(g.game))
