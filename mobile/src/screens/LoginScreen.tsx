@@ -17,6 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
+import { API_CONFIG } from '../constants'
 import { AuthStackParamList } from '../navigation'
 
 // Hero background image - Metal Gear Solid 3 artwork
@@ -28,20 +29,17 @@ type LoginScreenProps = {
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { signIn, signInWithGoogle } = useAuth()
-  const [email, setEmail] = useState('')
+  const [emailOrUsername, setEmailOrUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleLogin = async () => {
-    if (!email.trim() || !password.trim()) {
-      setError('please fill in all fields')
-      return
-    }
+    const input = emailOrUsername.trim()
 
-    if (!email.includes('@')) {
-      setError('please enter a valid email address')
+    if (!input || !password.trim()) {
+      setError('please fill in all fields')
       return
     }
 
@@ -49,10 +47,34 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setError(null)
 
     try {
-      const { error: signInError } = await signIn(email.trim(), password)
+      let loginEmail = input
+
+      // If input doesn't contain @, treat it as a username and look up the email
+      if (!input.includes('@')) {
+        const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/lookup-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: input }),
+        })
+
+        if (!response.ok) {
+          const data = await response.json()
+          if (response.status === 404) {
+            setError('username not found')
+            setIsLoading(false)
+            return
+          }
+          throw new Error(data.error || 'Failed to look up username')
+        }
+
+        const data = await response.json()
+        loginEmail = data.email
+      }
+
+      const { error: signInError } = await signIn(loginEmail, password)
 
       if (signInError) {
-        setError('invalid email or password')
+        setError('invalid email/username or password')
       }
     } catch (err) {
       setError('an error occurred. please try again.')
@@ -138,13 +160,12 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             <View style={styles.form}>
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder="Email or Username"
                 placeholderTextColor={Colors.textDim}
-                value={email}
-                onChangeText={setEmail}
+                value={emailOrUsername}
+                onChangeText={setEmailOrUsername}
                 autoCapitalize="none"
                 autoCorrect={false}
-                keyboardType="email-address"
               />
 
               <TextInput
