@@ -99,7 +99,7 @@ function GlitchResultButton({ onPress }: { onPress: () => void }) {
           <Ionicons name="add" size={16} color={Colors.accent} />
         </View>
 
-        {/* Main pink button */}
+        {/* Main white button (matches homepage) */}
         <View style={styles.addButtonMain}>
           <Ionicons name="add" size={16} color={Colors.background} />
         </View>
@@ -751,12 +751,11 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   addButtonMain: {
-    backgroundColor: Colors.pink,
+    backgroundColor: Colors.text,
     width: 28,
     height: 28,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    ...Glow.pink,
   },
 })

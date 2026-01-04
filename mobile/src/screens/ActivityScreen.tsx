@@ -75,17 +75,17 @@ export default function ActivityScreen() {
   const getEmptyMessage = () => {
     if (activeCategory === 'reviews') {
       return activeTab === 'friends'
-        ? 'no reviews from friends yet'
-        : 'you haven\'t written any reviews yet'
+        ? 'No reviews from friends yet'
+        : 'You haven\'t written any reviews yet'
     }
     if (activeCategory === 'logs') {
       return activeTab === 'friends'
-        ? 'no logs from friends yet'
-        : 'you haven\'t logged any games yet'
+        ? 'No logs from friends yet'
+        : 'You haven\'t logged any games yet'
     }
     return activeTab === 'friends'
-      ? 'follow other gamers to see what they\'re playing'
-      : 'start logging games to see your activity here'
+      ? 'Follow other gamers to see what they\'re playing'
+      : 'Start logging games to see your activity here'
   }
 
   return (
@@ -164,7 +164,7 @@ export default function ActivityScreen() {
                 <SweatDropIcon size={48} variant="static" />
               </View>
             )}
-            <Text style={styles.emptyTitle}>no activity yet</Text>
+            <Text style={styles.emptyTitle}>No Activity Yet</Text>
             <Text style={styles.emptyText}>{getEmptyMessage()}</Text>
           </View>
         ) : (

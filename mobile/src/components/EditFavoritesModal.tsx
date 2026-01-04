@@ -10,6 +10,8 @@ import {
   Image,
   Pressable,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
@@ -203,8 +205,12 @@ export default function EditFavoritesModal({
       transparent={true}
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
+        <Pressable style={styles.overlay} onPress={onClose}>
+          <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
           {/* Header */}
           <View style={styles.header}>
             {isSearchMode ? (
@@ -340,13 +346,17 @@ export default function EditFavoritesModal({
               </View>
             </>
           )}
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

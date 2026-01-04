@@ -103,13 +103,11 @@ function AppContent() {
   const { isQuickLogOpen, closeQuickLog } = useQuickLog()
 
   return (
-    <>
-      <NavigationContainer theme={theme}>
-        <StatusBar style="light" />
-        <Navigation />
-      </NavigationContainer>
+    <NavigationContainer theme={theme}>
+      <StatusBar style="light" />
+      <Navigation />
       <QuickLogModal visible={isQuickLogOpen} onClose={closeQuickLog} />
-    </>
+    </NavigationContainer>
   )
 }
 
