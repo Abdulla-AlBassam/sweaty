@@ -169,24 +169,7 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Header: Sweat drop icon centered - tap to open AI */}
-        <PressableScale
-          style={styles.header}
-          onPress={() => navigation.navigate('AIRecommend')}
-          haptic="light"
-          scale={0.9}
-        >
-          <SweatDropIcon size={40} isRefreshing={refreshing} />
-        </PressableScale>
-
-        {/* Personalized Greeting */}
-        <View style={styles.greetingContainer}>
-          <Text style={styles.greetingText}>
-            {getGreeting()}, <Text style={styles.greetingName}>{profile?.display_name || profile?.username || 'Gamer'}</Text>
-          </Text>
-        </View>
-
-        {/* Hero Banner - Featured Game Screenshot */}
+        {/* Hero Banner - Featured Game Screenshot (at the very top) */}
         {currentBanner && (
           <PressableScale
             style={styles.heroBannerContainer}
@@ -201,34 +184,50 @@ export default function DashboardScreen() {
             />
             {/* Left edge fade */}
             <LinearGradient
-              colors={['rgba(15,15,15,0.9)', 'rgba(15,15,15,0.4)', 'transparent']}
+              colors={['rgba(15,15,15,0.8)', 'rgba(15,15,15,0.3)', 'transparent']}
               start={{ x: 0, y: 0.5 }}
-              end={{ x: 0.3, y: 0.5 }}
+              end={{ x: 0.25, y: 0.5 }}
               style={styles.heroBannerEdgeFade}
             />
             {/* Right edge fade */}
             <LinearGradient
-              colors={['transparent', 'rgba(15,15,15,0.4)', 'rgba(15,15,15,0.9)']}
-              start={{ x: 0.7, y: 0.5 }}
+              colors={['transparent', 'rgba(15,15,15,0.3)', 'rgba(15,15,15,0.8)']}
+              start={{ x: 0.75, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={styles.heroBannerEdgeFade}
             />
-            {/* Top fade for seamless blend */}
-            <LinearGradient
-              colors={['rgba(15,15,15,0.7)', 'transparent']}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 0.3 }}
-              style={styles.heroBannerTopFade}
-            />
             {/* Bottom gradient for text */}
             <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.9)']}
+              colors={['transparent', 'rgba(15,15,15,0.95)']}
               style={styles.heroBannerGradient}
             />
+            {/* Sweaty logo top left */}
+            <PressableScale
+              style={styles.heroBannerLogo}
+              onPress={() => navigation.navigate('AIRecommend')}
+              haptic="light"
+              scale={0.9}
+            >
+              <SweatDropIcon size={28} isRefreshing={refreshing} />
+            </PressableScale>
+            {/* Game name - subtle, bottom right */}
             <View style={styles.heroBannerContent}>
               <Text style={styles.heroBannerGameName}>{currentBanner.game_name}</Text>
             </View>
           </PressableScale>
+        )}
+
+        {/* Fallback header when no banner */}
+        {!currentBanner && (
+          <View style={styles.headerFallback}>
+            <PressableScale
+              onPress={() => navigation.navigate('AIRecommend')}
+              haptic="light"
+              scale={0.9}
+            >
+              <SweatDropIcon size={32} isRefreshing={refreshing} />
+            </PressableScale>
+          </View>
         )}
 
         {/* ═══════════════════════════════════════════════ */}
@@ -534,32 +533,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
   },
-  // Header
-  header: {
-    alignItems: 'center',
+  // Fallback header when no banner
+  headerFallback: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.lg,
-  },
-  // Greeting + Stats
-  greetingContainer: {
-    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.xl,
-    alignItems: 'center',
   },
-  greetingText: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.xl,
-    color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
-  },
-  greetingName: {
-    color: Colors.text,
-  },
-  // Hero Banner - Cinematic full-width style
+  // Hero Banner - Cinematic full-width at top
   heroBannerContainer: {
-    marginBottom: Spacing.xl,
-    height: 200,
+    height: 220,
     position: 'relative',
   },
   heroBannerImage: {
@@ -573,37 +555,29 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
   },
-  heroBannerTopFade: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: '50%',
-  },
   heroBannerGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
+    height: '40%',
+  },
+  heroBannerLogo: {
+    position: 'absolute',
+    top: Spacing.md,
+    left: Spacing.screenPadding,
   },
   heroBannerContent: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: Spacing.screenPadding,
-    paddingBottom: Spacing.lg,
+    bottom: Spacing.md,
+    right: Spacing.screenPadding,
   },
   heroBannerGameName: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
-    color: Colors.text,
+    fontFamily: Fonts.mono,
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.5)',
     textTransform: 'uppercase',
-    letterSpacing: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    letterSpacing: 1,
   },
   // Section Groups
   sectionGroup: {
