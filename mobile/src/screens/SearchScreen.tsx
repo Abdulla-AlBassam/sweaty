@@ -63,6 +63,32 @@ interface DiscoveryGame {
   cover_url?: string | null
 }
 
+interface SearchCuratedList {
+  id: string
+  slug: string
+  title: string
+  description: string | null
+  game_count: number
+}
+
+interface SearchUserList {
+  id: string
+  title: string
+  description: string | null
+  is_public: boolean
+  item_count: number
+  user: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
+  preview_games: Array<{
+    id: number
+    cover_url: string | null
+  }>
+}
+
 const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
 const MAX_RECENT_SEARCHES = 5
 
@@ -75,6 +101,8 @@ export default function SearchScreen() {
   const [searchFilter, setSearchFilter] = useState<SearchFilter>('games')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])
   const [userResults, setUserResults] = useState<SearchUser[]>([])
+  const [curatedListResults, setCuratedListResults] = useState<SearchCuratedList[]>([])
+  const [userListResults, setUserListResults] = useState<SearchUserList[]>([])
   const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -181,11 +209,108 @@ export default function SearchScreen() {
     }
   }
 
-  // Debounced search for both games and users
+  // Search for curated lists
+  const searchCuratedLists = async (searchQuery: string): Promise<SearchCuratedList[]> => {
+    try {
+      const { data, error } = await supabase
+        .from('curated_lists')
+        .select('id, slug, title, description, game_ids, is_active')
+        .eq('is_active', true)
+        .ilike('title', `%${searchQuery}%`)
+        .order('display_order', { ascending: true })
+        .limit(10)
+
+      if (error) throw error
+
+      return (data || []).map((list: any) => ({
+        id: list.id,
+        slug: list.slug,
+        title: list.title,
+        description: list.description,
+        game_count: list.game_ids?.length || 0,
+      }))
+    } catch (err) {
+      console.error('Curated list search error:', err)
+      return []
+    }
+  }
+
+  // Search for user lists (public lists or user's own lists)
+  const searchUserLists = async (searchQuery: string): Promise<SearchUserList[]> => {
+    try {
+      // Search public lists or user's own lists
+      let query = supabase
+        .from('lists')
+        .select(`
+          id, title, description, is_public, user_id,
+          profiles!lists_user_id_fkey (id, username, display_name, avatar_url)
+        `)
+        .ilike('title', `%${searchQuery}%`)
+        .limit(10)
+
+      // If logged in, show public lists OR user's own lists
+      if (user) {
+        query = query.or(`is_public.eq.true,user_id.eq.${user.id}`)
+      } else {
+        query = query.eq('is_public', true)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // For each list, get item count and preview games
+      const listsWithDetails: SearchUserList[] = await Promise.all(
+        (data || []).map(async (list: any) => {
+          // Get item count
+          const { count } = await supabase
+            .from('list_items')
+            .select('id', { count: 'exact', head: true })
+            .eq('list_id', list.id)
+
+          // Get first 3 game covers for preview
+          const { data: previewItems } = await supabase
+            .from('list_items')
+            .select('game_id, games_cache!list_items_game_id_fkey (id, cover_url)')
+            .eq('list_id', list.id)
+            .order('position', { ascending: true })
+            .limit(3)
+
+          const preview_games = (previewItems || [])
+            .map((item: any) => item.games_cache)
+            .filter(Boolean)
+
+          return {
+            id: list.id,
+            title: list.title,
+            description: list.description,
+            is_public: list.is_public,
+            item_count: count || 0,
+            user: {
+              id: list.profiles.id,
+              username: list.profiles.username,
+              display_name: list.profiles.display_name,
+              avatar_url: list.profiles.avatar_url,
+            },
+            preview_games,
+          }
+        })
+      )
+
+      return listsWithDetails
+    } catch (err) {
+      console.error('User list search error:', err)
+      return []
+    }
+  }
+
+  // Debounced search for games, users, and lists
   useEffect(() => {
     if (!query || query.length < 2) {
       setGameResults([])
       setUserResults([])
+      setCuratedListResults([])
+      setUserListResults([])
       setError(null)
       return
     }
@@ -201,10 +326,12 @@ export default function SearchScreen() {
           searchUrl += `&platforms=${encodeURIComponent(platformsParam)}`
         }
 
-        // Search games and users in parallel
-        const [gamesResponse, users] = await Promise.all([
+        // Search games, users, and lists in parallel
+        const [gamesResponse, users, curatedLists, userLists] = await Promise.all([
           fetch(searchUrl),
           searchUsers(query),
+          searchCuratedLists(query),
+          searchUserLists(query),
         ])
 
         if (!gamesResponse.ok) {
@@ -214,17 +341,21 @@ export default function SearchScreen() {
         const gamesData = await gamesResponse.json()
         setGameResults(gamesData.games || [])
         setUserResults(users)
+        setCuratedListResults(curatedLists)
+        setUserListResults(userLists)
       } catch (err) {
         setError('Failed to search')
         setGameResults([])
         setUserResults([])
+        setCuratedListResults([])
+        setUserListResults([])
       } finally {
         setIsLoading(false)
       }
     }, 300)
 
     return () => clearTimeout(timeoutId)
-  }, [query, platformsParam])
+  }, [query, platformsParam, user])
 
   const handleGamePress = (gameId: number) => {
     const game = gameResults.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
@@ -256,6 +387,8 @@ export default function SearchScreen() {
     setSearchFilter('games')
     setGameResults([])
     setUserResults([])
+    setCuratedListResults([])
+    setUserListResults([])
     Keyboard.dismiss()
   }
 
@@ -264,7 +397,31 @@ export default function SearchScreen() {
     await AsyncStorage.removeItem(RECENT_SEARCHES_KEY)
   }
 
-  const hasResults = userResults.length > 0 || gameResults.length > 0
+  const hasResults = userResults.length > 0 || gameResults.length > 0 || curatedListResults.length > 0 || userListResults.length > 0
+
+  const handleCuratedListPress = (list: SearchCuratedList) => {
+    Keyboard.dismiss()
+    // Navigate to CuratedListDetail with the list info
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'CuratedListDetail',
+        params: {
+          listSlug: list.slug,
+          listTitle: list.title,
+        },
+      })
+    )
+  }
+
+  const handleUserListPress = (list: SearchUserList) => {
+    Keyboard.dismiss()
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'ListDetail',
+        params: { listId: list.id },
+      })
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -415,12 +572,81 @@ export default function SearchScreen() {
 
           {/* Lists Section - show when filter is 'lists' */}
           {searchFilter === 'lists' && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Lists</Text>
-              <View style={styles.listsEmptyState}>
-                <Text style={styles.emptyText}>List search coming soon</Text>
-              </View>
-            </View>
+            <>
+              {/* Curated Lists */}
+              {curatedListResults.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>Curated Lists</Text>
+                  {curatedListResults.map((list) => (
+                    <TouchableOpacity
+                      key={list.id}
+                      style={styles.listRow}
+                      onPress={() => handleCuratedListPress(list)}
+                    >
+                      <View style={styles.listIconContainer}>
+                        <Ionicons name="star" size={20} color={Colors.accent} />
+                      </View>
+                      <View style={styles.listInfo}>
+                        <Text style={styles.listTitle}>{list.title}</Text>
+                        {list.description && (
+                          <Text style={styles.listDescription} numberOfLines={1}>{list.description}</Text>
+                        )}
+                        <Text style={styles.listMeta}>{list.game_count} games</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* User Lists */}
+              {userListResults.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>User Lists</Text>
+                  {userListResults.map((list) => (
+                    <TouchableOpacity
+                      key={list.id}
+                      style={styles.listRow}
+                      onPress={() => handleUserListPress(list)}
+                    >
+                      {/* Preview game covers */}
+                      <View style={styles.listPreviewCovers}>
+                        {list.preview_games.length > 0 ? (
+                          list.preview_games.slice(0, 3).map((game, index) => (
+                            <Image
+                              key={game.id}
+                              source={{ uri: getIGDBImageUrl(game.cover_url, 'coverSmall') }}
+                              style={[
+                                styles.listPreviewCover,
+                                { marginLeft: index > 0 ? -10 : 0, zIndex: 3 - index },
+                              ]}
+                            />
+                          ))
+                        ) : (
+                          <View style={[styles.listPreviewCover, styles.listPreviewPlaceholder]}>
+                            <Ionicons name="list" size={16} color={Colors.textDim} />
+                          </View>
+                        )}
+                      </View>
+                      <View style={styles.listInfo}>
+                        <Text style={styles.listTitle}>{list.title}</Text>
+                        <Text style={styles.listMeta}>
+                          {list.item_count} games • by @{list.user.username}
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+
+              {/* Empty state for lists */}
+              {curatedListResults.length === 0 && userListResults.length === 0 && (
+                <View style={styles.centered}>
+                  <Text style={styles.emptyText}>No lists found</Text>
+                </View>
+              )}
+            </>
           )}
 
           {/* Empty state for current filter */}
@@ -784,8 +1010,57 @@ const styles = StyleSheet.create({
   filterPillTextActive: {
     color: Colors.text,
   },
-  listsEmptyState: {
-    paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.xl,
+  // List search styles
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  listIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listPreviewCovers: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 60,
+  },
+  listPreviewCover: {
+    width: 32,
+    height: 44,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surface,
+  },
+  listPreviewPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  listTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  listDescription: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  listMeta: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginTop: 4,
   },
 })

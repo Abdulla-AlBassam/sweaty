@@ -101,9 +101,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingHorizontal: Spacing.screenPadding,
-    marginBottom: Spacing.sectionHeaderBelow, // 16px below header
+    marginBottom: Spacing.md,              // 16px below header to posters
   },
   headerLeft: {
     flex: 1,
@@ -113,7 +113,8 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,               // 12px - smaller than title
     color: Colors.textDim,               // Gray color
-    marginTop: 2,
+    marginTop: 4,                        // Proper spacing from title
+    lineHeight: 16,
   },
   title: {
     fontFamily: Fonts.display,
