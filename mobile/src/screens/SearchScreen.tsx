@@ -721,17 +721,7 @@ export default function SearchScreen() {
             />
           }
         >
-          {/* AI Logo - Tap to open AI Recommendations */}
-          <PressableScale
-            style={styles.aiLogoContainer}
-            onPress={() => navigation.navigate('AIRecommend')}
-            haptic="light"
-            scale={0.9}
-          >
-            <SweatDropIcon size={48} variant="default" />
-          </PressableScale>
-
-          {/* Recent Searches */}
+          {/* Recent Searches - First section, right below search bar */}
           {recentSearches.length > 0 && (
             <View style={styles.recentSection}>
               <View style={styles.sectionHeaderRow}>
@@ -765,6 +755,16 @@ export default function SearchScreen() {
               </ScrollView>
             </View>
           )}
+
+          {/* AI Logo - Tap to open AI Recommendations */}
+          <PressableScale
+            style={styles.aiLogoContainer}
+            onPress={() => navigation.navigate('AIRecommend')}
+            haptic="light"
+            scale={0.9}
+          >
+            <SweatDropIcon size={48} variant="default" />
+          </PressableScale>
 
           {/* Discover Section - Dynamic Lists */}
           <View style={styles.discoverSection}>
@@ -940,8 +940,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   recentSection: {
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.sm,
     paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.md,
   },
   sectionHeaderRow: {
     flexDirection: 'row',

@@ -31,6 +31,7 @@ interface GameItem {
   id: number
   name: string
   cover_url: string | null
+  first_release_date?: string | null
 }
 
 export default function CuratedListDetailScreen() {
@@ -47,11 +48,20 @@ export default function CuratedListDetailScreen() {
 
       // If games were passed directly (e.g., from recommendations), use them
       if (passedGames && passedGames.length > 0) {
-        setGames(passedGames.map(g => ({
+        const mappedGames = passedGames.map(g => ({
           id: g.id,
           name: g.name,
           cover_url: g.coverUrl,
-        })))
+          first_release_date: g.first_release_date || null,
+        }))
+        // Sort by release date (newest first)
+        mappedGames.sort((a, b) => {
+          if (!a.first_release_date && !b.first_release_date) return 0
+          if (!a.first_release_date) return 1
+          if (!b.first_release_date) return -1
+          return new Date(b.first_release_date).getTime() - new Date(a.first_release_date).getTime()
+        })
+        setGames(mappedGames)
         setIsLoading(false)
         return
       }
@@ -60,22 +70,28 @@ export default function CuratedListDetailScreen() {
       try {
         const { data, error } = await supabase
           .from('games_cache')
-          .select('id, name, cover_url')
+          .select('id, name, cover_url, first_release_date')
           .in('id', gameIds)
 
         if (error) throw error
 
-        // Preserve order from gameIds
-        const gamesMap = new Map<number, GameItem>()
-        ;(data || []).forEach((game: any) => {
-          gamesMap.set(game.id, game)
+        // Get all games from cache
+        const fetchedGames: GameItem[] = (data || []).map((game: any) => ({
+          id: game.id,
+          name: game.name,
+          cover_url: game.cover_url,
+          first_release_date: game.first_release_date,
+        }))
+
+        // Sort by release date (newest first)
+        fetchedGames.sort((a, b) => {
+          if (!a.first_release_date && !b.first_release_date) return 0
+          if (!a.first_release_date) return 1
+          if (!b.first_release_date) return -1
+          return new Date(b.first_release_date).getTime() - new Date(a.first_release_date).getTime()
         })
 
-        const orderedGames = gameIds
-          .map((id) => gamesMap.get(id))
-          .filter((game): game is GameItem => game !== undefined)
-
-        setGames(orderedGames)
+        setGames(fetchedGames)
       } catch (err) {
         console.error('Failed to fetch games:', err)
       } finally {
