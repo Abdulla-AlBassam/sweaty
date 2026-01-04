@@ -138,9 +138,14 @@ export default function DashboardScreen() {
   )
 
   // Section Group Header
-  const SectionGroupHeader = ({ title }: { title: string }) => (
+  const SectionGroupHeader = ({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) => (
     <View style={styles.groupHeader}>
       <Text style={styles.groupHeaderText}>{title}</Text>
+      {onSeeAll && (
+        <PressableScale onPress={onSeeAll} haptic="light">
+          <Text style={styles.seeAllText}>See All</Text>
+        </PressableScale>
+      )}
     </View>
   )
 
@@ -480,7 +485,7 @@ export default function DashboardScreen() {
         {/* NEWS Section Group */}
         {/* ═══════════════════════════════════════════════ */}
         <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
-          <SectionGroupHeader title="News" />
+          <SectionGroupHeader title="News" onSeeAll={() => navigation.navigate('News' as never)} />
 
           {/* Gaming News (header hidden - parent group says "News") */}
           <NewsSection refreshKey={refreshCount} showHeader={false} />
@@ -542,6 +547,9 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
   },
   groupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
