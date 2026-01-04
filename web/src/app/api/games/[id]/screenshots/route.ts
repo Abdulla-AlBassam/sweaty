@@ -23,38 +23,56 @@ export async function GET(
   try {
     const token = await getAccessToken()
 
-    // Fetch game with screenshots from IGDB
-    const query = `
-      fields name, screenshots.image_id, screenshots.width, screenshots.height;
-      where id = ${gameId};
-    `
-
-    const response = await fetch('https://api.igdb.com/v4/games', {
+    // First get the game name
+    const gameResponse = await fetch('https://api.igdb.com/v4/games', {
       method: 'POST',
       headers: {
         'Client-ID': TWITCH_CLIENT_ID,
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'text/plain',
       },
-      body: query,
+      body: `fields name; where id = ${gameId};`,
     })
 
-    if (!response.ok) {
-      console.error('IGDB API error:', response.status, await response.text())
+    if (!gameResponse.ok) {
+      console.error('IGDB games API error:', gameResponse.status, await gameResponse.text())
       return NextResponse.json({ error: 'IGDB API error' }, { status: 502 })
     }
 
-    const games = await response.json()
-
+    const games = await gameResponse.json()
     if (!games || games.length === 0) {
       return NextResponse.json({ error: 'Game not found' }, { status: 404 })
     }
 
-    const game = games[0]
+    const gameName = games[0].name
+
+    // Fetch screenshots from the dedicated screenshots endpoint
+    const screenshotsQuery = `
+      fields image_id, width, height;
+      where game = ${gameId};
+      limit 20;
+    `
+
+    const screenshotsResponse = await fetch('https://api.igdb.com/v4/screenshots', {
+      method: 'POST',
+      headers: {
+        'Client-ID': TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'text/plain',
+      },
+      body: screenshotsQuery,
+    })
+
+    if (!screenshotsResponse.ok) {
+      console.error('IGDB screenshots API error:', screenshotsResponse.status, await screenshotsResponse.text())
+      return NextResponse.json({ error: 'IGDB API error' }, { status: 502 })
+    }
+
+    const screenshotsData = await screenshotsResponse.json()
 
     // Transform screenshots to full URLs
     // Using t_screenshot_big (889x500) which is great for banners
-    const screenshots = (game.screenshots || []).map((s: { image_id: string; width: number; height: number }) => ({
+    const screenshots = (screenshotsData || []).map((s: { image_id: string; width: number; height: number }) => ({
       url: `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${s.image_id}.jpg`,
       width: s.width,
       height: s.height,
@@ -62,7 +80,7 @@ export async function GET(
 
     return NextResponse.json({
       gameId: parseInt(gameId),
-      gameName: game.name,
+      gameName,
       screenshots,
     })
   } catch (error) {
