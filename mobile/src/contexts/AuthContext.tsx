@@ -15,6 +15,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: Error | null; needsUsername?: boolean }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ error: Error | null }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -119,11 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) return { error: error as Error }
 
-    if (data.user && data.session) {
+    if (data.user) {
       // Profile is auto-created by database trigger, but we need to update username/display_name
       // Wait a moment for the trigger to complete
       await new Promise(resolve => setTimeout(resolve, 500))
 
+      // If we don't have a session yet (email confirmation enabled), sign in manually
+      if (!data.session) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+        if (signInError) {
+          console.error('Error auto-signing in:', signInError)
+          // Don't fail signup - user can login manually
+        }
+      }
+
+      // Now update the profile with user's chosen username/display_name
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -188,8 +199,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'sweaty://auth/reset-password',
+    })
+    return { error: error as Error | null }
+  }
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signInWithGoogle, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signInWithGoogle, signOut, refreshProfile, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )
