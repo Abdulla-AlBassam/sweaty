@@ -11,7 +11,7 @@ interface AuthContextType {
   profile: Profile | null
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
-  signUp: (email: string, password: string, username: string, displayName: string) => Promise<{ error: Error | null }>
+  signUp: (email: string, password: string, username: string, displayName: string) => Promise<{ error: Error | null; needsEmailVerification?: boolean }>
   signInWithGoogle: () => Promise<{ error: Error | null; needsUsername?: boolean }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
@@ -117,24 +117,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, username: string, displayName: string) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+          display_name: displayName,
+        }
+      }
+    })
     if (error) return { error: error as Error }
 
     if (data.user) {
-      // Profile is auto-created by database trigger, but we need to update username/display_name
-      // Wait a moment for the trigger to complete
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Check if email confirmation is required (no session means confirmation needed)
+      const needsEmailVerification = !data.session
 
-      // If we don't have a session yet (email confirmation enabled), sign in manually
-      if (!data.session) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-        if (signInError) {
-          console.error('Error auto-signing in:', signInError)
-          // Don't fail signup - user can login manually
-        }
+      if (needsEmailVerification) {
+        // User needs to verify email before they can sign in
+        // Profile will be created by trigger, we'll update username after they verify
+        return { error: null, needsEmailVerification: true }
       }
 
-      // Now update the profile with user's chosen username/display_name
+      // Email confirmation disabled - user is auto-logged in
+      // Profile is auto-created by database trigger, update username/display_name
+      await new Promise(resolve => setTimeout(resolve, 500))
+
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -145,10 +153,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (profileError) {
         console.error('Error updating profile:', profileError)
-        // Don't fail signup if profile update fails - user can update later
       }
     }
-    return { error: null }
+    return { error: null, needsEmailVerification: false }
   }
 
   const signOut = async () => {

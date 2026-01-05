@@ -12,13 +12,15 @@ BEGIN
   INSERT INTO public.profiles (id, username, display_name, created_at, updated_at)
   VALUES (
     NEW.id,
-    -- Generate a default username from email (before @) or use random if needed
+    -- Use username from signup metadata, or generate from email
     COALESCE(
+      NEW.raw_user_meta_data->>'username',
       LOWER(REGEXP_REPLACE(SPLIT_PART(NEW.email, '@', 1), '[^a-z0-9_]', '', 'g')),
       'user_' || SUBSTR(NEW.id::text, 1, 8)
     ),
-    -- Use email prefix as display name initially
+    -- Use display_name from signup metadata, or email prefix
     COALESCE(
+      NEW.raw_user_meta_data->>'display_name',
       SPLIT_PART(NEW.email, '@', 1),
       'New User'
     ),

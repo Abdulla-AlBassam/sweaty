@@ -33,6 +33,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false)
 
   const validateUsername = (value: string): boolean => {
     // 3-20 characters, alphanumeric and underscore only
@@ -73,7 +74,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
     setIsLoading(true)
 
     try {
-      const { error: signUpError } = await signUp(
+      const { error: signUpError, needsEmailVerification } = await signUp(
         email.trim(),
         password,
         username.toLowerCase().trim(),
@@ -89,13 +90,54 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
         } else {
           setError(signUpError.message || 'failed to create account')
         }
+      } else if (needsEmailVerification) {
+        // Show verification message screen
+        setShowVerificationMessage(true)
       }
-      // If successful, AuthContext will update and navigation will switch to MainStack
+      // If successful and no verification needed, AuthContext will update and navigation will switch to MainStack
     } catch (err) {
       setError('an error occurred. please try again.')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Show verification message screen
+  if (showVerificationMessage) {
+    return (
+      <ImageBackground
+        source={heroBackground}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+        <LinearGradient
+          colors={['rgba(15, 15, 15, 0.9)', 'transparent']}
+          style={styles.edgeGradientTop}
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(15, 15, 15, 0.95)']}
+          style={styles.edgeGradientBottom}
+        />
+        <View style={styles.verificationContainer}>
+          <Text style={styles.verificationIcon}>✉️</Text>
+          <Text style={styles.verificationTitle}>Check your email</Text>
+          <Text style={styles.verificationText}>
+            We sent a verification link to{'\n'}
+            <Text style={styles.verificationEmail}>{email}</Text>
+          </Text>
+          <Text style={styles.verificationSubtext}>
+            Click the link in the email to verify your account, then come back and log in.
+          </Text>
+          <TouchableOpacity
+            style={styles.verificationButton}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.verificationButtonText}>GO TO LOGIN</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+    )
   }
 
   return (
@@ -351,5 +393,57 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
+  },
+  verificationContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+  },
+  verificationIcon: {
+    fontSize: 64,
+    marginBottom: Spacing.lg,
+  },
+  verificationTitle: {
+    fontFamily: Fonts.displaySemiBold,
+    fontSize: FontSize.xxl,
+    color: Colors.text,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+  },
+  verificationText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+    lineHeight: 24,
+  },
+  verificationEmail: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.accent,
+  },
+  verificationSubtext: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textDim,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+    lineHeight: 20,
+    paddingHorizontal: Spacing.lg,
+  },
+  verificationButton: {
+    backgroundColor: Colors.accent,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xxl,
+  },
+  verificationButtonText: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.background,
+    fontSize: FontSize.md,
   },
 })
