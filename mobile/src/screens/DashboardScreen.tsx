@@ -177,31 +177,38 @@ export default function DashboardScreen() {
               style={styles.heroBannerImage}
               resizeMode="cover"
             />
-            {/* Top edge fade */}
+            {/* Top-left corner blend */}
             <LinearGradient
-              colors={['rgba(15,15,15,1)', 'rgba(15,15,15,0.6)', 'transparent']}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 0.3 }}
-              style={styles.heroBannerEdgeFade}
+              colors={['rgba(15,15,15,0.95)', 'transparent']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0.5, y: 0.5 }}
+              style={styles.heroBannerCornerTL}
             />
-            {/* Left edge fade */}
+            {/* Top-right corner blend */}
             <LinearGradient
-              colors={['rgba(15,15,15,1)', 'rgba(15,15,15,0.5)', 'transparent']}
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 0.3, y: 0.5 }}
-              style={styles.heroBannerEdgeFade}
+              colors={['rgba(15,15,15,0.95)', 'transparent']}
+              start={{ x: 1, y: 0 }}
+              end={{ x: 0.5, y: 0.5 }}
+              style={styles.heroBannerCornerTR}
             />
-            {/* Right edge fade */}
+            {/* Bottom-left corner blend */}
             <LinearGradient
-              colors={['transparent', 'rgba(15,15,15,0.5)', 'rgba(15,15,15,1)']}
-              start={{ x: 0.7, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={styles.heroBannerEdgeFade}
+              colors={['rgba(15,15,15,1)', 'transparent']}
+              start={{ x: 0, y: 1 }}
+              end={{ x: 0.5, y: 0.5 }}
+              style={styles.heroBannerCornerBL}
+            />
+            {/* Bottom-right corner blend */}
+            <LinearGradient
+              colors={['rgba(15,15,15,1)', 'transparent']}
+              start={{ x: 1, y: 1 }}
+              end={{ x: 0.5, y: 0.5 }}
+              style={styles.heroBannerCornerBR}
             />
             {/* Bottom gradient for text */}
             <LinearGradient
-              colors={['transparent', 'rgba(15,15,15,0.7)', 'rgba(15,15,15,1)']}
-              locations={[0, 0.5, 1]}
+              colors={['transparent', 'rgba(15,15,15,0.8)', 'rgba(15,15,15,1)']}
+              locations={[0, 0.6, 1]}
               style={styles.heroBannerGradient}
             />
             {/* Game name - subtle, bottom right */}
@@ -523,19 +530,40 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  heroBannerEdgeFade: {
+  heroBannerCornerTL: {
     position: 'absolute',
     top: 0,
+    left: 0,
+    width: '50%',
+    height: '50%',
+  },
+  heroBannerCornerTR: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: '50%',
+    height: '50%',
+  },
+  heroBannerCornerBL: {
+    position: 'absolute',
     bottom: 0,
     left: 0,
+    width: '50%',
+    height: '50%',
+  },
+  heroBannerCornerBR: {
+    position: 'absolute',
+    bottom: 0,
     right: 0,
+    width: '50%',
+    height: '50%',
   },
   heroBannerGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '55%',
+    height: '45%',
   },
   heroBannerContent: {
     position: 'absolute',

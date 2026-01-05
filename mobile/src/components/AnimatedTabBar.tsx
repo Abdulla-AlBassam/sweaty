@@ -347,7 +347,7 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
   }
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom > 0 ? insets.bottom : 8 }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom > 0 ? insets.bottom - 10 : 4 }]}>
       {/* Animated bubble indicator - hidden for Add tab */}
       {state.index !== 2 && (
         <Animated.View
