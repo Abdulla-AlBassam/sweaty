@@ -119,13 +119,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) return { error: error as Error }
 
-    if (data.user) {
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        username,
-        display_name: displayName,
-      })
-      if (profileError) return { error: profileError as Error }
+    if (data.user && data.session) {
+      // Profile is auto-created by database trigger, but we need to update username/display_name
+      // Wait a moment for the trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          username,
+          display_name: displayName,
+        })
+        .eq('id', data.user.id)
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError)
+        // Don't fail signup if profile update fails - user can update later
+      }
     }
     return { error: null }
   }
