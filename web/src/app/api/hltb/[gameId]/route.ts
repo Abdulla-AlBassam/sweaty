@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { HowLongToBeatService } from 'howlongtobeat'
 import { createClient } from '@supabase/supabase-js'
 
 // Use service role client to bypass RLS for caching
@@ -8,18 +7,105 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const hltbService = new HowLongToBeatService()
-
 // Cache duration: 30 days
 const CACHE_DURATION_DAYS = 30
 
-interface HLTBCacheEntry {
-  igdb_game_id: number
-  hltb_id: number | null
-  main_story: number | null
-  main_plus_extras: number | null
-  completionist: number | null
-  cached_at: string
+// HLTB API endpoint
+const HLTB_API_URL = 'https://howlongtobeat.com/api/search'
+
+interface HLTBSearchResult {
+  game_id: number
+  game_name: string
+  game_name_date: number
+  game_alias: string
+  game_type: string
+  game_image: string
+  comp_lvl_combine: number
+  comp_lvl_sp: number
+  comp_lvl_co: number
+  comp_lvl_mp: number
+  comp_lvl_spd: number
+  comp_main: number
+  comp_plus: number
+  comp_100: number
+  comp_all: number
+  comp_main_count: number
+  comp_plus_count: number
+  comp_100_count: number
+  comp_all_count: number
+  invested_co: number
+  invested_mp: number
+  invested_co_count: number
+  invested_mp_count: number
+  count_comp: number
+  count_speedrun: number
+  count_backlog: number
+  count_review: number
+  review_score: number
+  count_playing: number
+  count_retired: number
+  profile_dev: string
+  profile_popular: number
+  profile_steam: number
+  profile_platform: string
+  release_world: number
+}
+
+interface HLTBResponse {
+  color: string
+  title: string
+  category: string
+  count: number
+  pageCurrent: number
+  pageTotal: number
+  pageSize: number
+  data: HLTBSearchResult[]
+}
+
+async function searchHLTB(gameName: string): Promise<HLTBSearchResult[]> {
+  const payload = {
+    searchType: 'games',
+    searchTerms: gameName.split(' '),
+    searchPage: 1,
+    size: 20,
+    searchOptions: {
+      games: {
+        userId: 0,
+        platform: '',
+        sortCategory: 'popular',
+        rangeCategory: 'main',
+        rangeTime: { min: null, max: null },
+        gameplay: { perspective: '', flow: '', genre: '' },
+        rangeYear: { min: '', max: '' },
+        modifier: '',
+      },
+      users: { sortCategory: 'postcount' },
+      lists: { sortCategory: 'follows' },
+      filter: '',
+      sort: 0,
+      randomizer: 0,
+    },
+  }
+
+  const response = await fetch(HLTB_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      'Accept': '*/*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Origin': 'https://howlongtobeat.com',
+      'Referer': 'https://howlongtobeat.com/',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error(`HLTB request failed with status ${response.status}`)
+  }
+
+  const data: HLTBResponse = await response.json()
+  return data.data || []
 }
 
 export async function GET(
@@ -68,7 +154,8 @@ export async function GET(
     }
 
     // Search HowLongToBeat
-    const results = await hltbService.search(cleanGameName(gameName))
+    const cleanedName = cleanGameName(gameName)
+    const results = await searchHLTB(cleanedName)
 
     if (!results || results.length === 0) {
       // Cache the "not found" result to avoid repeated searches
@@ -92,30 +179,30 @@ export async function GET(
     }
 
     // Find best match - prefer exact name match, then first result
-    const cleanedName = cleanGameName(gameName).toLowerCase()
+    const cleanedNameLower = cleanedName.toLowerCase()
     let bestMatch = results[0]
 
     for (const result of results) {
-      const resultName = result.name.toLowerCase()
-      if (resultName === cleanedName) {
+      const resultName = result.game_name.toLowerCase()
+      if (resultName === cleanedNameLower) {
         bestMatch = result
         break
       }
       // Partial match - if our game name is contained in HLTB result
-      if (resultName.includes(cleanedName) || cleanedName.includes(resultName)) {
+      if (resultName.includes(cleanedNameLower) || cleanedNameLower.includes(resultName)) {
         bestMatch = result
       }
     }
 
-    // Extract times (in hours)
-    const mainStory = bestMatch.gameplayMain || null
-    const mainPlusExtras = bestMatch.gameplayMainExtra || null
-    const completionist = bestMatch.gameplayCompletionist || null
+    // Extract times (in hours) - HLTB returns times in seconds, convert to hours
+    const mainStory = bestMatch.comp_main ? Math.round(bestMatch.comp_main / 3600 * 10) / 10 : null
+    const mainPlusExtras = bestMatch.comp_plus ? Math.round(bestMatch.comp_plus / 3600 * 10) / 10 : null
+    const completionist = bestMatch.comp_100 ? Math.round(bestMatch.comp_100 / 3600 * 10) / 10 : null
 
     // Cache the result
     await supabase.from('hltb_cache').upsert({
       igdb_game_id: gameIdNum,
-      hltb_id: parseInt(bestMatch.id, 10),
+      hltb_id: bestMatch.game_id,
       main_story: mainStory,
       main_plus_extras: mainPlusExtras,
       completionist: completionist,
@@ -124,7 +211,7 @@ export async function GET(
 
     return NextResponse.json({
       gameId: gameIdNum,
-      hltbId: parseInt(bestMatch.id, 10),
+      hltbId: bestMatch.game_id,
       mainStory,
       mainPlusExtras,
       completionist,
