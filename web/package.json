@@ -12,6 +12,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.87.3",
     "cheerio": "^1.0.0",
+    "howlongtobeat": "^1.8.0",
     "lucide-react": "^0.561.0",
     "next": "16.0.10",
     "react": "19.2.1",
@@ -29,4 +30,3 @@
     "typescript": "^5"
   }
 }
-
