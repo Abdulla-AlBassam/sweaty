@@ -252,9 +252,9 @@ async function getUserContext(userId: string): Promise<UserContext> {
 // AI RECOMMENDATION GENERATION
 // ============================================
 
-const SYSTEM_PROMPT = `You are a video game recommendation expert. Your job is to recommend games based on a user's gaming history and preferences.
+const SYSTEM_PROMPT = `You are a video game recommendation expert. Your job is to recommend games that are GENUINELY SIMILAR to a specific game.
 
-IMPORTANT RULES:
+CRITICAL RULES:
 1. Always respond with EXACTLY this JSON format:
 {
   "seedGame": "Name of the game these recommendations are based on",
@@ -264,11 +264,13 @@ IMPORTANT RULES:
 
 2. Recommend exactly 12 games
 3. Use EXACT official game names (e.g., "The Legend of Zelda: Breath of the Wild" not "BOTW")
-4. DO NOT recommend games the user has already played (check the played games list)
-5. Focus on games that match the user's taste based on their ratings and genres
-6. Prioritize games from the last 5 years unless the user likes older games
-7. Include a mix of popular titles and hidden gems
-8. Consider the user's favorite genres heavily
+4. DO NOT recommend games the user has already played
+5. ONLY recommend games that share SIMILAR GAMEPLAY, GENRE, or THEME with the seed game
+   - If seed is an action-adventure game, recommend action-adventure games
+   - If seed is a story-driven RPG, recommend story-driven RPGs
+   - DO NOT recommend sports games for action games, or racing games for RPGs, etc.
+6. Prioritize games from the last 5 years
+7. Include a mix of popular titles and hidden gems from the SAME genre
 
 Your entire response must be valid JSON with no markdown.`
 
@@ -277,6 +279,7 @@ async function generateAIRecommendations(
   listType: string
 ): Promise<{
   seedGameName: string | null
+  seedGameId: number | null
   explanation: string
   gameNames: string[]
 }> {
@@ -287,24 +290,35 @@ async function generateAIRecommendations(
 
   // Build the user prompt based on context
   let userPrompt = ''
+  let selectedSeedGame = context.topRatedGames[0]
 
   if (listType === 'because_you_loved') {
-    const topGame = context.topRatedGames[0]
-    if (!topGame) {
+    if (context.topRatedGames.length === 0) {
       throw new Error('No rated games to base recommendations on')
     }
 
-    userPrompt = `The user's highest rated game is "${topGame.name}" (${topGame.rating} stars).
+    // RANDOMIZE: Pick a random game from their top rated games (not always the #1)
+    const randomIndex = Math.floor(Math.random() * Math.min(context.topRatedGames.length, 5))
+    selectedSeedGame = context.topRatedGames[randomIndex]
 
-Their other highly rated games include:
-${context.topRatedGames.slice(1).map(g => `- ${g.name} (${g.rating}★)`).join('\n')}
+    // Get genres for the seed game to help AI stay on track
+    const seedGenres = selectedSeedGame.genres.length > 0
+      ? selectedSeedGame.genres.join(', ')
+      : 'Unknown'
 
-Their favorite genres are: ${context.favoriteGenres.join(', ')}
+    userPrompt = `Find games similar to "${selectedSeedGame.name}" (${selectedSeedGame.rating} stars).
+
+SEED GAME GENRES: ${seedGenres}
+You MUST recommend games that match these genres or have very similar gameplay.
+
+The user's other highly rated games (for context on their taste):
+${context.topRatedGames.filter(g => g.id !== selectedSeedGame.id).slice(0, 5).map(g => `- ${g.name} (${g.rating}★) [${g.genres.slice(0, 2).join(', ')}]`).join('\n')}
 
 Games they have already played (DO NOT recommend these):
 ${[...context.topRatedGames, ...context.recentlyPlayed].map(g => g.name).join(', ')}
 
-Recommend 12 games similar to "${topGame.name}" that match their taste. Focus on games they haven't played.`
+Recommend 12 games that someone who loved "${selectedSeedGame.name}" would also enjoy.
+Stay within the same genre/style - do not recommend unrelated games like sports games for action-adventure, etc.`
   } else if (listType === 'from_backlog') {
     if (context.backlog.length === 0) {
       throw new Error('User has no games in backlog')
@@ -388,8 +402,10 @@ Recommend 12 games they would love based on this profile.`
     throw new Error('Failed to parse AI response')
   }
 
+  // Use the selected seed game name (which was randomized for 'because_you_loved')
   return {
-    seedGameName: parsed.seedGame || context.topRatedGames[0]?.name || null,
+    seedGameName: selectedSeedGame?.name || parsed.seedGame || null,
+    seedGameId: selectedSeedGame?.id || null,
     explanation: parsed.explanation || 'Based on your gaming history',
     gameNames: parsed.games || [],
   }
@@ -483,18 +499,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Find seed game ID if we have the name
-    let seedGameId: number | null = null
-    if (aiResult.seedGameName) {
-      const seedGame = context.topRatedGames.find(g => g.name === aiResult.seedGameName)
-      seedGameId = seedGame?.id || null
-    }
-
-    // Cache the results
+    // Cache the results (seedGameId comes from the randomly selected game)
     await cacheRecommendations(
       userId,
       listType,
-      seedGameId,
+      aiResult.seedGameId,
       aiResult.seedGameName,
       games,
       aiResult.explanation
@@ -504,7 +513,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       basedOnGame: aiResult.seedGameName ? {
-        id: seedGameId,
+        id: aiResult.seedGameId,
         name: aiResult.seedGameName,
       } : null,
       recommendations: games,
