@@ -19,7 +19,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed } from '../hooks/useSupabase'
 import { usePlatformFilter } from '../hooks/usePlatformFilter'
-import { useHowLongToBeat, formatHLTBTime } from '../hooks/useHowLongToBeat'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
 import GameReviews from '../components/GameReviews'
@@ -83,9 +82,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
   // Fetch friends who played this game
   const { friends: friendsWhoPlayed } = useFriendsWhoPlayed(gameId, user?.id)
-
-  // Fetch HowLongToBeat data
-  const { hasData: hasHLTBData, mainStory, mainPlusExtras, completionist } = useHowLongToBeat(gameId, game?.name)
 
   useEffect(() => {
     console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
@@ -338,31 +334,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        {/* How Long To Beat */}
-        {hasHLTBData && (
-          <View style={styles.hltbContainer}>
-            <Ionicons name="time-outline" size={14} color={Colors.textMuted} />
-            {mainStory && (
-              <View style={styles.hltbItem}>
-                <Text style={styles.hltbTime}>{formatHLTBTime(mainStory)}</Text>
-                <Text style={styles.hltbLabel}>Main</Text>
-              </View>
-            )}
-            {mainPlusExtras && (
-              <View style={styles.hltbItem}>
-                <Text style={styles.hltbTime}>{formatHLTBTime(mainPlusExtras)}</Text>
-                <Text style={styles.hltbLabel}>Main+</Text>
-              </View>
-            )}
-            {completionist && (
-              <View style={styles.hltbItem}>
-                <Text style={styles.hltbTime}>{formatHLTBTime(completionist)}</Text>
-                <Text style={styles.hltbLabel}>100%</Text>
-              </View>
-            )}
-          </View>
-        )}
-
         {/* User Status */}
         {userLog && (
           <View style={styles.statusBadge}>
@@ -603,32 +574,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.text,
-  },
-  // How Long To Beat
-  hltbContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  hltbItem: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  hltbTime: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-  },
-  hltbLabel: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
   section: {
     marginBottom: Spacing.lg,
