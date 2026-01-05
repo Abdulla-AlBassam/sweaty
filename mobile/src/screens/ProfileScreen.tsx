@@ -37,7 +37,6 @@ import SweatDropIcon from '../components/SweatDropIcon'
 import LibraryFilterModal, {
   LibraryFilterType,
   LibrarySortType,
-  PlatformFilterType,
 } from '../components/LibraryFilterModal'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -67,6 +66,7 @@ interface GameLogWithGame {
     name: string
     cover_url: string | null
     platforms?: string[]
+    first_release_date?: string | null
   }
 }
 
@@ -92,7 +92,6 @@ export default function ProfileScreen() {
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false)
   const [advancedFilter, setAdvancedFilter] = useState<LibraryFilterType>('all')
   const [sortType, setSortType] = useState<LibrarySortType>('rating')
-  const [platformFilters, setPlatformFilters] = useState<PlatformFilterType[]>([])
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
 
@@ -117,25 +116,6 @@ export default function ProfileScreen() {
   const getStatusCount = (status: string) => {
     if (status === 'all') return gameLogs.length
     return gameLogs.filter(log => log.status === status).length
-  }
-
-  // Platform mapping for filtering
-  const platformMapping: Record<PlatformFilterType, string[]> = {
-    playstation: ['PlayStation 5', 'PlayStation 4', 'PlayStation 3', 'PlayStation 2', 'PlayStation', 'PS Vita', 'PSP'],
-    xbox: ['Xbox Series X|S', 'Xbox One', 'Xbox 360', 'Xbox'],
-    pc: ['PC (Microsoft Windows)', 'PC', 'Steam', 'Mac', 'Linux'],
-    nintendo: ['Nintendo Switch', 'Wii U', 'Wii', 'Nintendo 3DS', 'Nintendo DS', 'GameCube', 'Nintendo 64'],
-  }
-
-  // Check if platform filter matches
-  const matchesPlatformFilter = (logPlatform: string | null) => {
-    if (platformFilters.length === 0) return true
-    if (!logPlatform) return false
-
-    return platformFilters.some(filter => {
-      const platforms = platformMapping[filter]
-      return platforms.some(p => logPlatform.toLowerCase().includes(p.toLowerCase()))
-    })
   }
 
   // Filter and sort game logs
@@ -166,11 +146,6 @@ export default function ProfileScreen() {
         break
     }
 
-    // Apply platform filter
-    if (platformFilters.length > 0) {
-      filtered = filtered.filter(log => matchesPlatformFilter(log.platform))
-    }
-
     // Apply sort
     switch (sortType) {
       case 'rating':
@@ -192,13 +167,20 @@ export default function ProfileScreen() {
         })
         break
       case 'release_date':
-        // Sort by release date if available in game data
-        // For now, keep current order as we don't have release date in the log
+        filtered.sort((a, b) => {
+          const dateA = a.game?.first_release_date ? new Date(a.game.first_release_date).getTime() : 0
+          const dateB = b.game?.first_release_date ? new Date(b.game.first_release_date).getTime() : 0
+          // Newest first, games without dates go to the end
+          if (dateA === 0 && dateB === 0) return 0
+          if (dateA === 0) return 1
+          if (dateB === 0) return -1
+          return dateB - dateA
+        })
         break
     }
 
     return filtered
-  }, [gameLogs, selectedFilter, advancedFilter, sortType, platformFilters])
+  }, [gameLogs, selectedFilter, advancedFilter, sortType])
   const username = profile?.username || ''
 
   // Calculate stats
@@ -228,7 +210,7 @@ export default function ProfileScreen() {
           rating,
           platform,
           review,
-          game:games_cache(id, name, cover_url, platforms)
+          game:games_cache(id, name, cover_url, platforms, first_release_date)
         `)
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
@@ -293,23 +275,14 @@ export default function ProfileScreen() {
   }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs, refetchLists])
 
   // Filter modal handlers
-  const handlePlatformToggle = (platform: PlatformFilterType) => {
-    setPlatformFilters(prev =>
-      prev.includes(platform)
-        ? prev.filter(p => p !== platform)
-        : [...prev, platform]
-    )
-  }
-
   const handleResetFilters = () => {
     setAdvancedFilter('all')
     setSortType('rating')
-    setPlatformFilters([])
     setSelectedFilter('all')
   }
 
   // Check if any advanced filters are active (for showing indicator)
-  const hasActiveAdvancedFilters = advancedFilter !== 'all' || sortType !== 'rating' || platformFilters.length > 0
+  const hasActiveAdvancedFilters = advancedFilter !== 'all' || sortType !== 'rating'
 
   const handleFavoritesSaveSuccess = () => {
     refreshProfile()
@@ -742,10 +715,8 @@ export default function ProfileScreen() {
         onClose={() => setIsFilterModalVisible(false)}
         filterType={advancedFilter}
         sortType={sortType}
-        platformFilters={platformFilters}
         onFilterChange={setAdvancedFilter}
         onSortChange={setSortType}
-        onPlatformToggle={handlePlatformToggle}
         onReset={handleResetFilters}
       />
     </SafeAreaView>

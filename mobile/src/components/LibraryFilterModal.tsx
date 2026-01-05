@@ -14,17 +14,14 @@ import { Fonts } from '../constants/fonts'
 
 export type LibraryFilterType = 'all' | 'played' | 'backlog' | 'reviewed' | 'unrated'
 export type LibrarySortType = 'rating' | 'recent' | 'alphabetical' | 'release_date'
-export type PlatformFilterType = 'playstation' | 'xbox' | 'pc' | 'nintendo'
 
 interface LibraryFilterModalProps {
   visible: boolean
   onClose: () => void
   filterType: LibraryFilterType
   sortType: LibrarySortType
-  platformFilters: PlatformFilterType[]
   onFilterChange: (filter: LibraryFilterType) => void
   onSortChange: (sort: LibrarySortType) => void
-  onPlatformToggle: (platform: PlatformFilterType) => void
   onReset: () => void
 }
 
@@ -43,25 +40,16 @@ const SORT_OPTIONS: { value: LibrarySortType; label: string }[] = [
   { value: 'release_date', label: 'Release Date' },
 ]
 
-const PLATFORM_OPTIONS: { value: PlatformFilterType; label: string; icon: string }[] = [
-  { value: 'playstation', label: 'PlayStation', icon: 'logo-playstation' },
-  { value: 'xbox', label: 'Xbox', icon: 'logo-xbox' },
-  { value: 'pc', label: 'PC', icon: 'desktop-outline' },
-  { value: 'nintendo', label: 'Nintendo', icon: 'game-controller-outline' },
-]
-
 export default function LibraryFilterModal({
   visible,
   onClose,
   filterType,
   sortType,
-  platformFilters,
   onFilterChange,
   onSortChange,
-  onPlatformToggle,
   onReset,
 }: LibraryFilterModalProps) {
-  const hasActiveFilters = filterType !== 'all' || sortType !== 'rating' || platformFilters.length > 0
+  const hasActiveFilters = filterType !== 'all' || sortType !== 'rating'
 
   return (
     <Modal
@@ -134,33 +122,6 @@ export default function LibraryFilterModal({
                 )
               })}
             </View>
-
-            {/* Platform Section */}
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>PLATFORM</Text>
-              <Text style={styles.sectionSubtitle}>Filter by platform you played on</Text>
-              <View style={styles.platformGrid}>
-                {PLATFORM_OPTIONS.map((option) => {
-                  const isSelected = platformFilters.includes(option.value)
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
-                      style={[styles.platformChip, isSelected && styles.platformChipSelected]}
-                      onPress={() => onPlatformToggle(option.value)}
-                    >
-                      <Ionicons
-                        name={option.icon as any}
-                        size={16}
-                        color={isSelected ? Colors.accent : Colors.textMuted}
-                      />
-                      <Text style={[styles.platformChipText, isSelected && styles.platformChipTextSelected]}>
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-            </View>
           </ScrollView>
 
           {/* Apply Button */}
@@ -230,13 +191,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: Spacing.md,
   },
-  sectionSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-    marginTop: -Spacing.sm,
-    marginBottom: Spacing.md,
-  },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,34 +220,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: 2,
-  },
-  platformGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  platformChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: 'transparent',
-  },
-  platformChipSelected: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accent + '15',
-  },
-  platformChipText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-  },
-  platformChipTextSelected: {
-    color: Colors.accent,
   },
   footer: {
     padding: Spacing.lg,
