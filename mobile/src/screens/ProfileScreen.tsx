@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -34,6 +34,11 @@ import StreakBadge from '../components/StreakBadge'
 import PlatformBadges from '../components/PlatformBadges'
 import GlitchBorder from '../components/GlitchBorder'
 import SweatDropIcon from '../components/SweatDropIcon'
+import LibraryFilterModal, {
+  LibraryFilterType,
+  LibrarySortType,
+  PlatformFilterType,
+} from '../components/LibraryFilterModal'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = 180
@@ -83,6 +88,12 @@ export default function ProfileScreen() {
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
 
+  // Advanced filter state
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false)
+  const [advancedFilter, setAdvancedFilter] = useState<LibraryFilterType>('all')
+  const [sortType, setSortType] = useState<LibrarySortType>('rating')
+  const [platformFilters, setPlatformFilters] = useState<PlatformFilterType[]>([])
+
   const displayName = profile?.display_name || profile?.username || 'Gamer'
 
   // Premium status
@@ -108,25 +119,86 @@ export default function ProfileScreen() {
     return gameLogs.filter(log => log.status === status).length
   }
 
-  // Filter game logs based on selected filter
-  // For "All" tab, sort by rating (highest to lowest, unrated last)
-  const filteredGameLogs = (() => {
-    if (selectedFilter === 'all') {
-      return [...gameLogs].sort((a, b) => {
-        // Both have ratings - sort highest first
-        if (a.rating !== null && b.rating !== null) {
-          return b.rating - a.rating
-        }
-        // Only a has rating - a comes first
-        if (a.rating !== null) return -1
-        // Only b has rating - b comes first
-        if (b.rating !== null) return 1
-        // Neither has rating - keep original order
-        return 0
-      })
+  // Platform mapping for filtering
+  const platformMapping: Record<PlatformFilterType, string[]> = {
+    playstation: ['PlayStation 5', 'PlayStation 4', 'PlayStation 3', 'PlayStation 2', 'PlayStation', 'PS Vita', 'PSP'],
+    xbox: ['Xbox Series X|S', 'Xbox One', 'Xbox 360', 'Xbox'],
+    pc: ['PC (Microsoft Windows)', 'PC', 'Steam', 'Mac', 'Linux'],
+    nintendo: ['Nintendo Switch', 'Wii U', 'Wii', 'Nintendo 3DS', 'Nintendo DS', 'GameCube', 'Nintendo 64'],
+  }
+
+  // Check if platform filter matches
+  const matchesPlatformFilter = (logPlatform: string | null) => {
+    if (platformFilters.length === 0) return true
+    if (!logPlatform) return false
+
+    return platformFilters.some(filter => {
+      const platforms = platformMapping[filter]
+      return platforms.some(p => logPlatform.toLowerCase().includes(p.toLowerCase()))
+    })
+  }
+
+  // Filter and sort game logs
+  const filteredGameLogs = useMemo(() => {
+    let filtered = [...gameLogs]
+
+    // Apply status filter (from pills)
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(log => log.status === selectedFilter)
     }
-    return gameLogs.filter(log => log.status === selectedFilter)
-  })()
+
+    // Apply advanced filter
+    const playedStatuses = ['playing', 'played', 'completed', 'dropped']
+    const backlogStatuses = ['want_to_play', 'on_hold']
+
+    switch (advancedFilter) {
+      case 'played':
+        filtered = filtered.filter(log => playedStatuses.includes(log.status))
+        break
+      case 'backlog':
+        filtered = filtered.filter(log => backlogStatuses.includes(log.status))
+        break
+      case 'reviewed':
+        filtered = filtered.filter(log => log.review && log.review.trim().length > 0)
+        break
+      case 'unrated':
+        filtered = filtered.filter(log => log.rating === null)
+        break
+    }
+
+    // Apply platform filter
+    if (platformFilters.length > 0) {
+      filtered = filtered.filter(log => matchesPlatformFilter(log.platform))
+    }
+
+    // Apply sort
+    switch (sortType) {
+      case 'rating':
+        filtered.sort((a, b) => {
+          if (a.rating !== null && b.rating !== null) return b.rating - a.rating
+          if (a.rating !== null) return -1
+          if (b.rating !== null) return 1
+          return 0
+        })
+        break
+      case 'recent':
+        // Already sorted by updated_at from fetch, no need to re-sort
+        break
+      case 'alphabetical':
+        filtered.sort((a, b) => {
+          const nameA = a.game?.name?.toLowerCase() || ''
+          const nameB = b.game?.name?.toLowerCase() || ''
+          return nameA.localeCompare(nameB)
+        })
+        break
+      case 'release_date':
+        // Sort by release date if available in game data
+        // For now, keep current order as we don't have release date in the log
+        break
+    }
+
+    return filtered
+  }, [gameLogs, selectedFilter, advancedFilter, sortType, platformFilters])
   const username = profile?.username || ''
 
   // Calculate stats
@@ -219,6 +291,25 @@ export default function ProfileScreen() {
     ])
     setRefreshing(false)
   }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs, refetchLists])
+
+  // Filter modal handlers
+  const handlePlatformToggle = (platform: PlatformFilterType) => {
+    setPlatformFilters(prev =>
+      prev.includes(platform)
+        ? prev.filter(p => p !== platform)
+        : [...prev, platform]
+    )
+  }
+
+  const handleResetFilters = () => {
+    setAdvancedFilter('all')
+    setSortType('rating')
+    setPlatformFilters([])
+    setSelectedFilter('all')
+  }
+
+  // Check if any advanced filters are active (for showing indicator)
+  const hasActiveAdvancedFilters = advancedFilter !== 'all' || sortType !== 'rating' || platformFilters.length > 0
 
   const handleFavoritesSaveSuccess = () => {
     refreshProfile()
@@ -504,7 +595,16 @@ export default function ProfileScreen() {
 
         {/* Library */}
         <View style={styles.librarySection}>
-          <Text style={styles.sectionTitle}>Library</Text>
+          <View style={styles.libraryHeader}>
+            <Text style={styles.sectionTitle}>Library</Text>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setIsFilterModalVisible(true)}
+            >
+              <Ionicons name="options-outline" size={20} color={hasActiveAdvancedFilters ? Colors.accent : Colors.textMuted} />
+              {hasActiveAdvancedFilters && <View style={styles.filterBadge} />}
+            </TouchableOpacity>
+          </View>
 
           {/* Filter Tabs */}
           <ScrollView
@@ -634,6 +734,19 @@ export default function ProfileScreen() {
         visible={isCreateListModalVisible}
         onClose={() => setIsCreateListModalVisible(false)}
         onCreated={handleListCreated}
+      />
+
+      {/* Library Filter Modal */}
+      <LibraryFilterModal
+        visible={isFilterModalVisible}
+        onClose={() => setIsFilterModalVisible(false)}
+        filterType={advancedFilter}
+        sortType={sortType}
+        platformFilters={platformFilters}
+        onFilterChange={setAdvancedFilter}
+        onSortChange={setSortType}
+        onPlatformToggle={handlePlatformToggle}
+        onReset={handleResetFilters}
       />
     </SafeAreaView>
   )
@@ -873,6 +986,25 @@ const styles = StyleSheet.create({
   librarySection: {
     paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.xxl,                // 32px above section
+  },
+  libraryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  filterButton: {
+    padding: Spacing.sm,
+    position: 'relative',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.accent,
   },
   filterTabsContainer: {
     marginBottom: Spacing.xxl,              // 32px below filters
