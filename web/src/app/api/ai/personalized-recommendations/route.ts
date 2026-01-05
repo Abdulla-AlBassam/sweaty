@@ -265,12 +265,17 @@ CRITICAL RULES:
 2. Recommend exactly 12 games
 3. Use EXACT official game names (e.g., "The Legend of Zelda: Breath of the Wild" not "BOTW")
 4. DO NOT recommend games the user has already played
-5. ONLY recommend games that share SIMILAR GAMEPLAY, GENRE, or THEME with the seed game
+5. ONLY recommend FULL STANDALONE GAMES - never recommend:
+   - DLCs or expansion packs (e.g., "Ant-Man Pack", "Blood and Wine")
+   - Season passes
+   - Add-on content
+   - Demos or betas
+6. ONLY recommend games that share SIMILAR GAMEPLAY, GENRE, or THEME with the seed game
    - If seed is an action-adventure game, recommend action-adventure games
    - If seed is a story-driven RPG, recommend story-driven RPGs
    - DO NOT recommend sports games for action games, or racing games for RPGs, etc.
-6. Prioritize games from the last 5 years
-7. Include a mix of popular titles and hidden gems from the SAME genre
+7. Prioritize games from the last 5 years
+8. Include a mix of popular titles and hidden gems from the SAME genre
 
 Your entire response must be valid JSON with no markdown.`
 
