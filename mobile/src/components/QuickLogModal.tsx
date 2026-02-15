@@ -515,8 +515,6 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
             ) : (
               <View style={styles.centered}>
                 <SweatDropIcon size={64} variant="default" />
-                <Text style={styles.emptyText}>Search for a game</Text>
-                <Text style={styles.emptySubtext}>Type at least 2 characters to search</Text>
               </View>
             )}
           </View>
@@ -673,12 +671,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.textMuted,
     marginTop: Spacing.md,
-  },
-  emptySubtext: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-    marginTop: Spacing.xs,
   },
   resultsList: {
     paddingHorizontal: Spacing.lg,
