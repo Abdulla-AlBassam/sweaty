@@ -880,7 +880,7 @@ const styles = StyleSheet.create({
   },
   ranksSection: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.xxl,                // 32px above section
+    paddingTop: Spacing.lg,
   },
   sectionTitle: {
     fontFamily: Fonts.display,
@@ -892,7 +892,7 @@ const styles = StyleSheet.create({
   },
   favoritesSection: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.xxl,                // 32px above section
+    paddingTop: Spacing.xl,
   },
   favoritesTitleRow: {
     flexDirection: 'row',
@@ -910,11 +910,11 @@ const styles = StyleSheet.create({
   },
   favoritesRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.cardGap,                   // 12px gap between cards
+    justifyContent: 'center',
+    gap: Spacing.cardGap,
   },
   favoriteSlot: {
-    flex: 1,
+    width: 85,
   },
   favoriteCover: {
     width: '100%',

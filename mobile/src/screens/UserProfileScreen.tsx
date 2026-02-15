@@ -987,11 +987,11 @@ const styles = StyleSheet.create({
   },
   favoritesRow: {
     flexDirection: 'row',
-    gap: Spacing.md,
+    justifyContent: 'center',
+    gap: Spacing.cardGap,
   },
   favoriteSlot: {
-    flex: 1,
-    maxWidth: '31%',
+    width: 85,
   },
   favoriteCover: {
     width: '100%',
