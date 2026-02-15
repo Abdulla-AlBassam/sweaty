@@ -33,6 +33,7 @@ import PressableScale from '../components/PressableScale'
 import StackedAvatars from '../components/StackedAvatars'
 import NewsSection from '../components/NewsSection'
 import Skeleton from '../components/Skeleton'
+import SweatDropIcon from '../components/SweatDropIcon'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
@@ -159,11 +160,19 @@ export default function DashboardScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={Colors.accent}
-            colors={[Colors.accent]}
+            tintColor="transparent"
+            colors={['transparent']}
+            progressBackgroundColor="transparent"
           />
         }
       >
+        {/* Custom refresh indicator */}
+        {refreshing && (
+          <View style={styles.customRefreshIndicator}>
+            <SweatDropIcon size={32} variant="loading" />
+          </View>
+        )}
+
         {/* Hero Banner - Featured Game Screenshot (at the very top) */}
         {currentBanner && (
           <PressableScale
@@ -520,6 +529,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
+  },
+  customRefreshIndicator: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.lg,
   },
   // Hero Banner - Cinematic full-width at top
   heroBannerContainer: {
