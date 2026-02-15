@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, StyleSheet } from 'react-native'
+import React, { useEffect, useRef } from 'react'
+import { View, StyleSheet, Animated, Easing } from 'react-native'
 import SweatDropIcon from './SweatDropIcon'
 
 interface LoadingSpinnerProps {
@@ -7,17 +7,41 @@ interface LoadingSpinnerProps {
 }
 
 /**
- * Loading spinner using SweatDropIcon with loading pulse animation
+ * Loading spinner using SweatDropIcon with bounce + pulse animation
  * Features RGB chromatic aberration glitch effect
  */
 export default function LoadingSpinner({
   size = 'small',
 }: LoadingSpinnerProps) {
-  const iconSize = size === 'small' ? 22 : 36
+  const iconSize = size === 'small' ? 22 : 48
+  const bounceY = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    const bounce = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounceY, {
+          toValue: -6,
+          duration: 500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceY, {
+          toValue: 0,
+          duration: 500,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    )
+    bounce.start()
+    return () => bounce.stop()
+  }, [bounceY])
 
   return (
     <View style={styles.container}>
-      <SweatDropIcon size={iconSize} variant="loading" />
+      <Animated.View style={{ transform: [{ translateY: bounceY }] }}>
+        <SweatDropIcon size={iconSize} variant="loading" />
+      </Animated.View>
     </View>
   )
 }
