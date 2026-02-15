@@ -27,17 +27,16 @@ import { supabase } from '../lib/supabase'
 import { usePremium } from '../hooks/usePremium'
 import BannerSelector from '../components/BannerSelector'
 import PremiumBadge from '../components/PremiumBadge'
-import { BannerOption } from '../constants/banners'
 import { GamingPlatform } from '../types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_PREVIEW_HEIGHT = 80
 
-const PLATFORM_OPTIONS: { key: GamingPlatform; label: string; icon: string; iconLibrary: 'fa5' | 'mci' }[] = [
-  { key: 'playstation', label: 'PlayStation', icon: 'playstation', iconLibrary: 'fa5' },
-  { key: 'xbox', label: 'Xbox', icon: 'xbox', iconLibrary: 'fa5' },
-  { key: 'pc', label: 'PC', icon: 'desktop-tower-monitor', iconLibrary: 'mci' },
-  { key: 'nintendo', label: 'Nintendo', icon: 'nintendo-switch', iconLibrary: 'mci' },
+const PLATFORM_OPTIONS: { key: GamingPlatform; icon: string; iconLibrary: 'fa5' | 'mci' }[] = [
+  { key: 'playstation', icon: 'playstation', iconLibrary: 'fa5' },
+  { key: 'xbox', icon: 'xbox', iconLibrary: 'fa5' },
+  { key: 'pc', icon: 'desktop-tower-monitor', iconLibrary: 'mci' },
+  { key: 'nintendo', icon: 'nintendo-switch', iconLibrary: 'mci' },
 ]
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
@@ -53,7 +52,6 @@ export default function SettingsScreen() {
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [gamingPlatforms, setGamingPlatforms] = useState<GamingPlatform[]>([])
-  const [excludePcOnly, setExcludePcOnly] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [isSavingBanner, setIsSavingBanner] = useState(false)
@@ -69,7 +67,6 @@ export default function SettingsScreen() {
       setUsername(profile.username || '')
       setBio(profile.bio || '')
       setGamingPlatforms(profile.gaming_platforms || [])
-      setExcludePcOnly(profile.exclude_pc_only || false)
     }
   }, [profile])
 
@@ -79,7 +76,6 @@ export default function SettingsScreen() {
     const originalUsername = profile?.username || ''
     const originalAvatar = profile?.avatar_url || null
     const originalPlatforms = profile?.gaming_platforms || []
-    const originalExcludePcOnly = profile?.exclude_pc_only || false
 
     // Check if platforms arrays are different
     const platformsChanged =
@@ -91,10 +87,9 @@ export default function SettingsScreen() {
       bio !== originalBio ||
       username !== originalUsername ||
       avatarUrl !== originalAvatar ||
-      platformsChanged ||
-      excludePcOnly !== originalExcludePcOnly
+      platformsChanged
     )
-  }, [displayName, bio, username, avatarUrl, gamingPlatforms, excludePcOnly, profile])
+  }, [displayName, bio, username, avatarUrl, gamingPlatforms, profile])
 
   const validateUsername = (value: string): boolean => {
     if (value.length < 3) {
@@ -224,7 +219,6 @@ export default function SettingsScreen() {
           username: username,
           bio: bio.trim() || null,
           gaming_platforms: gamingPlatforms,
-          exclude_pc_only: excludePcOnly,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)
@@ -441,53 +435,16 @@ export default function SettingsScreen() {
                     onPress={() => togglePlatform(platform.key)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.platformIconContainer, isSelected && styles.platformIconSelected]}>
-                      {platform.iconLibrary === 'fa5' ? (
-                        <FontAwesome5 name={platform.icon} size={16} color={isSelected ? Colors.accent : Colors.textMuted} />
-                      ) : (
-                        <MaterialCommunityIcons name={platform.icon as any} size={16} color={isSelected ? Colors.accent : Colors.textMuted} />
-                      )}
-                    </View>
-                    <Text style={[styles.platformLabel, isSelected && styles.platformLabelSelected]}>
-                      {platform.label}
-                    </Text>
-                    {isSelected && (
-                      <Ionicons name="checkmark" size={14} color={Colors.accent} style={{ marginLeft: Spacing.xs }} />
+                    {platform.iconLibrary === 'fa5' ? (
+                      <FontAwesome5 name={platform.icon} size={22} color={isSelected ? Colors.accent : Colors.textMuted} />
+                    ) : (
+                      <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? Colors.accent : Colors.textMuted} />
                     )}
                   </TouchableOpacity>
                 )
               })}
             </View>
 
-            {/* Exclude PC-only toggle */}
-            <TouchableOpacity
-              style={styles.excludePcToggle}
-              onPress={() => setExcludePcOnly(!excludePcOnly)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.excludePcContent}>
-                <MaterialCommunityIcons
-                  name="desktop-tower-monitor"
-                  size={20}
-                  color={excludePcOnly ? Colors.error : Colors.textDim}
-                />
-                <View style={styles.excludePcTextContainer}>
-                  <Text style={styles.excludePcLabel}>Hide PC-only games</Text>
-                  <Text style={styles.excludePcDescription}>
-                    Remove games that are only available on PC from all lists
-                  </Text>
-                </View>
-              </View>
-              <View style={[
-                styles.toggleSwitch,
-                excludePcOnly && styles.toggleSwitchActive
-              ]}>
-                <View style={[
-                  styles.toggleKnob,
-                  excludePcOnly && styles.toggleKnobActive
-                ]} />
-              </View>
-            </TouchableOpacity>
           </View>
 
           {/* Developer Tools - Only visible to developer */}
@@ -818,95 +775,21 @@ const styles = StyleSheet.create({
   },
   platformsGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.sm,
   },
   platformButton: {
-    flexDirection: 'row',
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: Spacing.sm,
   },
   platformButtonSelected: {
     borderColor: Colors.accent,
     backgroundColor: Colors.accentDark,
-  },
-  platformIconContainer: {
-    width: 28,
-    height: 28,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  platformIconSelected: {
-    backgroundColor: 'transparent',
-  },
-  platformLabel: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-  },
-  platformLabelSelected: {
-    color: Colors.text,
-    fontFamily: Fonts.bodySemiBold,
-  },
-  excludePcToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginTop: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  excludePcContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: Spacing.sm,
-  },
-  excludePcTextContainer: {
-    flex: 1,
-  },
-  excludePcLabel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-  },
-  excludePcDescription: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    marginTop: 2,
-  },
-  toggleSwitch: {
-    width: 44,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center',
-    paddingHorizontal: 2,
-  },
-  toggleSwitchActive: {
-    backgroundColor: Colors.accent,
-  },
-  toggleKnob: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: Colors.textDim,
-  },
-  toggleKnobActive: {
-    backgroundColor: Colors.text,
-    alignSelf: 'flex-end',
   },
   infoRow: {
     flexDirection: 'row',
