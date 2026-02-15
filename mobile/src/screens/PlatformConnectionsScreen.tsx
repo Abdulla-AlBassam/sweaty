@@ -42,11 +42,11 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
   const getPlatformIcon = () => {
     switch (platform) {
       case 'steam':
-        return <FontAwesome5 name="steam" size={32} color="#ffffff" />
+        return <FontAwesome5 name="steam" size={28} color={Colors.text} />
       case 'playstation':
-        return <MaterialCommunityIcons name="sony-playstation" size={32} color="#006FCD" />
+        return <MaterialCommunityIcons name="sony-playstation" size={28} color={Colors.text} />
       case 'xbox':
-        return <MaterialCommunityIcons name="microsoft-xbox" size={32} color="#107C10" />
+        return <MaterialCommunityIcons name="microsoft-xbox" size={28} color={Colors.text} />
     }
   }
 
@@ -406,7 +406,7 @@ export default function PlatformConnectionsScreen() {
         <View style={[styles.platformCard, styles.platformCardDisabled]}>
           <View style={styles.platformHeader}>
             <View style={styles.platformIconContainer}>
-              <MaterialCommunityIcons name="microsoft-xbox" size={32} color="#107C10" />
+              <MaterialCommunityIcons name="microsoft-xbox" size={28} color={Colors.text} />
             </View>
             <View style={styles.platformInfo}>
               <Text style={styles.platformName}>Xbox</Text>
@@ -443,7 +443,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
     color: Colors.text,
     textAlign: 'center',

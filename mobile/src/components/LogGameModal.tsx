@@ -872,11 +872,11 @@ const styles = StyleSheet.create({
   // Dropdown styles
   dropdown: {
     backgroundColor: Colors.background,
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -885,17 +885,17 @@ const styles = StyleSheet.create({
   dropdownContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.sm,
   },
   dropdownText: {
     fontFamily: Fonts.body,
     color: Colors.text,
-    fontSize: 16,
+    fontSize: FontSize.md,
   },
   dropdownPlaceholder: {
     fontFamily: Fonts.body,
     color: Colors.textDim,
-    fontSize: 16,
+    fontSize: FontSize.md,
   },
   // Picker Modal styles
   pickerOverlay: {

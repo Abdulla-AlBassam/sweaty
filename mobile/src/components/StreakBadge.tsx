@@ -2,6 +2,7 @@ import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { AntDesign } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
+import { Fonts } from '../constants/fonts'
 
 interface StreakBadgeProps {
   streak: number
@@ -22,7 +23,7 @@ export default function StreakBadge({ streak, size = 'medium' }: StreakBadgeProp
 
   return (
     <View style={[styles.container, { gap: config.gap }]}>
-      <AntDesign name="fire" size={config.iconSize} color="#FF8C00" />
+      <AntDesign name="fire" size={config.iconSize} color={Colors.fire} />
       <Text style={[styles.text, { fontSize: config.fontSize }]}>{streak}</Text>
     </View>
   )
@@ -35,6 +36,6 @@ const styles = StyleSheet.create({
   },
   text: {
     color: Colors.text,
-    fontWeight: '600',
+    fontFamily: Fonts.bodySemiBold,
   },
 })

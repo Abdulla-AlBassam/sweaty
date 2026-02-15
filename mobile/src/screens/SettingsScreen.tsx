@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -11,10 +11,8 @@ import {
   Platform,
   Image,
   Dimensions,
-  Animated,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
-import SweatDropIcon from '../components/SweatDropIcon'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -29,17 +27,17 @@ import { supabase } from '../lib/supabase'
 import { usePremium } from '../hooks/usePremium'
 import BannerSelector from '../components/BannerSelector'
 import PremiumBadge from '../components/PremiumBadge'
-import PlatformBadges from '../components/PlatformBadges'
+import { BannerOption } from '../constants/banners'
 import { GamingPlatform } from '../types'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_PREVIEW_HEIGHT = 80
 
-const PLATFORM_OPTIONS: { key: GamingPlatform; label: string; icon: string; iconLibrary: 'fa5' | 'mci'; color: string }[] = [
-  { key: 'playstation', label: 'PlayStation', icon: 'playstation', iconLibrary: 'fa5', color: '#006FCD' },
-  { key: 'xbox', label: 'Xbox', icon: 'xbox', iconLibrary: 'fa5', color: '#107C10' },
-  { key: 'pc', label: 'PC', icon: 'desktop-tower-monitor', iconLibrary: 'mci', color: '#FF6600' },
-  { key: 'nintendo', label: 'Nintendo', icon: 'nintendo-switch', iconLibrary: 'mci', color: '#E60012' },
+const PLATFORM_OPTIONS: { key: GamingPlatform; label: string; icon: string; iconLibrary: 'fa5' | 'mci' }[] = [
+  { key: 'playstation', label: 'PlayStation', icon: 'playstation', iconLibrary: 'fa5' },
+  { key: 'xbox', label: 'Xbox', icon: 'xbox', iconLibrary: 'fa5' },
+  { key: 'pc', label: 'PC', icon: 'desktop-tower-monitor', iconLibrary: 'mci' },
+  { key: 'nintendo', label: 'Nintendo', icon: 'nintendo-switch', iconLibrary: 'mci' },
 ]
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
@@ -331,7 +329,7 @@ export default function SettingsScreen() {
           {/* Banner Section */}
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>profile banner</Text>
+              <Text style={styles.sectionTitle}>Profile Banner</Text>
               <PremiumBadge size="small" />
             </View>
 
@@ -377,7 +375,7 @@ export default function SettingsScreen() {
 
           {/* Profile Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>profile</Text>
+            <Text style={styles.sectionTitle}>Profile</Text>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Display name</Text>
@@ -429,11 +427,7 @@ export default function SettingsScreen() {
 
           {/* Gaming Platforms */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>gaming platforms</Text>
-            <Text style={styles.platformSubtitle}>
-              Select your platforms to filter game recommendations and content
-            </Text>
-
+            <Text style={styles.sectionTitle}>Platforms</Text>
             <View style={styles.platformsGrid}>
               {PLATFORM_OPTIONS.map((platform) => {
                 const isSelected = gamingPlatforms.includes(platform.key)
@@ -442,25 +436,23 @@ export default function SettingsScreen() {
                     key={platform.key}
                     style={[
                       styles.platformButton,
-                      isSelected && { borderColor: platform.color, backgroundColor: `${platform.color}15` }
+                      isSelected && styles.platformButtonSelected,
                     ]}
                     onPress={() => togglePlatform(platform.key)}
                     activeOpacity={0.7}
                   >
-                    <View style={[styles.platformIconContainer, { backgroundColor: platform.color }]}>
+                    <View style={[styles.platformIconContainer, isSelected && styles.platformIconSelected]}>
                       {platform.iconLibrary === 'fa5' ? (
-                        <FontAwesome5 name={platform.icon} size={18} color="#FFFFFF" />
+                        <FontAwesome5 name={platform.icon} size={16} color={isSelected ? Colors.accent : Colors.textMuted} />
                       ) : (
-                        <MaterialCommunityIcons name={platform.icon as any} size={18} color="#FFFFFF" />
+                        <MaterialCommunityIcons name={platform.icon as any} size={16} color={isSelected ? Colors.accent : Colors.textMuted} />
                       )}
                     </View>
-                    <Text style={[styles.platformLabel, isSelected && { color: Colors.text }]}>
+                    <Text style={[styles.platformLabel, isSelected && styles.platformLabelSelected]}>
                       {platform.label}
                     </Text>
                     {isSelected && (
-                      <View style={[styles.platformCheck, { backgroundColor: platform.color }]}>
-                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
-                      </View>
+                      <Ionicons name="checkmark" size={14} color={Colors.accent} style={{ marginLeft: Spacing.xs }} />
                     )}
                   </TouchableOpacity>
                 )
@@ -538,7 +530,7 @@ export default function SettingsScreen() {
 
           {/* Account Info */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>account</Text>
+            <Text style={styles.sectionTitle}>Account</Text>
 
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Email</Text>
@@ -548,7 +540,7 @@ export default function SettingsScreen() {
 
           {/* Import Games */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>import games</Text>
+            <Text style={styles.sectionTitle}>Import Games</Text>
 
             <TouchableOpacity
               style={styles.importGamesButton}
@@ -575,20 +567,9 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* App Info with Chrome Aesthetic */}
+          {/* App Version */}
           <View style={styles.appInfo}>
-            <View style={styles.appLogoContainer}>
-              <SweatDropIcon size={32} variant="static" />
-              <View style={styles.appNameWrapper}>
-                {/* Cyan layer */}
-                <Text style={[styles.appNameLayer, styles.appNameCyan]}>sweaty</Text>
-                {/* Green layer */}
-                <Text style={[styles.appNameLayer, styles.appNameGreen]}>sweaty</Text>
-                {/* Main white text */}
-                <Text style={styles.appName}>sweaty</Text>
-              </View>
-            </View>
-            <Text style={styles.appVersion}>Version 1.0.0</Text>
+            <Text style={styles.appVersion}>sweaty v1.0.0</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -623,7 +604,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex: 1,
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.display,
     fontSize: FontSize.lg,
     color: Colors.text,
     marginLeft: Spacing.sm,
@@ -655,9 +636,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
   avatarPlaceholder: {
     backgroundColor: Colors.surface,
@@ -687,11 +668,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   sectionTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    fontFamily: Fonts.display,
+    fontSize: FontSize.lg,
+    color: Colors.text,
     marginBottom: Spacing.md,
-    textTransform: 'uppercase',
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -788,32 +768,30 @@ const styles = StyleSheet.create({
   },
   input: {
     fontFamily: Fonts.body,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    backgroundColor: 'transparent',
+    borderRadius: 0,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: 0,
     fontSize: FontSize.md,
     color: Colors.text,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   usernamePrefix: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: Colors.textMuted,
-    paddingLeft: Spacing.md,
+    color: Colors.textDim,
   },
   usernameInput: {
     fontFamily: Fonts.body,
     flex: 1,
-    padding: Spacing.md,
+    paddingVertical: Spacing.md,
     paddingLeft: Spacing.xs,
     fontSize: FontSize.md,
     color: Colors.text,
@@ -825,8 +803,11 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   textArea: {
-    minHeight: 100,
+    minHeight: 80,
     paddingTop: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    borderRadius: 0,
   },
   charCount: {
     fontFamily: Fonts.body,
@@ -834,12 +815,6 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     textAlign: 'right',
     marginTop: Spacing.xs,
-  },
-  platformSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textDim,
-    marginBottom: Spacing.md,
   },
   platformsGrid: {
     flexDirection: 'row',
@@ -851,31 +826,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
-    paddingRight: Spacing.md,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.border,
     gap: Spacing.sm,
   },
+  platformButtonSelected: {
+    borderColor: Colors.accent,
+    backgroundColor: Colors.accentDark,
+  },
   platformIconContainer: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  platformIconSelected: {
+    backgroundColor: 'transparent',
+  },
   platformLabel: {
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
-  platformCheck: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: Spacing.xs,
+  platformLabelSelected: {
+    color: Colors.text,
+    fontFamily: Fonts.bodySemiBold,
   },
   excludePcToggle: {
     flexDirection: 'row',
@@ -1006,12 +985,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: 'transparent',
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     gap: Spacing.sm,
-    borderWidth: 1,
-    borderColor: Colors.error,
   },
   signOutText: {
     fontFamily: Fonts.bodySemiBold,
@@ -1020,41 +997,12 @@ const styles = StyleSheet.create({
   },
   appInfo: {
     alignItems: 'center',
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.xxl,
     paddingBottom: Spacing.xxl,
   },
-  appLogoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  appNameWrapper: {
-    position: 'relative',
-  },
-  appNameLayer: {
-    position: 'absolute',
-    fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
-  },
-  appNameCyan: {
-    color: Colors.cyan,
-    opacity: 0.6,
-    transform: [{ translateX: -1.5 }],
-  },
-  appNameGreen: {
-    color: Colors.accent,
-    opacity: 0.6,
-    transform: [{ translateX: 1.5 }],
-  },
-  appName: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
-    color: Colors.text,
-  },
   appVersion: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
     color: Colors.textDim,
-    marginTop: Spacing.xs,
   },
 })

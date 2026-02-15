@@ -8,7 +8,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient'
 import { Ionicons } from '@expo/vector-icons'
 import { Fonts } from '../constants/fonts'
-import { FontSize } from '../constants/colors'
+import { Colors, FontSize } from '../constants/colors'
 
 interface PremiumBadgeProps {
   size?: 'small' | 'medium' | 'large'
@@ -18,17 +18,17 @@ interface PremiumBadgeProps {
 // Color schemes for different badge variants
 const BADGE_VARIANTS = {
   premium: {
-    colors: ['#FFD700', '#FFA500', '#FF8C00'] as const,
-    shadowColor: '#FFD700',
-    textColor: '#1a1a1a',
-    iconColor: '#1a1a1a',
+    colors: [Colors.gold, Colors.goldMuted, Colors.fire] as const,
+    shadowColor: Colors.gold,
+    textColor: Colors.background,
+    iconColor: Colors.background,
     label: 'PREMIUM',
   },
   developer: {
-    colors: ['#22c55e', '#16a34a', '#15803d'] as const,
-    shadowColor: '#22c55e',
-    textColor: '#ffffff',
-    iconColor: '#ffffff',
+    colors: [Colors.accent, Colors.accentMuted, '#15803d'] as const,
+    shadowColor: Colors.accent,
+    textColor: Colors.text,
+    iconColor: Colors.text,
     label: 'DEVELOPER',
   },
 }

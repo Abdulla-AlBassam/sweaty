@@ -67,6 +67,13 @@ export const Colors = {
   statusOnHold: '#6b7280',    // Gray
   statusDropped: '#ef4444',   // Red
 
+  // Fire/streak color
+  fire: '#FF8C00',                     // Orange for streak badge
+
+  // Overlays
+  overlay: 'rgba(0, 0, 0, 0.5)',      // Standard modal overlay
+  overlayDark: 'rgba(0, 0, 0, 0.8)',  // Heavy overlay
+
   // Special effects
   scanLine: 'rgba(0, 0, 0, 0.03)',    // Very subtle scan lines
   vignette: 'rgba(0, 0, 0, 0.6)',     // Softer vignette
