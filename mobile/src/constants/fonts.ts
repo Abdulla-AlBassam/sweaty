@@ -28,68 +28,83 @@ export const FontAssets = {
 }
 
 // Typography presets for consistent styling
+// Every preset includes lineHeight (1.4–1.5× fontSize) for cross-device consistency
 export const Typography = {
   // Display styles (BBH Bogle)
   logo: {
     fontFamily: 'BBHBogle',
     fontSize: 24,
+    lineHeight: 34,
   },
   headline: {
     fontFamily: 'BBHBogle',
     fontSize: 26,
+    lineHeight: 36,
   },
   sectionTitle: {
     fontFamily: 'BBHBogle',
     fontSize: 18,
+    lineHeight: 26,
   },
 
   // Body styles (Geist)
   bodyLarge: {
     fontFamily: 'Geist-Regular',
     fontSize: 18,
+    lineHeight: 26,
   },
   body: {
     fontFamily: 'Geist-Regular',
     fontSize: 16,
+    lineHeight: 24,
   },
   bodySmall: {
     fontFamily: 'Geist-Regular',
     fontSize: 14,
+    lineHeight: 20,
   },
   caption: {
     fontFamily: 'Geist-Regular',
     fontSize: 12,
+    lineHeight: 17,
   },
 
   // Button/UI styles
   button: {
     fontFamily: 'Geist-SemiBold',
     fontSize: 16,
+    lineHeight: 24,
   },
   buttonSmall: {
     fontFamily: 'Geist-SemiBold',
     fontSize: 14,
+    lineHeight: 20,
   },
   label: {
     fontFamily: 'Geist-Medium',
     fontSize: 14,
+    lineHeight: 20,
   },
 
   // Terminal/Cyberpunk styles (Space Mono)
   terminal: {
     fontFamily: 'SpaceMono-Regular',
     fontSize: 14,
+    lineHeight: 20,
   },
   terminalLarge: {
     fontFamily: 'SpaceMono-Regular',
     fontSize: 16,
+    lineHeight: 24,
   },
   terminalSmall: {
     fontFamily: 'SpaceMono-Regular',
     fontSize: 12,
+    lineHeight: 17,
   },
   code: {
     fontFamily: 'SpaceMono-Regular',
     fontSize: 13,
+    lineHeight: 19,
   },
 }

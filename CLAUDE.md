@@ -1158,3 +1158,40 @@ Ideas ranked by implementation difficulty:
 9. Chapter/DLC progress tracking
 10. "Where to play" availability display (external API integrations)
 ~~11. Personalized game recommendations engine~~ ✅ Implemented (Session 10)
+
+## Design Context
+
+### Users
+Gamers who want to track, rate, review, and share their gaming journey. They range from casual players to dedicated collectors who take pride in their library. They use Sweaty on mobile (primary) and web to log games, discover new titles through curated lists and friend activity, and express their gaming identity. The core job: organise a personal gaming history and connect with others who share their taste.
+
+### Brand Personality
+**Warm, Inviting, Chill**
+
+Sweaty should feel like a relaxed living room where gamers hang out - not a competitive leaderboard or a sterile database. The tone is friendly and low-pressure, encouraging exploration over obligation. Despite the name's playful edge, the experience is calm and confident.
+
+### Emotional Goals
+- **Belonging & connection** - Being part of a community, seeing what friends play, shared discovery
+- **Pride & accomplishment** - Showing off a curated collection, feeling ownership over your gaming identity
+- **Excitement & discovery** - Finding new games through curated lists, recommendations, and friend activity
+
+### Aesthetic Direction
+- **Visual tone:** Dark, minimal, and warm. Letterboxd is the north star - social, review-focused, strong personal identity, dark palette with purposeful colour accents
+- **Theme:** Dark mode only. Deep blacks (#0A0A0A) with forest green accents (#2D6B4A). Gold reserved for ratings and achievements
+- **Typography:** BBH Bogle for display/headlines (distinctive personality), Geist for body (clean readability), Space Mono for terminal/cyberpunk touches
+- **Colour usage:** Restrained. Forest green for primary actions and success states. Grays for secondary interactive elements. Colour should feel earned, not everywhere
+
+### Anti-References
+- **No generic app store UI** - Sweaty must have distinct personality and feel handcrafted, never template-like
+- **No overly gamified / neon aesthetic** - Avoid badge overload, garish colours, XP bars dominating the UI, or Twitch-chat energy. Gamification features (XP, streaks, ranks) should be subtle and feel like quiet rewards, not the main event
+
+### Design Principles
+
+1. **Quiet confidence over loud decoration** - Let game artwork and user content be the visual centrepiece. UI elements should recede, not compete. Green accents are purposeful signals, not decoration.
+
+2. **Warmth through restraint** - A chill atmosphere comes from breathing room, not from adding cosy elements. Generous spacing, muted secondary text, and unhurried layouts create comfort.
+
+3. **Community without clutter** - Social features (activity feeds, friend activity, follows) should feel like gentle ambient awareness, not a noisy feed. Show connections, don't shout them.
+
+4. **Collection as identity** - A user's library, ratings, and reviews are self-expression. Treat them with the same care a gallery gives artwork - clean presentation, consistent sizing, intentional hierarchy.
+
+5. **Earn every pixel** - Every element must justify its presence. If removing something doesn't hurt the experience, remove it. Prefer fewer, better-crafted screens over feature-packed ones.

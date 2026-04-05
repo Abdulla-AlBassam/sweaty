@@ -4,16 +4,16 @@ import { Colors } from '../constants/colors'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
-// Confetti colors - holographic/iridescent palette
+// Confetti colors - refined forest green + gray palette
 const CONFETTI_COLORS = [
-  '#22c55e', // Green (accent)
-  '#4ade80', // Light green
-  '#67e8f9', // Cyan
-  '#c4b5fd', // Lavender
-  '#f0abfc', // Pink
-  '#fbbf24', // Gold
+  '#2D6B4A', // Forest green
+  '#3D8B63', // Light forest green
+  '#4A9E6E', // Soft green
+  '#8A8A8A', // Medium gray
+  '#A0A0A0', // Light gray
+  '#C8C8C8', // Silver
   '#ffffff', // White
-  '#ec4899', // Magenta
+  '#1F4D35', // Deep forest
 ]
 
 interface ConfettiPiece {

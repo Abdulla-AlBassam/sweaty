@@ -33,7 +33,6 @@ import StreakBadge from '../components/StreakBadge'
 import PlatformBadges from '../components/PlatformBadges'
 import { ProfileSkeleton } from '../components/skeletons'
 import { GamingPlatform } from '../types'
-import GlitchBorder from '../components/GlitchBorder'
 import SweatDropIcon from '../components/SweatDropIcon'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -537,19 +536,13 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     style={styles.favoriteSlot}
                     onPress={() => handleGamePress(game.id)}
                   >
-                    <GlitchBorder
-                      borderRadius={BorderRadius.md}
-                      borderWidth={2}
-                      intensity="medium"
-                    >
-                      {coverUrl ? (
-                        <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
-                      ) : (
-                        <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                          <SweatDropIcon size={20} variant="static" />
-                        </View>
-                      )}
-                    </GlitchBorder>
+                    {coverUrl ? (
+                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                    ) : (
+                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                        <SweatDropIcon size={20} variant="static" />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 )
               })}
@@ -988,7 +981,7 @@ const styles = StyleSheet.create({
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.cardGap,
+    gap: Spacing.sm,
   },
   favoriteSlot: {
     flex: 1,

@@ -3,9 +3,9 @@ import { View, StyleSheet } from 'react-native'
 import Skeleton, { SkeletonCircle, SkeletonText } from '../Skeleton'
 import { Colors, Spacing, BorderRadius } from '../../constants/colors'
 
-export default function ActivityItemSkeleton() {
+export default function ActivityItemSkeleton({ isLast }: { isLast?: boolean }) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isLast && styles.containerLast]}>
       {/* Avatar */}
       <SkeletonCircle size={40} />
 
@@ -16,7 +16,7 @@ export default function ActivityItemSkeleton() {
       </View>
 
       {/* Game Cover */}
-      <Skeleton width={40} height={53} borderRadius={BorderRadius.sm} />
+      <Skeleton width={56} height={75} borderRadius={BorderRadius.sm} />
     </View>
   )
 }
@@ -25,7 +25,7 @@ export function ActivitySkeletonList({ count = 5 }: { count?: number }) {
   return (
     <View style={styles.list}>
       {Array.from({ length: count }).map((_, i) => (
-        <ActivityItemSkeleton key={i} />
+        <ActivityItemSkeleton key={i} isLast={i === count - 1} />
       ))}
     </View>
   )
@@ -35,9 +35,12 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.md,
+    padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+  },
+  containerLast: {
+    borderBottomWidth: 0,
   },
   content: {
     flex: 1,
@@ -50,6 +53,6 @@ const styles = StyleSheet.create({
   list: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
+    overflow: 'hidden',
   },
 })

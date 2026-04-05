@@ -20,8 +20,8 @@ export default function HolographicText({
   const [currentColor, setCurrentColor] = useState('#ffffff')
 
   useEffect(() => {
-    // Iridescent color cycling - CD shimmer effect
-    const colors = ['#ffffff', '#e0e7ff', '#c4b5fd', '#f0abfc', '#67e8f9', '#a5f3fc']
+    // Subtle shimmer effect - gray/green palette
+    const colors = ['#ffffff', '#E0E0E0', '#C8C8C8', '#A0A0A0', '#4A9E6E', '#3D8B63']
     let colorIdx = 0
     const colorCycle = setInterval(() => {
       colorIdx = (colorIdx + 1) % colors.length

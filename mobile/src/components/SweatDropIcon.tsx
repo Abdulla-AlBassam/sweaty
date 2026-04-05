@@ -296,7 +296,7 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false, variant
           },
         ]}
       >
-        <Ionicons name="water" size={size} color="#00ffff" />
+        <Ionicons name="water" size={size} color="#5A5A5A" />
       </Animated.View>
 
       {/* Green layer (offset right) */}
@@ -316,7 +316,7 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false, variant
           },
         ]}
       >
-        <Ionicons name="water" size={size} color={Colors.accent} />
+        <Ionicons name="water" size={size} color="#2D6B4A" />
       </Animated.View>
 
       {/* Main white icon */}

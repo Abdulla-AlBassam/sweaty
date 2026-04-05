@@ -32,7 +32,6 @@ import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
 import PlatformBadges from '../components/PlatformBadges'
-import GlitchBorder from '../components/GlitchBorder'
 import SweatDropIcon from '../components/SweatDropIcon'
 import LibraryFilterModal, {
   LibraryFilterType,
@@ -443,7 +442,7 @@ export default function ProfileScreen() {
         {/* Favorites */}
         <View style={styles.favoritesSection}>
           <View style={styles.favoritesTitleRow}>
-            <Text style={styles.sectionTitle}>Favorites</Text>
+            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Favorites</Text>
             <TouchableOpacity
               onPress={() => setIsFavoritesModalVisible(true)}
               style={styles.editButton}
@@ -452,7 +451,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
           <View style={styles.favoritesRow}>
-            {[0, 1, 2].map((index) => {
+            {[0, 1, 2, 3, 4].map((index) => {
               const game = favorites[index]
               if (game) {
                 const coverUrl = game.cover_url
@@ -464,19 +463,13 @@ export default function ProfileScreen() {
                     style={styles.favoriteSlot}
                     onPress={() => navigation.navigate('GameDetail', { gameId: game.id })}
                   >
-                    <GlitchBorder
-                      borderRadius={BorderRadius.md}
-                      borderWidth={2}
-                      intensity="medium"
-                    >
-                      {coverUrl ? (
-                        <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
-                      ) : (
-                        <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
-                          <SweatDropIcon size={20} variant="static" />
-                        </View>
-                      )}
-                    </GlitchBorder>
+                    {coverUrl ? (
+                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                    ) : (
+                      <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
+                        <SweatDropIcon size={20} variant="static" />
+                      </View>
+                    )}
                   </TouchableOpacity>
                 )
               }
@@ -487,7 +480,7 @@ export default function ProfileScreen() {
                   onPress={() => setIsFavoritesModalVisible(true)}
                 >
                   <View style={[styles.favoriteCover, styles.emptyFavoriteSlot]}>
-                    <Ionicons name="add" size={24} color={Colors.textDim} />
+                    <Ionicons name="add" size={20} color={Colors.textDim} />
                   </View>
                 </TouchableOpacity>
               )
@@ -911,7 +904,7 @@ const styles = StyleSheet.create({
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.cardGap,
+    gap: Spacing.sm,
   },
   favoriteSlot: {
     flex: 1,
@@ -920,7 +913,6 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    // Border removed - GlitchBorder handles the RGB border effect
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.surface,

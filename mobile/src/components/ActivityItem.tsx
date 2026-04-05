@@ -1,15 +1,17 @@
 import React from 'react'
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { ActivityItem as ActivityItemType, GameStatus } from '../types'
-import { STATUS_LABELS, getIGDBImageUrl } from '../constants'
+import { getIGDBImageUrl } from '../constants'
 import StarRating from './StarRating'
 
 interface ActivityItemProps {
   activity: ActivityItemType
   onUserPress?: (userId: string, username: string) => void
   onGamePress?: (gameId: number) => void
+  isLast?: boolean
 }
 
 function getActionText(activity: ActivityItemType): string {
@@ -48,13 +50,14 @@ function getStatusVerb(status: GameStatus): string {
   }
 }
 
-export default function ActivityItem({ activity, onUserPress, onGamePress }: ActivityItemProps) {
-  const { user, game, status, rating, created_at } = activity
+export default function ActivityItem({ activity, onUserPress, onGamePress, isLast }: ActivityItemProps) {
+  const { user, game, status, rating, review, created_at } = activity
   const displayName = user.display_name || user.username
   const coverUrl = game.cover_url ? getIGDBImageUrl(game.cover_url, 'coverBig2x') : null
+  const hasReview = review && review.trim().length > 0
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isLast && styles.containerLast]}>
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={() => onUserPress?.(user.id, user.username)}
@@ -76,7 +79,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
           >
             {displayName}
           </Text>
-          {' '}{getActionText(activity)}{' '}
+          <Text style={styles.action}>{' '}{getActionText(activity)}{' '}</Text>
           <Text
             style={styles.gameName}
             onPress={() => onGamePress?.(game.id)}
@@ -85,10 +88,19 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
           </Text>
         </Text>
 
+        {hasReview && (
+          <View style={styles.reviewRow}>
+            <Ionicons name="chatbubble" size={11} color={Colors.text} style={styles.reviewIcon} />
+            <Text style={styles.reviewSnippet} numberOfLines={3}>
+              {review!.trim()}
+            </Text>
+          </View>
+        )}
+
         <View style={styles.meta}>
           {rating && (
             <View style={styles.ratingContainer}>
-              <StarRating rating={rating} size={12} />
+              <StarRating rating={rating} size={14} />
             </View>
           )}
           <Text style={styles.time}>{getRelativeTime(created_at)}</Text>
@@ -96,7 +108,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
       </View>
 
       {coverUrl && (
-        <TouchableOpacity onPress={() => onGamePress?.(game.id)}>
+        <TouchableOpacity onPress={() => onGamePress?.(game.id)} style={styles.coverContainer}>
           <Image source={{ uri: coverUrl }} style={styles.cover} />
         </TouchableOpacity>
       )}
@@ -107,54 +119,78 @@ export default function ActivityItem({ activity, onUserPress, onGamePress }: Act
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.lg,               // 16px internal padding
+    alignItems: 'flex-start',
+    padding: Spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  containerLast: {
+    borderBottomWidth: 0,
+  },
   avatarContainer: {
-    marginRight: Spacing.sm,
+    marginRight: Spacing.md,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
+    fontSize: FontSize.xs,
+    lineHeight: 17,
     color: Colors.text,
   },
   content: {
     flex: 1,
-    marginRight: Spacing.sm,
+    marginRight: Spacing.md,
   },
   text: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
-    lineHeight: 20,
+    lineHeight: 22,
+  },
+  action: {
+    color: Colors.textMuted,
   },
   username: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.cyanSoft,           // Softer cyan for readability
+    color: Colors.text,
   },
   gameName: {
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.cyanSoft,           // Softer cyan for readability
+    fontFamily: Fonts.bodyMedium,
+    color: Colors.textSecondary,
+  },
+  reviewRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: Spacing.sm,
+    gap: Spacing.xs + 2,
+  },
+  reviewIcon: {
+    marginTop: 4,
+  },
+  reviewSnippet: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    lineHeight: 22,
+    fontStyle: 'italic',
   },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.xs,
+    marginTop: Spacing.sm,
     gap: Spacing.sm,
   },
   ratingContainer: {
@@ -164,11 +200,16 @@ const styles = StyleSheet.create({
   time: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
+    lineHeight: 17,
     color: Colors.textDim,
+    letterSpacing: 0.3,
+  },
+  coverContainer: {
+    alignSelf: 'center',
   },
   cover: {
-    width: 48,
-    height: 64,
-    borderRadius: BorderRadius.md,
+    width: 56,
+    height: 75,
+    borderRadius: BorderRadius.sm,
   },
 })

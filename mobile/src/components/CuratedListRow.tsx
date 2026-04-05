@@ -103,32 +103,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: Spacing.screenPadding,
-    marginBottom: Spacing.md,              // 16px below header to posters
+    marginBottom: Spacing.md,
   },
   headerLeft: {
     flex: 1,
-    marginRight: Spacing.md,
+    marginRight: Spacing.sm,
   },
   description: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.xs,               // 12px - smaller than title
-    color: Colors.textDim,               // Gray color
-    marginTop: 4,                        // Proper spacing from title
-    lineHeight: 16,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    lineHeight: 17,
   },
   title: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.sm,                // Smaller, consistent with other headers
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
     color: Colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    lineHeight: 24,
   },
   seeAll: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,                // 12px
-    color: Colors.textSecondary,          // Gray instead of cyan
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+    lineHeight: 17,
   },
   scrollContent: {
     paddingHorizontal: Spacing.screenPadding,

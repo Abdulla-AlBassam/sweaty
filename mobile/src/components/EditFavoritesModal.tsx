@@ -116,7 +116,7 @@ export default function EditFavoritesModal({
   }
 
   const addFavorite = (game: Game) => {
-    if (favorites.length >= 3) return
+    if (favorites.length >= 5) return
 
     const newGame: Game = {
       id: game.id,
@@ -285,10 +285,10 @@ export default function EditFavoritesModal({
               {/* Current Favorites */}
               <View style={styles.currentFavorites}>
                 <Text style={styles.sectionLabel}>
-                  Your Favorites ({favorites.length}/3)
+                  Your Favorites ({favorites.length}/5)
                 </Text>
                 <View style={styles.favoritesRow}>
-                  {[0, 1, 2].map((index) => {
+                  {[0, 1, 2, 3, 4].map((index) => {
                     const game = favorites[index]
                     if (game) {
                       const coverUrl = getCoverUrl(game)
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   favoriteSlot: {
     flex: 1,
@@ -412,8 +412,6 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    borderWidth: 2,
-    borderColor: Colors.accent,
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.background,

@@ -17,8 +17,9 @@ import { useActivityFeed, useOwnActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { MainStackParamList } from '../navigation'
-import ActivityItem from '../components/ActivityItem'
+import ActivityItemComponent from '../components/ActivityItem'
 import { ActivitySkeletonList } from '../components/skeletons'
+import { ActivityItem as ActivityItemType } from '../types'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 type TabType = 'friends' | 'you'
@@ -29,6 +30,42 @@ const CATEGORIES = [
   { key: 'reviews' as CategoryType, label: 'Reviews' },
   { key: 'logs' as CategoryType, label: 'Logs' },
 ]
+
+type DateGroup = {
+  label: string
+  activities: ActivityItemType[]
+}
+
+function groupActivitiesByDate(activities: ActivityItemType[]): DateGroup[] {
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const yesterday = new Date(today.getTime() - 86400000)
+  const thisWeek = new Date(today.getTime() - 7 * 86400000)
+
+  const groups: Record<string, ActivityItemType[]> = {
+    'Today': [],
+    'Yesterday': [],
+    'This Week': [],
+    'Earlier': [],
+  }
+
+  for (const activity of activities) {
+    const date = new Date(activity.created_at)
+    if (date >= today) {
+      groups['Today'].push(activity)
+    } else if (date >= yesterday) {
+      groups['Yesterday'].push(activity)
+    } else if (date >= thisWeek) {
+      groups['This Week'].push(activity)
+    } else {
+      groups['Earlier'].push(activity)
+    }
+  }
+
+  return Object.entries(groups)
+    .filter(([_, items]) => items.length > 0)
+    .map(([label, items]) => ({ label, activities: items }))
+}
 
 export default function ActivityScreen() {
   const navigation = useNavigation<NavigationProp>()
@@ -53,6 +90,11 @@ export default function ActivityScreen() {
     }
     return rawActivities
   }, [rawActivities, activeCategory])
+
+  // Group activities by date for visual rhythm
+  const groupedActivities = useMemo(() => {
+    return groupActivitiesByDate(activities)
+  }, [activities])
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -94,49 +136,48 @@ export default function ActivityScreen() {
         <Text style={styles.title}>activity</Text>
       </View>
 
-      <View style={styles.tabContainer}>
-        {/* Friends/You Tabs */}
-        <View style={styles.tabsRow}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
-            onPress={() => setActiveTab('friends')}
-          >
-            <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>
-              Friends
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'you' && styles.activeTab]}
-            onPress={() => setActiveTab('you')}
-          >
-            <Text style={[styles.tabText, activeTab === 'you' && styles.activeTabText]}>
-              You
-            </Text>
-          </TouchableOpacity>
-        </View>
+      <View style={styles.navRow}>
+        {/* Friends/You Pills */}
+        <TouchableOpacity
+          style={[styles.pill, activeTab === 'friends' && styles.pillActive]}
+          onPress={() => setActiveTab('friends')}
+        >
+          <Text style={[styles.pillText, activeTab === 'friends' && styles.pillTextActive]}>
+            Friends
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.pill, activeTab === 'you' && styles.pillActive]}
+          onPress={() => setActiveTab('you')}
+        >
+          <Text style={[styles.pillText, activeTab === 'you' && styles.pillTextActive]}>
+            You
+          </Text>
+        </TouchableOpacity>
+
+        {/* Spacer */}
+        <View style={styles.navSpacer} />
 
         {/* Category Pills */}
-        <View style={styles.categoryRow}>
-          {CATEGORIES.map((category) => (
-            <TouchableOpacity
-              key={category.key}
+        {CATEGORIES.map((category) => (
+          <TouchableOpacity
+            key={category.key}
+            style={[
+              styles.pill,
+              activeCategory === category.key && styles.pillActive,
+            ]}
+            onPress={() => setActiveCategory(category.key)}
+          >
+            <Text
               style={[
-                styles.categoryPill,
-                activeCategory === category.key && styles.categoryPillActive,
+                styles.pillText,
+                activeCategory === category.key && styles.pillTextActive,
               ]}
-              onPress={() => setActiveCategory(category.key)}
             >
-              <Text
-                style={[
-                  styles.categoryText,
-                  activeCategory === category.key && styles.categoryTextActive,
-                ]}
-              >
-                {category.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+              {category.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <ScrollView
@@ -168,14 +209,24 @@ export default function ActivityScreen() {
             <Text style={styles.emptyText}>{getEmptyMessage()}</Text>
           </View>
         ) : (
-          <View style={styles.activityList}>
-            {activities.map((activity) => (
-              <ActivityItem
-                key={activity.id}
-                activity={activity}
-                onUserPress={handleUserPress}
-                onGamePress={handleGamePress}
-              />
+          <View style={styles.feedContainer}>
+            {groupedActivities.map((group) => (
+              <View key={group.label} style={styles.dateSection}>
+                {groupedActivities.length > 1 && (
+                  <Text style={styles.dateSectionLabel}>{group.label}</Text>
+                )}
+                <View style={styles.dateGroupCard}>
+                  {group.activities.map((activity, index) => (
+                    <ActivityItemComponent
+                      key={activity.id}
+                      activity={activity}
+                      onUserPress={handleUserPress}
+                      onGamePress={handleGamePress}
+                      isLast={index === group.activities.length - 1}
+                    />
+                  ))}
+                </View>
+              </View>
             ))}
           </View>
         )}
@@ -191,72 +242,75 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   title: {
     fontFamily: Fonts.display,
     fontSize: FontSize.xl,
+    lineHeight: 28,
     color: Colors.text,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
-  tabContainer: {
+  navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.screenPadding,
-    paddingBottom: Spacing.xl,            // 24px space below tabs
-  },
-  tabsRow: {
-    flexDirection: 'row',
-    gap: Spacing.xl,
-  },
-  tab: {
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: Colors.accent,
-  },
-  tabText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-  },
-  activeTabText: {
-    color: Colors.text,
-  },
-  categoryRow: {
-    flexDirection: 'row',
+    paddingBottom: Spacing.xl,
     gap: Spacing.sm,
   },
-  categoryPill: {
+  navSpacer: {
+    flex: 1,
+  },
+  pill: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  categoryPillActive: {
-    backgroundColor: Colors.text,
-    borderColor: Colors.text,
+  pillActive: {
+    backgroundColor: Colors.surfaceLight,
+    borderColor: Colors.borderBright,
   },
-  categoryText: {
+  pillText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
+    lineHeight: 20,
     color: Colors.textMuted,
   },
-  categoryTextActive: {
-    color: Colors.background,
+  pillTextActive: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.text,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingBottom: Spacing.xxxl,          // 48px bottom padding
+    paddingBottom: Spacing.xxxl,
+  },
+  feedContainer: {
+    gap: Spacing.xl,
+  },
+  dateSection: {
+    gap: Spacing.sm,
+  },
+  dateSectionLabel: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.xs,
+    lineHeight: 17,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    paddingLeft: Spacing.xs,
+  },
+  dateGroupCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
   },
   emptyState: {
     flex: 1,
@@ -270,17 +324,16 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
+    lineHeight: 26,
     color: Colors.text,
     marginBottom: Spacing.sm,
   },
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
+    lineHeight: 22,
     color: Colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: Spacing.xl,
-  },
-  activityList: {
-    // Items separated by bottom borders, no gap needed
   },
 })

@@ -9,10 +9,12 @@ import {
   Platform,
   ScrollView,
   ImageBackground,
+  Image,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { LinearGradient } from 'expo-linear-gradient'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '../contexts/AuthContext'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -20,6 +22,7 @@ import { AuthStackParamList } from '../navigation'
 
 // Hero background image - Resident Evil artwork
 const heroBackground = require('../../assets/images/signup-hero.png')
+const sweatyLogo = require('../../assets/images/sweaty-logo.png')
 
 type SignupScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Signup'>
@@ -32,6 +35,8 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showVerificationMessage, setShowVerificationMessage] = useState(false)
 
@@ -181,7 +186,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
         >
           <View style={styles.content}>
             {/* Logo */}
-            <Text style={styles.logo}>SWEATY</Text>
+            <Image source={sweatyLogo} style={styles.logo} resizeMode="contain" />
             <Text style={styles.tagline}>Create your account</Text>
 
             {/* Error Message */}
@@ -192,59 +197,79 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
             )}
 
             {/* Form */}
-            <View style={styles.form}>
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={Colors.textDim}
-                value={email}
-                onChangeText={setEmail}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-              />
+            <View style={styles.formCard}>
+              <View style={styles.form}>
+                <View style={styles.inputRow}>
+                  <Ionicons name="mail-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="Email"
+                    placeholderTextColor={Colors.textDim}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    keyboardType="email-address"
+                  />
+                </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Username"
-                placeholderTextColor={Colors.textDim}
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+                <View style={styles.inputRow}>
+                  <Ionicons name="person-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="Username"
+                    placeholderTextColor={Colors.textDim}
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={Colors.textDim}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-              />
+                <View style={styles.inputRow}>
+                  <Ionicons name="lock-closed-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="Password"
+                    placeholderTextColor={Colors.textDim}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                    <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm password"
-                placeholderTextColor={Colors.textDim}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                autoCapitalize="none"
-              />
+                <View style={styles.inputRow}>
+                  <Ionicons name="lock-closed-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.inputField}
+                    placeholder="Confirm password"
+                    placeholderTextColor={Colors.textDim}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+                    <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
 
-              <TouchableOpacity
-                style={[styles.button, isLoading && styles.buttonDisabled]}
-                onPress={handleSignup}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <LoadingSpinner size="small" color={Colors.background} />
-                ) : (
-                  <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
-                )}
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, isLoading && styles.buttonDisabled]}
+                  onPress={handleSignup}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <LoadingSpinner size="small" color={Colors.background} />
+                  ) : (
+                    <Text style={styles.buttonText}>CREATE ACCOUNT</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Login Link */}
@@ -267,7 +292,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
   },
   edgeGradientTop: {
     position: 'absolute',
@@ -310,24 +335,18 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxl,
   },
   logo: {
-    fontFamily: Fonts.display,
-    fontSize: 48,
-    color: Colors.accent,
-    textAlign: 'center',
-    marginBottom: Spacing.xs,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
+    marginBottom: Spacing.md,
   },
   tagline: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: Spacing.xxl,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    letterSpacing: 1,
   },
   errorContainer: {
     backgroundColor: 'rgba(239, 68, 68, 0.2)',
@@ -343,19 +362,38 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     textAlign: 'center',
   },
+  formCard: {
+    backgroundColor: 'rgba(21, 21, 21, 0.7)',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
   form: {
     gap: Spacing.md,
   },
-  input: {
-    fontFamily: Fonts.body,
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(26, 26, 26, 0.9)',
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
+  },
+  inputIcon: {
+    marginRight: Spacing.sm,
+  },
+  inputField: {
+    flex: 1,
+    fontFamily: Fonts.body,
     paddingVertical: Spacing.md,
     fontSize: FontSize.md,
     color: Colors.text,
+  },
+  eyeButton: {
+    padding: Spacing.xs,
+    marginLeft: Spacing.xs,
   },
   button: {
     backgroundColor: Colors.accent,
@@ -369,30 +407,25 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.bodyBold,
     color: Colors.background,
     fontSize: FontSize.md,
+    letterSpacing: 2,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: Spacing.xxl,
+    marginTop: Spacing.xl,
   },
   footerText: {
     fontFamily: Fonts.body,
-    color: Colors.textMuted,
-    fontSize: FontSize.sm,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: Colors.textSecondary,
+    fontSize: FontSize.md,
   },
   footerLink: {
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.accent,
-    fontSize: FontSize.sm,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontFamily: Fonts.bodyBold,
+    color: Colors.accentSoft,
+    fontSize: FontSize.md,
   },
   verificationContainer: {
     flex: 1,

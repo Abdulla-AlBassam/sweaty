@@ -85,14 +85,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   cyanLayer: {
-    color: '#00ffff',
-    opacity: 0.5,  // Reduced from 0.6
-    transform: [{ translateX: -1 }],  // Reduced from -1.5
+    color: '#5A5A5A', // Gray
+    opacity: 0.5,
+    transform: [{ translateX: -1 }],
   },
   magentaLayer: {
-    color: '#22c55e', // Green accent
-    opacity: 0.5,  // Reduced from 0.6
-    transform: [{ translateX: 1 }],  // Reduced from 1.5
+    color: '#2D6B4A', // Forest green
+    opacity: 0.5,
+    transform: [{ translateX: 1 }],
   },
   mainText: {
     color: '#ffffff',

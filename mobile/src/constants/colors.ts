@@ -1,5 +1,5 @@
-// Sweaty Theme - Chrome Glitch Aesthetic
-// Premium RGB chromatic aberration with intentional color hierarchy
+// Sweaty Theme - Clean & Minimal
+// Forest green + gray palette with refined aesthetic
 
 export const Colors = {
   // Backgrounds - Deep blacks with depth levels
@@ -8,60 +8,60 @@ export const Colors = {
   surfaceLight: '#1E1E1E',    // Elevated elements
   surfaceBright: '#282828',   // Highlighted elements
 
-  // PRIMARY ACCENT (Green) - Primary actions only
-  // Use for: Primary buttons, active filters, progress bars, glitch layers
-  accent: '#22C55E',          // Primary green (for buttons/glitch)
-  accentBright: '#4ade80',    // Brighter for emphasis
-  accentMuted: '#16a34a',     // Dimmer green
-  accentSoft: '#86EFAC',      // Soft green for text (less intense)
-  accentDark: '#052e16',      // Dark green tint
-  accentGlow: 'rgba(34, 197, 94, 0.2)',  // Subtle glow
+  // PRIMARY ACCENT (Forest Green) - Primary actions only
+  // Use for: Primary buttons, active filters, progress bars
+  accent: '#2D6B4A',          // Forest green (primary)
+  accentBright: '#3D8B63',    // Lighter forest green
+  accentMuted: '#1F4D35',     // Deep forest
+  accentSoft: '#4A9E6E',      // Soft green for text
+  accentDark: '#0F2A1C',      // Dark green tint
+  accentGlow: 'rgba(45, 107, 74, 0.2)',  // Subtle glow
 
-  // SECONDARY ACCENT (Cyan) - Interactive text elements
-  // Use for: Game titles, usernames, "See All" links, glitch layers
-  cyan: '#00BFFF',            // Vibrant cyan (for glitch effects only)
-  cyanSoft: '#7DD3FC',        // Soft sky blue (for text - less intense)
-  cyanBright: '#33CCFF',      // Hover/active state
-  cyanMuted: '#0099CC',       // Dimmer cyan
-  cyanGlow: 'rgba(0, 191, 255, 0.2)',  // Subtle glow
+  // SECONDARY ACCENT (Gray) - Interactive text elements
+  // Use for: Game titles, usernames, "See All" links
+  cyan: '#8A8A8A',            // Medium gray (replaces cyan)
+  cyanSoft: '#A0A0A0',        // Soft gray
+  cyanBright: '#9A9A9A',      // Slightly brighter gray
+  cyanMuted: '#707070',       // Dimmer gray
+  cyanGlow: 'rgba(138, 138, 138, 0.2)',  // Subtle glow
 
   // TERTIARY ACCENT (Gold) - Achievements & ratings
   // Use for: Star ratings, achievements, special badges
-  gold: '#FFD700',            // Star ratings
+  gold: '#FFD700',            // Star ratings (kept)
   goldBright: '#FFED4A',      // Brighter gold
   goldMuted: '#D4AF37',       // Dimmer gold
   goldGlow: 'rgba(255, 215, 0, 0.2)',  // Subtle glow
 
-  // HOT PINK - Glitch effects & special accents
-  // Use for: Plus button, glitch borders, special effects
-  pink: '#FF1493',            // Hot pink base
-  pinkBright: '#FF69B4',      // Lighter pink
-  pinkMuted: '#CC1177',       // Darker pink
-  pinkGlow: 'rgba(255, 20, 147, 0.3)',  // Pink glow
+  // FOREST GREEN ACCENT - Subtle effects & accents
+  // Use for: Plus button, borders, special effects
+  pink: '#2D6B4A',            // Forest green (replaces hot pink)
+  pinkBright: '#3D8B63',      // Lighter forest green
+  pinkMuted: '#1F4D35',       // Deeper forest green
+  pinkGlow: 'rgba(45, 107, 74, 0.3)',  // Forest green glow
 
-  // Text hierarchy
-  text: '#FFFFFF',            // Primary text (pure white)
+  // Text hierarchy — off-white primary to reduce halation on dark surfaces
+  text: '#E0E0E0',            // Primary text (soft off-white, reduces eye strain)
   textSecondary: '#A1A1A1',   // Secondary text
   textMuted: '#6B6B6B',       // Muted/tertiary text
-  textDim: '#4A4A4A',         // Disabled/very muted
+  textDim: '#5C5C5C',         // Disabled/very muted (was #4A4A4A — boosted for WCAG AA)
 
-  // Legacy aliases (for backwards compatibility)
-  textBright: '#FFFFFF',      // Alias for text
-  textGreen: '#22C55E',       // Keep for specific green text needs
+  // Pure white — use sparingly for high-emphasis moments (badges, active states)
+  textBright: '#FFFFFF',      // Pure white (use only when contrast demands it)
+  textGreen: '#2D6B4A',       // Forest green text
 
   // Borders - Subtle definition
   border: '#222222',          // Standard border
   borderBright: '#333333',    // Emphasized border
-  borderGlow: 'rgba(34, 197, 94, 0.15)',  // Subtle green tint
+  borderGlow: 'rgba(45, 107, 74, 0.15)',  // Subtle forest green tint
 
   // Status colors - Refined palette
   error: '#ef4444',           // Red
   warning: '#f59e0b',         // Amber
-  success: '#22C55E',         // Green
+  success: '#2D6B4A',         // Forest green
 
   // Game status colors
   statusPlaying: '#3b82f6',   // Blue
-  statusCompleted: '#22C55E', // Green
+  statusCompleted: '#2D6B4A', // Forest green
   statusPlayed: '#8b5cf6',    // Purple
   statusWantToPlay: '#f59e0b',// Amber
   statusOnHold: '#6b7280',    // Gray
@@ -77,8 +77,8 @@ export const Colors = {
   // Special effects
   scanLine: 'rgba(0, 0, 0, 0.03)',    // Very subtle scan lines
   vignette: 'rgba(0, 0, 0, 0.6)',     // Softer vignette
-  glitch: '#ec4899',                   // Pink/magenta for glitch
-  glitchCyan: '#06b6d4',              // Cyan for RGB split effect
+  glitch: '#3D8B63',                   // Forest green for effects
+  glitchCyan: '#5A5A5A',              // Gray for split effect
 }
 
 // Spacing values - 8px grid system
@@ -128,17 +128,17 @@ export const FontSize = {
 
 // Glow/Shadow presets - Refined and subtle
 export const Glow = {
-  // Primary green glow for interactive elements
+  // Primary forest green glow for interactive elements
   accent: {
-    shadowColor: '#22C55E',
+    shadowColor: '#2D6B4A',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  // Cyan glow for links/interactive text
+  // Gray glow for links/interactive text
   cyan: {
-    shadowColor: '#00BFFF',
+    shadowColor: '#8A8A8A',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -154,7 +154,7 @@ export const Glow = {
   },
   // Subtle glow for cards and surfaces
   subtle: {
-    shadowColor: '#22C55E',
+    shadowColor: '#2D6B4A',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -162,21 +162,21 @@ export const Glow = {
   },
   // Text glow - very subtle
   text: {
-    textShadowColor: 'rgba(34, 197, 94, 0.5)',
+    textShadowColor: 'rgba(45, 107, 74, 0.5)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 6,
   },
-  // Glitch glow for special effects
+  // Effect glow for special effects
   glitch: {
-    shadowColor: '#ec4899',
+    shadowColor: '#3D8B63',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 6,
     elevation: 3,
   },
-  // Hot pink glow for plus button and accents
+  // Forest green glow for plus button and accents
   pink: {
-    shadowColor: '#FF1493',
+    shadowColor: '#2D6B4A',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 10,

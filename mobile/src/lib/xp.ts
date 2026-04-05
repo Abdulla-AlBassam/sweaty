@@ -92,7 +92,7 @@ export function getLevel(xp: number): LevelInfo {
 export function getBadgeColor(level: number): string {
   if (level >= 10) return '#FFD700' // Gold for Legend/Sweat
   if (level >= 7) return '#8B5CF6'  // Purple for Champion+
-  if (level >= 4) return '#22c55e'  // Green for Veteran+
+  if (level >= 4) return '#2D6B4A'  // Forest green for Veteran+
   return '#6B7280'                   // Gray for lower levels
 }
 

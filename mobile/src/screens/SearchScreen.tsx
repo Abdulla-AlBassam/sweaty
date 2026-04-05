@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Image,
   RefreshControl,
   Dimensions,
+  Animated,
+  Easing,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions } from '@react-navigation/native'
@@ -31,7 +33,6 @@ import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
 import { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
-import { GlitchHeader } from '../components/GlitchText'
 
 // Calculate card width to match CuratedListDetailScreen grid
 const SCREEN_WIDTH = Dimensions.get('window').width
@@ -101,6 +102,43 @@ export default function SearchScreen() {
   const { user } = useAuth()
   const { platforms, platformsParam, excludePcOnly } = usePlatformFilter()
   const { lists: curatedLists, refetch: refetchLists } = useCuratedLists(excludePcOnly)
+
+  // Track whether user has used AI before
+  const [hasUsedAI, setHasUsedAI] = useState(false)
+
+  useEffect(() => {
+    AsyncStorage.getItem('sweaty_ai_used').then((value) => {
+      if (value) setHasUsedAI(true)
+    })
+  }, [])
+
+  // Shimmer animation for "Ask Sweaty" text
+  const shimmerAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    if (hasUsedAI) return
+    const shimmer = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.delay(3000),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 2000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: false,
+        }),
+        Animated.delay(1000),
+      ])
+    )
+    shimmer.start()
+    return () => shimmer.stop()
+  }, [])
+
   const [query, setQuery] = useState('')
   const [searchFilter, setSearchFilter] = useState<SearchFilter>('games')
   const [gameResults, setGameResults] = useState<SearchGame[]>([])
@@ -756,20 +794,33 @@ export default function SearchScreen() {
             </View>
           )}
 
-          {/* AI Logo - Tap to open AI Recommendations */}
+          {/* Ask Sweaty - AI Recommendations */}
           <PressableScale
             style={styles.aiLogoContainer}
             onPress={() => navigation.navigate('AIRecommend')}
             haptic="light"
-            scale={0.9}
+            scale={0.92}
           >
             <SweatDropIcon size={48} variant="default" />
+            {!hasUsedAI && (
+              <Animated.Text
+                style={[
+                  styles.aiLabel,
+                  {
+                    color: shimmerAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [Colors.textDim, Colors.text],
+                    }),
+                  },
+                ]}
+              >
+                Ask Sweaty
+              </Animated.Text>
+            )}
           </PressableScale>
 
-          {/* Discover Section - Dynamic Lists */}
+          {/* Discovery Section - Dynamic Lists */}
           <View style={styles.discoverSection}>
-            <GlitchHeader title="DISCOVER" style={styles.discoverHeader} />
-
             {/* Trending Games from IGDB (global trending) */}
             <View style={styles.discoveryRow}>
               <Text style={styles.discoveryRowTitle}>Trending Right Now</Text>
@@ -835,15 +886,22 @@ const styles = StyleSheet.create({
   },
   aiLogoContainer: {
     alignItems: 'center',
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xxl,
+    gap: Spacing.sm,
+  },
+  aiLabel: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.xs,
+    lineHeight: 17,
+    letterSpacing: 0.5,
   },
   scrollView: {
     flex: 1,
   },
   browseContent: {
-    paddingTop: Spacing.xl,             // 24px top padding
-    paddingBottom: Spacing.xxxl,        // 48px bottom padding
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxxl,
   },
   centered: {
     flex: 1,
@@ -863,16 +921,15 @@ const styles = StyleSheet.create({
     color: Colors.error,
   },
   section: {
-    paddingTop: Spacing.xxl,            // 32px above section
+    paddingTop: Spacing.xl,
   },
   sectionTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.sm,              // Smaller, consistent
-    color: Colors.textSecondary,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    lineHeight: 24,
+    color: Colors.text,
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.sectionHeaderBelow,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
   },
   userRow: {
     flexDirection: 'row',
@@ -893,9 +950,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   userAvatarText: {
-    fontFamily: Fonts.bodyBold,
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: Colors.accent,
+    color: Colors.text,
   },
   userInfo: {
     flex: 1,
@@ -920,7 +977,6 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: CARD_WIDTH,
-    marginBottom: GAP,
   },
   gridCover: {
     width: CARD_WIDTH,
@@ -951,11 +1007,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sectionHeaderBelow,
   },
   recentSectionTitle: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
+    lineHeight: 17,
+    color: Colors.textDim,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
   clearText: {
     fontFamily: Fonts.body,
@@ -972,15 +1029,15 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.md,
     paddingVertical: Spacing.xs,
     paddingLeft: Spacing.xs,
-    borderRadius: 20,
+    borderRadius: BorderRadius.full,
     borderWidth: 1,
     borderColor: Colors.border,
     gap: Spacing.sm,
   },
   recentChipImage: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: Colors.surfaceLight,
   },
   recentChipText: {
@@ -990,23 +1047,18 @@ const styles = StyleSheet.create({
     maxWidth: 120,
   },
   discoverSection: {
-    marginTop: Spacing.xxl,             // 32px above discover
-  },
-  discoverHeader: {
-    paddingHorizontal: Spacing.screenPadding,
-    marginBottom: Spacing.xl,           // 24px below header
+    marginTop: Spacing.lg,
   },
   discoveryRow: {
-    marginBottom: Spacing.xxl,          // 32px between rows
+    marginBottom: Spacing.xxl,
   },
   discoveryRowTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.sm,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
     color: Colors.text,
+    lineHeight: 24,
     marginLeft: Spacing.screenPadding,
     marginBottom: Spacing.sectionHeaderBelow,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
@@ -1036,21 +1088,23 @@ const styles = StyleSheet.create({
   filterPill: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderRadius: 20,
+    borderRadius: BorderRadius.full,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   filterPillActive: {
     backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.textSecondary,
+    borderColor: Colors.borderBright,
   },
   filterPillText: {
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
-    color: Colors.textDim,
+    lineHeight: 20,
+    color: Colors.textMuted,
   },
   filterPillTextActive: {
+    fontFamily: Fonts.bodySemiBold,
     color: Colors.text,
   },
   // List search styles

@@ -177,37 +177,14 @@ export default function DashboardScreen() {
               style={styles.heroBannerImage}
               resizeMode="cover"
             />
-            {/* Top-left corner blend */}
+            {/* Top gradient for containment */}
             <LinearGradient
-              colors={['rgba(15,15,15,0.95)', 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0.5, y: 0.5 }}
-              style={styles.heroBannerCornerTL}
+              colors={['rgba(10,10,10,0.6)', 'transparent']}
+              style={styles.heroBannerGradientTop}
             />
-            {/* Top-right corner blend */}
+            {/* Bottom gradient for page continuation */}
             <LinearGradient
-              colors={['rgba(15,15,15,0.95)', 'transparent']}
-              start={{ x: 1, y: 0 }}
-              end={{ x: 0.5, y: 0.5 }}
-              style={styles.heroBannerCornerTR}
-            />
-            {/* Bottom-left corner blend */}
-            <LinearGradient
-              colors={['rgba(15,15,15,1)', 'transparent']}
-              start={{ x: 0, y: 1 }}
-              end={{ x: 0.5, y: 0.5 }}
-              style={styles.heroBannerCornerBL}
-            />
-            {/* Bottom-right corner blend */}
-            <LinearGradient
-              colors={['rgba(15,15,15,1)', 'transparent']}
-              start={{ x: 1, y: 1 }}
-              end={{ x: 0.5, y: 0.5 }}
-              style={styles.heroBannerCornerBR}
-            />
-            {/* Bottom gradient for text */}
-            <LinearGradient
-              colors={['transparent', 'rgba(15,15,15,0.8)', 'rgba(15,15,15,1)']}
+              colors={['transparent', 'rgba(10,10,10,0.85)', '#0A0A0A']}
               locations={[0, 0.6, 1]}
               style={styles.heroBannerGradient}
             />
@@ -530,52 +507,34 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  heroBannerCornerTL: {
+  heroBannerGradientTop: {
     position: 'absolute',
     top: 0,
     left: 0,
-    width: '50%',
-    height: '50%',
-  },
-  heroBannerCornerTR: {
-    position: 'absolute',
-    top: 0,
     right: 0,
-    width: '50%',
-    height: '50%',
-  },
-  heroBannerCornerBL: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: '50%',
-    height: '50%',
-  },
-  heroBannerCornerBR: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: '50%',
-    height: '50%',
+    height: 60,
   },
   heroBannerGradient: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '45%',
+    height: '50%',
   },
   heroBannerContent: {
     position: 'absolute',
-    bottom: Spacing.md,
+    bottom: Spacing.lg,
+    left: Spacing.screenPadding,
     right: Spacing.screenPadding,
   },
   heroBannerGameName: {
-    fontFamily: Fonts.mono,
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.5)',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   // Section Groups
   sectionGroup: {
@@ -593,11 +552,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   groupHeaderText: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
+    fontFamily: Fonts.display,
+    fontSize: FontSize.lg,
+    color: Colors.text,
+    lineHeight: 26,
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
   },
   // Sections
   section: {
@@ -605,7 +565,7 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     paddingHorizontal: Spacing.screenPadding,
-    marginBottom: Spacing.sectionHeaderBelow,
+    marginBottom: Spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -616,28 +576,25 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   sectionTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 15,
+    color: Colors.textSecondary,
+    lineHeight: 21,
   },
   forYouTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 15,
+    color: Colors.textSecondary,
+    lineHeight: 21,
   },
   accentText: {
     color: Colors.cyanSoft,
   },
   seeAllText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    color: Colors.textMuted,
+    lineHeight: 17,
   },
   pulsingDot: {
     width: 6,
@@ -656,6 +613,13 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   coverPlaceholder: {
     alignItems: 'center',
@@ -678,8 +642,9 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textDim,
+    color: Colors.textMuted,
     textAlign: 'center',
+    lineHeight: 20,
   },
   emptyStateLink: {
     color: Colors.accent,
@@ -696,6 +661,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   communityCover: {
     width: '100%',
@@ -723,9 +690,10 @@ const styles = StyleSheet.create({
   },
   communityUsername: {
     flex: 1,
-    fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 11,
     color: Colors.textSecondary,
+    lineHeight: 15,
   },
   communityRating: {
     flexDirection: 'row',
@@ -734,9 +702,10 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   communityRatingText: {
-    fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 11,
     color: '#FFD700',
+    lineHeight: 15,
   },
   communityReviewText: {
     fontFamily: Fonts.body,
@@ -746,9 +715,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   communityGameName: {
-    fontFamily: Fonts.mono,
-    fontSize: 9,
-    color: Colors.textDim,
-    textTransform: 'uppercase',
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textMuted,
+    lineHeight: 15,
   },
 })
