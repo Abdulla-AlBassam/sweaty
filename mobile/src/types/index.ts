@@ -263,3 +263,13 @@ export interface NewsArticle {
   thumbnail: string | null
   publishedAt: string
 }
+
+// YouTube types
+export interface YouTubeVideo {
+  id: string
+  title: string
+  channel: string
+  thumbnail: string
+  videoUrl: string
+  publishedAt: string
+}

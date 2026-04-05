@@ -31,7 +31,7 @@ import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
 import PressableScale from '../components/PressableScale'
 import StackedAvatars from '../components/StackedAvatars'
-import NewsSection from '../components/NewsSection'
+import WatchSection from '../components/WatchSection'
 import Skeleton from '../components/Skeleton'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -474,13 +474,13 @@ export default function DashboardScreen() {
         </View>
 
         {/* ═══════════════════════════════════════════════ */}
-        {/* NEWS Section Group */}
+        {/* WATCH Section Group */}
         {/* ═══════════════════════════════════════════════ */}
         <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
-          <SectionGroupHeader title="News" onSeeAll={() => navigation.navigate('News' as never)} />
+          <SectionGroupHeader title="Watch" />
 
-          {/* Gaming News (header hidden - parent group says "News") */}
-          <NewsSection refreshKey={refreshCount} showHeader={false} />
+          {/* YouTube Videos (header hidden - parent group says "Watch") */}
+          <WatchSection refreshKey={refreshCount} showHeader={false} />
         </View>
       </ScrollView>
     </SafeAreaView>
