@@ -269,6 +269,7 @@ export interface YouTubeVideo {
   id: string
   title: string
   channel: string
+  channelAvatar: string
   thumbnail: string
   videoUrl: string
   publishedAt: string

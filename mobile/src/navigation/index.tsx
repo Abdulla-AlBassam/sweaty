@@ -18,6 +18,7 @@ import AIRecommendScreen from '../screens/AIRecommendScreen'
 import PlatformConnectionsScreen from '../screens/PlatformConnectionsScreen'
 import PlayStationImportScreen from '../screens/PlayStationImportScreen'
 import NewsScreen from '../screens/NewsScreen'
+import WatchScreen from '../screens/WatchScreen'
 import WebViewScreen from '../screens/WebViewScreen'
 import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
@@ -45,6 +46,7 @@ export type MainStackParamList = {
   PlatformConnections: undefined
   PlayStationImport: undefined
   News: undefined
+  Watch: undefined
   WebView: { url: string; title: string }
   // Admin routes (developer only)
   AdminHeroBanners: undefined
@@ -137,6 +139,13 @@ function MainNavigator() {
       <MainStack.Screen
         name="News"
         component={NewsScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="Watch"
+        component={WatchScreen}
         options={{
           animation: 'slide_from_right',
         }}

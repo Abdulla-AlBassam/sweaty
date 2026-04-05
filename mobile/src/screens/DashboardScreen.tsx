@@ -477,7 +477,7 @@ export default function DashboardScreen() {
         {/* WATCH Section Group */}
         {/* ═══════════════════════════════════════════════ */}
         <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
-          <SectionGroupHeader title="Watch" />
+          <SectionGroupHeader title="Watch" onSeeAll={() => navigation.navigate('Watch' as never)} />
 
           {/* YouTube Videos (header hidden - parent group says "Watch") */}
           <WatchSection refreshKey={refreshCount} showHeader={false} />
@@ -526,6 +526,7 @@ const styles = StyleSheet.create({
     bottom: Spacing.lg,
     left: Spacing.screenPadding,
     right: Spacing.screenPadding,
+    alignItems: 'flex-end',
   },
   heroBannerGameName: {
     fontFamily: Fonts.bodyMedium,

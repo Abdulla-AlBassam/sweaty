@@ -65,7 +65,10 @@ function VideoCard({ video, onPress }: VideoCardProps) {
             {decodeHtmlEntities(video.title)}
           </Text>
           <View style={styles.cardMeta}>
-            <Text style={styles.cardChannel}>{video.channel}</Text>
+            <View style={styles.cardChannelRow}>
+              <Image source={{ uri: video.channelAvatar }} style={styles.channelAvatar} />
+              <Text style={styles.cardChannel}>{video.channel}</Text>
+            </View>
             <Text style={styles.cardTime}>{formatTimeAgo(video.publishedAt)}</Text>
           </View>
         </View>
@@ -190,6 +193,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  cardChannelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  channelAvatar: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: Colors.surfaceLight,
   },
   cardChannel: {
     fontFamily: Fonts.mono,

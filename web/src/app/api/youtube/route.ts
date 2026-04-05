@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // YouTube channels - add new channels here
+// To find avatar URL: visit youtube.com/channel/CHANNEL_ID, view source, search for yt3.googleusercontent.com
 const YOUTUBE_CHANNELS = [
-  { name: 'gameranx', channelId: 'UCNvzD7Z-g64bPXxGzaQaa4g' },
-  { name: 'Jorraptor', channelId: 'UCzF5oxzeidHOZzy4KK5nxCQ' },
+  {
+    name: 'gameranx',
+    channelId: 'UCNvzD7Z-g64bPXxGzaQaa4g',
+    avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_mT3hsjvr0yyS6bW4inz3956572zV_j4t7TLsEOkK0G1VM=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'Jorraptor',
+    channelId: 'UCzF5oxzeidHOZzy4KK5nxCQ',
+    avatar: 'https://yt3.googleusercontent.com/2NRDdbrjRUUgWciHnRYmqz4JQ2pFa7zhqbNeuMhnn4sgCgn9MlrBwSo-ka0M1r3tZQjr91J2qQ=s88-c-k-c0x00ffffff-no-rj',
+  },
 ]
 
 // Simple in-memory cache
@@ -15,6 +24,7 @@ interface YouTubeVideo {
   id: string
   title: string
   channel: string
+  channelAvatar: string
   thumbnail: string
   videoUrl: string
   publishedAt: string
@@ -26,7 +36,7 @@ function extractTag(xml: string, tag: string): string {
   return match ? match[1].trim() : ''
 }
 
-function parseYouTubeFeed(xml: string, channelName: string): YouTubeVideo[] {
+function parseYouTubeFeed(xml: string, channelName: string, channelAvatar: string): YouTubeVideo[] {
   const videos: YouTubeVideo[] = []
   const entryRegex = /<entry>([\s\S]*?)<\/entry>/gi
   let match
@@ -54,6 +64,7 @@ function parseYouTubeFeed(xml: string, channelName: string): YouTubeVideo[] {
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'"),
         channel: channelName,
+        channelAvatar,
         thumbnail,
         videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
         publishedAt: published ? new Date(published).toISOString() : new Date().toISOString(),
@@ -85,7 +96,7 @@ async function fetchAllVideos(): Promise<YouTubeVideo[]> {
       }
 
       const xml = await response.text()
-      return parseYouTubeFeed(xml, channel.name)
+      return parseYouTubeFeed(xml, channel.name, channel.avatar)
     } catch (error) {
       console.error(`Error fetching ${channel.name}:`, error)
       return []
