@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
   StyleSheet,
+  Animated,
   ScrollView,
   Image,
   TouchableOpacity,
-  RefreshControl,
   Dimensions,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -23,14 +23,13 @@ import { useOpenCritic, useCommunityStats, useFriendsWhoPlayed } from '../hooks/
 import { usePlatformFilter } from '../hooks/usePlatformFilter'
 import { MainStackParamList } from '../navigation'
 import LogGameModal from '../components/LogGameModal'
-import GameReviews from '../components/GameReviews'
 import StarRating from '../components/StarRating'
 import TrailerSection from '../components/TrailerSection'
 import TwitchStreamsSection from '../components/TwitchStreamsSection'
 import { GameDetailSkeleton } from '../components/skeletons'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const BANNER_HEIGHT = SCREEN_WIDTH * 0.65
+const BANNER_HEIGHT = SCREEN_WIDTH * 0.75
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
@@ -74,14 +73,14 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const { gameId } = route.params
   const { user } = useAuth()
   const { platformsParam, excludePcOnly } = usePlatformFilter()
+  const insets = useSafeAreaInsets()
 
   const [game, setGame] = useState<GameDetails | null>(null)
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
-  const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
-  const [refreshing, setRefreshing] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
+  const scrollY = useRef(new Animated.Value(0)).current
 
   // Fetch ratings data
   const { data: openCriticData } = useOpenCritic(gameId, game?.name || '')
@@ -90,9 +89,35 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   // Fetch friends who played this game
   const { friends: friendsWhoPlayed } = useFriendsWhoPlayed(gameId, user?.id)
 
+  // Fetch reviewers for avatar row
+  const [reviewers, setReviewers] = useState<Array<{
+    id: string
+    rating: number | null
+    review: string
+    user: { id: string; username: string; display_name: string | null; avatar_url: string | null }
+  }>>([])
+
+  const fetchReviewers = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('game_logs')
+        .select(`id, rating, review, user:profiles!user_id(id, username, display_name, avatar_url)`)
+        .eq('game_id', gameId)
+        .not('review', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      if (data) {
+        setReviewers(data.map((item: any) => ({
+          ...item,
+          user: Array.isArray(item.user) ? item.user[0] : item.user,
+        })).filter((item: any) => item.user && item.review))
+      }
+    } catch {}
+  }, [gameId])
+
   useEffect(() => {
-    console.log('=== GAME DETAIL SCREEN MOUNTED === gameId:', gameId)
     fetchGameDetails()
+    fetchReviewers()
   }, [gameId])
 
   useEffect(() => {
@@ -193,22 +218,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const handleLogSaveSuccess = useCallback(() => {
     // Refresh the user's log, reviews, and community stats after saving
     fetchUserLog()
-    setReviewsRefreshKey(prev => prev + 1)
+    fetchReviewers()
     refetchCommunityStats()
-  }, [fetchUserLog, refetchCommunityStats])
+  }, [fetchUserLog, fetchReviewers, refetchCommunityStats])
 
   // Pull-to-refresh handler
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await Promise.all([
-      fetchGameDetails(),
-      fetchUserLog(),
-    ])
-    setReviewsRefreshKey(prev => prev + 1)
-    refetchCommunityStats()
-    setRefreshing(false)
-  }, [fetchUserLog, refetchCommunityStats])
-
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
     return url ? getIGDBImageUrl(url, 'coverBig2x') : null
@@ -268,53 +282,49 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const releaseYear = getReleaseYear()
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
-          <Ionicons name="arrow-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{game.name}</Text>
-        <TouchableOpacity
-          style={styles.headerFab}
-          onPress={() => setIsModalVisible(true)}
-          accessibilityLabel="Log this game"
-          accessibilityHint="Opens game logging form"
-          accessibilityRole="button"
-        >
-          <Ionicons
-            name={userLog ? 'pencil' : 'add'}
-            size={20}
-            color={Colors.background}
-          />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView
+    <View style={styles.container}>
+      <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContentWithBanner}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Colors.accent}
-            colors={[Colors.accent]}
-          />
-        }
+        bounces={true}
+        overScrollMode="never"
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
       >
-        {/* Hero Banner */}
+        {/* Hero Banner - stretches on overscroll */}
         {game.screenshotUrl ? (
-          <View style={styles.bannerContainer}>
+          <Animated.View style={[styles.bannerContainer, {
+            transform: [
+              {
+                translateY: scrollY.interpolate({
+                  inputRange: [-200, 0],
+                  outputRange: [-100, 0],
+                  extrapolateRight: 'clamp',
+                }),
+              },
+              {
+                scale: scrollY.interpolate({
+                  inputRange: [-200, 0],
+                  outputRange: [1.5, 1],
+                  extrapolateRight: 'clamp',
+                }),
+              },
+            ],
+          }]}>
             <Image
               source={{ uri: game.screenshotUrl }}
               style={styles.bannerImage}
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['transparent', Colors.background]}
+              colors={['transparent', 'rgba(15,15,15,0.6)', Colors.background]}
+              locations={[0.3, 0.7, 1]}
               style={styles.bannerGradient}
             />
-          </View>
+          </Animated.View>
         ) : (
           <View style={styles.bannerSpacer} />
         )}
@@ -370,32 +380,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         </View>
 
-        {/* Friends who played */}
-        {friendsWhoPlayed.length > 0 && (
-          <View style={styles.friendsSection}>
-            <Text style={styles.sectionTitle}>Friends who played</Text>
-            <View style={styles.friendsRow}>
-              {friendsWhoPlayed.map((friend) => (
-                <TouchableOpacity
-                  key={friend.id}
-                  onPress={() => navigation.navigate('UserProfile', { username: friend.username })}
-                  accessibilityLabel={friend.username + ' profile'}
-                  accessibilityRole="button"
-                >
-                  {friend.avatar_url ? (
-                    <Image source={{ uri: friend.avatar_url }} style={styles.friendAvatar} accessibilityLabel={friend.username + ' avatar'} />
-                  ) : (
-                    <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
-                      <Ionicons name="person" size={14} color={Colors.textMuted} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.sectionSeparator} />
-          </View>
-        )}
-
         {/* Summary */}
         {game.summary && (
           <TouchableOpacity
@@ -421,8 +405,88 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </TouchableOpacity>
         )}
 
-        {/* Reviews */}
-        <GameReviews gameId={gameId} gameName={game.name} refreshKey={reviewsRefreshKey} />
+        {/* Played by - unified friends + reviews */}
+        {(friendsWhoPlayed.length > 0 || reviewers.length > 0) && (
+          <View style={styles.friendsSection}>
+            <Text style={styles.sectionTitle}>Played by</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {/* Friends first */}
+              {friendsWhoPlayed.map((friend) => {
+                const friendReview = reviewers.find(r => r.user.id === friend.id)
+                return (
+                  <TouchableOpacity
+                    key={`friend-${friend.id}`}
+                    style={styles.playedByItem}
+                    onPress={() => friendReview
+                      ? navigation.navigate('ReviewDetail', {
+                          gameLogId: friendReview.id,
+                          gameName: game.name,
+                          gameId,
+                          coverUrl: coverUrl || undefined,
+                        })
+                      : navigation.navigate('UserProfile', { username: friend.username })
+                    }
+                    accessibilityLabel={(friend.display_name || friend.username) + (friendReview ? ' review' : ' profile')}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.playedByAvatarContainer}>
+                      {friend.avatar_url ? (
+                        <Image source={{ uri: friend.avatar_url }} style={styles.playedByAvatar} />
+                      ) : (
+                        <View style={[styles.playedByAvatar, styles.friendAvatarPlaceholder]}>
+                          <Ionicons name="person" size={16} color={Colors.textMuted} />
+                        </View>
+                      )}
+                      {friendReview && (
+                        <View style={styles.reviewBadge}>
+                          <Ionicons name="chatbubble-outline" size={12} color={Colors.text} />
+                        </View>
+                      )}
+                    </View>
+                    {friend.rating && (
+                      <StarRating rating={friend.rating} size={10} filledOnly />
+                    )}
+                  </TouchableOpacity>
+                )
+              })}
+              {/* Community reviewers (non-friends) */}
+              {reviewers
+                .filter(r => !friendsWhoPlayed.some(f => f.id === r.user.id))
+                .map((reviewer) => (
+                  <TouchableOpacity
+                    key={`review-${reviewer.id}`}
+                    style={styles.playedByItem}
+                    onPress={() => navigation.navigate('ReviewDetail', {
+                      gameLogId: reviewer.id,
+                      gameName: game.name,
+                      gameId,
+                      coverUrl: coverUrl || undefined,
+                    })}
+                    accessibilityLabel={(reviewer.user.display_name || reviewer.user.username) + ' review'}
+                    accessibilityRole="button"
+                  >
+                    <View style={styles.playedByAvatarContainer}>
+                      {reviewer.user.avatar_url ? (
+                        <Image source={{ uri: reviewer.user.avatar_url }} style={styles.playedByAvatar} />
+                      ) : (
+                        <View style={[styles.playedByAvatar, styles.friendAvatarPlaceholder]}>
+                          <Ionicons name="person" size={16} color={Colors.textMuted} />
+                        </View>
+                      )}
+                      <View style={styles.reviewBadge}>
+                        <Ionicons name="chatbubble-outline" size={12} color={Colors.text} />
+                      </View>
+                    </View>
+                    {reviewer.rating && (
+                      <StarRating rating={reviewer.rating} size={10} filledOnly />
+                    )}
+                  </TouchableOpacity>
+                ))
+              }
+            </ScrollView>
+            <View style={styles.sectionSeparator} />
+          </View>
+        )}
 
         {/* Live on Twitch */}
         <TwitchStreamsSection gameName={game.name} />
@@ -464,7 +528,27 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         )}
 
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {/* Floating Header - overlaid on banner */}
+      <View style={[styles.floatingHeader, { paddingTop: insets.top + Spacing.xs }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.floatingButton} accessibilityLabel="Go back" accessibilityRole="button">
+          <Ionicons name="chevron-back" size={22} color={Colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => setIsModalVisible(true)}
+          accessibilityLabel="Log this game"
+          accessibilityHint="Opens game logging form"
+          accessibilityRole="button"
+        >
+          <Ionicons
+            name={userLog ? 'pencil' : 'add'}
+            size={18}
+            color={Colors.text}
+          />
+        </TouchableOpacity>
+      </View>
 
       {/* Log Game Modal */}
       <LogGameModal
@@ -475,7 +559,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         onSaveSuccess={handleLogSaveSuccess}
       />
 
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -484,29 +568,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  header: {
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingBottom: Spacing.sm,
+    zIndex: 10,
   },
-  backButton: {
-    padding: Spacing.sm,
-    marginRight: Spacing.sm,
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.lg,
-    color: Colors.text,
-  },
-  headerFab: {
+  floatingButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.text,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -546,13 +624,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: BANNER_HEIGHT * 0.5,
+    height: BANNER_HEIGHT * 0.6,
   },
   bannerSpacer: {
-    height: Spacing.xl,
+    height: BANNER_HEIGHT,
   },
   contentBelowBanner: {
     paddingHorizontal: Spacing.lg,
+    marginTop: -40,
   },
   gameInfo: {
     flexDirection: 'row',
@@ -562,6 +641,11 @@ const styles = StyleSheet.create({
     width: 120,
     height: 160,
     borderRadius: BorderRadius.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 8,
   },
   coverPlaceholder: {
     backgroundColor: Colors.surface,
@@ -668,23 +752,42 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginTop: Spacing.md,
   },
-  // Friends who played styles
+  // Played by section styles
   friendsSection: {
     marginTop: Spacing.md,
-  },
-  friendsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-  },
-  friendAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
   },
   friendAvatarPlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  playedByItem: {
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  playedByAvatarContainer: {
+    position: 'relative',
+    marginBottom: 4,
+  },
+  playedByAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: Colors.borderBright,
+  },
+  reviewBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -4,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.surfaceBright,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: Colors.background,
   },
   // Similar Games styles
   similarGamesRow: {

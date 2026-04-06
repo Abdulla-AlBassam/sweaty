@@ -21,6 +21,7 @@ import NewsScreen from '../screens/NewsScreen'
 import WatchScreen from '../screens/WatchScreen'
 import WebViewScreen from '../screens/WebViewScreen'
 import AllReviewsScreen from '../screens/AllReviewsScreen'
+import ReviewDetailScreen from '../screens/ReviewDetailScreen'
 import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
 
@@ -44,6 +45,7 @@ export type MainStackParamList = {
   }
   ListDetail: { listId: string }
   AllReviews: { gameId: number; gameName: string }
+  ReviewDetail: { gameLogId: string; gameName: string; gameId: number; coverUrl?: string }
   AIRecommend: undefined
   PlatformConnections: undefined
   PlayStationImport: undefined
@@ -112,6 +114,13 @@ function MainNavigator() {
       <MainStack.Screen
         name="AllReviews"
         component={AllReviewsScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="ReviewDetail"
+        component={ReviewDetailScreen}
         options={{
           animation: 'slide_from_right',
         }}

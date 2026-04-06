@@ -662,7 +662,7 @@ export default function ProfileScreen() {
                     <View style={styles.ratingBelow}>
                       {log.rating && <StarRating rating={log.rating} size={12} filledOnly />}
                       {log.review && log.review.trim().length > 0 && (
-                        <Ionicons name="chatbubble" size={12} color={Colors.accent} style={log.rating ? { marginLeft: 4 } : undefined} />
+                        <Ionicons name="chatbubble-outline" size={12} color={Colors.accent} style={log.rating ? { marginLeft: 4 } : undefined} />
                       )}
                     </View>
                   )}

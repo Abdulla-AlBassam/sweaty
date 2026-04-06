@@ -89,10 +89,10 @@ export default function ReviewLikeButton({
         // Like the review
         const { error } = await supabase
           .from('review_likes')
-          .insert({
+          .upsert({
             user_id: user.id,
             game_log_id: gameLogId,
-          })
+          }, { onConflict: 'user_id,game_log_id' })
 
         if (error) throw error
       } else {
@@ -116,7 +116,7 @@ export default function ReviewLikeButton({
     }
   }
 
-  const iconSize = size === 'small' ? 18 : 22
+  const iconSize = size === 'small' ? 20 : 26
   const fontSize = size === 'small' ? FontSize.xs : FontSize.sm
 
   return (
@@ -130,7 +130,7 @@ export default function ReviewLikeButton({
         <Ionicons
           name={isLiked ? 'heart' : 'heart-outline'}
           size={iconSize}
-          color={isLiked ? Colors.error : Colors.textMuted}
+          color={isLiked ? Colors.accentDark : Colors.textMuted}
         />
       </Animated.View>
       {likeCount > 0 && (

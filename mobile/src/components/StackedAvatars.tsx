@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   },
   avatar: {
     borderWidth: 2,
-    borderColor: Colors.surface,
+    borderColor: Colors.borderBright,
     backgroundColor: Colors.surface,
     overflow: 'hidden',
     alignItems: 'center',
