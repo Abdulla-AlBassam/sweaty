@@ -19,12 +19,14 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+*_output.txt
 
 # Build outputs (web)
 web/.next/
 web/out/
 
 # Build outputs (mobile)
+.expo/
 mobile/.expo/
 mobile/dist/
 mobile/ios/
