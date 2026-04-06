@@ -92,7 +92,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
 
         {hasReview && (
           <View style={styles.reviewRow}>
-            <Ionicons name="chatbubble" size={11} color={Colors.text} style={styles.reviewIcon} />
+            <Ionicons name="chatbubble-outline" size={11} color={Colors.textDim} style={styles.reviewIcon} />
             <Text style={styles.reviewSnippet} numberOfLines={3}>
               {review!.trim()}
             </Text>

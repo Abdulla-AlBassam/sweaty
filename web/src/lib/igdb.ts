@@ -238,6 +238,38 @@ function getScreenshotUrls(screenshots?: IGDBGame['screenshots']): string[] {
     .map(s => `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${s.image_id}.jpg`)
 }
 
+// Pick the best banner image from screenshots and artworks.
+// Prefers landscape screenshots (in-game footage) over artworks (often text/logo heavy).
+export function pickBestBannerImage(
+  screenshots?: { image_id: string; width?: number; height?: number }[],
+  artworks?: { image_id: string; width?: number; height?: number }[]
+): string | null {
+  const toUrl = (imageId: string) =>
+    `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${imageId}.jpg`
+
+  const isLandscape = (img: { width?: number; height?: number }) =>
+    img.width && img.height && img.width / img.height >= 1.3
+
+  const validScreenshots = (screenshots || []).filter(s => s.image_id)
+  const validArtworks = (artworks || []).filter(a => a.image_id)
+
+  // 1. Landscape screenshot (ideal)
+  const landscapeScreenshot = validScreenshots.find(isLandscape)
+  if (landscapeScreenshot) return toUrl(landscapeScreenshot.image_id)
+
+  // 2. Any screenshot (still better than promotional art)
+  if (validScreenshots.length > 0) return toUrl(validScreenshots[0].image_id)
+
+  // 3. Landscape artwork with decent width
+  const landscapeArtwork = validArtworks.find(a => isLandscape(a) && (a.width ?? 0) >= 500)
+  if (landscapeArtwork) return toUrl(landscapeArtwork.image_id)
+
+  // 4. Any artwork (last resort)
+  if (validArtworks.length > 0) return toUrl(validArtworks[0].image_id)
+
+  return null
+}
+
 // Transform IGDB response to our cleaner Game format
 interface TransformOptions {
   includeArtworks?: boolean

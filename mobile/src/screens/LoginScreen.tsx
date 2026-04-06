@@ -9,11 +9,11 @@ import {
   Platform,
   ScrollView,
   ImageBackground,
-  Image,
   Modal,
   Alert,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
+import SweatDropIcon from '../components/SweatDropIcon'
 import { LinearGradient } from 'expo-linear-gradient'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
@@ -25,7 +25,6 @@ import { AuthStackParamList } from '../navigation'
 
 // Hero background image - Metal Gear Solid 3 artwork
 const heroBackground = require('../../assets/images/login-hero.png')
-const sweatyLogo = require('../../assets/images/sweaty-logo.png')
 
 type LoginScreenProps = {
   navigation: NativeStackNavigationProp<AuthStackParamList, 'Login'>
@@ -187,7 +186,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         >
           <View style={styles.content}>
             {/* Logo */}
-            <Image source={sweatyLogo} style={styles.logo} resizeMode="contain" accessibilityLabel="Sweaty logo" />
+            <View style={styles.logo}>
+              <SweatDropIcon size={48} variant="default" />
+            </View>
             <Text style={styles.tagline}>Track your gaming journey</Text>
 
             {/* Error Message */}
@@ -399,8 +400,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxl,
   },
   logo: {
-    width: 80,
-    height: 80,
     alignSelf: 'center',
     marginBottom: Spacing.md,
   },

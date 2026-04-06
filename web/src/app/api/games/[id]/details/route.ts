@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSmartSimilarGames } from '@/lib/igdb'
+import { getSmartSimilarGames, pickBestBannerImage } from '@/lib/igdb'
 
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID!
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET!
@@ -39,7 +39,8 @@ export async function GET(
       fields name, slug, summary, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating,
              videos.video_id, videos.name,
-             screenshots.image_id, artworks.image_id;
+             screenshots.image_id, screenshots.width, screenshots.height,
+             artworks.image_id, artworks.width, artworks.height;
       where id = ${gameId};
     `
 
@@ -105,12 +106,7 @@ export async function GET(
         videoId: v.video_id,
         name: v.name || 'Trailer'
       })) || [],
-      screenshotUrl: (() => {
-        const imageId = game.artworks?.[0]?.image_id || game.screenshots?.[0]?.image_id
-        return imageId
-          ? `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${imageId}.jpg`
-          : null
-      })(),
+      screenshotUrl: pickBestBannerImage(game.screenshots, game.artworks),
       similarGames
     })
   } catch (error) {
