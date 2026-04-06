@@ -246,6 +246,7 @@ export default function PlayStationImportScreen() {
               style={styles.gameCover}
               resizeMode="cover"
               onError={(e) => console.log(`Image load error for ${item.name}:`, e.nativeEvent.error)}
+              accessibilityLabel={`${item.name} cover art`}
             />
           ) : (
             <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
@@ -268,6 +269,8 @@ export default function PlayStationImportScreen() {
           <TouchableOpacity
             style={styles.logButtonWrapper}
             onPress={() => handleLogGame(item)}
+            accessibilityLabel={`Log ${item.name}`}
+            accessibilityRole="button"
           >
             {/* RGB Chromatic aberration layers */}
             <View style={[styles.logButtonLayer, styles.logButtonCyan]} />
@@ -378,7 +381,7 @@ export default function PlayStationImportScreen() {
         <View style={styles.header}>
           <View style={styles.backButton} />
           <Text style={styles.headerTitle}>REVIEW & LOG</Text>
-          <TouchableOpacity onPress={handleDone} style={styles.doneHeaderButton}>
+          <TouchableOpacity onPress={handleDone} style={styles.doneHeaderButton} accessibilityLabel="Done" accessibilityRole="button">
             <Text style={styles.doneHeaderText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -420,6 +423,8 @@ export default function PlayStationImportScreen() {
             <TouchableOpacity
               style={styles.unmatchedHeader}
               onPress={() => toggleSection('unmatched')}
+              accessibilityLabel={`${expandedSection === 'unmatched' ? 'Collapse' : 'Expand'} unmatched games`}
+              accessibilityRole="button"
             >
               <Text style={styles.unmatchedTitle}>
                 Couldn't match ({importResult.unmatched_games.length})
@@ -444,7 +449,7 @@ export default function PlayStationImportScreen() {
 
         {/* Bottom Done Button */}
         <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+          <TouchableOpacity style={styles.doneButton} onPress={handleDone} accessibilityLabel={loggedCount > 0 ? `Finish with ${loggedCount} logged` : 'Skip for now'} accessibilityRole="button">
             <Text style={styles.doneButtonText}>
               {loggedCount > 0 ? `FINISH (${loggedCount} logged)` : 'SKIP FOR NOW'}
             </Text>
@@ -478,11 +483,11 @@ export default function PlayStationImportScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>CONTINUE LOGGING</Text>
-          <TouchableOpacity onPress={handleDone} style={styles.doneHeaderButton}>
+          <TouchableOpacity onPress={handleDone} style={styles.doneHeaderButton} accessibilityLabel="Done" accessibilityRole="button">
             <Text style={styles.doneHeaderText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -520,7 +525,7 @@ export default function PlayStationImportScreen() {
 
         {/* Bottom Done Button */}
         <View style={styles.bottomButtonContainer}>
-          <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
+          <TouchableOpacity style={styles.doneButton} onPress={handleDone} accessibilityLabel={remainingGames.length === 0 ? 'Finish' : loggedCount > 0 ? `Finish with ${loggedCount} logged` : 'Skip for now'} accessibilityRole="button">
             <Text style={styles.doneButtonText}>
               {remainingGames.length === 0 ? 'FINISH' : loggedCount > 0 ? `FINISH (${loggedCount} logged)` : 'SKIP FOR NOW'}
             </Text>
@@ -550,7 +555,7 @@ export default function PlayStationImportScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>IMPORT FAILED</Text>
@@ -562,7 +567,7 @@ export default function PlayStationImportScreen() {
           </View>
           <Text style={styles.errorTitle}>Import Failed</Text>
           <Text style={styles.errorMessage}>{importResult.error || 'Something went wrong'}</Text>
-          <TouchableOpacity style={styles.tryAgainButton} onPress={handleTryAgain}>
+          <TouchableOpacity style={styles.tryAgainButton} onPress={handleTryAgain} accessibilityLabel="Try again" accessibilityRole="button">
             <Text style={styles.tryAgainButtonText}>TRY AGAIN</Text>
           </TouchableOpacity>
         </View>
@@ -574,7 +579,7 @@ export default function PlayStationImportScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>IMPORT PLAYSTATION</Text>
@@ -584,7 +589,7 @@ export default function PlayStationImportScreen() {
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* PlayStation Logo */}
         <View style={styles.logoContainer}>
-          <MaterialCommunityIcons name="sony-playstation" size={48} color="#006FCD" />
+          <MaterialCommunityIcons name="sony-playstation" size={48} color={Colors.platformPlayStation} />
         </View>
 
         {/* Instructions */}
@@ -604,6 +609,8 @@ export default function PlayStationImportScreen() {
             <TouchableOpacity
               style={styles.howToAccordionHeader}
               onPress={() => toggleSection('howto')}
+              accessibilityLabel={`${expandedSection === 'howto' ? 'Collapse' : 'Expand'} export instructions`}
+              accessibilityRole="button"
             >
               <View style={styles.accordionHeaderContent}>
                 <Ionicons name="help-circle-outline" size={20} color={Colors.textMuted} />
@@ -658,6 +665,8 @@ export default function PlayStationImportScreen() {
               selectedFile && styles.uploadAreaSelected,
             ]}
             onPress={handlePickFile}
+            accessibilityLabel={selectedFile ? `Selected file: ${selectedFile.name}. Tap to change` : 'Choose CSV file'}
+            accessibilityRole="button"
           >
             {selectedFile ? (
               <View style={styles.selectedFileContainer}>
@@ -683,6 +692,8 @@ export default function PlayStationImportScreen() {
               style={[styles.findButton, isLoading && styles.findButtonDisabled]}
               onPress={handleCSVImport}
               disabled={isLoading}
+              accessibilityLabel="Import games"
+              accessibilityRole="button"
             >
               {isLoading ? (
                 <LoadingSpinner size="small" color={Colors.text} />

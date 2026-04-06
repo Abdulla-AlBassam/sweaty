@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
@@ -355,7 +355,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>loading...</Text>
@@ -371,7 +371,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>not found</Text>
@@ -388,7 +388,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>@{profile.username}</Text>
@@ -413,6 +413,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               source={{ uri: profile.banner_url }}
               style={styles.banner}
               resizeMode="cover"
+              accessibilityLabel={(profile.display_name || profile.username) + ' profile banner'}
             />
             <LinearGradient
               colors={['rgba(15, 15, 15, 0.3)', 'rgba(15, 15, 15, 0.6)', Colors.background]}
@@ -427,7 +428,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile.banner_url && styles.profileSectionWithBanner]}>
           {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessibilityLabel={(profile.display_name || profile.username) + ' profile picture'} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Ionicons name="person" size={40} color={Colors.textDim} />
@@ -454,6 +455,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                 setFollowersModalType('followers')
                 setFollowersModalVisible(true)
               }}
+              accessibilityLabel={followerCount + ' followers'}
+              accessibilityRole="button"
             >
               <Text style={styles.followText}>
                 <Text style={styles.followNumber}>{followerCount}</Text> followers
@@ -464,6 +467,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                 setFollowersModalType('following')
                 setFollowersModalVisible(true)
               }}
+              accessibilityLabel={followingCount + ' following'}
+              accessibilityRole="button"
             >
               <Text style={styles.followText}>
                 <Text style={styles.followNumber}>{followingCount}</Text> following
@@ -481,6 +486,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               style={[styles.followButton, isFollowing && styles.followingButton]}
               onPress={handleFollow}
               disabled={isFollowLoading}
+              accessibilityLabel={isFollowing ? 'Unfollow ' + profile.username : 'Follow ' + profile.username}
+              accessibilityRole="button"
             >
               {isFollowLoading ? (
                 <LoadingSpinner size="small" color={isFollowing ? Colors.text : Colors.background} />
@@ -535,9 +542,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     key={game.id}
                     style={styles.favoriteSlot}
                     onPress={() => handleGamePress(game.id)}
+                    accessibilityLabel={game.name}
+                    accessibilityRole="button"
                   >
                     {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} accessibilityLabel={game.name + ' cover art'} />
                     ) : (
                       <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
                         <SweatDropIcon size={20} variant="static" />
@@ -569,11 +578,14 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                   key={log.id}
                   style={styles.recentlyLoggedCard}
                   onPress={() => handleGamePress(log.game_id)}
+                  accessibilityLabel={log.game?.name || 'Game'}
+                  accessibilityRole="button"
                 >
                   {log.game?.cover_url ? (
                     <Image
                       source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
                       style={styles.recentlyLoggedCover}
+                      accessibilityLabel={log.game.name + ' cover art'}
                     />
                   ) : (
                     <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
@@ -631,6 +643,9 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                     count === 0 && !isSelected && styles.filterTabDimmed,
                   ]}
                   onPress={() => setSelectedFilter(tab.key)}
+                  accessibilityLabel={tab.label + ' ' + count + ' games'}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isSelected }}
                 >
                   <Text
                     style={[
@@ -653,11 +668,14 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                   key={log.id}
                   style={styles.gameCard}
                   onPress={() => handleGamePress(log.game_id)}
+                  accessibilityLabel={log.game?.name || 'Game'}
+                  accessibilityRole="button"
                 >
                   {log.game?.cover_url ? (
                     <Image
                       source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
                       style={styles.gameCover}
+                      accessibilityLabel={log.game.name + ' cover art'}
                     />
                   ) : (
                     <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
@@ -889,6 +907,8 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   section: {
     paddingHorizontal: Spacing.lg,
@@ -950,6 +970,8 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',

@@ -75,19 +75,22 @@ export default function WatchScreen() {
       onPress={() => handleVideoPress(item)}
       haptic="light"
       scale={0.98}
+      accessibilityLabel={`${decodeHtmlEntities(item.title)} by ${item.channel}`}
+      accessibilityRole="button"
     >
       <View style={styles.videoCard}>
         <Image
           source={{ uri: item.thumbnail }}
           style={styles.thumbnail}
           resizeMode="cover"
+          accessibilityLabel={`Thumbnail for ${decodeHtmlEntities(item.title)}`}
         />
         <View style={styles.videoContent}>
           <Text style={styles.videoTitle} numberOfLines={2}>
             {decodeHtmlEntities(item.title)}
           </Text>
           <View style={styles.videoMeta}>
-            <Image source={{ uri: item.channelAvatar }} style={styles.channelAvatar} />
+            <Image source={{ uri: item.channelAvatar }} style={styles.channelAvatar} accessibilityLabel={`${item.channel} avatar`} />
             <Text style={styles.channelName}>{item.channel}</Text>
             <Text style={styles.metaSeparator}>|</Text>
             <Text style={styles.timeAgo}>{formatTimeAgo(item.publishedAt)}</Text>
@@ -104,6 +107,8 @@ export default function WatchScreen() {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           haptic="light"
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </PressableScale>
@@ -118,7 +123,7 @@ export default function WatchScreen() {
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Failed to load videos</Text>
-          <PressableScale onPress={refetch} haptic="light">
+          <PressableScale onPress={refetch} haptic="light" accessibilityLabel="Retry loading videos" accessibilityRole="button">
             <Text style={styles.retryText}>Tap to retry</Text>
           </PressableScale>
         </View>

@@ -196,9 +196,11 @@ export default function AIRecommendScreen() {
                     onPress={() => handleGamePress(game.id)}
                     haptic="light"
                     scale={0.95}
+                    accessibilityLabel={game.name}
+                    accessibilityRole="button"
                   >
                     {imageUrl ? (
-                      <Image source={{ uri: imageUrl }} style={styles.gameCover} />
+                      <Image source={{ uri: imageUrl }} style={styles.gameCover} accessibilityLabel={`${game.name} cover art`} />
                     ) : (
                       <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
                         <SweatDropIcon size={24} variant="static" />
@@ -218,7 +220,7 @@ export default function AIRecommendScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <PressableScale onPress={() => navigation.goBack()} haptic="light">
+        <PressableScale onPress={() => navigation.goBack()} haptic="light" accessibilityLabel="Close" accessibilityRole="button">
           <View style={styles.closeButton}>
             <Ionicons name="close" size={24} color={Colors.text} />
           </View>
@@ -254,6 +256,8 @@ export default function AIRecommendScreen() {
                       onPress={() => sendMessage(prompt)}
                       haptic="light"
                       scale={0.98}
+                      accessibilityLabel={prompt}
+                      accessibilityRole="button"
                     >
                       <View style={styles.promptCard}>
                         <Text style={styles.promptText}>{prompt}</Text>
@@ -297,6 +301,8 @@ export default function AIRecommendScreen() {
                     }
                   }}
                   haptic="light"
+                  accessibilityLabel="Retry"
+                  accessibilityRole="button"
                 >
                   <Text style={styles.retryText}>Retry</Text>
                 </PressableScale>
@@ -319,12 +325,15 @@ export default function AIRecommendScreen() {
               returnKeyType="send"
               blurOnSubmit={false}
               onSubmitEditing={() => sendMessage(inputText)}
+              accessibilityLabel="Ask for game recommendations"
             />
             <PressableScale
               onPress={() => sendMessage(inputText)}
               disabled={!inputText.trim() || isLoading}
               haptic="medium"
               scale={0.9}
+              accessibilityLabel="Send message"
+              accessibilityRole="button"
             >
               <View style={[
                 styles.sendButton,

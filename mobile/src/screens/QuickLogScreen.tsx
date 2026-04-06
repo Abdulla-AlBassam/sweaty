@@ -103,9 +103,11 @@ export default function QuickLogScreen() {
       <TouchableOpacity
         style={styles.gameItem}
         onPress={() => handleGameSelect(item)}
+        accessibilityLabel={`Log ${item.name}`}
+        accessibilityRole="button"
       >
         {coverUrl ? (
-          <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+          <Image source={{ uri: coverUrl }} style={styles.gameCover} accessibilityLabel={`${item.name} cover art`} />
         ) : (
           <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
             <SweatDropIcon size={20} variant="static" />
@@ -144,9 +146,10 @@ export default function QuickLogScreen() {
           autoCapitalize="none"
           autoCorrect={false}
           autoFocus={true}
+          accessibilityLabel="Search for a game to log"
         />
         {query.length > 0 && (
-          <TouchableOpacity onPress={() => { setQuery(''); setResults([]) }}>
+          <TouchableOpacity onPress={() => { setQuery(''); setResults([]) }} accessibilityLabel="Clear search" accessibilityRole="button">
             <Ionicons name="close-circle" size={20} color={Colors.textDim} />
           </TouchableOpacity>
         )}

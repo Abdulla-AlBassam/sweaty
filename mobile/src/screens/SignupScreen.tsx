@@ -137,6 +137,8 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
           <TouchableOpacity
             style={styles.verificationButton}
             onPress={() => navigation.navigate('Login')}
+            accessibilityLabel="Go to login"
+            accessibilityRole="button"
           >
             <Text style={styles.verificationButtonText}>GO TO LOGIN</Text>
           </TouchableOpacity>
@@ -186,7 +188,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
         >
           <View style={styles.content}>
             {/* Logo */}
-            <Image source={sweatyLogo} style={styles.logo} resizeMode="contain" />
+            <Image source={sweatyLogo} style={styles.logo} resizeMode="contain" accessibilityLabel="Sweaty logo" />
             <Text style={styles.tagline}>Create your account</Text>
 
             {/* Error Message */}
@@ -210,6 +212,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
+                    accessibilityLabel="Email"
                   />
                 </View>
 
@@ -223,6 +226,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                     onChangeText={setUsername}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    accessibilityLabel="Username"
                   />
                 </View>
 
@@ -236,8 +240,9 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
+                    accessibilityLabel="Password"
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'} accessibilityRole="button">
                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textMuted} />
                   </TouchableOpacity>
                 </View>
@@ -252,8 +257,9 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showConfirmPassword}
                     autoCapitalize="none"
+                    accessibilityLabel="Confirm password"
                   />
-                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton}>
+                  <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeButton} accessibilityLabel={showConfirmPassword ? 'Hide password' : 'Show password'} accessibilityRole="button">
                     <Ionicons name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textMuted} />
                   </TouchableOpacity>
                 </View>
@@ -262,6 +268,8 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
                   style={[styles.button, isLoading && styles.buttonDisabled]}
                   onPress={handleSignup}
                   disabled={isLoading}
+                  accessibilityLabel="Create account"
+                  accessibilityRole="button"
                 >
                   {isLoading ? (
                     <LoadingSpinner size="small" color={Colors.background} />
@@ -275,7 +283,7 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
             {/* Login Link */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Already have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')} accessibilityLabel="Sign in to existing account" accessibilityRole="link">
                 <Text style={styles.footerLink}>Log in</Text>
               </TouchableOpacity>
             </View>

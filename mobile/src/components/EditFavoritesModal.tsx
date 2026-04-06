@@ -180,9 +180,11 @@ export default function EditFavoritesModal({
       <TouchableOpacity
         style={styles.searchResultItem}
         onPress={() => addFavorite(item)}
+        accessibilityLabel={`Add ${item.name} to favorites`}
+        accessibilityRole="button"
       >
         {coverUrl ? (
-          <Image source={{ uri: coverUrl }} style={styles.resultCover} />
+          <Image source={{ uri: coverUrl }} style={styles.resultCover} accessibilityLabel={`${item.name} cover art`} />
         ) : (
           <View style={[styles.resultCover, styles.resultCoverPlaceholder]}>
             <SweatDropIcon size={16} variant="static" />
@@ -204,6 +206,7 @@ export default function EditFavoritesModal({
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -215,7 +218,7 @@ export default function EditFavoritesModal({
           <View style={styles.header}>
             {isSearchMode ? (
               <>
-                <TouchableOpacity onPress={closeSearch} style={styles.backButton}>
+                <TouchableOpacity onPress={closeSearch} style={styles.backButton} accessibilityLabel="Back to favorites" accessibilityRole="button">
                   <Ionicons name="arrow-back" size={24} color={Colors.text} />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Add Game</Text>
@@ -223,7 +226,7 @@ export default function EditFavoritesModal({
             ) : (
               <Text style={styles.headerTitle}>Edit Favorites</Text>
             )}
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
@@ -244,9 +247,10 @@ export default function EditFavoritesModal({
                     onChangeText={handleSearchChange}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    accessibilityLabel="Search games for favorites"
                   />
                   {query.length > 0 && (
-                    <TouchableOpacity onPress={() => { setQuery(''); setSearchResults([]) }}>
+                    <TouchableOpacity onPress={() => { setQuery(''); setSearchResults([]) }} accessibilityLabel="Clear search" accessibilityRole="button">
                       <Ionicons name="close-circle" size={20} color={Colors.textDim} />
                     </TouchableOpacity>
                   )}
@@ -295,7 +299,7 @@ export default function EditFavoritesModal({
                       return (
                         <View key={game.id} style={styles.favoriteSlot}>
                           {coverUrl ? (
-                            <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                            <Image source={{ uri: coverUrl }} style={styles.favoriteCover} accessibilityLabel={`${game.name} cover art`} />
                           ) : (
                             <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
                               <SweatDropIcon size={20} variant="static" />
@@ -304,6 +308,8 @@ export default function EditFavoritesModal({
                           <TouchableOpacity
                             style={styles.removeButton}
                             onPress={() => removeFavorite(game.id)}
+                            accessibilityLabel={`Remove ${game.name} from favorites`}
+                            accessibilityRole="button"
                           >
                             <Ionicons name="close-circle" size={22} color={Colors.error} />
                           </TouchableOpacity>
@@ -316,6 +322,8 @@ export default function EditFavoritesModal({
                         key={`empty-${index}`}
                         style={styles.favoriteSlot}
                         onPress={() => openSearchForSlot(index)}
+                        accessibilityLabel={`Add favorite game to slot ${index + 1}`}
+                        accessibilityRole="button"
                       >
                         <View style={[styles.favoriteCover, styles.emptySlot]}>
                           <Ionicons name="add" size={28} color={Colors.textDim} />
@@ -336,6 +344,8 @@ export default function EditFavoritesModal({
                   style={styles.saveButton}
                   onPress={handleSave}
                   disabled={isSaving}
+                  accessibilityLabel="Save favorites"
+                  accessibilityRole="button"
                 >
                   {isSaving ? (
                     <LoadingSpinner size="small" color={Colors.background} />
@@ -359,7 +369,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContainer: {

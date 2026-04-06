@@ -57,12 +57,12 @@ export default function PressableScale({
 
   const handlePressOut = useCallback(
     (e: any) => {
-      // Scale back up with satisfying bounce
+      // Scale back up — gentle, not bouncy
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
-        speed: 12,
-        bounciness: 12,
+        speed: 20,
+        bounciness: 4,
       }).start()
 
       onPressOut?.(e)

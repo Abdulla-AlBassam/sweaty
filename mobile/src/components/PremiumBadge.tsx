@@ -91,7 +91,7 @@ export default function PremiumBadge({ size = 'medium', variant = 'premium' }: P
   const currentSize = sizeStyles[size]
 
   return (
-    <View style={[styles.container, { borderRadius: currentSize.borderRadius, shadowColor: badgeStyle.shadowColor }]}>
+    <View style={[styles.container, { borderRadius: currentSize.borderRadius, shadowColor: badgeStyle.shadowColor }]} accessibilityLabel={variant === 'developer' ? 'Developer badge' : 'Premium member badge'}>
       <LinearGradient
         colors={badgeStyle.colors as unknown as string[]}
         start={{ x: 0, y: 0 }}

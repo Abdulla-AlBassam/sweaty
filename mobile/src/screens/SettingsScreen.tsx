@@ -275,7 +275,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>SETTINGS</Text>
@@ -283,6 +283,8 @@ export default function SettingsScreen() {
           onPress={handleSave}
           disabled={!hasChanges || isSaving || !!usernameError}
           style={styles.saveButton}
+          accessibilityLabel="Save changes"
+          accessibilityRole="button"
         >
           {isSaving ? (
             <LoadingSpinner size="small" color={Colors.accent} />
@@ -301,13 +303,13 @@ export default function SettingsScreen() {
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
-            <TouchableOpacity onPress={pickImage} disabled={isUploadingAvatar}>
+            <TouchableOpacity onPress={pickImage} disabled={isUploadingAvatar} accessibilityLabel="Change profile picture" accessibilityRole="button">
               {isUploadingAvatar ? (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
                   <LoadingSpinner size="large" color={Colors.accent} />
                 </View>
               ) : avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} accessibilityLabel="Your profile picture" />
               ) : (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
                   <Ionicons name="person" size={50} color={Colors.textDim} />
@@ -331,6 +333,8 @@ export default function SettingsScreen() {
               <TouchableOpacity
                 style={styles.bannerPreviewContainer}
                 onPress={() => setBannerSelectorVisible(true)}
+                accessibilityLabel="Change profile banner"
+                accessibilityRole="button"
               >
                 {bannerUrl ? (
                   <View style={styles.bannerPreviewWrapper}>
@@ -338,6 +342,7 @@ export default function SettingsScreen() {
                       source={{ uri: bannerUrl }}
                       style={styles.bannerPreview}
                       resizeMode="cover"
+                      accessibilityLabel="Current profile banner"
                     />
                     <LinearGradient
                       colors={['transparent', 'rgba(0,0,0,0.6)']}
@@ -380,6 +385,7 @@ export default function SettingsScreen() {
                 placeholder="Your display name"
                 placeholderTextColor={Colors.textDim}
                 maxLength={50}
+                accessibilityLabel="Display name"
               />
             </View>
 
@@ -396,6 +402,7 @@ export default function SettingsScreen() {
                   maxLength={20}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  accessibilityLabel="Username"
                 />
               </View>
               {usernameError && (
@@ -414,6 +421,7 @@ export default function SettingsScreen() {
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
+                accessibilityLabel="Bio"
               />
               <Text style={styles.charCount}>{bio.length}/160</Text>
             </View>
@@ -434,6 +442,9 @@ export default function SettingsScreen() {
                     ]}
                     onPress={() => togglePlatform(platform.key)}
                     activeOpacity={0.7}
+                    accessibilityLabel={platform.key.charAt(0).toUpperCase() + platform.key.slice(1)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
                   >
                     {platform.iconLibrary === 'fa5' ? (
                       <FontAwesome5 name={platform.icon} size={22} color={isSelected ? Colors.accent : Colors.textMuted} />
@@ -518,7 +529,7 @@ export default function SettingsScreen() {
 
           {/* Actions */}
           <View style={styles.section}>
-            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} accessibilityLabel="Sign out" accessibilityRole="button">
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
               <Text style={styles.signOutText}>SIGN OUT</Text>
             </TouchableOpacity>

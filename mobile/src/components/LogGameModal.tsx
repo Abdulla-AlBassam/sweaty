@@ -453,12 +453,13 @@ export default function LogGameModal({
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <Pressable style={styles.pickerOverlay} onPress={onClose}>
         <Pressable style={styles.pickerContainer} onPress={(e) => e.stopPropagation()}>
           <View style={styles.pickerHeader}>
             <Text style={styles.pickerTitle}>{title}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.pickerCloseButton}>
+            <TouchableOpacity onPress={onClose} style={styles.pickerCloseButton} accessibilityLabel="Close" accessibilityRole="button">
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
@@ -475,6 +476,9 @@ export default function LogGameModal({
                   onSelect(item.value)
                   onClose()
                 }}
+                accessibilityLabel={`Set ${title.toLowerCase()} to ${item.label}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: selectedValue === item.value }}
               >
                 {showIcons && item.icon && (
                   <Ionicons
@@ -509,6 +513,7 @@ export default function LogGameModal({
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -521,16 +526,16 @@ export default function LogGameModal({
             <Text style={styles.headerTitle}>
               {existingLog ? 'edit log' : 'log game'}
             </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close game log" accessibilityRole="button">
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Game Info - Tappable to view game details */}
-            <TouchableOpacity style={styles.gameInfo} onPress={handleGamePress} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.gameInfo} onPress={handleGamePress} activeOpacity={0.7} accessibilityLabel={`View ${game.name} details`} accessibilityRole="button">
               {imageUrl ? (
-                <Image source={{ uri: imageUrl }} style={styles.gameCover} />
+                <Image source={{ uri: imageUrl }} style={styles.gameCover} accessibilityLabel={`${game.name} cover art`} />
               ) : (
                 <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
                   <SweatDropIcon size={24} variant="static" />
@@ -545,6 +550,8 @@ export default function LogGameModal({
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setStatusPickerVisible(true)}
+              accessibilityLabel={currentStatusOption ? `Status: ${currentStatusOption.label}` : 'Select status'}
+              accessibilityRole="button"
             >
               <View style={styles.dropdownContent}>
                 {currentStatusOption ? (
@@ -568,6 +575,8 @@ export default function LogGameModal({
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setPlatformPickerVisible(true)}
+              accessibilityLabel={platform ? `Platform: ${platform}` : 'Select platform'}
+              accessibilityRole="button"
             >
               <View style={styles.dropdownContent}>
                 {platform ? (
@@ -589,12 +598,16 @@ export default function LogGameModal({
                     style={styles.starHalfTouch}
                     onPress={() => handleHalfStarPress(starNumber, true)}
                     activeOpacity={0.7}
+                    accessibilityLabel={`Rate ${starNumber - 0.5} stars`}
+                    accessibilityRole="button"
                   />
                   {/* Right half - gives X.0 rating */}
                   <TouchableOpacity
                     style={styles.starHalfTouch}
                     onPress={() => handleHalfStarPress(starNumber, false)}
                     activeOpacity={0.7}
+                    accessibilityLabel={`Rate ${starNumber} stars`}
+                    accessibilityRole="button"
                   />
                   {/* Star icon (positioned absolutely so touch zones work) */}
                   <View style={styles.starIconContainer} pointerEvents="none">
@@ -603,7 +616,7 @@ export default function LogGameModal({
                 </View>
               ))}
               {rating && (
-                <TouchableOpacity onPress={() => setRating(null)} style={styles.clearRating}>
+                <TouchableOpacity onPress={() => setRating(null)} style={styles.clearRating} accessibilityLabel="Clear rating" accessibilityRole="button">
                   <Text style={styles.clearRatingText}>Clear</Text>
                 </TouchableOpacity>
               )}
@@ -621,6 +634,7 @@ export default function LogGameModal({
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
+                accessibilityLabel="Write a review"
               />
               <Text style={styles.reviewCharCount}>
                 {review.length}/2000
@@ -635,6 +649,8 @@ export default function LogGameModal({
                   style={styles.dropdown}
                   onPress={() => setListsPickerVisible(true)}
                   disabled={listsLoading}
+                  accessibilityLabel={gameInLists.size > 0 ? `${gameInLists.size} lists selected` : 'Select lists'}
+                  accessibilityRole="button"
                 >
                   <View style={styles.dropdownContent}>
                     {listsLoading ? (
@@ -668,6 +684,9 @@ export default function LogGameModal({
                 onPress={handleDelete}
                 disabled={isSaving}
                 haptic="medium"
+                accessibilityLabel="Remove from library"
+                accessibilityRole="button"
+                accessibilityHint="Deletes this game from your library"
               >
                 <Ionicons name="trash-outline" size={20} color={Colors.error} />
               </PressableScale>
@@ -681,6 +700,8 @@ export default function LogGameModal({
               onPress={handleSave}
               disabled={!status || isSaving}
               haptic="medium"
+              accessibilityLabel="Save game log"
+              accessibilityRole="button"
             >
               {isSaving ? (
                 <LoadingSpinner size="small" color={Colors.background} />
@@ -723,12 +744,13 @@ export default function LogGameModal({
         animationType="slide"
         transparent={true}
         onRequestClose={() => setListsPickerVisible(false)}
+        accessibilityViewIsModal={true}
       >
         <Pressable style={styles.pickerOverlay} onPress={() => setListsPickerVisible(false)}>
           <Pressable style={styles.pickerContainer} onPress={(e) => e.stopPropagation()}>
             <View style={styles.pickerHeader}>
               <Text style={styles.pickerTitle}>Add to Lists</Text>
-              <TouchableOpacity onPress={() => setListsPickerVisible(false)} style={styles.pickerCloseButton}>
+              <TouchableOpacity onPress={() => setListsPickerVisible(false)} style={styles.pickerCloseButton} accessibilityLabel="Close" accessibilityRole="button">
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
@@ -747,6 +769,8 @@ export default function LogGameModal({
                     setListsPickerVisible(false)
                     setShowCreateListModal(true)
                   }}
+                  accessibilityLabel="Create new list"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="add" size={22} color={Colors.accent} />
                   <Text style={styles.newListButtonText}>New list</Text>
@@ -764,6 +788,9 @@ export default function LogGameModal({
                     ]}
                     onPress={() => handleToggleList(item.id)}
                     disabled={isLoadingItem}
+                    accessibilityLabel={`${isInList ? 'Remove from' : 'Add to'} ${item.title}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isInList }}
                   >
                     <View style={styles.listPickerInfo}>
                       <Text
@@ -810,7 +837,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContainer: {
@@ -900,7 +927,7 @@ const styles = StyleSheet.create({
   // Picker Modal styles
   pickerOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'flex-end',
   },
   pickerContainer: {

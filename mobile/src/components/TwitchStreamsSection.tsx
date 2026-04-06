@@ -65,13 +65,14 @@ function StreamCard({ stream }: { stream: TwitchStream }) {
   }
 
   return (
-    <TouchableOpacity style={styles.streamCard} onPress={handlePress} activeOpacity={0.7}>
+    <TouchableOpacity style={styles.streamCard} onPress={handlePress} activeOpacity={0.7} accessibilityLabel={stream.streamer_name + ' live on Twitch'} accessibilityRole="link" accessibilityHint="Opens Twitch stream">
       {/* Thumbnail */}
       <View style={styles.thumbnailContainer}>
         <Image
           source={{ uri: stream.thumbnail_url }}
           style={styles.thumbnail}
           resizeMode="cover"
+          accessibilityLabel={stream.streamer_name + ' stream thumbnail'}
         />
         {/* Live badge on thumbnail */}
         <View style={styles.liveBadge}>
@@ -129,16 +130,15 @@ export default function TwitchStreamsSection({ gameName }: TwitchStreamsSectionP
 
   return (
     <View style={styles.container}>
-      {/* Header with pulsing live dot */}
+      {/* Header — Twitch icon + live dot + streaming count, all inline */}
       <View style={styles.headerRow}>
+        <Image
+          source={require('../../assets/images/twitch-icon.png')}
+          style={styles.twitchIcon}
+          accessibilityLabel="Twitch icon"
+        />
         <Animated.View style={[styles.liveDot, { opacity: pulseAnim }]} />
-        <Text style={styles.sectionTitle}>Live on Twitch</Text>
       </View>
-
-      {/* Total streaming count */}
-      <Text style={styles.totalText}>
-        {totalLive} {totalLive === 1 ? 'person' : 'people'} streaming this game
-      </Text>
 
       {/* Horizontal scroll of stream cards */}
       <ScrollView
@@ -159,32 +159,29 @@ const THUMBNAIL_HEIGHT = 90 // 16:9 aspect ratio
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.lg,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.sm,
+  },
+  twitchIcon: {
+    width: 20,
+    height: 20,
+    tintColor: Colors.twitch,
   },
   liveDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: Colors.error,
-  },
-  sectionTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
   },
   totalText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textDim,
-    marginBottom: Spacing.md,
   },
   scrollContent: {
     paddingRight: Spacing.lg,
@@ -224,7 +221,7 @@ const styles = StyleSheet.create({
   },
   liveText: {
     fontFamily: Fonts.bodySemiBold,
-    fontSize: 10,
+    fontSize: FontSize.xxs,
     color: Colors.text,
     letterSpacing: 0.5,
   },

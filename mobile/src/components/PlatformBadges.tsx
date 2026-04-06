@@ -10,10 +10,10 @@ interface PlatformBadgesProps {
 }
 
 const PLATFORM_CONFIG: Record<GamingPlatform, { icon: string; library: 'fa5' | 'mci'; color: string }> = {
-  playstation: { icon: 'playstation', library: 'fa5', color: '#006FCD' },
-  xbox: { icon: 'xbox', library: 'fa5', color: '#107C10' },
-  pc: { icon: 'desktop-tower-monitor', library: 'mci', color: '#FF6600' },
-  nintendo: { icon: 'nintendo-switch', library: 'mci', color: '#E60012' },
+  playstation: { icon: 'playstation', library: 'fa5', color: Colors.platformPlayStation },
+  xbox: { icon: 'xbox', library: 'fa5', color: Colors.platformXbox },
+  pc: { icon: 'desktop-tower-monitor', library: 'mci', color: Colors.platformPC },
+  nintendo: { icon: 'nintendo-switch', library: 'mci', color: Colors.platformNintendo },
 }
 
 const SIZE_CONFIG = {
@@ -28,7 +28,7 @@ export default function PlatformBadges({ platforms, size = 'medium' }: PlatformB
   const { iconSize, padding } = SIZE_CONFIG[size]
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityLabel={`Plays on ${platforms.map(p => p === 'pc' ? 'PC' : p.charAt(0).toUpperCase() + p.slice(1)).join(', ')}`}>
       {platforms.map((platform) => {
         const config = PLATFORM_CONFIG[platform]
         if (!config) return null

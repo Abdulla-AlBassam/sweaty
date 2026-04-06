@@ -81,6 +81,8 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
                 setSelectedIndex(index)
                 setPlaying(false)
               }}
+              accessibilityLabel={`Play trailer: ${video.name || `trailer ${index + 1}`}`}
+              accessibilityRole="button"
             >
               <Ionicons
                 name="play-circle"
@@ -106,14 +108,13 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    lineHeight: 20,
     marginBottom: Spacing.sm,
   },
   playerContainer: {

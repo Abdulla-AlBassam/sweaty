@@ -35,22 +35,22 @@ interface Review {
 
 interface GameReviewsProps {
   gameId: number
+  gameName: string
   refreshKey?: number
 }
 
-const INITIAL_LIMIT = 10
+const PREVIEW_LIMIT = 2
 
-export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
+export default function GameReviews({ gameId, gameName, refreshKey }: GameReviewsProps) {
   const { user } = useAuth()
-  const navigation = useNavigation()
+  const navigation = useNavigation<any>()
   const [reviews, setReviews] = useState<Review[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
-  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     fetchReviews()
-  }, [gameId, refreshKey, showAll])
+  }, [gameId, refreshKey])
 
   const fetchReviews = async () => {
     try {
@@ -63,8 +63,8 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
 
       setTotalCount(count || 0)
 
-      // Then fetch reviews (limited or all)
-      let query = supabase
+      // Fetch only a preview (2 reviews)
+      const { data, error } = await supabase
         .from('game_logs')
         .select(`
           id,
@@ -76,12 +76,7 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
         .eq('game_id', gameId)
         .not('review', 'is', null)
         .order('created_at', { ascending: false })
-
-      if (!showAll) {
-        query = query.limit(INITIAL_LIMIT)
-      }
-
-      const { data, error } = await query
+        .limit(PREVIEW_LIMIT)
 
       if (error) throw error
 
@@ -179,7 +174,7 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
   }
 
   const handleShowAll = () => {
-    setShowAll(true)
+    navigation.navigate('AllReviews', { gameId, gameName })
   }
 
   if (isLoading) {
@@ -206,19 +201,27 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
     )
   }
 
-  const hasMore = totalCount > INITIAL_LIMIT && !showAll
-
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Reviews ({totalCount})</Text>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Reviews ({totalCount})</Text>
+        {totalCount > PREVIEW_LIMIT && (
+          <TouchableOpacity onPress={handleShowAll} style={styles.seeAllButton} accessibilityLabel={'See all ' + totalCount + ' reviews'} accessibilityRole="button">
+            <Text style={styles.seeAllText}>See all</Text>
+            <Ionicons name="chevron-forward" size={14} color={Colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
       {reviews.map((review) => (
         <View key={review.id} style={styles.reviewCard}>
           <TouchableOpacity
             style={styles.userRow}
             onPress={() => handleUserPress(review.user.username, review.user.id)}
+            accessibilityLabel={'View ' + (review.user.display_name || review.user.username) + ' profile'}
+            accessibilityRole="button"
           >
             {review.user.avatar_url ? (
-              <Image source={{ uri: review.user.avatar_url }} style={styles.avatar} />
+              <Image source={{ uri: review.user.avatar_url }} style={styles.avatar} accessibilityLabel={(review.user.display_name || review.user.username) + ' avatar'} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarText}>
@@ -258,26 +261,35 @@ export default function GameReviews({ gameId, refreshKey }: GameReviewsProps) {
           </View>
         </View>
       ))}
-      {hasMore && (
-        <TouchableOpacity style={styles.showAllButton} onPress={handleShowAll}>
-          <Text style={styles.showAllText}>Show all {totalCount} reviews</Text>
-        </TouchableOpacity>
-      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   section: {
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
   },
   sectionTitle: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    lineHeight: 20,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  seeAllText: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: Colors.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    marginBottom: Spacing.sm,
+    color: Colors.textMuted,
   },
   loadingContainer: {
     padding: Spacing.xl,
@@ -370,14 +382,5 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     flexWrap: 'wrap',
     gap: Spacing.lg,
-  },
-  showAllButton: {
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-  },
-  showAllText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.accent,
   },
 })

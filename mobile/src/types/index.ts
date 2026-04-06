@@ -145,6 +145,7 @@ export interface GameList {
   title: string
   description: string | null
   is_public: boolean
+  is_ranked: boolean
   created_at: string
   updated_at: string
 }

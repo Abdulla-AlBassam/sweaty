@@ -149,9 +149,11 @@ export default function BannerSelector({
       style={styles.gameItem}
       onPress={() => handleSelectGame(item)}
       activeOpacity={0.7}
+      accessibilityLabel={`Select ${item.name}`}
+      accessibilityRole="button"
     >
       {item.coverUrl ? (
-        <Image source={{ uri: item.coverUrl }} style={styles.gameCover} />
+        <Image source={{ uri: item.coverUrl }} style={styles.gameCover} accessibilityLabel={`${item.name} cover`} />
       ) : (
         <View style={[styles.gameCover, styles.coverPlaceholder]}>
           <Ionicons name="game-controller" size={20} color={Colors.textDim} />
@@ -174,11 +176,14 @@ export default function BannerSelector({
         style={[styles.screenshotItem, isSelected && styles.screenshotItemSelected]}
         onPress={() => setSelectedScreenshot(item)}
         activeOpacity={0.8}
+        accessibilityLabel={`Screenshot ${index + 1}${isCurrent ? ', current banner' : ''}${isSelected ? ', selected' : ''}`}
+        accessibilityRole="button"
       >
         <Image
           source={{ uri: item.url }}
           style={styles.screenshotImage}
           resizeMode="cover"
+          accessibilityLabel={`${selectedGame?.name || 'Game'} screenshot ${index + 1}`}
         />
         {isCurrent && (
           <View style={styles.currentBadge}>
@@ -209,11 +214,11 @@ export default function BannerSelector({
           {/* Header */}
           <View style={styles.header}>
             {step === 'screenshots' ? (
-              <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
+              <TouchableOpacity onPress={handleBack} style={styles.headerButton} accessibilityLabel="Go back" accessibilityRole="button">
                 <Ionicons name="arrow-back" size={24} color={Colors.text} />
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity onPress={handleClose} style={styles.headerButton}>
+              <TouchableOpacity onPress={handleClose} style={styles.headerButton} accessibilityLabel="Close" accessibilityRole="button">
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             )}
@@ -230,6 +235,8 @@ export default function BannerSelector({
                   styles.confirmButton,
                   (!selectedScreenshot || isLoading) && styles.confirmButtonDisabled,
                 ]}
+                accessibilityLabel="Save selected banner"
+                accessibilityRole="button"
               >
                 {isLoading ? (
                   <LoadingSpinner size="small" color={Colors.text} />
@@ -260,7 +267,7 @@ export default function BannerSelector({
                     autoFocus
                   />
                   {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
                       <Ionicons name="close-circle" size={18} color={Colors.textDim} />
                     </TouchableOpacity>
                   )}
@@ -310,7 +317,7 @@ export default function BannerSelector({
                 <View style={styles.centered}>
                   <Ionicons name="images-outline" size={48} color={Colors.textDim} />
                   <Text style={styles.emptyText}>{screenshotError}</Text>
-                  <TouchableOpacity style={styles.retryButton} onPress={handleBack}>
+                  <TouchableOpacity style={styles.retryButton} onPress={handleBack} accessibilityLabel="Try another game" accessibilityRole="button">
                     <Text style={styles.retryButtonText}>Try another game</Text>
                   </TouchableOpacity>
                 </View>
@@ -507,7 +514,7 @@ const styles = StyleSheet.create({
   },
   selectedOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: Colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },

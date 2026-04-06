@@ -135,6 +135,9 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
         onPress={() => handleToggleList(item.id)}
         disabled={isLoadingItem}
         activeOpacity={0.7}
+        accessibilityLabel={`${isInList ? 'Remove from' : 'Add to'} ${item.title}`}
+        accessibilityRole="button"
+        accessibilityState={{ selected: isInList }}
       >
         <View style={styles.listInfo}>
           <View style={styles.listTitleRow}>
@@ -178,11 +181,12 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
         animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={onClose}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
@@ -214,7 +218,7 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
 
           {/* Create New List Button */}
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.createButton} onPress={handleCreateList}>
+            <TouchableOpacity style={styles.createButton} onPress={handleCreateList} accessibilityLabel="Create new list" accessibilityRole="button">
               <Ionicons name="add" size={20} color={Colors.background} />
               <Text style={styles.createButtonText}>Add to a new list</Text>
             </TouchableOpacity>

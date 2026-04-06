@@ -1,7 +1,7 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
 import { AntDesign } from '@expo/vector-icons'
-import { Colors } from '../constants/colors'
+import { Colors, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 
 interface StreakBadgeProps {
@@ -14,15 +14,15 @@ export default function StreakBadge({ streak, size = 'medium' }: StreakBadgeProp
   if (streak <= 0) return null
 
   const sizeConfig = {
-    small: { iconSize: 14, fontSize: 12, gap: 2 },
-    medium: { iconSize: 18, fontSize: 14, gap: 4 },
-    large: { iconSize: 24, fontSize: 18, gap: 6 },
+    small: { iconSize: 14, fontSize: FontSize.xs, gap: 2 },
+    medium: { iconSize: 18, fontSize: FontSize.sm, gap: 4 },
+    large: { iconSize: 24, fontSize: FontSize.lg, gap: 6 },
   }
 
   const config = sizeConfig[size]
 
   return (
-    <View style={[styles.container, { gap: config.gap }]}>
+    <View style={[styles.container, { gap: config.gap }]} accessibilityLabel={`${streak} day streak`}>
       <AntDesign name="fire" size={config.iconSize} color={Colors.fire} />
       <Text style={[styles.text, { fontSize: config.fontSize }]}>{streak}</Text>
     </View>

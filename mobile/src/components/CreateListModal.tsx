@@ -41,6 +41,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isPublic, setIsPublic] = useState(true)
+  const [isRanked, setIsRanked] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,6 +64,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
       setTitle('')
       setDescription('')
       setIsPublic(true)
+      setIsRanked(false)
       setError(null)
       setSearchQuery('')
       setSearchResults([])
@@ -178,7 +180,8 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
       user.id,
       title.trim(),
       description.trim() || undefined,
-      isPublic
+      isPublic,
+      isRanked
     )
 
     if (createError || !newList) {
@@ -214,11 +217,12 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
             <Ionicons name="close" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>New List</Text>
@@ -226,6 +230,8 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
             onPress={handleCreate}
             disabled={!canCreate || isCreating}
             style={[styles.createButton, (!canCreate || isCreating) && styles.createButtonDisabled]}
+            accessibilityLabel="Create list"
+            accessibilityRole="button"
           >
             {isCreating ? (
               <LoadingSpinner size="small" color={Colors.background} />
@@ -252,6 +258,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
               value={title}
               onChangeText={setTitle}
               maxLength={100}
+              accessibilityLabel="List title"
             />
           </View>
 
@@ -268,14 +275,18 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
               numberOfLines={2}
               maxLength={500}
               textAlignVertical="top"
+              accessibilityLabel="List description"
             />
           </View>
 
           {/* Public/Private Toggle */}
           <TouchableOpacity
-            style={styles.toggleRow}
+            style={[styles.toggleRow, { marginBottom: Spacing.sm }]}
             onPress={() => setIsPublic(!isPublic)}
             activeOpacity={0.7}
+            accessibilityLabel="Make list public"
+            accessibilityRole="button"
+            accessibilityState={{ checked: isPublic }}
           >
             <View style={styles.toggleInfo}>
               <Ionicons
@@ -292,12 +303,42 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
             </View>
           </TouchableOpacity>
 
+          {/* Ranked Toggle */}
+          <TouchableOpacity
+            style={styles.toggleRow}
+            onPress={() => setIsRanked(!isRanked)}
+            activeOpacity={0.7}
+            accessibilityLabel="Make list ranked"
+            accessibilityRole="button"
+            accessibilityState={{ checked: isRanked }}
+          >
+            <View style={styles.toggleInfo}>
+              <Ionicons
+                name={isRanked ? 'podium' : 'podium-outline'}
+                size={20}
+                color={Colors.text}
+              />
+              <Text style={styles.toggleLabel}>Ranked</Text>
+            </View>
+            <View style={[styles.toggleSwitch, isRanked && styles.toggleSwitchActive]}>
+              <View style={[styles.toggleKnob, isRanked && styles.toggleKnobActive]} />
+            </View>
+          </TouchableOpacity>
+
           {/* Selected Games Preview */}
           {selectedGames.length > 0 && (
             <View style={styles.selectedSection}>
-              <Text style={styles.sectionLabel}>
-                Selected ({selectedGames.length})
-              </Text>
+              <View style={styles.selectedHeader}>
+                <Text style={[styles.sectionLabel, { marginBottom: 0 }]}>
+                  Selected ({selectedGames.length})
+                </Text>
+                {isRanked && (
+                  <View style={styles.rankedBadge}>
+                    <Ionicons name="podium" size={11} color={Colors.textMuted} />
+                    <Text style={styles.rankedBadgeText}>Ranked</Text>
+                  </View>
+                )}
+              </View>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -309,11 +350,14 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                     key={game.id}
                     style={styles.selectedGame}
                     onPress={() => toggleGameSelection(game)}
+                    accessibilityLabel={`Remove ${game.name} from selection`}
+                    accessibilityRole="button"
                   >
                     {game.cover_url ? (
                       <Image
                         source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') }}
                         style={styles.selectedCover}
+                        accessibilityLabel={`${game.name} cover art`}
                       />
                     ) : (
                       <View style={[styles.selectedCover, styles.coverPlaceholder]}>
@@ -341,9 +385,10 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
+                accessibilityLabel="Search for games to add to list"
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSearchDropdown(false); }}>
+                <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSearchDropdown(false); }} accessibilityLabel="Clear search" accessibilityRole="button">
                   <Ionicons name="close-circle" size={18} color={Colors.textDim} />
                 </TouchableOpacity>
               )}
@@ -366,11 +411,15 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                         key={game.id}
                         style={[styles.searchResult, selected && styles.searchResultSelected]}
                         onPress={() => handleSearchResultPress(game)}
+                        accessibilityLabel={`${selected ? 'Deselect' : 'Select'} ${game.name}`}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
                       >
                         {coverUrl ? (
                           <Image
                             source={{ uri: getIGDBImageUrl(coverUrl, 'thumb') }}
                             style={styles.searchResultCover}
+                            accessibilityLabel={`${game.name} cover art`}
                           />
                         ) : (
                           <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
@@ -409,11 +458,15 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                       key={game.id}
                       style={styles.libraryGame}
                       onPress={() => toggleGameSelection(game)}
+                      accessibilityLabel={`${selected ? 'Deselect' : 'Select'} ${game.name}`}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
                     >
                       {game.cover_url ? (
                         <Image
                           source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') }}
                           style={[styles.libraryCover, selected && styles.libraryCoverSelected]}
+                          accessibilityLabel={`${game.name} cover art`}
                         />
                       ) : (
                         <View style={[styles.libraryCover, styles.coverPlaceholder, selected && styles.libraryCoverSelected]}>
@@ -565,6 +618,26 @@ const styles = StyleSheet.create({
   selectedSection: {
     marginBottom: Spacing.lg,
   },
+  selectedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  rankedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  rankedBadgeText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 11,
+    color: Colors.textMuted,
+  },
   sectionLabel: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
@@ -576,10 +649,12 @@ const styles = StyleSheet.create({
   },
   selectedContent: {
     paddingHorizontal: Spacing.lg,
+    paddingTop: 6,
     gap: Spacing.sm,
   },
   selectedGame: {
     position: 'relative',
+    overflow: 'visible',
   },
   selectedCover: {
     width: 60,
@@ -691,7 +766,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',

@@ -87,6 +87,84 @@ export function useUserLists(userId: string | undefined) {
   return { lists, isLoading, error, refetch: fetchLists }
 }
 
+// Fetch all public user lists (community lists)
+export function usePublicLists() {
+  const [lists, setLists] = useState<GameListWithUser[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchLists = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const { data: listsData, error: listsError } = await supabase
+        .from('lists')
+        .select(`
+          *,
+          profiles!lists_user_id_fkey (id, username, display_name, avatar_url)
+        `)
+        .eq('is_public', true)
+        .order('updated_at', { ascending: false })
+        .limit(50)
+
+      if (listsError) throw listsError
+
+      const listsWithDetails = await Promise.all(
+        (listsData || []).map(async (list: any) => {
+          const { count } = await supabase
+            .from('list_items')
+            .select('id', { count: 'exact', head: true })
+            .eq('list_id', list.id)
+
+          const { data: previewItems } = await supabase
+            .from('list_items')
+            .select('game_id, games_cache!list_items_game_id_fkey (id, name, cover_url)')
+            .eq('list_id', list.id)
+            .order('position', { ascending: true })
+            .limit(15)
+
+          const preview_games = (previewItems || [])
+            .map((item: any) => item.games_cache)
+            .filter(Boolean)
+
+          return {
+            id: list.id,
+            user_id: list.user_id,
+            title: list.title,
+            description: list.description,
+            is_public: list.is_public,
+            is_ranked: list.is_ranked ?? false,
+            created_at: list.created_at,
+            updated_at: list.updated_at,
+            user: {
+              id: list.profiles.id,
+              username: list.profiles.username,
+              display_name: list.profiles.display_name,
+              avatar_url: list.profiles.avatar_url,
+            },
+            item_count: count || 0,
+            preview_games,
+          }
+        })
+      ) as unknown as GameListWithUser[]
+
+      // Only show lists that have games
+      setLists(listsWithDetails.filter(l => (l.item_count || 0) > 0))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch lists')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchLists()
+  }, [fetchLists])
+
+  return { lists, isLoading, error, refetch: fetchLists }
+}
+
 // Fetch a single list with all its games
 export function useListDetail(listId: string | undefined) {
   const [list, setList] = useState<GameListWithItems | null>(null)
@@ -162,17 +240,21 @@ export async function createList(
   userId: string,
   title: string,
   description?: string,
-  isPublic: boolean = true
+  isPublic: boolean = true,
+  isRanked: boolean = false
 ): Promise<{ data: GameList | null; error: string | null }> {
   try {
+    const insertData: Record<string, unknown> = {
+      user_id: userId,
+      title: title.trim(),
+      description: description?.trim() || null,
+      is_public: isPublic,
+    }
+    if (isRanked) insertData.is_ranked = true
+
     const { data, error } = await supabase
       .from('lists')
-      .insert({
-        user_id: userId,
-        title: title.trim(),
-        description: description?.trim() || null,
-        is_public: isPublic,
-      })
+      .insert(insertData)
       .select()
       .single()
 

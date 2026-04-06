@@ -51,6 +51,8 @@ export default function WebViewScreen() {
           style={styles.headerButton}
           onPress={() => navigation.goBack()}
           haptic="light"
+          accessibilityLabel="Close"
+          accessibilityRole="button"
         >
           <Ionicons name="close" size={24} color={Colors.text} />
         </PressableScale>
@@ -66,6 +68,8 @@ export default function WebViewScreen() {
             style={styles.headerButton}
             onPress={handleShare}
             haptic="light"
+            accessibilityLabel="Share"
+            accessibilityRole="button"
           >
             <Ionicons name="share-outline" size={22} color={Colors.text} />
           </PressableScale>
@@ -73,6 +77,8 @@ export default function WebViewScreen() {
             style={styles.headerButton}
             onPress={handleOpenInBrowser}
             haptic="light"
+            accessibilityLabel="Open in browser"
+            accessibilityRole="button"
           >
             <Ionicons name="open-outline" size={22} color={Colors.text} />
           </PressableScale>
@@ -116,6 +122,8 @@ export default function WebViewScreen() {
           onPress={() => webViewRef.current?.goBack()}
           haptic="light"
           disabled={!canGoBack}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <Ionicons
             name="chevron-back"
@@ -129,6 +137,8 @@ export default function WebViewScreen() {
           onPress={() => webViewRef.current?.goForward()}
           haptic="light"
           disabled={!canGoForward}
+          accessibilityLabel="Go forward"
+          accessibilityRole="button"
         >
           <Ionicons
             name="chevron-forward"
@@ -141,6 +151,8 @@ export default function WebViewScreen() {
           style={styles.navButton}
           onPress={() => webViewRef.current?.reload()}
           haptic="light"
+          accessibilityLabel="Reload page"
+          accessibilityRole="button"
         >
           <Ionicons name="reload" size={22} color={Colors.text} />
         </PressableScale>

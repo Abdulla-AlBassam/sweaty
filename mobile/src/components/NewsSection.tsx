@@ -68,13 +68,14 @@ interface NewsCardProps {
 
 function NewsCard({ article, onPress }: NewsCardProps) {
   return (
-    <PressableScale onPress={onPress} haptic="light" scale={0.95}>
+    <PressableScale onPress={onPress} haptic="light" scale={0.95} accessibilityLabel={decodeHtmlEntities(article.title) + ' from ' + article.source} accessibilityRole="button" accessibilityHint="Opens news article">
       <View style={styles.card}>
         {article.thumbnail ? (
           <Image
             source={{ uri: article.thumbnail }}
             style={styles.cardImage}
             resizeMode="cover"
+            accessibilityLabel={decodeHtmlEntities(article.title) + ' thumbnail'}
           />
         ) : (
           <View style={[styles.cardImage, styles.cardImagePlaceholder]} />
@@ -184,7 +185,7 @@ export default function NewsSection({ refreshKey = 0, showHeader = true }: NewsS
             style={styles.title}
             intensity="subtle"
           />
-          <PressableScale onPress={handleSeeAll} haptic="light">
+          <PressableScale onPress={handleSeeAll} haptic="light" accessibilityLabel="See all gaming news" accessibilityRole="button">
             <Text style={styles.seeAll}>See All</Text>
           </PressableScale>
         </View>
@@ -240,6 +241,8 @@ const styles = StyleSheet.create({
     color: Colors.text,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
+    flex: 1,
+    marginRight: Spacing.sm,
   },
   seeAll: {
     fontFamily: Fonts.mono,
@@ -247,6 +250,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,          // Gray instead of cyan
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    flexShrink: 0,
   },
   scrollContent: {
     paddingHorizontal: Spacing.screenPadding,
@@ -292,13 +296,13 @@ const styles = StyleSheet.create({
   },
   cardSource: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: FontSize.xxs,
     color: Colors.cyan,
     textTransform: 'uppercase',
   },
   cardTime: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: FontSize.xxs,
     color: Colors.textMuted,
   },
   errorContainer: {

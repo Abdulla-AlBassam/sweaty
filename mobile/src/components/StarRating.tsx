@@ -55,7 +55,7 @@ export default function StarRating({
     const starsToShow = hasHalf ? fullStars + 1 : fullStars
 
     return (
-      <View style={styles.container}>
+      <View style={styles.container} accessibilityLabel={rating + ' out of 5 stars'} accessibilityRole="text">
         {Array.from({ length: starsToShow }, (_, i) => i + 1).map((starNumber) => (
           <StarIcon
             key={starNumber}
@@ -70,7 +70,7 @@ export default function StarRating({
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityLabel={displayRating + ' out of 5 stars'} accessibilityRole="text">
       {[1, 2, 3, 4, 5].map((starNumber) => (
         <StarIcon
           key={starNumber}
@@ -95,7 +95,7 @@ export function CompactStarRating({
   }
 
   return (
-    <View style={styles.compactContainer}>
+    <View style={styles.compactContainer} accessibilityLabel={rating + ' out of 5 stars'} accessibilityRole="text">
       <Ionicons name="star" size={size} color={color} />
     </View>
   )

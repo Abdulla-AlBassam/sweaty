@@ -183,10 +183,12 @@ export default function FollowersModal({
         style={styles.userRow}
         onPress={() => handleUserPress(item)}
         activeOpacity={0.7}
+        accessibilityLabel={`View ${item.display_name || item.username} profile`}
+        accessibilityRole="button"
       >
         {/* Avatar */}
         {item.avatar_url ? (
-          <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+          <Image source={{ uri: item.avatar_url }} style={styles.avatar} accessibilityLabel={`${item.display_name || item.username} avatar`} />
         ) : (
           <View style={[styles.avatar, styles.avatarPlaceholder]}>
             <Text style={styles.avatarText}>
@@ -211,6 +213,8 @@ export default function FollowersModal({
             style={[styles.followButton, isFollowing && styles.followingButton]}
             onPress={() => handleFollow(item.id)}
             disabled={isLoadingThis}
+            accessibilityLabel={isFollowing ? `Unfollow ${item.display_name || item.username}` : `Follow ${item.display_name || item.username}`}
+            accessibilityRole="button"
           >
             {isLoadingThis ? (
               <LoadingSpinner
@@ -239,6 +243,7 @@ export default function FollowersModal({
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <SafeAreaView style={styles.container} edges={['top']}>
         {/* Header */}
@@ -246,7 +251,7 @@ export default function FollowersModal({
           <Text style={styles.headerTitle}>
             {type === 'followers' ? 'followers' : 'following'}
           </Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
             <Ionicons name="close" size={24} color={Colors.text} />
           </TouchableOpacity>
         </View>

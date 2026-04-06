@@ -75,9 +75,12 @@ export default function HorizontalGameList({
             style={styles.gameItem}
             onPress={() => onGamePress(game)}
             activeOpacity={0.7}
+            accessibilityLabel={game.name}
+            accessibilityRole="button"
+            accessibilityHint="Opens game details"
           >
             {coverUrl ? (
-              <Image source={{ uri: coverUrl }} style={styles.cover} />
+              <Image source={{ uri: coverUrl }} style={styles.cover} accessibilityLabel={game.name + ' cover art'} />
             ) : (
               <View style={[styles.cover, styles.coverPlaceholder]}>
                 <SweatDropIcon size={24} variant="static" />
@@ -103,6 +106,8 @@ const styles = StyleSheet.create({
     height: COVER_HEIGHT,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   coverPlaceholder: {
     alignItems: 'center',

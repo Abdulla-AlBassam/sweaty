@@ -75,19 +75,11 @@ export default function StackedAvatars({
                     borderRadius: size / 2,
                   },
                 ]}
+                accessibilityLabel={user.username + ' avatar'}
               />
             ) : (
-              <View
-                style={[
-                  styles.avatarPlaceholder,
-                  {
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                  },
-                ]}
-              >
-                <Text style={[styles.placeholderText, { fontSize: size * 0.45 }]}>
+              <View style={styles.avatarPlaceholder}>
+                <Text style={[styles.placeholderText, { fontSize: size * 0.45, lineHeight: size * 0.5 }]}>
                   {user.username[0].toUpperCase()}
                 </Text>
               </View>
@@ -114,12 +106,16 @@ const styles = StyleSheet.create({
     borderColor: Colors.surface,
     backgroundColor: Colors.surface,
     overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   avatarImage: {
     width: '100%',
     height: '100%',
   },
   avatarPlaceholder: {
+    width: '100%',
+    height: '100%',
     backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -127,6 +123,8 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontFamily: Fonts.bodyBold,
     color: Colors.accent,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   extraBadge: {
     backgroundColor: Colors.surfaceLight,

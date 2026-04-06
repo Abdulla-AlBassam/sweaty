@@ -20,6 +20,7 @@ import PlayStationImportScreen from '../screens/PlayStationImportScreen'
 import NewsScreen from '../screens/NewsScreen'
 import WatchScreen from '../screens/WatchScreen'
 import WebViewScreen from '../screens/WebViewScreen'
+import AllReviewsScreen from '../screens/AllReviewsScreen'
 import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
 
@@ -42,6 +43,7 @@ export type MainStackParamList = {
     games?: Array<{ id: number; name: string; coverUrl: string | null }>
   }
   ListDetail: { listId: string }
+  AllReviews: { gameId: number; gameName: string }
   AIRecommend: undefined
   PlatformConnections: undefined
   PlayStationImport: undefined
@@ -103,6 +105,13 @@ function MainNavigator() {
       <MainStack.Screen
         name="CuratedListDetail"
         component={CuratedListDetailScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="AllReviews"
+        component={AllReviewsScreen}
         options={{
           animation: 'slide_from_right',
         }}

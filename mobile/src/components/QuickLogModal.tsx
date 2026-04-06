@@ -18,7 +18,7 @@ import {
 import SweatDropIcon from './SweatDropIcon'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors, Spacing, FontSize, BorderRadius, Glow } from '../constants/colors'
+import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import LogGameModal from './LogGameModal'
@@ -65,7 +65,7 @@ function GlitchResultButton({ onPress }: { onPress: () => void }) {
   }, [scaleAnim])
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8} accessibilityLabel="Add game to log" accessibilityRole="button">
       <Animated.View style={[styles.addButtonContainer, { transform: [{ scale: scaleAnim }] }]}>
         {/* Cyan layer */}
         <View
@@ -308,9 +308,11 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
         style={styles.gameItem}
         onPress={() => handleGameSelect(item)}
         activeOpacity={0.7}
+        accessibilityLabel={item.name}
+        accessibilityRole="button"
       >
         {coverUrl ? (
-          <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+          <Image source={{ uri: coverUrl }} style={styles.gameCover} accessibilityLabel={`${item.name} cover art`} />
         ) : (
           <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
             <SweatDropIcon size={24} variant="static" />
@@ -355,6 +357,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
             paddingBottom: insets.bottom,
           },
         ]}
+        accessibilityViewIsModal={true}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -417,7 +420,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
               {/* Main white title */}
               <Text style={styles.headerTitle}>quick log</Text>
             </View>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
               <Ionicons name="close" size={24} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -482,9 +485,10 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
                 autoCorrect={false}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
+                accessibilityLabel="Search for a game to log"
               />
               {query.length > 0 && (
-                <TouchableOpacity onPress={() => setQuery('')} style={styles.clearButton}>
+                <TouchableOpacity onPress={() => setQuery('')} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button">
                   <Ionicons name="close-circle" size={20} color={Colors.textDim} />
                 </TouchableOpacity>
               )}

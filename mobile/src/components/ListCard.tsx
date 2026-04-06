@@ -46,13 +46,13 @@ export default function ListCard({ list, onPress, showUser = false }: ListCardPr
     : COVER_WIDTH
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
+    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8} accessibilityLabel={list.title + ' list'} accessibilityRole="button">
       {/* Header: Avatar + Username • Title OR just Title */}
       <View style={styles.header}>
         {showUser && list.user ? (
           <View style={styles.userHeader}>
             {list.user.avatar_url ? (
-              <Image source={{ uri: list.user.avatar_url }} style={styles.avatar} />
+              <Image source={{ uri: list.user.avatar_url }} style={styles.avatar} accessibilityLabel={(list.user.display_name || list.user.username) + ' avatar'} />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <Text style={styles.avatarText}>
@@ -99,6 +99,7 @@ export default function ListCard({ list, onPress, showUser = false }: ListCardPr
             <Image
               source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') || undefined }}
               style={styles.coverImage}
+              accessibilityLabel={game.name + ' cover art'}
             />
           </View>
         ))}
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     fontFamily: Fonts.bodyBold,
-    fontSize: 10,
+    fontSize: FontSize.xxs,
     color: Colors.textMuted,
   },
   username: {

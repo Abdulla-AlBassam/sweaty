@@ -10,15 +10,15 @@ import { useNavigation, CommonActions } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
-import { CuratedListWithGames } from '../types'
-import GlitchText from './GlitchText'
+import { GameListWithUser } from '../types'
 import PressableScale from './PressableScale'
+import { Ionicons } from '@expo/vector-icons'
 
-interface CuratedListRowProps {
-  list: CuratedListWithGames
+interface UserListRowProps {
+  list: GameListWithUser
 }
 
-export default function CuratedListRow({ list }: CuratedListRowProps) {
+export default function UserListRow({ list }: UserListRowProps) {
   const navigation = useNavigation()
 
   const handleGamePress = (gameId: number) => {
@@ -30,36 +30,63 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
     )
   }
 
-  const handleSeeAll = () => {
+  const handleListPress = () => {
     navigation.dispatch(
       CommonActions.navigate({
-        name: 'CuratedListDetail',
-        params: {
-          listSlug: list.slug,
-          listTitle: list.title,
-          gameIds: list.game_ids,
-        },
+        name: 'ListDetail',
+        params: { listId: list.id },
       })
     )
   }
 
-  if (list.games.length === 0) return null
+  const handleUserPress = () => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'UserProfile',
+        params: { username: list.user.username },
+      })
+    )
+  }
+
+  const games = list.preview_games || []
+  if (games.length === 0) return null
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <GlitchText
-            text={list.title}
-            style={styles.title}
-            intensity="subtle"
-          />
+        <PressableScale
+          style={styles.headerLeft}
+          onPress={handleListPress}
+          haptic="light"
+          scale={0.98}
+          accessibilityLabel={list.title + ' list'}
+          accessibilityRole="button"
+          accessibilityHint="Opens list details"
+        >
+          <Text style={styles.title} numberOfLines={1}>{list.title}</Text>
           {list.description && (
             <Text style={styles.description} numberOfLines={1}>{list.description}</Text>
           )}
-        </View>
-        <PressableScale onPress={handleSeeAll} haptic="light" accessibilityLabel={'See all games in ' + list.title} accessibilityRole="button">
-          <Text style={styles.seeAll}>See All</Text>
+        </PressableScale>
+        <PressableScale
+          style={styles.userInfo}
+          onPress={handleUserPress}
+          haptic="light"
+          accessibilityLabel={'View ' + list.user.username + ' profile'}
+          accessibilityRole="button"
+        >
+          {list.user.avatar_url ? (
+            <Image
+              source={{ uri: list.user.avatar_url }}
+              style={styles.avatar}
+              accessibilityLabel={list.user.username + ' avatar'}
+            />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Ionicons name="person" size={10} color={Colors.textDim} />
+            </View>
+          )}
+          <Text style={styles.username} numberOfLines={1}>@{list.user.username}</Text>
         </PressableScale>
       </View>
       <ScrollView
@@ -67,9 +94,9 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {list.games.slice(0, 15).map((game, index) => (
+        {games.slice(0, 15).map((game, index) => (
           <PressableScale
-            key={`${list.slug}-${game.id}-${index}`}
+            key={`${list.id}-${game.id}-${index}`}
             style={styles.gameCard}
             onPress={() => handleGamePress(game.id)}
             haptic="light"
@@ -100,18 +127,24 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.xxl,            // 32px between sections
+    marginBottom: Spacing.xxl,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.md,
   },
   headerLeft: {
     flex: 1,
-    marginRight: Spacing.sm,
+    marginRight: Spacing.md,
+  },
+  title: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    lineHeight: 24,
   },
   description: {
     fontFamily: Fonts.body,
@@ -120,21 +153,30 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     lineHeight: 17,
   },
-  title: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
-    color: Colors.text,
-    lineHeight: 24,
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
-  seeAll: {
-    fontFamily: Fonts.bodyMedium,
+  avatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  avatarPlaceholder: {
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  username: {
+    fontFamily: Fonts.body,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
-    lineHeight: 17,
+    maxWidth: 100,
   },
   scrollContent: {
     paddingHorizontal: Spacing.screenPadding,
-    gap: Spacing.cardGap,                 // 12px gap between cards
+    gap: Spacing.cardGap,
   },
   gameCard: {
     width: 105,

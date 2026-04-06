@@ -187,7 +187,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         >
           <View style={styles.content}>
             {/* Logo */}
-            <Image source={sweatyLogo} style={styles.logo} resizeMode="contain" />
+            <Image source={sweatyLogo} style={styles.logo} resizeMode="contain" accessibilityLabel="Sweaty logo" />
             <Text style={styles.tagline}>Track your gaming journey</Text>
 
             {/* Error Message */}
@@ -210,6 +210,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                     onChangeText={setEmailOrUsername}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    accessibilityLabel="Email or username"
                   />
                 </View>
 
@@ -223,8 +224,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                     onChangeText={setPassword}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
+                    accessibilityLabel="Password"
                   />
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton}>
+                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeButton} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'} accessibilityRole="button">
                     <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color={Colors.textMuted} />
                   </TouchableOpacity>
                 </View>
@@ -233,6 +235,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                 <TouchableOpacity
                   style={styles.forgotPasswordButton}
                   onPress={() => setShowForgotPassword(true)}
+                  accessibilityLabel="Forgot password"
+                  accessibilityRole="button"
                 >
                   <Text style={styles.forgotPasswordText}>Forgot password?</Text>
                 </TouchableOpacity>
@@ -241,6 +245,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                   style={[styles.button, isLoading && styles.buttonDisabled]}
                   onPress={handleLogin}
                   disabled={isLoading}
+                  accessibilityLabel="Sign in"
+                  accessibilityRole="button"
                 >
                   {isLoading ? (
                     <LoadingSpinner size="small" color={Colors.background} />
@@ -261,6 +267,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                   style={[styles.googleButton, isGoogleLoading && styles.buttonDisabled]}
                   onPress={handleGoogleLogin}
                   disabled={isGoogleLoading}
+                  accessibilityLabel="Sign in with Google"
+                  accessibilityRole="button"
                 >
                   {isGoogleLoading ? (
                     <LoadingSpinner size="small" color={Colors.text} />
@@ -277,7 +285,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             {/* Sign Up Link */}
             <View style={styles.footer}>
               <Text style={styles.footerText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+              <TouchableOpacity onPress={() => navigation.navigate('Signup')} accessibilityLabel="Create an account" accessibilityRole="link">
                 <Text style={styles.footerLink}>Sign up</Text>
               </TouchableOpacity>
             </View>
@@ -309,6 +317,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
               autoCorrect={false}
               keyboardType="email-address"
               autoFocus
+              accessibilityLabel="Email for password reset"
             />
 
             <View style={styles.modalButtons}>
@@ -529,7 +538,7 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: Colors.overlayDark,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,

@@ -116,11 +116,15 @@ export default function CuratedListDetailScreen() {
       style={styles.gameCard}
       onPress={() => handleGamePress(item.id)}
       activeOpacity={0.7}
+      accessibilityLabel={item.name}
+      accessibilityRole="button"
+      accessibilityHint="Opens game details"
     >
       {item.cover_url ? (
         <Image
           source={{ uri: getIGDBImageUrl(item.cover_url, 'coverBig') }}
           style={styles.cover}
+          accessibilityLabel={`${item.name} cover art`}
         />
       ) : (
         <View style={[styles.cover, styles.placeholderCover]}>
@@ -139,6 +143,8 @@ export default function CuratedListDetailScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </TouchableOpacity>

@@ -40,10 +40,11 @@ export const Colors = {
   pinkGlow: 'rgba(45, 107, 74, 0.3)',  // Forest green glow
 
   // Text hierarchy — off-white primary to reduce halation on dark surfaces
+  // All values pass WCAG AA (4.5:1) on both background (#0A0A0A) and surface (#151515)
   text: '#E0E0E0',            // Primary text (soft off-white, reduces eye strain)
-  textSecondary: '#A1A1A1',   // Secondary text
-  textMuted: '#6B6B6B',       // Muted/tertiary text
-  textDim: '#5C5C5C',         // Disabled/very muted (was #4A4A4A — boosted for WCAG AA)
+  textSecondary: '#A1A1A1',   // Secondary text (~8:1 on background)
+  textMuted: '#8E8E8E',       // Muted/tertiary text (~6:1 on background, ~5.6:1 on surface)
+  textDim: '#808080',         // Disabled/very muted (~5:1 on background, ~4.6:1 on surface)
 
   // Pure white — use sparingly for high-emphasis moments (badges, active states)
   textBright: '#FFFFFF',      // Pure white (use only when contrast demands it)
@@ -52,6 +53,7 @@ export const Colors = {
   // Borders - Subtle definition
   border: '#222222',          // Standard border
   borderBright: '#333333',    // Emphasized border
+  borderSubtle: 'rgba(255, 255, 255, 0.06)', // Very subtle white border (game covers, cards)
   borderGlow: 'rgba(45, 107, 74, 0.15)',  // Subtle forest green tint
 
   // Status colors - Refined palette
@@ -71,14 +73,25 @@ export const Colors = {
   fire: '#FF8C00',                     // Orange for streak badge
 
   // Overlays
+  overlayLight: 'rgba(0, 0, 0, 0.4)', // Light overlay (banners, subtle tints)
   overlay: 'rgba(0, 0, 0, 0.5)',      // Standard modal overlay
   overlayDark: 'rgba(0, 0, 0, 0.8)',  // Heavy overlay
 
-  // Special effects
-  scanLine: 'rgba(0, 0, 0, 0.03)',    // Very subtle scan lines
-  vignette: 'rgba(0, 0, 0, 0.6)',     // Softer vignette
-  glitch: '#3D8B63',                   // Forest green for effects
-  glitchCyan: '#5A5A5A',              // Gray for split effect
+  // Platform brand colors
+  platformPlayStation: '#006FCD',
+  platformXbox: '#107C10',
+  platformPC: '#FF6600',
+  platformNintendo: '#E60012',
+
+  // OpenCritic tier colors
+  openCriticMighty: '#66CC33',
+  openCriticStrong: '#4A90D9',
+  openCriticFair: '#FFCC33',
+  openCriticWeak: '#FF6633',
+
+  // External brand
+  twitch: '#9146FF',
+
 }
 
 // Spacing values - 8px grid system
@@ -117,6 +130,7 @@ export const BorderRadius = {
 
 // Font sizes
 export const FontSize = {
+  xxs: 10,
   xs: 12,
   sm: 14,
   md: 16,
@@ -126,60 +140,3 @@ export const FontSize = {
   xxxl: 32,
 }
 
-// Glow/Shadow presets - Refined and subtle
-export const Glow = {
-  // Primary forest green glow for interactive elements
-  accent: {
-    shadowColor: '#2D6B4A',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  // Gray glow for links/interactive text
-  cyan: {
-    shadowColor: '#8A8A8A',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  // Gold glow for ratings/achievements
-  gold: {
-    shadowColor: '#FFD700',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  // Subtle glow for cards and surfaces
-  subtle: {
-    shadowColor: '#2D6B4A',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  // Text glow - very subtle
-  text: {
-    textShadowColor: 'rgba(45, 107, 74, 0.5)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
-  },
-  // Effect glow for special effects
-  glitch: {
-    shadowColor: '#3D8B63',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  // Forest green glow for plus button and accents
-  pink: {
-    shadowColor: '#2D6B4A',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-}

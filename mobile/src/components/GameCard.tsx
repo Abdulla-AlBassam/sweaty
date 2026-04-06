@@ -44,6 +44,9 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
       onPress={handlePress}
       haptic="light"
       scale={0.9}
+      accessibilityLabel={game.name}
+      accessibilityRole="button"
+      accessibilityHint="Opens game details"
     >
       {showPlaceholder ? (
         <View style={[styles.placeholder, { width, height }]}>
@@ -55,6 +58,7 @@ export default function GameCard({ game, onPress, size = 'medium' }: GameCardPro
             source={{ uri: imageUrl }}
             style={[styles.cover, { width, height }]}
             resizeMode="cover"
+            accessibilityLabel={game.name + ' cover art'}
             onLoad={() => setImageLoading(false)}
             onError={() => {
               setImageError(true)
@@ -82,6 +86,8 @@ const styles = StyleSheet.create({
   cover: {
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -95,6 +101,8 @@ const styles = StyleSheet.create({
   placeholder: {
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
   },

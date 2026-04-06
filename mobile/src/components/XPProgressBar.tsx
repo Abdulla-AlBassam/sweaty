@@ -15,7 +15,7 @@ export default function XPProgressBar({ levelInfo }: XPProgressBarProps) {
   const badgeColor = getBadgeColor(level)
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} accessibilityLabel={isMaxLevel ? `${rank}, max level` : `${rank}, ${currentXP.toLocaleString()} of ${xpForNextLevel.toLocaleString()} XP`} accessibilityRole="progressbar">
       {/* Rank + XP */}
       <View style={styles.row}>
         <Text style={styles.rank}>{rank}</Text>
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
   },
   xpText: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: FontSize.xxs,
     color: Colors.textDim,
   },
   track: {

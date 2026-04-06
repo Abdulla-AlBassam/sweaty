@@ -7,39 +7,38 @@ interface LoadingSpinnerProps {
 }
 
 /**
- * Loading spinner using SweatDropIcon with bounce + pulse animation
- * Features RGB chromatic aberration glitch effect
+ * Loading spinner using SweatDropIcon with gentle pulse animation
  */
 export default function LoadingSpinner({
   size = 'small',
 }: LoadingSpinnerProps) {
   const iconSize = size === 'small' ? 22 : 48
-  const bounceY = useRef(new Animated.Value(0)).current
+  const opacity = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
-    const bounce = Animated.loop(
+    const pulse = Animated.loop(
       Animated.sequence([
-        Animated.timing(bounceY, {
-          toValue: -6,
-          duration: 500,
+        Animated.timing(opacity, {
+          toValue: 0.4,
+          duration: 800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
-        Animated.timing(bounceY, {
-          toValue: 0,
-          duration: 500,
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 800,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }),
       ])
     )
-    bounce.start()
-    return () => bounce.stop()
-  }, [bounceY])
+    pulse.start()
+    return () => pulse.stop()
+  }, [opacity])
 
   return (
-    <View style={styles.container}>
-      <Animated.View style={{ transform: [{ translateY: bounceY }] }}>
+    <View style={styles.container} accessibilityLabel="Loading">
+      <Animated.View style={{ opacity }}>
         <SweatDropIcon size={iconSize} variant="loading" />
       </Animated.View>
     </View>

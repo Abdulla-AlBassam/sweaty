@@ -431,6 +431,8 @@ export default function AdminCuratedListsScreen() {
           style={[styles.reorderButton, index === 0 && styles.reorderButtonDisabled]}
           onPress={() => handleMoveList(item, 'up')}
           disabled={index === 0}
+          accessibilityLabel={`Move ${item.title} up`}
+          accessibilityRole="button"
         >
           <Ionicons name="chevron-up" size={18} color={index === 0 ? Colors.textDim : Colors.text} />
         </TouchableOpacity>
@@ -438,6 +440,8 @@ export default function AdminCuratedListsScreen() {
           style={[styles.reorderButton, index === lists.length - 1 && styles.reorderButtonDisabled]}
           onPress={() => handleMoveList(item, 'down')}
           disabled={index === lists.length - 1}
+          accessibilityLabel={`Move ${item.title} down`}
+          accessibilityRole="button"
         >
           <Ionicons name="chevron-down" size={18} color={index === lists.length - 1 ? Colors.textDim : Colors.text} />
         </TouchableOpacity>
@@ -446,6 +450,8 @@ export default function AdminCuratedListsScreen() {
       <TouchableOpacity
         style={styles.listCardContent}
         onPress={() => handleSelectList(item)}
+        accessibilityLabel={`Edit ${item.title}`}
+        accessibilityRole="button"
       >
         <View style={styles.listInfo}>
           <Text style={styles.listTitle}>{item.title}</Text>
@@ -462,6 +468,8 @@ export default function AdminCuratedListsScreen() {
         <TouchableOpacity
           style={[styles.actionButton, !item.is_active && styles.actionButtonInactive]}
           onPress={() => handleToggleList(item)}
+          accessibilityLabel={`${item.is_active ? 'Hide' : 'Show'} ${item.title}`}
+          accessibilityRole="button"
         >
           <Ionicons
             name={item.is_active ? 'eye' : 'eye-off'}
@@ -472,6 +480,8 @@ export default function AdminCuratedListsScreen() {
         <TouchableOpacity
           style={styles.actionButton}
           onPress={() => handleDeleteList(item)}
+          accessibilityLabel={`Delete ${item.title}`}
+          accessibilityRole="button"
         >
           <Ionicons name="trash-outline" size={16} color={Colors.error} />
         </TouchableOpacity>
@@ -483,7 +493,7 @@ export default function AdminCuratedListsScreen() {
   const renderGameItem = ({ item }: { item: SearchGame }) => (
     <View style={styles.gameItem}>
       {item.coverUrl ? (
-        <Image source={{ uri: item.coverUrl }} style={styles.gameCover} />
+        <Image source={{ uri: item.coverUrl }} style={styles.gameCover} accessibilityLabel={`${item.name} cover`} />
       ) : (
         <View style={[styles.gameCover, styles.coverPlaceholder]}>
           <Ionicons name="game-controller" size={16} color={Colors.textDim} />
@@ -493,6 +503,8 @@ export default function AdminCuratedListsScreen() {
       <TouchableOpacity
         style={styles.removeButton}
         onPress={() => handleRemoveGame(item)}
+        accessibilityLabel={`Remove ${item.name}`}
+        accessibilityRole="button"
       >
         <Ionicons name="close-circle" size={24} color={Colors.error} />
       </TouchableOpacity>
@@ -505,9 +517,11 @@ export default function AdminCuratedListsScreen() {
       style={styles.searchResult}
       onPress={() => handleAddGame(item)}
       disabled={isAdding}
+      accessibilityLabel={`Add ${item.name} to list`}
+      accessibilityRole="button"
     >
       {item.coverUrl ? (
-        <Image source={{ uri: item.coverUrl }} style={styles.searchCover} />
+        <Image source={{ uri: item.coverUrl }} style={styles.searchCover} accessibilityLabel={`${item.name} cover`} />
       ) : (
         <View style={[styles.searchCover, styles.coverPlaceholder]}>
           <Ionicons name="game-controller" size={16} color={Colors.textDim} />
@@ -542,7 +556,7 @@ export default function AdminCuratedListsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
@@ -554,6 +568,8 @@ export default function AdminCuratedListsScreen() {
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setShowCreateModal(true)}
+            accessibilityLabel="Create new list"
+            accessibilityRole="button"
           >
             <Ionicons name="add" size={24} color={Colors.accent} />
           </TouchableOpacity>
@@ -563,12 +579,16 @@ export default function AdminCuratedListsScreen() {
             <TouchableOpacity
               style={styles.headerButton}
               onPress={handleEditListMeta}
+              accessibilityLabel="Edit list details"
+              accessibilityRole="button"
             >
               <Ionicons name="pencil" size={20} color={Colors.text} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.headerButton}
               onPress={() => setMode('search')}
+              accessibilityLabel="Add game to list"
+              accessibilityRole="button"
             >
               <Ionicons name="add" size={24} color={Colors.accent} />
             </TouchableOpacity>
@@ -589,6 +609,8 @@ export default function AdminCuratedListsScreen() {
             <TouchableOpacity
               style={styles.emptyButton}
               onPress={() => setShowCreateModal(true)}
+              accessibilityLabel="Create first list"
+              accessibilityRole="button"
             >
               <Text style={styles.emptyButtonText}>Create First List</Text>
             </TouchableOpacity>
@@ -624,6 +646,8 @@ export default function AdminCuratedListsScreen() {
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={() => setMode('search')}
+                accessibilityLabel="Add first game"
+                accessibilityRole="button"
               >
                 <Text style={styles.emptyButtonText}>Add First Game</Text>
               </TouchableOpacity>
@@ -653,9 +677,10 @@ export default function AdminCuratedListsScreen() {
               onSubmitEditing={handleSearch}
               returnKeyType="search"
               autoFocus
+              accessibilityLabel="Search for a game"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
                 <Ionicons name="close-circle" size={18} color={Colors.textDim} />
               </TouchableOpacity>
             )}
@@ -690,12 +715,13 @@ export default function AdminCuratedListsScreen() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowCreateModal(false)}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>CREATE NEW LIST</Text>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+              <TouchableOpacity onPress={() => setShowCreateModal(false)} accessibilityLabel="Close" accessibilityRole="button">
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
@@ -708,6 +734,7 @@ export default function AdminCuratedListsScreen() {
                 placeholderTextColor={Colors.textDim}
                 value={newListTitle}
                 onChangeText={setNewListTitle}
+                accessibilityLabel="List title"
               />
 
               <Text style={styles.inputLabel}>Slug (URL-friendly)</Text>
@@ -718,6 +745,7 @@ export default function AdminCuratedListsScreen() {
                 value={newListSlug}
                 onChangeText={(text) => setNewListSlug(text.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                 autoCapitalize="none"
+                accessibilityLabel="List slug"
               />
 
               <Text style={styles.inputLabel}>Description (optional)</Text>
@@ -729,6 +757,7 @@ export default function AdminCuratedListsScreen() {
                 onChangeText={setNewListDescription}
                 multiline
                 numberOfLines={3}
+                accessibilityLabel="List description"
               />
             </View>
 
@@ -736,6 +765,8 @@ export default function AdminCuratedListsScreen() {
               style={[styles.modalButton, isSaving && styles.modalButtonDisabled]}
               onPress={handleCreateList}
               disabled={isSaving}
+              accessibilityLabel="Create list"
+              accessibilityRole="button"
             >
               {isSaving ? (
                 <LoadingSpinner size="small" />
@@ -753,12 +784,13 @@ export default function AdminCuratedListsScreen() {
         animationType="slide"
         transparent={true}
         onRequestClose={() => setEditingListMeta(false)}
+        accessibilityViewIsModal={true}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>EDIT LIST</Text>
-              <TouchableOpacity onPress={() => setEditingListMeta(false)}>
+              <TouchableOpacity onPress={() => setEditingListMeta(false)} accessibilityLabel="Close" accessibilityRole="button">
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
@@ -771,6 +803,7 @@ export default function AdminCuratedListsScreen() {
                 placeholderTextColor={Colors.textDim}
                 value={newListTitle}
                 onChangeText={setNewListTitle}
+                accessibilityLabel="List title"
               />
 
               <Text style={styles.inputLabel}>Description (optional)</Text>
@@ -782,6 +815,7 @@ export default function AdminCuratedListsScreen() {
                 onChangeText={setNewListDescription}
                 multiline
                 numberOfLines={3}
+                accessibilityLabel="List description"
               />
             </View>
 
@@ -789,6 +823,8 @@ export default function AdminCuratedListsScreen() {
               style={[styles.modalButton, isSaving && styles.modalButtonDisabled]}
               onPress={handleUpdateListMeta}
               disabled={isSaving}
+              accessibilityLabel="Save changes"
+              accessibilityRole="button"
             >
               {isSaving ? (
                 <LoadingSpinner size="small" />
@@ -1026,7 +1062,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: Colors.overlayDark,
     justifyContent: 'flex-end',
   },
   modalContent: {

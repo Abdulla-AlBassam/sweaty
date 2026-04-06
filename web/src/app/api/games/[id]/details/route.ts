@@ -38,7 +38,8 @@ export async function GET(
     const query = `
       fields name, slug, summary, cover.image_id, first_release_date,
              genres.name, platforms.name, total_rating,
-             videos.video_id, videos.name;
+             videos.video_id, videos.name,
+             screenshots.image_id, artworks.image_id;
       where id = ${gameId};
     `
 
@@ -104,6 +105,12 @@ export async function GET(
         videoId: v.video_id,
         name: v.name || 'Trailer'
       })) || [],
+      screenshotUrl: (() => {
+        const imageId = game.artworks?.[0]?.image_id || game.screenshots?.[0]?.image_id
+        return imageId
+          ? `https://images.igdb.com/igdb/image/upload/t_screenshot_big/${imageId}.jpg`
+          : null
+      })(),
       similarGames
     })
   } catch (error) {

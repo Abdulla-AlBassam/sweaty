@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS lists (
   title text NOT NULL,
   description text,
   is_public boolean NOT NULL DEFAULT true,
+  is_ranked boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

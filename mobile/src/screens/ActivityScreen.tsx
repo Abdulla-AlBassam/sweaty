@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useScrollToTop } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
@@ -69,6 +69,8 @@ function groupActivitiesByDate(activities: ActivityItemType[]): DateGroup[] {
 
 export default function ActivityScreen() {
   const navigation = useNavigation<NavigationProp>()
+  const scrollRef = useRef<ScrollView>(null)
+  useScrollToTop(scrollRef)
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('friends')
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all')
@@ -141,6 +143,9 @@ export default function ActivityScreen() {
         <TouchableOpacity
           style={[styles.pill, activeTab === 'friends' && styles.pillActive]}
           onPress={() => setActiveTab('friends')}
+          accessibilityLabel="Friends"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'friends' }}
         >
           <Text style={[styles.pillText, activeTab === 'friends' && styles.pillTextActive]}>
             Friends
@@ -149,6 +154,9 @@ export default function ActivityScreen() {
         <TouchableOpacity
           style={[styles.pill, activeTab === 'you' && styles.pillActive]}
           onPress={() => setActiveTab('you')}
+          accessibilityLabel="You"
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'you' }}
         >
           <Text style={[styles.pillText, activeTab === 'you' && styles.pillTextActive]}>
             You
@@ -167,6 +175,9 @@ export default function ActivityScreen() {
               activeCategory === category.key && styles.pillActive,
             ]}
             onPress={() => setActiveCategory(category.key)}
+            accessibilityLabel={category.label}
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeCategory === category.key }}
           >
             <Text
               style={[
@@ -181,6 +192,7 @@ export default function ActivityScreen() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={

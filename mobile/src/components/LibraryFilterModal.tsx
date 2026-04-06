@@ -57,6 +57,7 @@ export default function LibraryFilterModal({
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
+      accessibilityViewIsModal={true}
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.container} onPress={(e) => e.stopPropagation()}>
@@ -65,11 +66,11 @@ export default function LibraryFilterModal({
             <Text style={styles.headerTitle}>Filter & Sort</Text>
             <View style={styles.headerButtons}>
               {hasActiveFilters && (
-                <TouchableOpacity onPress={onReset} style={styles.resetButton}>
+                <TouchableOpacity onPress={onReset} style={styles.resetButton} accessibilityLabel="Clear all filters" accessibilityRole="button">
                   <Text style={styles.resetButtonText}>Reset</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
                 <Ionicons name="close" size={24} color={Colors.text} />
               </TouchableOpacity>
             </View>
@@ -86,6 +87,9 @@ export default function LibraryFilterModal({
                     key={option.value}
                     style={[styles.optionRow, isSelected && styles.optionRowSelected]}
                     onPress={() => onFilterChange(option.value)}
+                    accessibilityLabel={`Filter by ${option.label}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
                   >
                     <View style={styles.optionInfo}>
                       <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
@@ -111,6 +115,9 @@ export default function LibraryFilterModal({
                     key={option.value}
                     style={[styles.optionRow, isSelected && styles.optionRowSelected]}
                     onPress={() => onSortChange(option.value)}
+                    accessibilityLabel={`Sort by ${option.label}`}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
                   >
                     <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
                       {option.label}
@@ -126,7 +133,7 @@ export default function LibraryFilterModal({
 
           {/* Apply Button */}
           <View style={styles.footer}>
-            <TouchableOpacity style={styles.applyButton} onPress={onClose}>
+            <TouchableOpacity style={styles.applyButton} onPress={onClose} accessibilityLabel="Apply filters" accessibilityRole="button">
               <Text style={styles.applyButtonText}>Apply Filters</Text>
             </TouchableOpacity>
           </View>
@@ -139,7 +146,7 @@ export default function LibraryFilterModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     justifyContent: 'flex-end',
   },
   container: {

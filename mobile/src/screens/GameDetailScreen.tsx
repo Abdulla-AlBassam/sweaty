@@ -7,7 +7,9 @@ import {
   Image,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
@@ -26,6 +28,9 @@ import StarRating from '../components/StarRating'
 import TrailerSection from '../components/TrailerSection'
 import TwitchStreamsSection from '../components/TwitchStreamsSection'
 import { GameDetailSkeleton } from '../components/skeletons'
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const BANNER_HEIGHT = SCREEN_WIDTH * 0.65
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
@@ -54,6 +59,7 @@ interface GameDetails {
   rating?: number
   videos?: GameVideo[]
   similarGames?: SimilarGame[]
+  screenshotUrl?: string | null
 }
 
 interface UserGameLog {
@@ -75,6 +81,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [reviewsRefreshKey, setReviewsRefreshKey] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
+  const [summaryExpanded, setSummaryExpanded] = useState(false)
 
   // Fetch ratings data
   const { data: openCriticData } = useOpenCritic(gameId, game?.name || '')
@@ -216,10 +223,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   // Get color based on OpenCritic tier
   const getOpenCriticColor = (tier: string | null) => {
     switch (tier) {
-      case 'Mighty': return '#66CC33' // Green
-      case 'Strong': return '#4A90D9' // Blue
-      case 'Fair': return '#FFCC33' // Amber/Yellow
-      case 'Weak': return '#FF6633' // Red/Orange
+      case 'Mighty': return Colors.openCriticMighty
+      case 'Strong': return Colors.openCriticStrong
+      case 'Fair': return Colors.openCriticFair
+      case 'Weak': return Colors.openCriticWeak
       default: return Colors.textMuted
     }
   }
@@ -228,7 +235,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>loading...</Text>
@@ -244,7 +251,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>not found</Text>
@@ -264,13 +271,16 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{game.name}</Text>
         <TouchableOpacity
           style={styles.headerFab}
           onPress={() => setIsModalVisible(true)}
+          accessibilityLabel="Log this game"
+          accessibilityHint="Opens game logging form"
+          accessibilityRole="button"
         >
           <Ionicons
             name={userLog ? 'pencil' : 'add'}
@@ -282,7 +292,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.scrollContentWithBanner}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -292,10 +302,28 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           />
         }
       >
+        {/* Hero Banner */}
+        {game.screenshotUrl ? (
+          <View style={styles.bannerContainer}>
+            <Image
+              source={{ uri: game.screenshotUrl }}
+              style={styles.bannerImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['transparent', Colors.background]}
+              style={styles.bannerGradient}
+            />
+          </View>
+        ) : (
+          <View style={styles.bannerSpacer} />
+        )}
+
+        <View style={styles.contentBelowBanner}>
         {/* Cover and Info */}
         <View style={styles.gameInfo}>
           {coverUrl ? (
-            <Image source={{ uri: coverUrl }} style={styles.cover} />
+            <Image source={{ uri: coverUrl }} style={styles.cover} accessibilityLabel={game.name + ' cover art'} />
           ) : (
             <View style={[styles.cover, styles.coverPlaceholder]}>
               <SweatDropIcon size={40} variant="static" />
@@ -310,45 +338,37 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             {game.genres && game.genres.length > 0 && (
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
+            {game.platforms && game.platforms.length > 0 && (
+              <Text style={styles.platformsInline} numberOfLines={2}>{game.platforms.join(', ')}</Text>
+            )}
 
-            {/* Rating Pills */}
-            <View style={styles.ratingPills}>
+            {/* Ratings Row */}
+            <View style={styles.ratingsRow}>
               {openCriticData?.score && (
-                <View style={[styles.ratingPill, { borderColor: getOpenCriticColor(openCriticData.tier) }]}>
-                  <Text style={[styles.ratingPillScore, { color: getOpenCriticColor(openCriticData.tier) }]}>
+                <View style={styles.ratingItem}>
+                  <Image
+                    source={require('../../assets/images/opencritic-icon.png')}
+                    style={[styles.ocIcon, { tintColor: getOpenCriticColor(openCriticData.tier) }]}
+                    accessibilityLabel="OpenCritic score"
+                  />
+                  <Text style={[styles.ratingScore, { color: getOpenCriticColor(openCriticData.tier) }]}>
                     {openCriticData.score}
                   </Text>
                 </View>
               )}
               {communityStats.averageRating ? (
-                <View style={styles.ratingPill}>
-                  <Ionicons name="star" size={14} color="#FFD700" />
-                  <Text style={styles.ratingPillText}>{communityStats.averageRating}</Text>
+                <View style={styles.ratingItem}>
+                  <Ionicons name="star" size={14} color={Colors.gold} />
+                  <Text style={styles.ratingText}>{communityStats.averageRating}</Text>
                 </View>
               ) : null}
-              <View style={styles.ratingPill}>
+              <View style={styles.ratingItem}>
                 <SweatDropIcon size={14} variant="static" />
-                <Text style={styles.ratingPillText}>{communityStats.totalLogs || 0} logs</Text>
+                <Text style={styles.ratingText}>{communityStats.totalLogs || 0}</Text>
               </View>
             </View>
           </View>
         </View>
-
-        {/* User Status */}
-        {userLog && (
-          <View style={styles.statusBadge}>
-            <Ionicons name="checkmark-circle" size={16} color={Colors.accent} />
-            <Text style={styles.statusText}>
-              {STATUS_LABELS[userLog.status] || userLog.status}
-            </Text>
-            {userLog.rating && (
-              <View style={styles.statusRating}>
-                <Text style={styles.statusText}> • </Text>
-                <StarRating rating={userLog.rating} size={14} />
-              </View>
-            )}
-          </View>
-        )}
 
         {/* Friends who played */}
         {friendsWhoPlayed.length > 0 && (
@@ -359,9 +379,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                 <TouchableOpacity
                   key={friend.id}
                   onPress={() => navigation.navigate('UserProfile', { username: friend.username })}
+                  accessibilityLabel={friend.username + ' profile'}
+                  accessibilityRole="button"
                 >
                   {friend.avatar_url ? (
-                    <Image source={{ uri: friend.avatar_url }} style={styles.friendAvatar} />
+                    <Image source={{ uri: friend.avatar_url }} style={styles.friendAvatar} accessibilityLabel={friend.username + ' avatar'} />
                   ) : (
                     <View style={[styles.friendAvatar, styles.friendAvatarPlaceholder]}>
                       <Ionicons name="person" size={14} color={Colors.textMuted} />
@@ -374,17 +396,33 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Reviews */}
-        <GameReviews gameId={gameId} refreshKey={reviewsRefreshKey} />
-
-        {/* About */}
+        {/* Summary */}
         {game.summary && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>About</Text>
-            <Text style={styles.summaryText}>{game.summary}</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setSummaryExpanded(!summaryExpanded)}
+            style={styles.summarySection}
+          >
+            <View>
+              <Text
+                style={styles.summaryText}
+                numberOfLines={summaryExpanded ? undefined : 3}
+              >
+                {game.summary}
+              </Text>
+              {!summaryExpanded && (
+                <LinearGradient
+                  colors={['transparent', Colors.background]}
+                  style={styles.summaryFade}
+                />
+              )}
+            </View>
             <View style={styles.sectionSeparator} />
-          </View>
+          </TouchableOpacity>
         )}
+
+        {/* Reviews */}
+        <GameReviews gameId={gameId} gameName={game.name} refreshKey={reviewsRefreshKey} />
 
         {/* Live on Twitch */}
         <TwitchStreamsSection gameName={game.name} />
@@ -408,9 +446,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                   key={similarGame.id}
                   style={styles.similarGameCard}
                   onPress={() => navigation.push('GameDetail', { gameId: similarGame.id })}
+                  accessibilityLabel={similarGame.name}
+                  accessibilityRole="button"
                 >
                   {similarGame.coverUrl ? (
-                    <Image source={{ uri: similarGame.coverUrl }} style={styles.similarGameCover} />
+                    <Image source={{ uri: similarGame.coverUrl }} style={styles.similarGameCover} accessibilityLabel={similarGame.name + ' cover art'} />
                   ) : (
                     <View style={[styles.similarGameCover, styles.similarGamePlaceholder]}>
                       <SweatDropIcon size={24} variant="static" />
@@ -423,13 +463,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Platforms */}
-        {game.platforms && game.platforms.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Platforms</Text>
-            <Text style={styles.platformsText}>{game.platforms.join(', ')}</Text>
-          </View>
-        )}
+        </View>
       </ScrollView>
 
       {/* Log Game Modal */}
@@ -491,11 +525,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xxl,
+  },
+  scrollContentWithBanner: {
+    paddingBottom: Spacing.xxl,
+  },
+  bannerContainer: {
+    width: SCREEN_WIDTH,
+    height: BANNER_HEIGHT,
+    position: 'relative',
+  },
+  bannerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: BANNER_HEIGHT * 0.5,
+  },
+  bannerSpacer: {
+    height: Spacing.xl,
+  },
+  contentBelowBanner: {
+    paddingHorizontal: Spacing.lg,
   },
   gameInfo: {
     flexDirection: 'row',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.xl,
   },
   cover: {
     width: 120,
@@ -509,7 +570,7 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     flex: 1,
-    marginLeft: Spacing.md,
+    marginLeft: Spacing.lg,
     justifyContent: 'center',
   },
   title: {
@@ -519,8 +580,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   year: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.md,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
@@ -529,14 +590,17 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textDim,
   },
+  platformsInline: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginTop: Spacing.sm,
+    lineHeight: 18,
+  },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
     gap: Spacing.xs,
   },
   statusText: {
@@ -548,42 +612,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  // Rating Pills
-  ratingPills: {
+  // Ratings Row
+  ratingsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginTop: Spacing.md,
   },
-  ratingPill: {
+  ratingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 4,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
   },
-  ratingPillScore: {
+  ocIcon: {
+    width: 16,
+    height: 16,
+  },
+  ratingScore: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSize.sm,
   },
-  ratingPillText: {
+  ratingText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.text,
   },
   section: {
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.mono,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    lineHeight: 20,
+    marginBottom: Spacing.sm,
+  },
+  summarySection: {
     marginBottom: Spacing.sm,
   },
   summaryText: {
@@ -592,19 +656,21 @@ const styles = StyleSheet.create({
     color: Colors.text,
     lineHeight: 22,
   },
-  platformsText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.text,
+  summaryFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 30,
   },
   sectionSeparator: {
     height: 1,
     backgroundColor: Colors.border,
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
   },
   // Friends who played styles
   friendsSection: {
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.md,
   },
   friendsRow: {
     flexDirection: 'row',
@@ -631,6 +697,8 @@ const styles = StyleSheet.create({
     width: 105,
     height: 140,
     borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   similarGamePlaceholder: {
     backgroundColor: Colors.surface,

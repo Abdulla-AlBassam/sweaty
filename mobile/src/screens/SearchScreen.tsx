@@ -14,7 +14,7 @@ import {
   Easing,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation, CommonActions } from '@react-navigation/native'
+import { useNavigation, CommonActions, useScrollToTop } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { MainStackParamList } from '../navigation'
@@ -26,9 +26,11 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { useCuratedLists } from '../hooks/useSupabase'
 import { usePlatformFilter } from '../hooks/usePlatformFilter'
+import { usePublicLists } from '../hooks/useLists'
 import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import CuratedListRow from '../components/CuratedListRow'
+import UserListRow from '../components/UserListRow'
 import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
 import { SkeletonCircle, SkeletonText } from '../components/Skeleton'
@@ -99,9 +101,16 @@ const MAX_RECENT_SEARCHES = 5
 
 export default function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
+  const scrollRef = useRef<ScrollView>(null)
+  useScrollToTop(scrollRef)
   const { user } = useAuth()
   const { platforms, platformsParam, excludePcOnly } = usePlatformFilter()
   const { lists: curatedLists, refetch: refetchLists } = useCuratedLists(excludePcOnly)
+  const { lists: publicLists, isLoading: isLoadingPublicLists, refetch: refetchPublicLists } = usePublicLists()
+
+  // Toggle between curated lists and community user lists
+  type BrowseMode = 'curated' | 'community'
+  const [browseMode, setBrowseMode] = useState<BrowseMode>('curated')
 
   // Track whether user has used AI before
   const [hasUsedAI, setHasUsedAI] = useState(false)
@@ -199,9 +208,10 @@ export default function SearchScreen() {
       loadTrendingGames(),
       loadCommunityGames(),
       refetchLists(),
+      refetchPublicLists(),
     ])
     setRefreshing(false)
-  }, [refetchLists])
+  }, [refetchLists, refetchPublicLists])
 
   const loadRecentSearches = async () => {
     try {
@@ -504,9 +514,10 @@ export default function SearchScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
+            accessibilityLabel="Search for games, users, or lists"
           />
           {query.length > 0 && (
-            <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button">
               <Ionicons name="close-circle" size={18} color={Colors.textDim} />
             </TouchableOpacity>
           )}
@@ -518,6 +529,9 @@ export default function SearchScreen() {
             <TouchableOpacity
               style={[styles.filterPill, searchFilter === 'games' && styles.filterPillActive]}
               onPress={() => setSearchFilter('games')}
+              accessibilityLabel="Games"
+              accessibilityRole="button"
+              accessibilityState={{ selected: searchFilter === 'games' }}
             >
               <Text style={[styles.filterPillText, searchFilter === 'games' && styles.filterPillTextActive]}>
                 Games
@@ -526,6 +540,9 @@ export default function SearchScreen() {
             <TouchableOpacity
               style={[styles.filterPill, searchFilter === 'users' && styles.filterPillActive]}
               onPress={() => setSearchFilter('users')}
+              accessibilityLabel="Users"
+              accessibilityRole="button"
+              accessibilityState={{ selected: searchFilter === 'users' }}
             >
               <Text style={[styles.filterPillText, searchFilter === 'users' && styles.filterPillTextActive]}>
                 Users
@@ -534,6 +551,9 @@ export default function SearchScreen() {
             <TouchableOpacity
               style={[styles.filterPill, searchFilter === 'lists' && styles.filterPillActive]}
               onPress={() => setSearchFilter('lists')}
+              accessibilityLabel="Lists"
+              accessibilityRole="button"
+              accessibilityState={{ selected: searchFilter === 'lists' }}
             >
               <Text style={[styles.filterPillText, searchFilter === 'lists' && styles.filterPillTextActive]}>
                 Lists
@@ -580,9 +600,11 @@ export default function SearchScreen() {
                   key={userProfile.id}
                   style={styles.userRow}
                   onPress={() => handleUserPress(userProfile)}
+                  accessibilityLabel={'View ' + userProfile.username + ' profile'}
+                  accessibilityRole="button"
                 >
                   {userProfile.avatar_url ? (
-                    <Image source={{ uri: userProfile.avatar_url }} style={styles.userAvatar} />
+                    <Image source={{ uri: userProfile.avatar_url }} style={styles.userAvatar} accessibilityLabel={userProfile.username + ' avatar'} />
                   ) : (
                     <View style={[styles.userAvatar, styles.userAvatarPlaceholder]}>
                       <Text style={styles.userAvatarText}>
@@ -615,11 +637,15 @@ export default function SearchScreen() {
                       style={styles.gridItem}
                       onPress={() => handleGamePress(game.id)}
                       activeOpacity={0.7}
+                      accessibilityLabel={game.name}
+                      accessibilityRole="button"
+                      accessibilityHint="Opens game details"
                     >
                       {coverUrl ? (
                         <Image
                           source={{ uri: getIGDBImageUrl(coverUrl, 'coverBig') }}
                           style={styles.gridCover}
+                          accessibilityLabel={game.name + ' cover art'}
                         />
                       ) : (
                         <View style={[styles.gridCover, styles.gridPlaceholder]}>
@@ -647,6 +673,8 @@ export default function SearchScreen() {
                       key={list.id}
                       style={styles.listRow}
                       onPress={() => handleCuratedListPress(list)}
+                      accessibilityLabel={list.title}
+                      accessibilityRole="button"
                     >
                       {/* Preview game covers */}
                       <View style={styles.listPreviewCovers}>
@@ -688,6 +716,8 @@ export default function SearchScreen() {
                       key={list.id}
                       style={styles.listRow}
                       onPress={() => handleUserListPress(list)}
+                      accessibilityLabel={list.title + ' by ' + list.user.username}
+                      accessibilityRole="button"
                     >
                       {/* Preview game covers */}
                       <View style={styles.listPreviewCovers}>
@@ -747,6 +777,7 @@ export default function SearchScreen() {
         </View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           style={styles.scrollView}
           contentContainerStyle={styles.browseContent}
           showsVerticalScrollIndicator={false}
@@ -764,7 +795,7 @@ export default function SearchScreen() {
             <View style={styles.recentSection}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.recentSectionTitle}>Recent Searches</Text>
-                <TouchableOpacity onPress={clearRecentSearches}>
+                <TouchableOpacity onPress={clearRecentSearches} accessibilityLabel="Clear recent searches" accessibilityRole="button">
                   <Text style={styles.clearText}>Clear</Text>
                 </TouchableOpacity>
               </View>
@@ -778,11 +809,15 @@ export default function SearchScreen() {
                     key={game.id}
                     style={styles.recentChip}
                     onPress={() => handleGamePress(game.id)}
+                    accessibilityLabel={game.name}
+                    accessibilityRole="button"
+                    accessibilityHint="Opens game details"
                   >
                     {(game.coverUrl || game.cover_url) && (
                       <Image
                         source={{ uri: getIGDBImageUrl(game.coverUrl || game.cover_url) }}
                         style={styles.recentChipImage}
+                        accessibilityLabel={game.name + ' cover art'}
                       />
                     )}
                     <Text style={styles.recentChipText} numberOfLines={1}>
@@ -800,6 +835,8 @@ export default function SearchScreen() {
             onPress={() => navigation.navigate('AIRecommend')}
             haptic="light"
             scale={0.92}
+            accessibilityLabel="Ask Sweaty for recommendations"
+            accessibilityRole="button"
           >
             <SweatDropIcon size={48} variant="default" />
             {!hasUsedAI && (
@@ -819,33 +856,86 @@ export default function SearchScreen() {
             )}
           </PressableScale>
 
-          {/* Discovery Section - Dynamic Lists */}
-          <View style={styles.discoverSection}>
-            {/* Trending Games from IGDB (global trending) */}
-            <View style={styles.discoveryRow}>
-              <Text style={styles.discoveryRowTitle}>Trending Right Now</Text>
-              <HorizontalGameList
-                games={trendingGames}
-                onGamePress={(game) => handleGamePress(game.id)}
-                isLoading={isLoadingTrending}
-              />
-            </View>
-
-            {/* Community Popular Games (what Sweaty users like) */}
-            <View style={styles.discoveryRow}>
-              <Text style={styles.discoveryRowTitle}>Popular on Sweaty</Text>
-              <HorizontalGameList
-                games={communityGames}
-                onGamePress={(game) => handleGamePress(game.id)}
-                isLoading={isLoadingCommunity}
-              />
-            </View>
+          {/* Browse Mode Toggle */}
+          <View style={styles.browseToggle}>
+            <TouchableOpacity
+              style={[styles.browseTab, browseMode === 'curated' && styles.browseTabActive]}
+              onPress={() => setBrowseMode('curated')}
+              accessibilityLabel="Curated lists"
+              accessibilityRole="tab"
+              accessibilityState={{ selected: browseMode === 'curated' }}
+            >
+              <Text style={[styles.browseTabText, browseMode === 'curated' && styles.browseTabTextActive]}>
+                Curated
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.browseTab, browseMode === 'community' && styles.browseTabActive]}
+              onPress={() => setBrowseMode('community')}
+              accessibilityLabel="Community lists"
+              accessibilityRole="tab"
+              accessibilityState={{ selected: browseMode === 'community' }}
+            >
+              <Text style={[styles.browseTabText, browseMode === 'community' && styles.browseTabTextActive]}>
+                Community
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          {/* Curated Discovery Lists */}
-          {curatedLists.map((list) => (
-            <CuratedListRow key={list.id} list={list} />
-          ))}
+          {browseMode === 'curated' ? (
+            <>
+              {/* Discovery Section - Dynamic Lists */}
+              <View style={styles.discoverSection}>
+                {/* Trending Games from IGDB (global trending) */}
+                <View style={styles.discoveryRow}>
+                  <Text style={styles.discoveryRowTitle}>Trending Right Now</Text>
+                  <HorizontalGameList
+                    games={trendingGames}
+                    onGamePress={(game) => handleGamePress(game.id)}
+                    isLoading={isLoadingTrending}
+                  />
+                </View>
+
+                {/* Community Popular Games (what Sweaty users like) */}
+                <View style={styles.discoveryRow}>
+                  <Text style={styles.discoveryRowTitle}>Popular on Sweaty</Text>
+                  <HorizontalGameList
+                    games={communityGames}
+                    onGamePress={(game) => handleGamePress(game.id)}
+                    isLoading={isLoadingCommunity}
+                  />
+                </View>
+              </View>
+
+              {/* Curated Discovery Lists */}
+              {curatedLists.map((list) => (
+                <CuratedListRow key={list.id} list={list} />
+              ))}
+            </>
+          ) : (
+            <>
+              {/* Community User Lists */}
+              {isLoadingPublicLists ? (
+                <View style={styles.communityLoading}>
+                  <SkeletonText width={150} height={20} style={{ marginLeft: Spacing.screenPadding, marginBottom: Spacing.md }} />
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: Spacing.cardGap }}>
+                    {[1, 2, 3, 4].map((i) => (
+                      <View key={i} style={{ width: 105, height: 140, borderRadius: BorderRadius.md, backgroundColor: Colors.surface }} />
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : publicLists.length > 0 ? (
+                publicLists.map((list) => (
+                  <UserListRow key={list.id} list={list} />
+                ))
+              ) : (
+                <View style={styles.communityEmpty}>
+                  <Text style={styles.communityEmptyText}>No community lists yet.</Text>
+                  <Text style={styles.communityEmptySubtext}>Create a list and make it public to see it here.</Text>
+                </View>
+              )}
+            </>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -983,6 +1073,8 @@ const styles = StyleSheet.create({
     height: CARD_WIDTH * (4 / 3), // 3:4 aspect ratio
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   gridPlaceholder: {
     justifyContent: 'center',
@@ -1013,6 +1105,8 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
+    flex: 1,
+    marginRight: Spacing.sm,
   },
   clearText: {
     fontFamily: Fonts.body,
@@ -1045,6 +1139,51 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: FontSize.sm,
     maxWidth: 120,
+  },
+  browseToggle: {
+    flexDirection: 'row',
+    marginHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.xl,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: 3,
+  },
+  browseTab: {
+    flex: 1,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    borderRadius: BorderRadius.sm,
+  },
+  browseTabActive: {
+    backgroundColor: Colors.surfaceLight,
+  },
+  browseTabText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  browseTabTextActive: {
+    color: Colors.text,
+  },
+  communityLoading: {
+    paddingTop: Spacing.lg,
+  },
+  communityEmpty: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+    paddingHorizontal: Spacing.xxl,
+  },
+  communityEmptyText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.md,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  communityEmptySubtext: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    textAlign: 'center',
   },
   discoverSection: {
     marginTop: Spacing.lg,

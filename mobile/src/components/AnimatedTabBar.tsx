@@ -9,7 +9,7 @@ import {
 } from 'react-native'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons'
-import { Colors, Glow } from '../constants/colors'
+import { Colors } from '../constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuickLog } from '../contexts/QuickLogContext'
 

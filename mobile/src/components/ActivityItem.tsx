@@ -61,9 +61,11 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
       <TouchableOpacity
         style={styles.avatarContainer}
         onPress={() => onUserPress?.(user.id, user.username)}
+        accessibilityLabel={'View ' + displayName + ' profile'}
+        accessibilityRole="button"
       >
         {user.avatar_url ? (
-          <Image source={{ uri: user.avatar_url }} style={styles.avatar} />
+          <Image source={{ uri: user.avatar_url }} style={styles.avatar} accessibilityLabel={displayName + ' avatar'} />
         ) : (
           <View style={styles.avatarPlaceholder}>
             <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
@@ -108,8 +110,8 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
       </View>
 
       {coverUrl && (
-        <TouchableOpacity onPress={() => onGamePress?.(game.id)} style={styles.coverContainer}>
-          <Image source={{ uri: coverUrl }} style={styles.cover} />
+        <TouchableOpacity onPress={() => onGamePress?.(game.id)} style={styles.coverContainer} accessibilityLabel={'View ' + game.name} accessibilityRole="button">
+          <Image source={{ uri: coverUrl }} style={styles.cover} accessibilityLabel={game.name + ' cover art'} />
         </TouchableOpacity>
       )}
     </View>
@@ -211,5 +213,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 75,
     borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
 })

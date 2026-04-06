@@ -48,12 +48,13 @@ interface VideoCardProps {
 
 function VideoCard({ video, onPress }: VideoCardProps) {
   return (
-    <PressableScale onPress={onPress} haptic="light" scale={0.95}>
+    <PressableScale onPress={onPress} haptic="light" scale={0.95} accessibilityLabel={decodeHtmlEntities(video.title) + ' by ' + video.channel} accessibilityRole="button" accessibilityHint="Opens video">
       <View style={styles.card}>
         <Image
           source={{ uri: video.thumbnail }}
           style={styles.cardImage}
           resizeMode="cover"
+          accessibilityLabel={decodeHtmlEntities(video.title) + ' thumbnail'}
         />
         <LinearGradient
           colors={['transparent', 'rgba(0,0,0,0.85)']}
@@ -66,7 +67,7 @@ function VideoCard({ video, onPress }: VideoCardProps) {
           </Text>
           <View style={styles.cardMeta}>
             <View style={styles.cardChannelRow}>
-              <Image source={{ uri: video.channelAvatar }} style={styles.channelAvatar} />
+              <Image source={{ uri: video.channelAvatar }} style={styles.channelAvatar} accessibilityLabel={video.channel + ' channel avatar'} />
               <Text style={styles.cardChannel}>{video.channel}</Text>
             </View>
             <Text style={styles.cardTime}>{formatTimeAgo(video.publishedAt)}</Text>
@@ -214,7 +215,7 @@ const styles = StyleSheet.create({
   },
   cardTime: {
     fontFamily: Fonts.mono,
-    fontSize: 10,
+    fontSize: FontSize.xxs,
     color: Colors.textMuted,
   },
   errorContainer: {

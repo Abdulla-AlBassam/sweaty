@@ -61,6 +61,8 @@ export default function NewsScreen() {
       onPress={() => handleArticlePress(item)}
       haptic="light"
       scale={0.98}
+      accessibilityLabel={item.title}
+      accessibilityRole="button"
     >
       <View style={styles.articleCard}>
         {item.thumbnail && (
@@ -68,6 +70,7 @@ export default function NewsScreen() {
             source={{ uri: item.thumbnail }}
             style={styles.thumbnail}
             resizeMode="cover"
+            accessibilityLabel={`Thumbnail for ${item.title}`}
           />
         )}
         <View style={styles.articleContent}>
@@ -92,6 +95,8 @@ export default function NewsScreen() {
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           haptic="light"
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </PressableScale>
@@ -107,7 +112,7 @@ export default function NewsScreen() {
       ) : error ? (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Failed to load news</Text>
-          <PressableScale onPress={refetch} haptic="light">
+          <PressableScale onPress={refetch} haptic="light" accessibilityLabel="Retry loading news" accessibilityRole="button">
             <Text style={styles.retryText}>Tap to retry</Text>
           </PressableScale>
         </View>

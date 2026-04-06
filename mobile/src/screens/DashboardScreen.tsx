@@ -4,16 +4,19 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  RefreshControl,
   Image,
   Animated,
+  Easing,
+  LayoutAnimation,
   TouchableOpacity,
   Dimensions,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useScrollToTop } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
 import { MainStackParamList } from '../navigation'
@@ -29,6 +32,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
+import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
 import StackedAvatars from '../components/StackedAvatars'
 import WatchSection from '../components/WatchSection'
@@ -44,6 +48,8 @@ const SectionBg = {
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
+  const scrollRef = useRef<ScrollView>(null)
+  useScrollToTop(scrollRef)
   const { user, profile } = useAuth()
   const { logs, refetch: refetchLogs } = useGameLogs(user?.id)
 
@@ -69,6 +75,81 @@ export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
 
+  // Refresh logo animation
+  const refreshOpacity = useRef(new Animated.Value(0)).current
+  const refreshScale = useRef(new Animated.Value(0.3)).current
+  const refreshFlip = useRef(new Animated.Value(0)).current
+  const refreshFlipLoop = useRef<Animated.CompositeAnimation | null>(null)
+
+  useEffect(() => {
+    if (refreshing) {
+      // Pop in
+      Animated.parallel([
+        Animated.timing(refreshOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(refreshScale, { toValue: 1, tension: 150, friction: 8, useNativeDriver: true }),
+      ]).start()
+
+      // Continuous flip
+      refreshFlip.setValue(0)
+      refreshFlipLoop.current = Animated.loop(
+        Animated.timing(refreshFlip, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: true,
+        })
+      )
+      refreshFlipLoop.current.start()
+    } else {
+      // Stop flip + pop out
+      refreshFlipLoop.current?.stop()
+      Animated.parallel([
+        Animated.timing(refreshOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
+        Animated.spring(refreshScale, { toValue: 1.3, tension: 200, friction: 10, useNativeDriver: true }),
+      ]).start(() => {
+        refreshScale.setValue(0.3)
+        refreshFlip.setValue(0)
+      })
+    }
+  }, [refreshing])
+
+  const refreshRotateY = refreshFlip.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  })
+
+  // Custom pull-to-refresh: track scroll position
+  const PULL_THRESHOLD = 70
+  const REFRESH_HEIGHT = 60
+  const scrollY = useRef(new Animated.Value(0)).current
+
+  // Pull-phase animations driven by scroll position (before refresh triggers)
+  const pullOpacity = scrollY.interpolate({
+    inputRange: [-PULL_THRESHOLD, -15, 0],
+    outputRange: [1, 0.3, 0],
+    extrapolate: 'clamp',
+  })
+  const pullScale = scrollY.interpolate({
+    inputRange: [-PULL_THRESHOLD, -10, 0],
+    outputRange: [1, 0.3, 0.1],
+    extrapolate: 'clamp',
+  })
+  const pullRotateY = scrollY.interpolate({
+    inputRange: [-PULL_THRESHOLD * 2, 0],
+    outputRange: ['360deg', '0deg'],
+    extrapolate: 'clamp',
+  })
+
+  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollY.setValue(e.nativeEvent.contentOffset.y)
+  }, [scrollY])
+
+  const handleScrollEndDrag = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (e.nativeEvent.contentOffset.y < -PULL_THRESHOLD && !refreshing) {
+      onRefresh()
+    }
+  }, [refreshing, onRefresh])
+
   // Pulsing animation for "Currently Playing" indicator
   const pulseAnim = useRef(new Animated.Value(1)).current
 
@@ -92,6 +173,7 @@ export default function DashboardScreen() {
   }, [pulseAnim])
 
   const onRefresh = useCallback(async () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setRefreshing(true)
     setRefreshCount((prev) => prev + 1) // Trigger news shuffle
     shuffleBanner() // Show a different hero banner
@@ -103,6 +185,7 @@ export default function DashboardScreen() {
       refetchFavorites(),
       refetchCommunity(),
     ])
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setRefreshing(false)
   }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchCommunity, shuffleBanner])
 
@@ -142,7 +225,7 @@ export default function DashboardScreen() {
     <View style={styles.groupHeader}>
       <Text style={styles.groupHeaderText}>{title}</Text>
       {onSeeAll && (
-        <PressableScale onPress={onSeeAll} haptic="light">
+        <PressableScale onPress={onSeeAll} haptic="light" accessibilityLabel={'See all ' + title} accessibilityRole="button">
           <Text style={styles.seeAllText}>See All</Text>
         </PressableScale>
       )}
@@ -152,18 +235,35 @@ export default function DashboardScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={Colors.accent}
-            colors={[Colors.accent]}
-          />
-        }
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        onScrollEndDrag={handleScrollEndDrag}
       >
+        {/* Custom refresh indicator — negative margin hides it above content.
+            Pull-down rubber-band reveals it. LayoutAnimation expands space during refresh. */}
+        <View style={[styles.refreshContainer, {
+          height: REFRESH_HEIGHT,
+          marginTop: refreshing ? 0 : -REFRESH_HEIGHT,
+        }]}>
+          <Animated.View
+            style={{
+              opacity: refreshing ? refreshOpacity : pullOpacity,
+              transform: [
+                { scale: refreshing ? refreshScale : pullScale },
+                { perspective: 800 },
+                { rotateY: refreshing ? refreshRotateY : pullRotateY },
+              ],
+            }}
+            pointerEvents="none"
+          >
+            <SweatDropIcon size={32} isRefreshing={refreshing} variant="static" />
+          </Animated.View>
+        </View>
+
         {/* Hero Banner - Featured Game Screenshot (at the very top) */}
         {currentBanner && (
           <PressableScale
@@ -171,11 +271,14 @@ export default function DashboardScreen() {
             onPress={() => handleGamePress(currentBanner.game_id)}
             haptic="light"
             scale={0.99}
+            accessibilityLabel={currentBanner.game_name}
+            accessibilityRole="button"
           >
             <Image
               source={{ uri: currentBanner.screenshot_url }}
               style={styles.heroBannerImage}
               resizeMode="cover"
+              accessibilityLabel={currentBanner.game_name + ' screenshot'}
             />
             {/* Top gradient for containment */}
             <LinearGradient
@@ -227,9 +330,12 @@ export default function DashboardScreen() {
                       onPress={() => handleGamePress(game.id)}
                       haptic="light"
                       scale={0.95}
+                      accessibilityLabel={game.name}
+                      accessibilityRole="button"
+                      accessibilityHint="Opens game details"
                     >
                       {coverUrl ? (
-                        <Image source={{ uri: coverUrl }} style={styles.gameCover} />
+                        <Image source={{ uri: coverUrl }} style={styles.gameCover} accessibilityLabel={game.name + ' cover art'} />
                       ) : (
                         <View style={[styles.gameCover, styles.coverPlaceholder]}>
                           <Text style={styles.placeholderText}>?</Text>
@@ -268,10 +374,14 @@ export default function DashboardScreen() {
                     style={styles.friendsGameCard}
                     onPress={() => handleGamePress(game.id)}
                     activeOpacity={0.8}
+                    accessibilityLabel={game.name}
+                    accessibilityRole="button"
+                    accessibilityHint="Opens game details"
                   >
                     <Image
                       source={{ uri: getIGDBImageUrl(game.cover_url) }}
                       style={styles.gameCover}
+                      accessibilityLabel={game.name + ' cover art'}
                     />
                     <StackedAvatars users={game.friends} />
                   </TouchableOpacity>
@@ -306,6 +416,8 @@ export default function DashboardScreen() {
                     })),
                   })}
                   haptic="light"
+                  accessibilityLabel={"See all Friends' Favorites"}
+                  accessibilityRole="button"
                 >
                   <Text style={styles.seeAllText}>See All</Text>
                 </PressableScale>
@@ -325,10 +437,14 @@ export default function DashboardScreen() {
                     style={styles.friendsGameCard}
                     onPress={() => handleGamePress(game.id)}
                     activeOpacity={0.8}
+                    accessibilityLabel={game.name}
+                    accessibilityRole="button"
+                    accessibilityHint="Opens game details"
                   >
                     <Image
                       source={{ uri: getIGDBImageUrl(game.coverUrl) }}
                       style={styles.gameCover}
+                      accessibilityLabel={game.name + ' cover art'}
                     />
                     <StackedAvatars users={game.friends} />
                   </TouchableOpacity>
@@ -367,10 +483,14 @@ export default function DashboardScreen() {
                         haptic="light"
                         scale={0.95}
                         style={styles.communityCard}
+                        accessibilityLabel={(review.user.display_name || review.user.username) + ' review of ' + review.game.name}
+                        accessibilityRole="button"
+                        accessibilityHint="Opens game details"
                       >
                         <Image
                           source={{ uri: getIGDBImageUrl(review.game.cover_url) }}
                           style={styles.communityCover}
+                          accessibilityLabel={review.game.name + ' cover art'}
                         />
                         <View style={styles.communityContent}>
                           <View style={styles.communityHeader}>
@@ -378,6 +498,7 @@ export default function DashboardScreen() {
                               <Image
                                 source={{ uri: review.user.avatar_url }}
                                 style={styles.communityAvatar}
+                                accessibilityLabel={(review.user.display_name || review.user.username) + ' avatar'}
                               />
                             ) : (
                               <View style={[styles.communityAvatar, styles.avatarPlaceholder]}>
@@ -389,7 +510,7 @@ export default function DashboardScreen() {
                             </Text>
                             {review.rating && (
                               <View style={styles.communityRating}>
-                                <Ionicons name="star" size={10} color="#FFD700" />
+                                <Ionicons name="star" size={10} color={Colors.gold} />
                                 <Text style={styles.communityRatingText}>{review.rating}</Text>
                               </View>
                             )}
@@ -432,6 +553,8 @@ export default function DashboardScreen() {
                       games: becauseYouLovedGames,
                     })}
                     haptic="light"
+                    accessibilityLabel={'See all Because You Loved ' + (basedOnGame?.name || '')}
+                    accessibilityRole="button"
                   >
                     <Text style={styles.seeAllText}>See All</Text>
                   </PressableScale>
@@ -451,10 +574,14 @@ export default function DashboardScreen() {
                       onPress={() => handleGamePress(game.id)}
                       haptic="light"
                       scale={0.95}
+                      accessibilityLabel={game.name}
+                      accessibilityRole="button"
+                      accessibilityHint="Opens game details"
                     >
                       <Image
                         source={{ uri: getIGDBImageUrl(game.coverUrl) }}
                         style={styles.gameCover}
+                        accessibilityLabel={game.name + ' cover art'}
                       />
                     </PressableScale>
                   ))}
@@ -483,6 +610,7 @@ export default function DashboardScreen() {
           <WatchSection refreshKey={refreshCount} showHeader={false} />
         </View>
       </ScrollView>
+
     </SafeAreaView>
   )
 }
@@ -497,6 +625,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
+  },
+  refreshContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Hero Banner - Cinematic full-width at top
   heroBannerContainer: {
@@ -581,12 +713,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textSecondary,
     lineHeight: 21,
+    flex: 1,
+    marginRight: Spacing.sm,
   },
   forYouTitle: {
     fontFamily: Fonts.bodyMedium,
     fontSize: 15,
     color: Colors.textSecondary,
     lineHeight: 21,
+    flex: 1,
+    marginRight: Spacing.sm,
   },
   accentText: {
     color: Colors.cyanSoft,
@@ -615,7 +751,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: Colors.borderSubtle,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
@@ -663,7 +799,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: Colors.borderSubtle,
   },
   communityCover: {
     width: '100%',
@@ -705,7 +841,7 @@ const styles = StyleSheet.create({
   communityRatingText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: 11,
-    color: '#FFD700',
+    color: Colors.gold,
     lineHeight: 15,
   },
   communityReviewText: {

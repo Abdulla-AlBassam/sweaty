@@ -124,6 +124,8 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
             style={styles.continueButtonWrapper}
             onPress={onContinueLogging}
             disabled={isLoading}
+            accessibilityLabel={`Continue logging ${unloggedCount} PlayStation games`}
+            accessibilityRole="button"
           >
             {/* RGB Chromatic aberration layers */}
             <View style={[styles.continueButtonLayer, styles.continueButtonCyan]} />
@@ -145,6 +147,8 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
                 style={[styles.actionButton, styles.actionButtonDanger, styles.actionButtonFullWidth]}
                 onPress={onClear}
                 disabled={isLoading}
+                accessibilityLabel={`Clear ${getPlatformName()} data`}
+                accessibilityRole="button"
               >
                 <Ionicons name="trash-outline" size={18} color={Colors.error} />
                 <Text style={[styles.actionButtonText, styles.actionButtonTextDanger]}>
@@ -156,6 +160,8 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
                 style={styles.actionButton}
                 onPress={onSync}
                 disabled={isLoading}
+                accessibilityLabel={`Sync ${getPlatformName()} library`}
+                accessibilityRole="button"
               >
                 {isLoading ? (
                   <LoadingSpinner size="small" color={Colors.accent} />
@@ -173,6 +179,8 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
                 style={[styles.actionButton, styles.actionButtonDanger]}
                 onPress={onClear}
                 disabled={isLoading}
+                accessibilityLabel={`Clear ${getPlatformName()} data`}
+                accessibilityRole="button"
               >
                 <Ionicons name="trash-outline" size={18} color={Colors.error} />
                 <Text style={[styles.actionButtonText, styles.actionButtonTextDanger]}>
@@ -186,6 +194,8 @@ function PlatformCard({ platform, status, isLoading, onConnect, onSync, onClear,
             style={styles.connectButtonWrapper}
             onPress={onConnect}
             disabled={isLoading}
+            accessibilityLabel={`Connect ${getPlatformName()}`}
+            accessibilityRole="button"
           >
             {isLoading ? (
               <View style={styles.connectButton}>
@@ -359,7 +369,7 @@ export default function PlatformConnectionsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>IMPORT GAMES</Text>

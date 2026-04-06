@@ -159,6 +159,7 @@ export default function AdminHeroBannersScreen() {
         source={{ uri: item.screenshot_url }}
         style={styles.bannerPreview}
         resizeMode="cover"
+        accessibilityLabel={`${item.game_name} banner`}
       />
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.8)']}
@@ -172,6 +173,8 @@ export default function AdminHeroBannersScreen() {
           <TouchableOpacity
             style={[styles.actionButton, !item.is_active && styles.actionButtonInactive]}
             onPress={() => handleToggleBanner(item)}
+            accessibilityLabel={`${item.is_active ? 'Hide' : 'Show'} ${item.game_name} banner`}
+            accessibilityRole="button"
           >
             <Ionicons
               name={item.is_active ? 'eye' : 'eye-off'}
@@ -182,6 +185,8 @@ export default function AdminHeroBannersScreen() {
           <TouchableOpacity
             style={[styles.actionButton, styles.deleteButton]}
             onPress={() => handleRemoveBanner(item)}
+            accessibilityLabel={`Remove ${item.game_name} banner`}
+            accessibilityRole="button"
           >
             <Ionicons name="trash-outline" size={18} color={Colors.error} />
           </TouchableOpacity>
@@ -195,11 +200,14 @@ export default function AdminHeroBannersScreen() {
     <TouchableOpacity
       style={styles.searchResult}
       onPress={() => fetchScreenshots(item)}
+      accessibilityLabel={`View screenshots for ${item.name}`}
+      accessibilityRole="button"
     >
       {item.coverUrl ? (
         <Image
           source={{ uri: item.coverUrl }}
           style={styles.searchResultCover}
+          accessibilityLabel={`${item.name} cover`}
         />
       ) : (
         <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
@@ -219,11 +227,14 @@ export default function AdminHeroBannersScreen() {
       style={styles.screenshotItem}
       onPress={() => handleAddBanner(item.url)}
       disabled={isAdding}
+      accessibilityLabel={`Use this screenshot as banner for ${selectedGame?.name}`}
+      accessibilityRole="button"
     >
       <Image
         source={{ uri: item.url }}
         style={styles.screenshotImage}
         resizeMode="cover"
+        accessibilityLabel={`${selectedGame?.name} screenshot`}
       />
       {isAdding && (
         <View style={styles.screenshotOverlay}>
@@ -252,6 +263,8 @@ export default function AdminHeroBannersScreen() {
             }
           }}
           style={styles.backButton}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
@@ -264,6 +277,8 @@ export default function AdminHeroBannersScreen() {
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => setMode('search')}
+            accessibilityLabel="Add new banner"
+            accessibilityRole="button"
           >
             <Ionicons name="add" size={24} color={Colors.accent} />
           </TouchableOpacity>
@@ -283,6 +298,8 @@ export default function AdminHeroBannersScreen() {
             <TouchableOpacity
               style={styles.emptyButton}
               onPress={() => setMode('search')}
+              accessibilityLabel="Add first banner"
+              accessibilityRole="button"
             >
               <Text style={styles.emptyButtonText}>Add First Banner</Text>
             </TouchableOpacity>
@@ -311,9 +328,10 @@ export default function AdminHeroBannersScreen() {
               onSubmitEditing={handleSearch}
               returnKeyType="search"
               autoFocus
+              accessibilityLabel="Search for a game"
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search" accessibilityRole="button">
                 <Ionicons name="close-circle" size={18} color={Colors.textDim} />
               </TouchableOpacity>
             )}
@@ -544,7 +562,7 @@ const styles = StyleSheet.create({
   },
   screenshotOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: Colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
   },

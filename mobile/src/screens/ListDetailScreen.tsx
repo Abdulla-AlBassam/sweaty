@@ -235,6 +235,8 @@ export default function ListDetailScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
           >
             <Ionicons name="chevron-back" size={24} color={Colors.text} />
           </TouchableOpacity>
@@ -243,7 +245,7 @@ export default function ListDetailScreen() {
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={refetch} style={styles.retryButton}>
+          <TouchableOpacity onPress={refetch} style={styles.retryButton} accessibilityLabel="Try again" accessibilityRole="button">
             <Text style={styles.retryText}>Try Again</Text>
           </TouchableOpacity>
         </View>
@@ -258,6 +260,8 @@ export default function ListDetailScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
         >
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </TouchableOpacity>
@@ -272,6 +276,8 @@ export default function ListDetailScreen() {
               <TouchableOpacity
                 style={styles.doneButton}
                 onPress={() => setIsEditMode(false)}
+                accessibilityLabel="Done editing"
+                accessibilityRole="button"
               >
                 <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>
@@ -280,6 +286,8 @@ export default function ListDetailScreen() {
                 <TouchableOpacity
                   style={styles.headerButton}
                   onPress={() => setIsEditMode(true)}
+                  accessibilityLabel="Edit list"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="pencil" size={20} color={Colors.text} />
                 </TouchableOpacity>
@@ -287,6 +295,8 @@ export default function ListDetailScreen() {
                   style={styles.headerButton}
                   onPress={handleDeleteList}
                   disabled={isDeleting}
+                  accessibilityLabel="Delete list"
+                  accessibilityRole="button"
                 >
                   {isDeleting ? (
                     <LoadingSpinner size="small" color={Colors.error} />
@@ -338,9 +348,10 @@ export default function ListDetailScreen() {
                     value={searchQuery}
                     onChangeText={setSearchQuery}
                     onFocus={() => searchQuery.length >= 2 && setShowSearchDropdown(true)}
+                    accessibilityLabel="Search for games to add"
                   />
                   {searchQuery.length > 0 && (
-                    <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSearchDropdown(false); }}>
+                    <TouchableOpacity onPress={() => { setSearchQuery(''); setShowSearchDropdown(false); }} accessibilityLabel="Clear search" accessibilityRole="button">
                       <Ionicons name="close-circle" size={18} color={Colors.textDim} />
                     </TouchableOpacity>
                   )}
@@ -368,11 +379,14 @@ export default function ListDetailScreen() {
                               key={game.id}
                               style={[styles.searchResult, inList && styles.searchResultInList]}
                               onPress={() => handleSearchResultPress(game)}
+                              accessibilityLabel={`${inList ? 'Remove' : 'Add'} ${game.name}`}
+                              accessibilityRole="button"
                             >
                               {coverUrl ? (
                                 <Image
                                   source={{ uri: getIGDBImageUrl(coverUrl, 'thumb') }}
                                   style={styles.searchResultCover}
+                                  accessibilityLabel={`${game.name} cover`}
                                 />
                               ) : (
                                 <View style={[styles.searchResultCover, styles.coverPlaceholder]}>
@@ -413,11 +427,14 @@ export default function ListDetailScreen() {
                         key={game.id}
                         style={styles.libraryGame}
                         onPress={() => handleAddGame(game)}
+                        accessibilityLabel={`${inList ? 'Remove' : 'Add'} ${game.name}`}
+                        accessibilityRole="button"
                       >
                         {game.cover_url ? (
                           <Image
                             source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') }}
                             style={[styles.libraryCover, inList && styles.libraryCoverInList]}
+                            accessibilityLabel={`${game.name} cover`}
                           />
                         ) : (
                           <View style={[styles.libraryCover, styles.coverPlaceholder, inList && styles.libraryCoverInList]}>
@@ -459,11 +476,14 @@ export default function ListDetailScreen() {
                     onLongPress={() => isOwner && isEditMode && handleGameLongPress(item.game.id, item.game.name)}
                     activeOpacity={0.7}
                     delayLongPress={500}
+                    accessibilityLabel={item.game.name}
+                    accessibilityRole="button"
                   >
                     {item.game.cover_url ? (
                       <Image
                         source={{ uri: getIGDBImageUrl(item.game.cover_url, 'coverBig') }}
                         style={styles.gameCover}
+                        accessibilityLabel={`${item.game.name} cover art`}
                       />
                     ) : (
                       <View style={[styles.gameCover, styles.coverPlaceholder]}>
@@ -725,7 +745,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: Colors.overlay,
     borderRadius: BorderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',

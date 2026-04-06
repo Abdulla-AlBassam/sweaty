@@ -21,6 +21,10 @@ import { ReviewComment } from '../types'
 interface ReviewCommentsProps {
   gameLogId: string
   initialCommentCount?: number
+  /** When true, only shows the icon + count — no expand/inline comments */
+  previewMode?: boolean
+  /** Called when tapped in preview mode */
+  onPreviewPress?: () => void
 }
 
 // Helper to format relative time
@@ -71,9 +75,9 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
 
   return (
     <View style={[styles.commentItem, isReply && styles.replyItem]}>
-      <TouchableOpacity onPress={handleProfilePress} style={styles.avatarContainer}>
+      <TouchableOpacity onPress={handleProfilePress} style={styles.avatarContainer} accessibilityLabel={`View profile of ${comment.user?.display_name || comment.user?.username || 'User'}`} accessibilityRole="button">
         {comment.user?.avatar_url ? (
-          <Image source={{ uri: comment.user.avatar_url }} style={[styles.avatar, isReply && styles.replyAvatar]} />
+          <Image source={{ uri: comment.user.avatar_url }} style={[styles.avatar, isReply && styles.replyAvatar]} accessibilityLabel={`${comment.user?.display_name || comment.user?.username || 'User'} avatar`} />
         ) : (
           <View style={[styles.avatar, styles.avatarPlaceholder, isReply && styles.replyAvatar]}>
             <Ionicons name="person" size={isReply ? 10 : 12} color={Colors.textDim} />
@@ -84,7 +88,7 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
       <View style={styles.commentBody}>
         {/* Header outside bubble - aligns with avatar top */}
         <View style={styles.commentHeader}>
-          <TouchableOpacity onPress={handleProfilePress}>
+          <TouchableOpacity onPress={handleProfilePress} accessibilityLabel={`View profile of ${comment.user?.display_name || comment.user?.username || 'User'}`} accessibilityRole="button">
             <Text style={styles.username}>
               {comment.user?.display_name || comment.user?.username || 'User'}
             </Text>
@@ -97,13 +101,13 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
         <Text style={styles.commentText}>{comment.content}</Text>
 
         <View style={styles.commentActions}>
-          <TouchableOpacity onPress={() => onReply(comment)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity onPress={() => onReply(comment)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel={`Reply to ${comment.user?.display_name || comment.user?.username || 'User'}`} accessibilityRole="button">
             <Text style={styles.actionText}>Reply</Text>
           </TouchableOpacity>
           {isOwnComment && (
             <>
               <Text style={styles.actionDot}>·</Text>
-              <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={handleDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityLabel="Delete comment" accessibilityRole="button">
                 <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
               </TouchableOpacity>
             </>
@@ -130,7 +134,7 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
   )
 }
 
-export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: ReviewCommentsProps) {
+export default function ReviewComments({ gameLogId, initialCommentCount = 0, previewMode = false, onPreviewPress }: ReviewCommentsProps) {
   const { user, profile } = useAuth()
   const [comments, setComments] = useState<ReviewComment[]>([])
   const [commentCount, setCommentCount] = useState(initialCommentCount)
@@ -331,10 +335,21 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
     setIsExpanded(!isExpanded)
   }
 
+  if (previewMode) {
+    return (
+      <TouchableOpacity style={styles.toggleButton} onPress={onPreviewPress} activeOpacity={0.7}>
+        <Ionicons name="chatbubble-outline" size={16} color={Colors.textMuted} />
+        {commentCount > 0 && (
+          <Text style={styles.countText}>{commentCount}</Text>
+        )}
+      </TouchableOpacity>
+    )
+  }
+
   return (
     <>
       {/* Comment toggle button - stays inline with like button */}
-      <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7}>
+      <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7} accessibilityLabel={isExpanded ? 'Hide comments' : `Show comments${commentCount > 0 ? `, ${commentCount} comments` : ''}`} accessibilityRole="button">
         <Ionicons
           name="chatbubble-outline"
           size={16}
@@ -379,14 +394,14 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
                       <Text style={styles.replyingToText}>
                         Replying to <Text style={styles.replyingToName}>@{replyingTo.user?.username}</Text>
                       </Text>
-                      <TouchableOpacity onPress={() => setReplyingTo(null)}>
+                      <TouchableOpacity onPress={() => setReplyingTo(null)} accessibilityLabel="Cancel reply" accessibilityRole="button">
                         <Ionicons name="close" size={14} color={Colors.textMuted} />
                       </TouchableOpacity>
                     </View>
                   )}
                   <View style={styles.inputRow}>
                     {profile?.avatar_url ? (
-                      <Image source={{ uri: profile.avatar_url }} style={styles.inputAvatar} />
+                      <Image source={{ uri: profile.avatar_url }} style={styles.inputAvatar} accessibilityLabel="Your avatar" />
                     ) : (
                       <View style={[styles.inputAvatar, styles.avatarPlaceholder]}>
                         <Ionicons name="person" size={10} color={Colors.textDim} />
@@ -405,6 +420,8 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0 }: R
                       style={[styles.sendButton, (!inputText.trim() || isSubmitting) && styles.sendButtonDisabled]}
                       onPress={handleSubmit}
                       disabled={!inputText.trim() || isSubmitting}
+                      accessibilityLabel={replyingTo ? 'Send reply' : 'Send comment'}
+                      accessibilityRole="button"
                     >
                       {isSubmitting ? (
                         <LoadingSpinner size="small" color={Colors.text} />

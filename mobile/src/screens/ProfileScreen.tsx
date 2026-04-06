@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useNavigation, CommonActions } from '@react-navigation/native'
+import { useNavigation, CommonActions, useScrollToTop } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuth } from '../contexts/AuthContext'
 import { useGameLogs, useFollowCounts } from '../hooks/useSupabase'
@@ -75,6 +75,8 @@ export default function ProfileScreen() {
   const { followers, following } = useFollowCounts(user?.id)
   const { lists: userLists, refetch: refetchLists } = useUserLists(user?.id)
   const navigation = useNavigation()
+  const scrollRef = useRef<ScrollView>(null)
+  useScrollToTop(scrollRef)
 
   const [gameLogs, setGameLogs] = useState<GameLogWithGame[]>([])
   const [selectedGame, setSelectedGame] = useState<GameLogWithGame | null>(null)
@@ -313,6 +315,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -331,6 +334,7 @@ export default function ProfileScreen() {
               source={{ uri: profile.banner_url }}
               style={styles.banner}
               resizeMode="cover"
+              accessibilityLabel="Profile banner"
             />
             {/* Gradient overlay for blending */}
             <LinearGradient
@@ -344,6 +348,8 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 onPress={() => navigation.navigate('Settings' as never)}
                 style={styles.settingsButton}
+                accessibilityLabel="Settings"
+                accessibilityRole="button"
               >
                 <Ionicons name="settings-outline" size={24} color={Colors.text} />
               </TouchableOpacity>
@@ -358,6 +364,8 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 onPress={() => navigation.navigate('Settings' as never)}
                 style={styles.settingsButton}
+                accessibilityLabel="Settings"
+                accessibilityRole="button"
               >
                 <Ionicons name="settings-outline" size={24} color={Colors.text} />
               </TouchableOpacity>
@@ -368,7 +376,7 @@ export default function ProfileScreen() {
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile?.banner_url && styles.profileSectionWithBanner]}>
           {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessibilityLabel={displayName + ' avatar'} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
@@ -391,6 +399,8 @@ export default function ProfileScreen() {
                 setFollowersModalType('followers')
                 setFollowersModalVisible(true)
               }}
+              accessibilityLabel={followers + ' followers'}
+              accessibilityRole="button"
             >
               <Text style={styles.followText}>
                 <Text style={styles.followNumber}>{followers}</Text> followers
@@ -401,6 +411,8 @@ export default function ProfileScreen() {
                 setFollowersModalType('following')
                 setFollowersModalVisible(true)
               }}
+              accessibilityLabel={following + ' following'}
+              accessibilityRole="button"
             >
               <Text style={styles.followText}>
                 <Text style={styles.followNumber}>{following}</Text> following
@@ -446,6 +458,8 @@ export default function ProfileScreen() {
             <TouchableOpacity
               onPress={() => setIsFavoritesModalVisible(true)}
               style={styles.editButton}
+              accessibilityLabel="Edit favorites"
+              accessibilityRole="button"
             >
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
@@ -462,9 +476,12 @@ export default function ProfileScreen() {
                     key={game.id}
                     style={styles.favoriteSlot}
                     onPress={() => navigation.navigate('GameDetail', { gameId: game.id })}
+                    accessibilityLabel={game.name}
+                    accessibilityRole="button"
+                    accessibilityHint="Opens game details"
                   >
                     {coverUrl ? (
-                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} />
+                      <Image source={{ uri: coverUrl }} style={styles.favoriteCover} accessibilityLabel={game.name + ' cover art'} />
                     ) : (
                       <View style={[styles.favoriteCover, styles.favoriteCoverPlaceholder]}>
                         <SweatDropIcon size={20} variant="static" />
@@ -478,6 +495,8 @@ export default function ProfileScreen() {
                   key={`empty-${index}`}
                   style={styles.favoriteSlot}
                   onPress={() => setIsFavoritesModalVisible(true)}
+                  accessibilityLabel="Add favorite game"
+                  accessibilityRole="button"
                 >
                   <View style={[styles.favoriteCover, styles.emptyFavoriteSlot]}>
                     <Ionicons name="add" size={20} color={Colors.textDim} />
@@ -503,11 +522,15 @@ export default function ProfileScreen() {
                   key={log.id}
                   style={styles.recentlyLoggedCard}
                   onPress={() => handleGamePress(log)}
+                  accessibilityLabel={log.game?.name || 'Game'}
+                  accessibilityRole="button"
+                  accessibilityHint="Opens game details"
                 >
                   {log.game?.cover_url ? (
                     <Image
                       source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
                       style={styles.recentlyLoggedCover}
+                      accessibilityLabel={(log.game?.name || 'Game') + ' cover art'}
                     />
                   ) : (
                     <View style={[styles.recentlyLoggedCover, styles.gameCoverPlaceholder]}>
@@ -534,6 +557,8 @@ export default function ProfileScreen() {
                 <TouchableOpacity
                   onPress={() => setIsCreateListModalVisible(true)}
                   style={styles.newListButton}
+                  accessibilityLabel="Create new list"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="add" size={18} color={Colors.accent} />
                   <Text style={styles.newListButtonText}>New</Text>
@@ -566,6 +591,8 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={styles.filterButton}
               onPress={() => setIsFilterModalVisible(true)}
+              accessibilityLabel="Library filters"
+              accessibilityRole="button"
             >
               <Ionicons name="options-outline" size={20} color={hasActiveAdvancedFilters ? Colors.accent : Colors.textMuted} />
               {hasActiveAdvancedFilters && <View style={styles.filterBadge} />}
@@ -591,6 +618,9 @@ export default function ProfileScreen() {
                     count === 0 && !isSelected && styles.filterTabDimmed,
                   ]}
                   onPress={() => setSelectedFilter(tab.key)}
+                  accessibilityLabel={tab.label + ' (' + count + ')'}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isSelected }}
                 >
                   <Text
                     style={[
@@ -613,11 +643,15 @@ export default function ProfileScreen() {
                   key={log.id}
                   style={styles.gameCard}
                   onPress={() => handleGamePress(log)}
+                  accessibilityLabel={log.game?.name || 'Game'}
+                  accessibilityRole="button"
+                  accessibilityHint="Opens game details"
                 >
                   {log.game?.cover_url ? (
                     <Image
                       source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
                       style={styles.gameCover}
+                      accessibilityLabel={(log.game?.name || 'Game') + ' cover art'}
                     />
                   ) : (
                     <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
@@ -945,6 +979,8 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   librarySection: {
     paddingHorizontal: Spacing.screenPadding,
@@ -1017,6 +1053,8 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.borderSubtle,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',
