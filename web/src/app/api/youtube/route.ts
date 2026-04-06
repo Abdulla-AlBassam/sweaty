@@ -13,6 +13,31 @@ const YOUTUBE_CHANNELS = [
     channelId: 'UCzF5oxzeidHOZzy4KK5nxCQ',
     avatar: 'https://yt3.googleusercontent.com/2NRDdbrjRUUgWciHnRYmqz4JQ2pFa7zhqbNeuMhnn4sgCgn9MlrBwSo-ka0M1r3tZQjr91J2qQ=s88-c-k-c0x00ffffff-no-rj',
   },
+  {
+    name: 'MBG',
+    channelId: 'UC-r774_ow9ojRSQnDv-PpyA',
+    avatar: 'https://yt3.googleusercontent.com/bCNQM3uoDIugjbIo5lUzihSg0ySIOomOEqpyLiZBow6NAJPBUdyTS_77bRthjqW0zW4nKfZg4w=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'penguinz0',
+    channelId: 'UCq6VFHwMzcMXbuKyG7SQYIg',
+    avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_kOWn68FmChjExAEGw0vjLBpiP907ccNT5wASHcBjZeEuA=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'mugthief',
+    channelId: 'UC3TC163wX81ZzdE_D9oGtGg',
+    avatar: 'https://yt3.googleusercontent.com/5I8V89z3iysyW4e0Qm2U8vUhiQ3fjJ3gW0yaOst_GNV60_UrTUvKi-8cepS3Hu5OHROxnTk=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'IGN',
+    channelId: 'UCKy1dAqELo0zrOtPkf0eTMw',
+    avatar: 'https://yt3.googleusercontent.com/M5xbpJc3JNKQuLgzHr0Qv_ZhjPVpUeSn1BaWhopQFyMGlQmBVY_0Mn5MIf-JWbxTKYZRS67_GcI=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'MrMattyPlays',
+    channelId: 'UCmXH6CX_juGwNFTj3PESdoA',
+    avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m3UHNKz6Ij09MCgy199Ytx2jiagJrvccvisMznocKfdmM=s88-c-k-c0x00ffffff-no-rj',
+  },
 ]
 
 // Simple in-memory cache

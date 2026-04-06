@@ -80,7 +80,7 @@ function VideoCard({ video, onPress }: VideoCardProps) {
 function VideoCardSkeleton() {
   return (
     <View style={styles.card}>
-      <Skeleton width={280} height={170} style={{ borderRadius: BorderRadius.md }} />
+      <Skeleton width={280} height={158} style={{ borderRadius: BorderRadius.md }} />
     </View>
   )
 }
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: 280,
-    height: 170,
+    aspectRatio: 16 / 9,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
     backgroundColor: Colors.surface,
@@ -206,10 +206,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceLight,
   },
   cardChannel: {
-    fontFamily: Fonts.mono,
-    fontSize: 10,
-    color: Colors.cyan,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: 11,
+    color: Colors.textSecondary,
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   cardTime: {
     fontFamily: Fonts.mono,
