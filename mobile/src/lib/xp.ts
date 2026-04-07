@@ -16,22 +16,26 @@ const XP_VALUES = {
   follower: 10,
 }
 
-// 12 levels (0-11)
-const LEVEL_THRESHOLDS = [0, 150, 500, 1200, 2500, 4500, 7000, 10000, 15000, 22000, 30000, 40000]
+// 16 levels (0-15)
+const LEVEL_THRESHOLDS = [0, 50, 150, 400, 800, 1500, 2500, 4000, 6000, 9000, 13000, 18000, 25000, 35000, 50000, 60000]
 
 const RANK_NAMES = [
-  'Newcomer',     // Level 0
-  'Apprentice',   // Level 1
-  'Player',       // Level 2
-  'Skilled',      // Level 3
-  'Veteran',      // Level 4
-  'Expert',       // Level 5
-  'Elite',        // Level 6
-  'Champion',     // Level 7
-  'Master',       // Level 8
-  'Grandmaster',  // Level 9
-  'Legend',       // Level 10
-  'Sweat',        // Level 11
+  'Newcomer',      // Level 0
+  'Apprentice',    // Level 1
+  'Player',        // Level 2
+  'Regular',       // Level 3
+  'Dedicated',     // Level 4
+  'Skilled',       // Level 5
+  'Veteran',       // Level 6
+  'Expert',        // Level 7
+  'Elite',         // Level 8
+  'Champion',      // Level 9
+  'Master',        // Level 10
+  'Grandmaster',   // Level 11
+  'Legend',         // Level 12
+  'Icon',          // Level 13
+  'Mythic',        // Level 14
+  'Sweat',         // Level 15
 ]
 
 interface GameLogForXP {
@@ -77,7 +81,7 @@ export function getLevel(xp: number): LevelInfo {
   const nextThreshold = LEVEL_THRESHOLDS[level + 1] || LEVEL_THRESHOLDS[level]
   const xpInLevel = xp - currentThreshold
   const xpNeeded = nextThreshold - currentThreshold
-  const progress = level === 11 ? 100 : Math.min((xpInLevel / xpNeeded) * 100, 100)
+  const progress = level === 15 ? 100 : Math.min((xpInLevel / xpNeeded) * 100, 100)
 
   return {
     level,
@@ -88,15 +92,17 @@ export function getLevel(xp: number): LevelInfo {
   }
 }
 
-// Get badge color based on level (for future use)
+// Get badge/ring color based on level
 export function getBadgeColor(level: number): string {
-  if (level >= 10) return '#FFD700' // Gold for Legend/Sweat
-  if (level >= 7) return '#8B5CF6'  // Purple for Champion+
-  if (level >= 4) return '#E0E0E0'  // Off-white for Veteran+
+  if (level >= 15) return '#F0E4D0' // Cream for Sweat (brand colour)
+  if (level >= 13) return '#FFD700' // Gold for Icon/Mythic
+  if (level >= 10) return '#8B5CF6' // Purple for Master+
+  if (level >= 7) return '#3B82F6'  // Blue for Expert+
+  if (level >= 4) return '#E0E0E0'  // Off-white for Dedicated+
   return '#6B7280'                   // Gray for lower levels
 }
 
-// Legacy exports for backwards compatibility during transition
+// Legacy exports for backwards compatibility
 export const calculateGamerXP = (logs: GameLogForXP[]) => calculateXP(logs, 0)
 export const getGamerLevel = (xp: number) => getLevel(xp)
 export const calculateSocialXP = (logs: GameLogForXP[], followers: number) => calculateXP(logs, followers)

@@ -25,6 +25,7 @@ import ReviewDetailScreen from '../screens/ReviewDetailScreen'
 import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
 import LibraryStatusScreen from '../screens/LibraryStatusScreen'
+import RankProgressScreen from '../screens/RankProgressScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -54,6 +55,7 @@ export type MainStackParamList = {
   Watch: undefined
   WebView: { url: string; title: string }
   LibraryStatus: { userId: string; status: string }
+  RankProgress: undefined
   // Admin routes (developer only)
   AdminHeroBanners: undefined
   AdminCuratedLists: undefined
@@ -181,6 +183,13 @@ function MainNavigator() {
       <MainStack.Screen
         name="LibraryStatus"
         component={LibraryStatusScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="RankProgress"
+        component={RankProgressScreen}
         options={{
           animation: 'slide_from_right',
         }}

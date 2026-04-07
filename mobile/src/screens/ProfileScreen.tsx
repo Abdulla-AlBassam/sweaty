@@ -487,7 +487,9 @@ export default function ProfileScreen() {
             <Text style={styles.statValue}>{completed}</Text>
             <Text style={styles.statLabel}>completed</Text>
           </View>
-          <XPProgressBar levelInfo={levelInfo} />
+          <TouchableOpacity onPress={() => navigation.navigate('RankProgress' as never)} activeOpacity={0.7}>
+            <XPProgressBar levelInfo={levelInfo} />
+          </TouchableOpacity>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{playing}</Text>
             <Text style={styles.statLabel}>playing</Text>

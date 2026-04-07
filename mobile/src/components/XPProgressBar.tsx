@@ -14,7 +14,7 @@ interface XPProgressBarProps {
 
 export default function XPProgressBar({ levelInfo, variant = 'ring' }: XPProgressBarProps) {
   const { level, rank, currentXP, xpForNextLevel, progress } = levelInfo
-  const isMaxLevel = level === 11
+  const isMaxLevel = level === 15
   const badgeColor = getBadgeColor(level)
   const fillProgress = isMaxLevel ? 100 : progress
 
@@ -31,7 +31,7 @@ export default function XPProgressBar({ levelInfo, variant = 'ring' }: XPProgres
         <View style={styles.detailedTrack}>
           <View style={[styles.detailedFill, { width: `${fillProgress}%`, backgroundColor: badgeColor }]} />
         </View>
-        <Text style={styles.detailedLevel}>Level {level} of 11</Text>
+        <Text style={styles.detailedLevel}>Level {level} of 15</Text>
       </View>
     )
   }
