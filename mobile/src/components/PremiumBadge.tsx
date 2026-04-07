@@ -25,10 +25,10 @@ const BADGE_VARIANTS = {
     label: 'PREMIUM',
   },
   developer: {
-    colors: [Colors.accent, Colors.accentMuted, Colors.accentMuted] as const,
-    shadowColor: Colors.accent,
-    textColor: Colors.text,
-    iconColor: Colors.text,
+    colors: ['#8B1A2B', '#6B1520', '#4A0F17'] as const,
+    shadowColor: '#8B1A2B',
+    textColor: '#FFFFFF',
+    iconColor: '#FFFFFF',
     label: 'DEVELOPER',
   },
 }
@@ -124,11 +124,13 @@ export default function PremiumBadge({ size = 'medium', variant = 'premium' }: P
 
         {/* Content */}
         <View style={styles.content}>
-          <Ionicons
-            name="diamond"
-            size={currentSize.iconSize}
-            color={badgeStyle.iconColor}
-          />
+          {variant !== 'developer' && (
+            <Ionicons
+              name="diamond"
+              size={currentSize.iconSize}
+              color={badgeStyle.iconColor}
+            />
+          )}
           <Text style={[styles.text, { fontSize: currentSize.fontSize, color: badgeStyle.textColor }]}>
             {badgeStyle.label}
           </Text>

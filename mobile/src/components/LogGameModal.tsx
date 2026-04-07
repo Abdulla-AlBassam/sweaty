@@ -8,7 +8,6 @@ import {
   Image,
   ScrollView,
   Pressable,
-  TextInput,
   FlatList,
   KeyboardAvoidingView,
   Platform,
@@ -31,6 +30,8 @@ import { haptics } from '../hooks/useHaptics'
 import PressableScale from './PressableScale'
 import SweatDropIcon from './SweatDropIcon'
 import CreateListModal from './CreateListModal'
+import ReviewEditorModal from './ReviewEditorModal'
+import FormattedText from './FormattedText'
 
 // XP values for different statuses
 const GAMER_XP_VALUES: Record<string, number> = {
@@ -55,7 +56,7 @@ interface StarIconProps {
   color?: string
 }
 
-function StarIcon({ starNumber, rating, size = 32, color = Colors.accent }: StarIconProps) {
+function StarIcon({ starNumber, rating, size = 32, color = Colors.gold }: StarIconProps) {
   if (!rating) {
     return <Ionicons name="star-outline" size={size} color={Colors.textDim} />
   }
@@ -133,6 +134,8 @@ export default function LogGameModal({
   const [platformPickerVisible, setPlatformPickerVisible] = useState(false)
   const [listsPickerVisible, setListsPickerVisible] = useState(false)
   const [showCreateListModal, setShowCreateListModal] = useState(false)
+  const [reviewEditorVisible, setReviewEditorVisible] = useState(false)
+
 
   // Lists functionality
   const { lists, isLoading: listsLoading, refetch: refetchLists } = useUserLists(user?.id)
@@ -484,7 +487,7 @@ export default function LogGameModal({
                   <Ionicons
                     name={item.icon as any}
                     size={22}
-                    color={selectedValue === item.value ? Colors.accent : Colors.textMuted}
+                    color={selectedValue === item.value ? '#F0E4D0' : Colors.textMuted}
                     style={styles.pickerItemIcon}
                   />
                 )}
@@ -497,7 +500,7 @@ export default function LogGameModal({
                   {item.label}
                 </Text>
                 {selectedValue === item.value && (
-                  <Ionicons name="checkmark" size={22} color={Colors.accent} />
+                  <Ionicons name="checkmark" size={22} color={'#F0E4D0'} />
                 )}
               </TouchableOpacity>
             )}
@@ -546,126 +549,124 @@ export default function LogGameModal({
             </TouchableOpacity>
 
             {/* Status Dropdown */}
-            <Text style={styles.sectionLabel}>Log Game As...</Text>
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setStatusPickerVisible(true)}
               accessibilityLabel={currentStatusOption ? `Status: ${currentStatusOption.label}` : 'Select status'}
               accessibilityRole="button"
             >
-              <View style={styles.dropdownContent}>
+              <View style={styles.dropdownInner}>
                 {currentStatusOption ? (
                   <>
-                    <Ionicons
-                      name={currentStatusOption.icon as any}
-                      size={20}
-                      color={Colors.textMuted}
-                    />
-                    <Text style={styles.dropdownText}>{currentStatusOption.label}</Text>
+                    <Text style={styles.dropdownLabel}>Log Game As...</Text>
+                    <View style={styles.dropdownContent}>
+                      <Ionicons
+                        name={currentStatusOption.icon as any}
+                        size={18}
+                        color={Colors.textMuted}
+                      />
+                      <Text style={styles.dropdownText}>{currentStatusOption.label}</Text>
+                    </View>
                   </>
                 ) : (
-                  <Text style={styles.dropdownPlaceholder}>Select Status</Text>
+                  <Text style={styles.dropdownPlaceholder}>Log Game As...</Text>
                 )}
               </View>
               <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
 
-            {/* Platform Dropdown - Always show with our granular platform options */}
-            <Text style={styles.sectionLabel}>Platform</Text>
+            {/* Platform Dropdown */}
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setPlatformPickerVisible(true)}
               accessibilityLabel={platform ? `Platform: ${platform}` : 'Select platform'}
               accessibilityRole="button"
             >
-              <View style={styles.dropdownContent}>
+              <View style={styles.dropdownInner}>
                 {platform ? (
-                  <Text style={styles.dropdownText}>{platform}</Text>
+                  <>
+                    <Text style={styles.dropdownLabel}>Platform</Text>
+                    <Text style={styles.dropdownText}>{platform}</Text>
+                  </>
                 ) : (
-                  <Text style={styles.dropdownPlaceholder}>Select Platform</Text>
+                  <Text style={styles.dropdownPlaceholder}>Platform</Text>
                 )}
               </View>
               <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
 
             {/* Rating */}
-            <Text style={styles.sectionLabel}>Rating {rating ? `(${rating})` : ''}</Text>
-            <View style={styles.ratingContainer}>
-              {[1, 2, 3, 4, 5].map((starNumber) => (
-                <View key={starNumber} style={styles.starWrapper}>
-                  {/* Left half - gives X.5 rating */}
-                  <TouchableOpacity
-                    style={styles.starHalfTouch}
-                    onPress={() => handleHalfStarPress(starNumber, true)}
-                    activeOpacity={0.7}
-                    accessibilityLabel={`Rate ${starNumber - 0.5} stars`}
-                    accessibilityRole="button"
-                  />
-                  {/* Right half - gives X.0 rating */}
-                  <TouchableOpacity
-                    style={styles.starHalfTouch}
-                    onPress={() => handleHalfStarPress(starNumber, false)}
-                    activeOpacity={0.7}
-                    accessibilityLabel={`Rate ${starNumber} stars`}
-                    accessibilityRole="button"
-                  />
-                  {/* Star icon (positioned absolutely so touch zones work) */}
-                  <View style={styles.starIconContainer} pointerEvents="none">
-                    <StarIcon starNumber={starNumber} rating={rating} size={36} />
+            <Text style={styles.ratingLabel}>Rating{rating ? ` (${rating})` : ''}</Text>
+            <View style={styles.ratingRow}>
+                {[1, 2, 3, 4, 5].map((starNumber) => (
+                  <View key={starNumber} style={styles.starWrapper}>
+                    <TouchableOpacity
+                      style={styles.starHalfTouch}
+                      onPress={() => handleHalfStarPress(starNumber, true)}
+                      activeOpacity={0.7}
+                      accessibilityLabel={`Rate ${starNumber - 0.5} stars`}
+                      accessibilityRole="button"
+                    />
+                    <TouchableOpacity
+                      style={styles.starHalfTouch}
+                      onPress={() => handleHalfStarPress(starNumber, false)}
+                      activeOpacity={0.7}
+                      accessibilityLabel={`Rate ${starNumber} stars`}
+                      accessibilityRole="button"
+                    />
+                    <View style={styles.starIconContainer} pointerEvents="none">
+                      <StarIcon starNumber={starNumber} rating={rating} size={36} />
+                    </View>
                   </View>
-                </View>
-              ))}
-              {rating && (
-                <TouchableOpacity onPress={() => setRating(null)} style={styles.clearRating} accessibilityLabel="Clear rating" accessibilityRole="button">
-                  <Text style={styles.clearRatingText}>Clear</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+                ))}
+                {rating && (
+                  <TouchableOpacity onPress={() => setRating(null)} style={styles.clearRating} accessibilityLabel="Clear rating" accessibilityRole="button">
+                    <Text style={styles.clearRatingText}>Clear</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
 
             {/* Review */}
-            <Text style={styles.sectionLabel}>Review</Text>
-            <View style={styles.reviewContainer}>
-              <TextInput
-                style={styles.reviewInput}
-                placeholder="Write your thoughts about this game..."
-                placeholderTextColor={Colors.textDim}
-                value={review}
-                onChangeText={(text) => setReview(text.slice(0, 2000))}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-                accessibilityLabel="Write a review"
-              />
-              <Text style={styles.reviewCharCount}>
-                {review.length}/2000
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={styles.reviewContainer}
+              onPress={() => setReviewEditorVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.fieldBoxLabel}>Review</Text>
+              {review ? (
+                <FormattedText style={styles.reviewPreviewText} numberOfLines={3}>
+                  {review}
+                </FormattedText>
+              ) : (
+                <Text style={styles.reviewPlaceholder}>Add a review...</Text>
+              )}
+            </TouchableOpacity>
 
             {/* Add to Lists */}
             {user && (
-              <>
-                <Text style={styles.sectionLabel}>Add to Lists</Text>
-                <TouchableOpacity
-                  style={styles.dropdown}
-                  onPress={() => setListsPickerVisible(true)}
-                  disabled={listsLoading}
-                  accessibilityLabel={gameInLists.size > 0 ? `${gameInLists.size} lists selected` : 'Select lists'}
-                  accessibilityRole="button"
-                >
-                  <View style={styles.dropdownContent}>
-                    {listsLoading ? (
-                      <Text style={styles.dropdownPlaceholder}>Loading lists...</Text>
-                    ) : gameInLists.size > 0 ? (
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setListsPickerVisible(true)}
+                disabled={listsLoading}
+                accessibilityLabel={gameInLists.size > 0 ? `${gameInLists.size} lists selected` : 'Select lists'}
+                accessibilityRole="button"
+              >
+                <View style={styles.dropdownInner}>
+                  {listsLoading ? (
+                    <Text style={styles.dropdownPlaceholder}>Loading lists...</Text>
+                  ) : gameInLists.size > 0 ? (
+                    <>
+                      <Text style={styles.dropdownLabel}>Add to Lists</Text>
                       <Text style={styles.dropdownText} numberOfLines={1}>
                         {gameInLists.size} {gameInLists.size === 1 ? 'list' : 'lists'} selected
                       </Text>
-                    ) : (
-                      <Text style={styles.dropdownPlaceholder}>Select Lists</Text>
-                    )}
-                  </View>
-                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
-                </TouchableOpacity>
-              </>
+                    </>
+                  ) : (
+                    <Text style={styles.dropdownPlaceholder}>Add to Lists</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+              </TouchableOpacity>
             )}
 
             {/* Error */}
@@ -772,7 +773,7 @@ export default function LogGameModal({
                   accessibilityLabel="Create new list"
                   accessibilityRole="button"
                 >
-                  <Ionicons name="add" size={22} color={Colors.accent} />
+                  <Ionicons name="add" size={22} color={'rgba(240, 228, 208, 0.6)'} />
                   <Text style={styles.newListButtonText}>New list</Text>
                 </TouchableOpacity>
               }
@@ -807,9 +808,9 @@ export default function LogGameModal({
                       )}
                     </View>
                     {isLoadingItem ? (
-                      <LoadingSpinner size="small" color={Colors.accent} />
+                      <LoadingSpinner size="small" color={'#F0E4D0'} />
                     ) : isInList ? (
-                      <Ionicons name="checkmark" size={22} color={Colors.accent} />
+                      <Ionicons name="checkmark" size={22} color={'#F0E4D0'} />
                     ) : (
                       <View style={styles.listEmptyCheckPicker} />
                     )}
@@ -826,6 +827,16 @@ export default function LogGameModal({
         visible={showCreateListModal}
         onClose={() => setShowCreateListModal(false)}
         onCreated={handleListCreated}
+      />
+
+      <ReviewEditorModal
+        visible={reviewEditorVisible}
+        onClose={() => setReviewEditorVisible(false)}
+        onSave={(md) => {
+          setReview(md)
+          setReviewEditorVisible(false)
+        }}
+        initialValue={review}
       />
     </Modal>
   )
@@ -890,12 +901,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text,
   },
-  sectionLabel: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginBottom: Spacing.sm,
-  },
   // Dropdown styles
   dropdown: {
     backgroundColor: Colors.background,
@@ -907,7 +912,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
+  },
+  dropdownInner: {
+    flex: 1,
+  },
+  dropdownLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginBottom: 2,
   },
   dropdownContent: {
     flexDirection: 'row',
@@ -923,6 +937,21 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     color: Colors.textDim,
     fontSize: FontSize.md,
+  },
+  // Rating label (standalone, no box)
+  ratingLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.sm,
+  },
+  // Shared field box (review)
+  fieldBoxLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginBottom: Spacing.sm,
   },
   // Picker Modal styles
   pickerOverlay: {
@@ -974,13 +1003,13 @@ const styles = StyleSheet.create({
   },
   pickerItemTextSelected: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.accent,
+    color: '#F0E4D0',
   },
   // Rating styles
-  ratingContainer: {
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   starWrapper: {
     width: 44,
@@ -1010,24 +1039,25 @@ const styles = StyleSheet.create({
   },
   // Review styles
   reviewContainer: {
-    marginBottom: Spacing.xl,
-  },
-  reviewInput: {
-    fontFamily: Fonts.body,
     backgroundColor: Colors.background,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-    minHeight: 100,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.border,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    minHeight: 64,
   },
-  reviewCharCount: {
+  reviewPreviewText: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    lineHeight: FontSize.sm * 1.5,
+    marginTop: Spacing.xs,
+  },
+  reviewPlaceholder: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
     color: Colors.textDim,
-    textAlign: 'right',
     marginTop: Spacing.xs,
   },
   errorContainer: {
@@ -1059,7 +1089,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButton: {
-    backgroundColor: Colors.accent,
+    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    borderWidth: 1,
+    borderColor: '#F0E4D0',
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
@@ -1071,7 +1103,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.background,
+    color: '#F0E4D0',
     fontSize: FontSize.md,
   },
   // Lists styles
@@ -1102,7 +1134,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: Colors.accent,
+    backgroundColor: '#F0E4D0',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1126,7 +1158,7 @@ const styles = StyleSheet.create({
   createListButtonText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: 'rgba(240, 228, 208, 0.6)',
     marginLeft: Spacing.xs,
   },
   // Lists picker styles
@@ -1151,7 +1183,7 @@ const styles = StyleSheet.create({
   newListButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: Colors.accent,
+    color: 'rgba(240, 228, 208, 0.6)',
   },
   listPickerInfo: {
     flex: 1,

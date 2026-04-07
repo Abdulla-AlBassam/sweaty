@@ -10,6 +10,8 @@ import {
   Platform,
   Image,
   Dimensions,
+  Switch,
+  Linking,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import PressableScale from '../components/PressableScale'
@@ -27,7 +29,8 @@ import { supabase } from '../lib/supabase'
 import { usePremium } from '../hooks/usePremium'
 import BannerSelector from '../components/BannerSelector'
 import PremiumBadge from '../components/PremiumBadge'
-import { GamingPlatform } from '../types'
+import { GamingPlatform, NotificationPreferences } from '../types'
+import { useNotifications } from '../hooks/useNotifications'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_PREVIEW_HEIGHT = 80
@@ -45,6 +48,12 @@ export default function SettingsScreen() {
   const navigation = useNavigation<NavigationProp>()
   const { user, profile, signOut, refreshProfile } = useAuth()
   const { isPremium } = usePremium(profile?.subscription_tier, profile?.subscription_expires_at)
+  const {
+    preferences: notifPrefs,
+    isEnabled: notificationsEnabled,
+    requestPermissions,
+    updatePreference,
+  } = useNotifications(user?.id)
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [bannerUrl, setBannerUrl] = useState<string | null>(null)
@@ -281,6 +290,25 @@ export default function SettingsScreen() {
     )
   }
 
+  const handleNotificationToggle = async (key: keyof NotificationPreferences, value: boolean) => {
+    if (!notificationsEnabled) {
+      // Permissions not granted - prompt user
+      const granted = await requestPermissions()
+      if (!granted) {
+        Alert.alert(
+          'Notifications disabled',
+          'Enable notifications in your device settings to receive updates.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => Linking.openSettings() },
+          ]
+        )
+        return
+      }
+    }
+    updatePreference(key, value)
+  }
+
   const handleBannerSelect = (banner: { url: string; gameName: string }) => {
     setBannerUrl(banner.url)
     setBannerSelectorVisible(false)
@@ -304,7 +332,7 @@ export default function SettingsScreen() {
           accessibilityHint="Saves profile changes"
         >
           {isSaving ? (
-            <LoadingSpinner size="small" color={Colors.accent} />
+            <LoadingSpinner size="small" color={'#F0E4D0'} />
           ) : (
             <Text style={[styles.saveText, (!hasChanges || !!usernameError) && styles.saveTextDisabled]}>
               SAVE
@@ -323,7 +351,7 @@ export default function SettingsScreen() {
             <PressableScale onPress={pickImage} disabled={isUploadingAvatar} haptic="light" accessibilityLabel="Change profile picture" accessibilityRole="button">
               {isUploadingAvatar ? (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <LoadingSpinner size="large" color={Colors.accent} />
+                  <LoadingSpinner size="large" color={'#F0E4D0'} />
                 </View>
               ) : avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} accessibilityLabel="Your profile picture" />
@@ -469,9 +497,9 @@ export default function SettingsScreen() {
                     accessibilityState={{ selected: isSelected }}
                   >
                     {platform.iconLibrary === 'fa5' ? (
-                      <FontAwesome5 name={platform.icon} size={22} color={isSelected ? Colors.accent : Colors.textMuted} />
+                      <FontAwesome5 name={platform.icon} size={22} color={isSelected ? '#F0E4D0' : Colors.textMuted} />
                     ) : (
-                      <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? Colors.accent : Colors.textMuted} />
+                      <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? '#F0E4D0' : Colors.textMuted} />
                     )}
                   </PressableScale>
                 )
@@ -482,6 +510,53 @@ export default function SettingsScreen() {
 
           {/* ── Secondary Zone ── */}
           <View style={styles.zoneDivider} />
+
+          {/* Notifications */}
+          <View style={styles.sectionCompact}>
+            <Text style={styles.sectionTitle}>Notifications</Text>
+
+            <View style={styles.notifRow}>
+              <View style={styles.notifInfo}>
+                <Text style={styles.notifTitle}>New followers</Text>
+                <Text style={styles.notifSubtitle}>When someone follows you</Text>
+              </View>
+              <Switch
+                value={notificationsEnabled && notifPrefs.new_followers}
+                onValueChange={(v) => handleNotificationToggle('new_followers', v)}
+                trackColor={{ false: '#39393D', true: Colors.cream }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="#39393D"
+              />
+            </View>
+
+            <View style={styles.notifRow}>
+              <View style={styles.notifInfo}>
+                <Text style={styles.notifTitle}>Friend activity</Text>
+                <Text style={styles.notifSubtitle}>When someone you follow logs a game</Text>
+              </View>
+              <Switch
+                value={notificationsEnabled && notifPrefs.friend_activity}
+                onValueChange={(v) => handleNotificationToggle('friend_activity', v)}
+                trackColor={{ false: '#39393D', true: Colors.cream }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="#39393D"
+              />
+            </View>
+
+            <View style={[styles.notifRow, styles.notifRowLast]}>
+              <View style={styles.notifInfo}>
+                <Text style={styles.notifTitle}>Streak reminders</Text>
+                <Text style={styles.notifSubtitle}>Reminder to keep your streak alive</Text>
+              </View>
+              <Switch
+                value={notificationsEnabled && notifPrefs.streak_reminders}
+                onValueChange={(v) => handleNotificationToggle('streak_reminders', v)}
+                trackColor={{ false: '#39393D', true: Colors.cream }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor="#39393D"
+              />
+            </View>
+          </View>
 
           {/* Developer Tools - Only visible to developer */}
           {profile?.username === 'abdulla' && (
@@ -497,7 +572,7 @@ export default function SettingsScreen() {
                 haptic="light"
               >
                 <View style={styles.devToolContent}>
-                  <Ionicons name="images-outline" size={24} color={Colors.accent} />
+                  <Ionicons name="images-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
                   <View style={styles.devToolText}>
                     <Text style={styles.devToolTitle}>Hero Banners</Text>
                     <Text style={styles.devToolSubtitle}>Manage homepage featured banners</Text>
@@ -512,7 +587,7 @@ export default function SettingsScreen() {
                 haptic="light"
               >
                 <View style={styles.devToolContent}>
-                  <Ionicons name="list-outline" size={24} color={Colors.accent} />
+                  <Ionicons name="list-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
                   <View style={styles.devToolText}>
                     <Text style={styles.devToolTitle}>Curated Lists</Text>
                     <Text style={styles.devToolSubtitle}>Manage discovery lists</Text>
@@ -538,7 +613,7 @@ export default function SettingsScreen() {
               haptic="light"
             >
               <View style={styles.importGamesContent}>
-                <Ionicons name="cloud-download-outline" size={24} color={Colors.accent} />
+                <Ionicons name="cloud-download-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
                 <View style={styles.importGamesText}>
                   <Text style={styles.importGamesTitle}>Import from platforms</Text>
                   <Text style={styles.importGamesSubtitle}>
@@ -607,7 +682,7 @@ const styles = StyleSheet.create({
   saveText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: Colors.accent,
+    color: '#F0E4D0',
   },
   saveTextDisabled: {
     color: Colors.textDim,
@@ -639,7 +714,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surfaceBright,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -651,7 +726,7 @@ const styles = StyleSheet.create({
   changeAvatarText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: 'rgba(240, 228, 208, 0.6)',
     marginTop: Spacing.sm,
   },
   section: {
@@ -669,7 +744,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.sm,
-    color: Colors.text,
+    color: Colors.cream,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: Spacing.sectionHeaderBelow,
@@ -827,8 +902,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   platformButtonSelected: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accentDark,
+    borderColor: '#F0E4D0',
+    backgroundColor: 'rgba(240, 228, 208, 0.08)',
   },
   infoRow: {
     flexDirection: 'row',
@@ -920,6 +995,32 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.error,
+  },
+  notifRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  notifRowLast: {
+    borderBottomWidth: 0,
+  },
+  notifInfo: {
+    flex: 1,
+    marginRight: Spacing.lg,
+  },
+  notifTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  notifSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginTop: 2,
   },
   appInfo: {
     alignItems: 'center',

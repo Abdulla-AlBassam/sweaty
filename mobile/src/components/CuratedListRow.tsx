@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   seeAll: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
-    color: Colors.textMuted,
+    color: Colors.cream,
     lineHeight: 17,
   },
   scrollContent: {

@@ -368,12 +368,12 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               )}
               {communityStats.averageRating ? (
                 <View style={styles.ratingItem}>
-                  <Ionicons name="star" size={14} color={Colors.gold} />
+                  <Ionicons name="star" size={18} color={Colors.gold} />
                   <Text style={styles.ratingText}>{communityStats.averageRating}</Text>
                 </View>
               ) : null}
               <View style={styles.ratingItem}>
-                <SweatDropIcon size={14} variant="static" />
+                <SweatDropIcon size={18} variant="static" />
                 <Text style={styles.ratingText}>{communityStats.totalLogs || 0}</Text>
               </View>
             </View>
@@ -713,16 +713,16 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   ocIcon: {
-    width: 16,
-    height: 16,
+    width: 22,
+    height: 22,
   },
   ratingScore: {
     fontFamily: Fonts.bodyBold,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
   },
   ratingText: {
     fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
+    fontSize: FontSize.sm,
     color: Colors.text,
   },
   section: {

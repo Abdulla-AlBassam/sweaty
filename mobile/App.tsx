@@ -1,18 +1,21 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native'
+import { NavigationContainer, DefaultTheme, NavigationContainerRef } from '@react-navigation/native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import Toast, { BaseToast, ToastConfig } from 'react-native-toast-message'
 import * as Font from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
-import { AuthProvider } from './src/contexts/AuthContext'
+import * as Notifications from 'expo-notifications'
+import { AuthProvider, useAuth } from './src/contexts/AuthContext'
 import { QuickLogProvider, useQuickLog } from './src/contexts/QuickLogContext'
 import { CelebrationProvider } from './src/contexts/CelebrationContext'
+import { useNotifications } from './src/hooks/useNotifications'
 import { Colors } from './src/constants/colors'
 import { FontAssets, Fonts } from './src/constants/fonts'
 import Navigation from './src/navigation'
 import QuickLogModal from './src/components/QuickLogModal'
+import { MainStackParamList } from './src/navigation'
 
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync()
@@ -101,9 +104,37 @@ const theme = {
 
 function AppContent() {
   const { isQuickLogOpen, closeQuickLog } = useQuickLog()
+  const { user } = useAuth()
+  const navigationRef = useRef<NavigationContainerRef<MainStackParamList>>(null)
+
+  // Initialise push notification listeners
+  useNotifications(user?.id)
+
+  // Handle notification taps for deep linking
+  const lastNotificationResponse = Notifications.useLastNotificationResponse()
+  useEffect(() => {
+    if (!lastNotificationResponse || !navigationRef.current) return
+
+    const data = lastNotificationResponse.notification.request.content.data as Record<string, string> | undefined
+    if (!data?.type) return
+
+    switch (data.type) {
+      case 'new_follower':
+        if (data.username) {
+          navigationRef.current.navigate('UserProfile', { username: data.username })
+        }
+        break
+      case 'friend_activity':
+        if (data.gameId) {
+          navigationRef.current.navigate('GameDetail', { gameId: Number(data.gameId) })
+        }
+        break
+      // streak_reminder: just opens the app (no specific navigation)
+    }
+  }, [lastNotificationResponse])
 
   return (
-    <NavigationContainer theme={theme}>
+    <NavigationContainer ref={navigationRef} theme={theme}>
       <StatusBar style="light" />
       <Navigation />
       <QuickLogModal visible={isQuickLogOpen} onClose={closeQuickLog} />

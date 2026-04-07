@@ -797,8 +797,8 @@ export default function SearchScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={Colors.accent}
-              colors={[Colors.accent]}
+              tintColor={'#F0E4D0'}
+              colors={['#F0E4D0']}
             />
           }
         >
@@ -1168,7 +1168,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   browseTabActive: {
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: 'rgba(240, 228, 208, 0.08)',
   },
   browseTabText: {
     fontFamily: Fonts.bodyMedium,
@@ -1176,7 +1176,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   browseTabTextActive: {
-    color: Colors.text,
+    color: '#F0E4D0',
   },
   communityLoading: {
     paddingTop: Spacing.lg,
@@ -1246,8 +1246,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   filterPillActive: {
-    backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.borderBright,
+    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    borderColor: '#F0E4D0',
   },
   filterPillText: {
     fontFamily: Fonts.bodyMedium,
@@ -1257,7 +1257,7 @@ const styles = StyleSheet.create({
   },
   filterPillTextActive: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.text,
+    color: '#F0E4D0',
   },
   // List search styles
   listRow: {

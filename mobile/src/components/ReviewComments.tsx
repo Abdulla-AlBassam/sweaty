@@ -25,6 +25,14 @@ interface ReviewCommentsProps {
   previewMode?: boolean
   /** Called when tapped in preview mode */
   onPreviewPress?: () => void
+  /** When true, does not render the inline input bar (caller renders it separately) */
+  hideInput?: boolean
+  /** Called when Reply is pressed on a comment (used with hideInput) */
+  onReplyRequest?: (comment: ReviewComment | null) => void
+  /** Auto-expand comments on mount (skip toggle) */
+  autoExpand?: boolean
+  /** When true, hides the toggle button and only renders the expanded content */
+  hideToggle?: boolean
 }
 
 // Helper to format relative time
@@ -55,6 +63,7 @@ interface CommentItemProps {
 function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = false }: CommentItemProps) {
   const navigation = useNavigation()
   const isOwnComment = currentUserId === comment.user_id
+  const [repliesExpanded, setRepliesExpanded] = useState(false)
 
   const handleProfilePress = () => {
     if (comment.user?.username) {
@@ -114,10 +123,23 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
           )}
         </View>
 
-        {/* Nested replies */}
+        {/* Nested replies - collapsed by default */}
         {comment.replies && comment.replies.length > 0 && (
           <View style={styles.repliesContainer}>
-            {comment.replies.map((reply) => (
+            <TouchableOpacity
+              style={styles.repliesToggle}
+              onPress={() => setRepliesExpanded(!repliesExpanded)}
+              activeOpacity={0.7}
+              accessibilityLabel={repliesExpanded ? 'Hide replies' : `Show ${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}`}
+              accessibilityRole="button"
+            >
+              <View style={styles.repliesToggleLine} />
+              <Ionicons name={repliesExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textDim} />
+              <Text style={styles.repliesToggleText}>
+                {repliesExpanded ? 'Hide' : `${comment.replies.length} ${comment.replies.length === 1 ? 'reply' : 'replies'}`}
+              </Text>
+            </TouchableOpacity>
+            {repliesExpanded && comment.replies.map((reply) => (
               <CommentItem
                 key={reply.id}
                 comment={reply}
@@ -134,12 +156,12 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
   )
 }
 
-export default function ReviewComments({ gameLogId, initialCommentCount = 0, previewMode = false, onPreviewPress }: ReviewCommentsProps) {
+export default function ReviewComments({ gameLogId, initialCommentCount = 0, previewMode = false, onPreviewPress, hideInput = false, onReplyRequest, autoExpand = false, hideToggle = false }: ReviewCommentsProps) {
   const { user, profile } = useAuth()
   const [comments, setComments] = useState<ReviewComment[]>([])
   const [commentCount, setCommentCount] = useState(initialCommentCount)
   const [isLoading, setIsLoading] = useState(false)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(autoExpand)
   const [replyingTo, setReplyingTo] = useState<ReviewComment | null>(null)
   const [inputText, setInputText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -328,7 +350,11 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
   }
 
   const handleReply = (comment: ReviewComment) => {
-    setReplyingTo(comment)
+    if (onReplyRequest) {
+      onReplyRequest(comment)
+    } else {
+      setReplyingTo(comment)
+    }
   }
 
   const toggleExpanded = () => {
@@ -338,7 +364,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
   if (previewMode) {
     return (
       <TouchableOpacity style={styles.toggleButton} onPress={onPreviewPress} activeOpacity={0.7}>
-        <Ionicons name="chatbubble-outline" size={16} color={Colors.textMuted} />
+        <Ionicons name="chatbubble-outline" size={26} color={Colors.textMuted} />
         {commentCount > 0 && (
           <Text style={styles.countText}>{commentCount}</Text>
         )}
@@ -349,6 +375,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
   return (
     <>
       {/* Comment toggle button - stays inline with like button */}
+      {!hideToggle && (
       <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7} accessibilityLabel={isExpanded ? 'Hide comments' : `Show comments${commentCount > 0 ? `, ${commentCount} comments` : ''}`} accessibilityRole="button">
         <Ionicons
           name="chatbubble-outline"
@@ -359,6 +386,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
           <Text style={styles.countText}>{commentCount}</Text>
         )}
       </TouchableOpacity>
+      )}
 
       {/* Expanded comments section - full width below */}
       {isExpanded && (
@@ -387,7 +415,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
               )}
 
               {/* Comment input */}
-              {user && (
+              {user && !hideInput && (
                 <View style={styles.inputSection}>
                   {replyingTo && (
                     <View style={styles.replyingTo}>
@@ -543,6 +571,22 @@ const styles = StyleSheet.create({
   repliesContainer: {
     marginTop: Spacing.xs,
     marginLeft: Spacing.sm,
+  },
+  repliesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+  },
+  repliesToggleLine: {
+    width: 20,
+    height: 1,
+    backgroundColor: Colors.textDim,
+  },
+  repliesToggleText: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
   },
   inputSection: {
     marginTop: Spacing.md,

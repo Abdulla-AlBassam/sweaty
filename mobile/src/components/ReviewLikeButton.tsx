@@ -132,7 +132,7 @@ export default function ReviewLikeButton({
         <Ionicons
           name={isLiked ? 'heart' : 'heart-outline'}
           size={iconSize}
-          color={isLiked ? Colors.accentDark : Colors.textMuted}
+          color={isLiked ? Colors.error : Colors.textMuted}
         />
       </Animated.View>
       {likeCount > 0 && (

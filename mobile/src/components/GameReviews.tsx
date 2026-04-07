@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
+import FormattedText from './FormattedText'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -244,7 +245,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
               <Text style={styles.timeText}>{getRelativeTime(review.created_at)}</Text>
             </View>
           </TouchableOpacity>
-          <Text style={styles.reviewText}>{review.review}</Text>
+          <FormattedText style={styles.reviewText}>{review.review}</FormattedText>
 
           {/* Likes and Comments */}
           <View style={styles.socialSection}>

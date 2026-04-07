@@ -1,11 +1,11 @@
 import React from 'react'
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { ActivityItem as ActivityItemType, GameStatus } from '../types'
 import { getIGDBImageUrl } from '../constants'
 import StarRating from './StarRating'
+import FormattedText from './FormattedText'
 
 interface ActivityItemProps {
   activity: ActivityItemType
@@ -97,18 +97,20 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
 
         {hasReview && (
           <View style={styles.reviewRow}>
-            <Ionicons name="chatbubble-outline" size={11} color={Colors.textDim} style={styles.reviewIcon} accessible={false} />
-            <Text style={styles.reviewSnippet} numberOfLines={3}>
+            <FormattedText style={styles.reviewSnippet} numberOfLines={2}>
               {review!.trim()}
-            </Text>
+            </FormattedText>
           </View>
         )}
 
         <View style={styles.meta}>
           {rating && (
-            <View style={styles.ratingContainer}>
-              <StarRating rating={rating} size={14} />
-            </View>
+            <>
+              <View style={styles.ratingContainer}>
+                <StarRating rating={rating} size={12} />
+              </View>
+              <Text style={styles.metaDot}>·</Text>
+            </>
           )}
           <Text style={styles.time}>{getRelativeTime(created_at)}</Text>
         </View>
@@ -178,27 +180,28 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   reviewRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: Spacing.sm,
-    gap: Spacing.xs + 2,
-  },
-  reviewIcon: {
     marginTop: Spacing.xs,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.borderBright,
+    paddingLeft: Spacing.sm,
   },
   reviewSnippet: {
-    flex: 1,
     fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
-    lineHeight: 22,
+    lineHeight: 18,
     fontStyle: 'italic',
   },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.sm,
-    gap: Spacing.sm,
+    marginTop: Spacing.xs,
+    gap: Spacing.xs,
+  },
+  metaDot: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
   },
   ratingContainer: {
     flexDirection: 'row',

@@ -13,6 +13,15 @@
       "resizeMode": "contain",
       "backgroundColor": "#14181c"
     },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#0A0A0A"
+        }
+      ]
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sweaty.app"

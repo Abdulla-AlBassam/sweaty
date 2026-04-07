@@ -209,6 +209,10 @@ export default function ProfileScreen() {
   const totalGames = logs.length
   const completed = logs.filter((l) => l.status === 'completed').length
   const playing = logs.filter((l) => l.status === 'playing').length
+  const played = logs.filter((l) => l.status === 'played').length
+  const wantToPlay = logs.filter((l) => l.status === 'want_to_play').length
+  const onHold = logs.filter((l) => l.status === 'on_hold').length
+  const dropped = logs.filter((l) => l.status === 'dropped').length
   const ratings = logs.filter((l) => l.rating).map((l) => l.rating as number)
   const avgRating = ratings.length > 0
     ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
@@ -343,8 +347,8 @@ export default function ProfileScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={Colors.accent}
-            colors={[Colors.accent]}
+            tintColor={'#F0E4D0'}
+            colors={['#F0E4D0']}
           />
         }
       >
@@ -471,6 +475,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+
         {/* Rank */}
         <View style={styles.ranksSection}>
           <XPProgressBar levelInfo={levelInfo} />
@@ -587,7 +592,7 @@ export default function ProfileScreen() {
                   accessibilityRole="button"
                   accessibilityHint="Opens list creation form"
                 >
-                  <Ionicons name="add" size={18} color={Colors.accent} />
+                  <Ionicons name="add" size={18} color={'rgba(240, 228, 208, 0.6)'} />
                   <Text style={styles.newListButtonText}>New</Text>
                 </TouchableOpacity>
               </View>
@@ -775,7 +780,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.xl,
-    color: Colors.text,
+    color: Colors.cream,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
@@ -813,7 +818,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 40,
-    color: Colors.accent,
+    color: '#F0E4D0',
   },
   displayName: {
     fontFamily: Fonts.display,
@@ -850,11 +855,11 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    paddingVertical: Spacing.md,            // 12px vertical padding
+    paddingVertical: Spacing.lg,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: Colors.border,
-    marginHorizontal: Spacing.screenPadding,
+    marginHorizontal: Spacing.lg,
   },
   stat: {
     alignItems: 'center',
@@ -869,7 +874,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSize.lg,
-    color: Colors.text,
+    color: Colors.cream,
   },
   statLabel: {
     fontFamily: Fonts.body,
@@ -884,7 +889,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.sm,                  // Smaller, consistent headers
-    color: Colors.text,
+    color: Colors.cream,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     marginBottom: Spacing.sectionHeaderBelow, // 16px below header
@@ -905,7 +910,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: 'rgba(240, 228, 208, 0.6)',
   },
   favoritesRow: {
     flexDirection: 'row',
@@ -1055,7 +1060,7 @@ const styles = StyleSheet.create({
   newListButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: 'rgba(240, 228, 208, 0.6)',
     marginLeft: 4,
   },
   listsScroll: {
@@ -1077,7 +1082,7 @@ const styles = StyleSheet.create({
   seeAllListsText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: Colors.accent,
+    color: 'rgba(240, 228, 208, 0.6)',
   },
   emptyListsState: {
     alignItems: 'center',
@@ -1095,7 +1100,9 @@ const styles = StyleSheet.create({
   createListButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.accent,
+    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    borderWidth: 1,
+    borderColor: '#F0E4D0',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
@@ -1103,7 +1110,7 @@ const styles = StyleSheet.create({
   createListButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: Colors.background,
+    color: '#F0E4D0',
     marginLeft: Spacing.xs,
   },
 })

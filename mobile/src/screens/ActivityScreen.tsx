@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.display,
     fontSize: FontSize.xl,
     lineHeight: 28,
-    color: Colors.text,
+    color: Colors.cream,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
@@ -284,8 +284,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   pillActive: {
-    backgroundColor: Colors.surfaceLight,
-    borderColor: Colors.borderBright,
+    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    borderColor: '#F0E4D0',
   },
   pillText: {
     fontFamily: Fonts.bodyMedium,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   },
   pillTextActive: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.text,
+    color: '#F0E4D0',
   },
   scrollView: {
     flex: 1,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     lineHeight: 17,
-    color: Colors.textDim,
+    color: Colors.cream,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     paddingLeft: Spacing.xs,

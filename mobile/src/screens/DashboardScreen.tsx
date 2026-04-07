@@ -683,14 +683,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderSubtle,
+    borderBottomWidth: 2,
+    borderBottomColor: Colors.cream,
     marginBottom: Spacing.md,
   },
   groupHeaderText: {
     fontFamily: Fonts.display,
     fontSize: FontSize.lg,
-    color: Colors.text,
+    color: Colors.cream,
     lineHeight: 26,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
@@ -733,14 +733,14 @@ const styles = StyleSheet.create({
   seeAllText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
-    color: Colors.textMuted,
+    color: Colors.cream,
     lineHeight: 17,
   },
   pulsingDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: Colors.accent,
+    backgroundColor: '#2D6B4A',
   },
   // Horizontal scroll
   horizontalScroll: {

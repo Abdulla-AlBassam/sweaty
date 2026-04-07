@@ -79,6 +79,10 @@ interface Stats {
   totalGames: number
   completed: number
   playing: number
+  played: number
+  wantToPlay: number
+  onHold: number
+  dropped: number
   averageRating: number | null
 }
 
@@ -90,7 +94,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [gameLogs, setGameLogs] = useState<GameLog[]>([])
   const [favorites, setFavorites] = useState<FavoriteGame[]>([])
-  const [stats, setStats] = useState<Stats>({ totalGames: 0, completed: 0, playing: 0, averageRating: null })
+  const [stats, setStats] = useState<Stats>({ totalGames: 0, completed: 0, playing: 0, played: 0, wantToPlay: 0, onHold: 0, dropped: 0, averageRating: null })
   const [followerCount, setFollowerCount] = useState(0)
   const [followingCount, setFollowingCount] = useState(0)
   const [isFollowing, setIsFollowing] = useState(false)
@@ -246,7 +250,6 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         `)
         .eq('user_id', profile.id)
         .order('updated_at', { ascending: false })
-        .limit(20)
 
       if (data) {
         // Transform the data to handle the nested game object
@@ -260,6 +263,10 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         // Calculate stats
         const completed = logs.filter((l: any) => l.status === 'completed').length
         const playing = logs.filter((l: any) => l.status === 'playing').length
+        const played = logs.filter((l: any) => l.status === 'played').length
+        const wantToPlay = logs.filter((l: any) => l.status === 'want_to_play').length
+        const onHold = logs.filter((l: any) => l.status === 'on_hold').length
+        const dropped = logs.filter((l: any) => l.status === 'dropped').length
         const ratings = logs.filter((l: any) => l.rating).map((l: any) => l.rating as number)
         const avgRating = ratings.length > 0
           ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
@@ -269,6 +276,10 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           totalGames: logs.length,
           completed,
           playing,
+          played,
+          wantToPlay,
+          onHold,
+          dropped,
           averageRating: avgRating,
         })
       }
@@ -419,8 +430,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={Colors.accent}
-            colors={[Colors.accent]}
+            tintColor={'#F0E4D0'}
+            colors={['#F0E4D0']}
           />
         }
       >
@@ -467,54 +478,56 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           </View>
           <Text style={styles.username}>@{profile.username}</Text>
 
-          <View style={styles.followCounts}>
-            <TouchableOpacity
-              onPress={() => {
-                setFollowersModalType('followers')
-                setFollowersModalVisible(true)
-              }}
-              accessibilityLabel={followerCount + ' followers'}
-              accessibilityRole="button"
-            >
-              <Text style={styles.followText}>
-                <Text style={styles.followNumber}>{followerCount}</Text> followers
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setFollowersModalType('following')
-                setFollowersModalVisible(true)
-              }}
-              accessibilityLabel={followingCount + ' following'}
-              accessibilityRole="button"
-            >
-              <Text style={styles.followText}>
-                <Text style={styles.followNumber}>{followingCount}</Text> following
-              </Text>
-            </TouchableOpacity>
+          <View style={styles.followRow}>
+            <View style={styles.followCounts}>
+              <TouchableOpacity
+                onPress={() => {
+                  setFollowersModalType('followers')
+                  setFollowersModalVisible(true)
+                }}
+                accessibilityLabel={followerCount + ' followers'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.followText}>
+                  <Text style={styles.followNumber}>{followerCount}</Text> followers
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setFollowersModalType('following')
+                  setFollowersModalVisible(true)
+                }}
+                accessibilityLabel={followingCount + ' following'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.followText}>
+                  <Text style={styles.followNumber}>{followingCount}</Text> following
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Follow Button - compact pill */}
+            {!isOwnProfile && user && (
+              <TouchableOpacity
+                style={[styles.followButton, isFollowing && styles.followingButton]}
+                onPress={handleFollow}
+                disabled={isFollowLoading}
+                accessibilityLabel={isFollowing ? 'Unfollow ' + profile.username : 'Follow ' + profile.username}
+                accessibilityRole="button"
+              >
+                {isFollowLoading ? (
+                  <LoadingSpinner size="small" />
+                ) : (
+                  <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
+                    {isFollowing ? 'following' : 'follow'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            )}
           </View>
 
           {profile.bio && (
             <Text style={styles.bio}>{profile.bio}</Text>
-          )}
-
-          {/* Follow Button */}
-          {!isOwnProfile && user && (
-            <TouchableOpacity
-              style={[styles.followButton, isFollowing && styles.followingButton]}
-              onPress={handleFollow}
-              disabled={isFollowLoading}
-              accessibilityLabel={isFollowing ? 'Unfollow ' + profile.username : 'Follow ' + profile.username}
-              accessibilityRole="button"
-            >
-              {isFollowLoading ? (
-                <LoadingSpinner size="small" color={isFollowing ? Colors.text : Colors.background} />
-              ) : (
-                <Text style={[styles.followButtonText, isFollowing && styles.followingButtonText]}>
-                  {isFollowing ? 'following' : 'follow'}
-                </Text>
-              )}
-            </TouchableOpacity>
           )}
         </View>
 
@@ -540,6 +553,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <Text style={styles.statLabel}>avg rating</Text>
           </View>
         </View>
+
 
         {/* Rank */}
         <View style={styles.ranksSection}>
@@ -737,7 +751,7 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
   },
   bannerContainer: {
     width: SCREEN_WIDTH,
@@ -788,10 +802,15 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
+  followRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
   followCounts: {
     flexDirection: 'row',
     gap: Spacing.lg,
-    marginTop: Spacing.sm,
   },
   followText: {
     fontFamily: Fonts.body,
@@ -810,13 +829,13 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
   },
   followButton: {
-    backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
+    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    borderWidth: 1,
+    borderColor: '#F0E4D0',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
     alignItems: 'center',
-    marginTop: Spacing.md,
-    minWidth: 120,
   },
   followingButton: {
     backgroundColor: 'transparent',
@@ -825,8 +844,8 @@ const styles = StyleSheet.create({
   },
   followButtonText: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.background,
-    fontSize: FontSize.md,
+    color: '#F0E4D0',
+    fontSize: FontSize.sm,
   },
   followingButtonText: {
     color: Colors.text,
@@ -838,7 +857,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: Colors.border,
-    marginHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.screenPadding,
   },
   stat: {
     alignItems: 'center',
@@ -853,7 +872,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSize.lg,
-    color: Colors.text,
+    color: Colors.cream,
   },
   statLabel: {
     fontFamily: Fonts.body,
@@ -862,19 +881,19 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
   ranksSection: {
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
     paddingTop: Spacing.lg,
   },
   recentlyLoggedSection: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,
   },
   recentlyLoggedScroll: {
-    marginHorizontal: -Spacing.lg,
+    marginHorizontal: -Spacing.screenPadding,
   },
   recentlyLoggedContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.sm,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,
   },
   recentlyLoggedCard: {
     width: 105,
@@ -888,15 +907,17 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderSubtle,
   },
   section: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
+    paddingHorizontal: Spacing.screenPadding,
+    paddingTop: Spacing.xxl,
     marginBottom: Spacing.lg,
   },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.md,
-    color: Colors.textMuted,
-    marginBottom: Spacing.md,
+    fontSize: FontSize.sm,
+    color: Colors.cream,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: Spacing.sectionHeaderBelow,
   },
   filterTabsContainer: {
     marginBottom: Spacing.md,
@@ -915,8 +936,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   filterTabSelected: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
+    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    borderColor: '#F0E4D0',
   },
   filterTabDimmed: {
     opacity: 0.5,
@@ -928,7 +949,7 @@ const styles = StyleSheet.create({
   },
   filterTabTextSelected: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.background,
+    color: '#F0E4D0',
   },
   filterTabTextDimmed: {
     color: Colors.textDim,

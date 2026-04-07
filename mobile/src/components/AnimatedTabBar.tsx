@@ -132,7 +132,7 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
               ) : (
                 // Regular tab icon
                 <Animated.View style={styles.iconContainer}>
-                  {iconConfig && renderIcon(iconConfig, 22, isFocused ? Colors.text : Colors.textDim)}
+                  {iconConfig && renderIcon(iconConfig, 22, isFocused ? '#F0E4D0' : Colors.textDim)}
                 </Animated.View>
               )}
             </TouchableOpacity>
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: 'rgba(240, 228, 208, 0.08)',
   },
   tabsContainer: {
     flexDirection: 'row',

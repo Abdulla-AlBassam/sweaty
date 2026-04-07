@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import FormattedText from '../components/FormattedText'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { supabase } from '../lib/supabase'
@@ -184,7 +185,7 @@ export default function AllReviewsScreen({ navigation, route }: Props) {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.reviewText}>{review.review}</Text>
+      <FormattedText style={styles.reviewText}>{review.review}</FormattedText>
 
       <View style={styles.socialSection}>
         <ReviewLikeButton

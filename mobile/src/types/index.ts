@@ -18,6 +18,12 @@ export interface Game {
 export type SubscriptionTier = 'free' | 'trial' | 'monthly' | 'yearly' | 'lifetime'
 export type GamingPlatform = 'playstation' | 'xbox' | 'pc' | 'nintendo'
 
+export interface NotificationPreferences {
+  new_followers: boolean
+  friend_activity: boolean
+  streak_reminders: boolean
+}
+
 export interface Profile {
   id: string
   username: string
@@ -34,6 +40,7 @@ export interface Profile {
   current_streak: number
   longest_streak: number
   last_activity_at: string | null
+  notification_preferences: NotificationPreferences | null
   created_at: string
   updated_at: string
 }

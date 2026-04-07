@@ -10,15 +10,15 @@ export const Colors = {
   surfaceTranslucent: 'rgba(21, 21, 21, 0.7)',  // Frosted surface (auth forms)
   surfaceLightTranslucent: 'rgba(26, 26, 26, 0.9)',  // Translucent input fields (auth)
 
-  // PRIMARY ACCENT (Forest Green) - Primary actions only
+  // PRIMARY ACCENT (Off-white) - Primary actions only
   // Use for: Primary buttons, active filters, progress bars
-  accent: '#2D6B4A',          // Forest green (primary)
-  accentBright: '#3D8B63',    // Lighter forest green
-  accentMuted: '#1F4D35',     // Deep forest
-  accentSoft: '#4A9E6E',      // Soft green for text
-  accentDark: '#0F2A1C',      // Dark green tint
-  accentGlow: 'rgba(45, 107, 74, 0.2)',  // Subtle glow
-  accentSubtle: 'rgba(45, 107, 74, 0.12)',  // Subtle tint for highlighted items
+  accent: '#E0E0E0',          // Off-white (primary)
+  accentBright: '#FFFFFF',    // Pure white
+  accentMuted: '#B0B0B0',    // Muted off-white
+  accentSoft: '#C8C8C8',     // Soft off-white for text
+  accentDark: '#1E1E1E',     // Dark tint
+  accentGlow: 'rgba(224, 224, 224, 0.2)',  // Subtle glow
+  accentSubtle: 'rgba(224, 224, 224, 0.12)',  // Subtle tint for highlighted items
 
   // SECONDARY ACCENT (Gray) - Interactive text elements
   // Use for: Game titles, usernames, "See All" links
@@ -28,6 +28,9 @@ export const Colors = {
   cyanMuted: '#707070',       // Dimmer gray
   cyanGlow: 'rgba(138, 138, 138, 0.2)',  // Subtle glow
 
+  // BRAND ACCENT (Cream) - Section headers & brand identity
+  cream: '#F0E4D0',            // Warm cream (brand colour)
+
   // TERTIARY ACCENT (Gold) - Achievements & ratings
   // Use for: Star ratings, achievements, special badges
   gold: '#FFD700',            // Star ratings (kept)
@@ -35,12 +38,12 @@ export const Colors = {
   goldMuted: '#D4AF37',       // Dimmer gold
   goldGlow: 'rgba(255, 215, 0, 0.2)',  // Subtle glow
 
-  // FOREST GREEN ACCENT - Subtle effects & accents
+  // OFF-WHITE ACCENT - Subtle effects & accents
   // Use for: Plus button, borders, special effects
-  pink: '#2D6B4A',            // Forest green (replaces hot pink)
-  pinkBright: '#3D8B63',      // Lighter forest green
-  pinkMuted: '#1F4D35',       // Deeper forest green
-  pinkGlow: 'rgba(45, 107, 74, 0.3)',  // Forest green glow
+  pink: '#E0E0E0',            // Off-white (replaces forest green)
+  pinkBright: '#FFFFFF',      // Pure white
+  pinkMuted: '#B0B0B0',      // Muted off-white
+  pinkGlow: 'rgba(224, 224, 224, 0.3)',  // Off-white glow
 
   // Text hierarchy — off-white primary to reduce halation on dark surfaces
   // All values pass WCAG AA (4.5:1) on both background (#0A0A0A) and surface (#151515)
@@ -51,23 +54,23 @@ export const Colors = {
 
   // Pure white — use sparingly for high-emphasis moments (badges, active states)
   textBright: '#FFFFFF',      // Pure white (use only when contrast demands it)
-  textGreen: '#2D6B4A',       // Forest green text
+  textGreen: '#E0E0E0',       // Off-white text (was forest green)
 
   // Borders - Subtle definition
   border: '#222222',          // Standard border
   borderBright: '#333333',    // Emphasized border
   borderSubtle: 'rgba(255, 255, 255, 0.06)', // Very subtle white border (game covers, cards)
-  borderGlow: 'rgba(45, 107, 74, 0.15)',  // Subtle forest green tint
+  borderGlow: 'rgba(224, 224, 224, 0.15)',  // Subtle off-white tint
 
   // Status colors - Refined palette
   error: '#ef4444',           // Red
   errorGlow: 'rgba(239, 68, 68, 0.2)',  // Error background tint
   warning: '#f59e0b',         // Amber
-  success: '#2D6B4A',         // Forest green
+  success: '#E0E0E0',         // Off-white (was forest green)
 
   // Game status colors
   statusPlaying: '#3b82f6',   // Blue
-  statusCompleted: '#2D6B4A', // Forest green
+  statusCompleted: '#E0E0E0', // Off-white (was forest green)
   statusPlayed: '#8b5cf6',    // Purple
   statusWantToPlay: '#f59e0b',// Amber
   statusOnHold: '#6b7280',    // Gray

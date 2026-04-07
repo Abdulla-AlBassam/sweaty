@@ -6,17 +6,21 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  TextInput,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+import FormattedText from '../components/FormattedText'
 import { Fonts } from '../constants/fonts'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { MainStackParamList } from '../navigation'
+import { ReviewComment } from '../types'
 import StarRating from '../components/StarRating'
 import ReviewLikeButton from '../components/ReviewLikeButton'
 import ReviewComments from '../components/ReviewComments'
@@ -43,9 +47,13 @@ interface ReviewData {
 
 export default function ReviewDetailScreen({ navigation, route }: Props) {
   const { gameLogId, gameName, gameId, coverUrl } = route.params
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [review, setReview] = useState<ReviewData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [commentText, setCommentText] = useState('')
+  const [replyingTo, setReplyingTo] = useState<ReviewComment | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [commentRefreshKey, setCommentRefreshKey] = useState(0)
 
   useEffect(() => {
     fetchReview()
@@ -136,6 +144,30 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
   const handleGamePress = () => {
     if (review) {
       navigation.navigate('GameDetail', { gameId: review.game_id })
+    }
+  }
+
+  const handleCommentSubmit = async () => {
+    if (!user || !commentText.trim() || isSubmitting || !review) return
+    setIsSubmitting(true)
+    try {
+      const { error } = await supabase
+        .from('review_comments')
+        .insert({
+          user_id: user.id,
+          game_log_id: review.id,
+          parent_id: replyingTo?.id || null,
+          content: commentText.trim(),
+        })
+      if (error) throw error
+      setCommentText('')
+      setReplyingTo(null)
+      Keyboard.dismiss()
+      setCommentRefreshKey(k => k + 1)
+    } catch (err) {
+      console.error('Failed to add comment:', err)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -235,7 +267,7 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
 
           {/* Review text */}
           {review.review ? (
-            <Text style={styles.reviewText}>{review.review}</Text>
+            <FormattedText style={styles.reviewText}>{review.review}</FormattedText>
           ) : null}
 
           {/* Separator + social actions */}
@@ -250,10 +282,72 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
             <ReviewComments
               gameLogId={review.id}
               initialCommentCount={review.commentCount}
-              previewMode={false}
+              previewMode={true}
             />
           </View>
+
+          {/* Comments section label */}
+          <Text style={styles.commentsLabel}>Comments</Text>
+
+          {/* Comments list - full width below social row */}
+          <ReviewComments
+            key={commentRefreshKey}
+            gameLogId={review.id}
+            initialCommentCount={review.commentCount}
+            previewMode={false}
+            hideInput
+            hideToggle
+            autoExpand
+            onReplyRequest={setReplyingTo}
+          />
         </ScrollView>
+
+        {/* Comment input - pinned at bottom */}
+        {user && (
+          <View style={styles.inputBar}>
+            {replyingTo && (
+              <View style={styles.replyingTo}>
+                <Text style={styles.replyingToText}>
+                  Replying to <Text style={styles.replyingToName}>@{replyingTo.user?.username}</Text>
+                </Text>
+                <TouchableOpacity onPress={() => setReplyingTo(null)} accessibilityLabel="Cancel reply" accessibilityRole="button">
+                  <Ionicons name="close" size={14} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            )}
+            <View style={styles.inputRow}>
+              {profile?.avatar_url ? (
+                <Image source={{ uri: profile.avatar_url }} style={styles.inputAvatar} />
+              ) : (
+                <View style={[styles.inputAvatar, styles.inputAvatarPlaceholder]}>
+                  <Ionicons name="person" size={10} color={Colors.textDim} />
+                </View>
+              )}
+              <TextInput
+                style={styles.commentInput}
+                placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
+                placeholderTextColor={Colors.textDim}
+                value={commentText}
+                onChangeText={(text) => setCommentText(text.slice(0, 500))}
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                style={[styles.sendButton, (!commentText.trim() || isSubmitting) && styles.sendButtonDisabled]}
+                onPress={handleCommentSubmit}
+                disabled={!commentText.trim() || isSubmitting}
+                accessibilityLabel={replyingTo ? 'Send reply' : 'Send comment'}
+                accessibilityRole="button"
+              >
+                {isSubmitting ? (
+                  <LoadingSpinner size="small" color={Colors.text} />
+                ) : (
+                  <Ionicons name="arrow-up" size={16} color={commentText.trim() ? Colors.background : Colors.textDim} />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
@@ -368,6 +462,78 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  commentsLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
     marginBottom: Spacing.md,
+  },
+  // Pinned comment input bar
+  inputBar: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.background,
+  },
+  replyingTo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.sm,
+  },
+  replyingToText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textMuted,
+  },
+  replyingToName: {
+    fontFamily: Fonts.bodySemiBold,
+    color: Colors.accent,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.full,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.xs,
+  },
+  inputAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  inputAvatarPlaceholder: {
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commentInput: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    maxHeight: 80,
+  },
+  sendButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: Colors.surfaceLight,
   },
 })
