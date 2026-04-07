@@ -23,6 +23,19 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { MainStackParamList } from '../navigation'
 import * as ImagePicker from 'expo-image-picker'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+
+// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
+const TestBg = {
+  background: '#1A1A1C',
+  surface: '#2A2A2E',
+  surfaceLight: '#333338',
+  surfaceBright: '#3A3A3E',
+  border: '#2E2E32',
+  borderSubtle: 'rgba(255, 255, 255, 0.08)',
+  textDim: '#999999',
+  textMuted: '#A3A3A3',
+}
+// ── END COLOR SCHEME TEST ─────────────────────────────────
 import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -357,7 +370,7 @@ export default function SettingsScreen() {
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} accessibilityLabel="Your profile picture" />
               ) : (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Ionicons name="person" size={50} color={Colors.textDim} />
+                  <Ionicons name="person" size={50} color={TestBg.textDim} />
                 </View>
               )}
               <View style={styles.avatarEditBadge}>
@@ -369,52 +382,38 @@ export default function SettingsScreen() {
 
           {/* Banner Section */}
           <View style={styles.section}>
-            <View style={styles.sectionTitleRow}>
-              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Profile Banner</Text>
-              <PremiumBadge size="small" />
-            </View>
+            <Text style={styles.sectionTitle}>Profile Banner</Text>
 
-            {isPremium ? (
-              <PressableScale
-                style={styles.bannerPreviewContainer}
-                onPress={() => setBannerSelectorVisible(true)}
-                haptic="light"
-                accessibilityLabel="Change profile banner"
-                accessibilityRole="button"
-              >
-                {bannerUrl ? (
-                  <View style={styles.bannerPreviewWrapper}>
-                    <Image
-                      source={{ uri: bannerUrl }}
-                      style={styles.bannerPreview}
-                      resizeMode="cover"
-                      accessibilityLabel="Current profile banner"
-                    />
-                    <LinearGradient
-                      colors={['transparent', Colors.overlay]}
-                      style={styles.bannerPreviewGradient}
-                    />
-                    <View style={styles.bannerEditOverlay}>
-                      <Ionicons name="create-outline" size={18} color={Colors.text} />
-                    </View>
+            <PressableScale
+              style={styles.bannerPreviewContainer}
+              onPress={() => setBannerSelectorVisible(true)}
+              haptic="light"
+              accessibilityLabel="Change profile banner"
+              accessibilityRole="button"
+            >
+              {bannerUrl ? (
+                <View style={styles.bannerPreviewWrapper}>
+                  <Image
+                    source={{ uri: bannerUrl }}
+                    style={styles.bannerPreview}
+                    resizeMode="cover"
+                    accessibilityLabel="Current profile banner"
+                  />
+                  <LinearGradient
+                    colors={['transparent', Colors.overlay]}
+                    style={styles.bannerPreviewGradient}
+                  />
+                  <View style={styles.bannerEditOverlay}>
+                    <Ionicons name="create-outline" size={18} color={Colors.text} />
                   </View>
-                ) : (
-                  <View style={styles.bannerPlaceholder}>
-                    <Ionicons name="image-outline" size={24} color={Colors.textMuted} />
-                    <Text style={styles.bannerPlaceholderText}>Tap to select a banner</Text>
-                  </View>
-                )}
-              </PressableScale>
-            ) : (
-              <View style={styles.bannerLockedContainer}>
-                <View style={styles.bannerLockedContent}>
-                  <Ionicons name="lock-closed" size={24} color={Colors.textDim} />
-                  <Text style={styles.bannerLockedText}>
-                    Upgrade to Premium to customize your profile banner
-                  </Text>
                 </View>
-              </View>
-            )}
+              ) : (
+                <View style={styles.bannerPlaceholder}>
+                  <Ionicons name="image-outline" size={24} color={TestBg.textMuted} />
+                  <Text style={styles.bannerPlaceholderText}>Tap to select a banner</Text>
+                </View>
+              )}
+            </PressableScale>
           </View>
 
           {/* Profile Section */}
@@ -428,7 +427,7 @@ export default function SettingsScreen() {
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder="Your display name"
-                placeholderTextColor={Colors.textDim}
+                placeholderTextColor={TestBg.textDim}
                 maxLength={50}
                 accessibilityLabel="Display name"
                 accessibilityLabelledBy="displayNameLabel"
@@ -444,7 +443,7 @@ export default function SettingsScreen() {
                   value={username}
                   onChangeText={handleUsernameChange}
                   placeholder="username"
-                  placeholderTextColor={Colors.textDim}
+                  placeholderTextColor={TestBg.textDim}
                   maxLength={20}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -464,7 +463,7 @@ export default function SettingsScreen() {
                 value={bio}
                 onChangeText={(text) => setBio(text.slice(0, 160))}
                 placeholder="Tell us about yourself..."
-                placeholderTextColor={Colors.textDim}
+                placeholderTextColor={TestBg.textDim}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -497,9 +496,9 @@ export default function SettingsScreen() {
                     accessibilityState={{ selected: isSelected }}
                   >
                     {platform.iconLibrary === 'fa5' ? (
-                      <FontAwesome5 name={platform.icon} size={22} color={isSelected ? '#F0E4D0' : Colors.textMuted} />
+                      <FontAwesome5 name={platform.icon} size={22} color={isSelected ? '#F0E4D0' : TestBg.textMuted} />
                     ) : (
-                      <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? '#F0E4D0' : Colors.textMuted} />
+                      <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? '#F0E4D0' : TestBg.textMuted} />
                     )}
                   </PressableScale>
                 )
@@ -578,7 +577,7 @@ export default function SettingsScreen() {
                     <Text style={styles.devToolSubtitle}>Manage homepage featured banners</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
               </PressableScale>
 
               <PressableScale
@@ -593,7 +592,7 @@ export default function SettingsScreen() {
                     <Text style={styles.devToolSubtitle}>Manage discovery lists</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
               </PressableScale>
             </View>
           )}
@@ -603,7 +602,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>Account</Text>
 
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Email</Text>
+              <Ionicons name="mail-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
               <Text style={styles.infoValue} selectable>{user?.email || 'Not available'}</Text>
             </View>
 
@@ -621,7 +620,7 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+              <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
             </PressableScale>
           </View>
 
@@ -654,7 +653,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: TestBg.background,
   },
   header: {
     flexDirection: 'row',
@@ -662,7 +661,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   backButton: {
     padding: Spacing.sm,
@@ -685,7 +684,7 @@ const styles = StyleSheet.create({
     color: '#F0E4D0',
   },
   saveTextDisabled: {
-    color: Colors.textDim,
+    color: TestBg.textDim,
   },
   keyboardView: {
     flex: 1,
@@ -706,7 +705,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   avatarPlaceholder: {
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -714,14 +713,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: Colors.surfaceBright,
+    backgroundColor: TestBg.surfaceBright,
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: Colors.background,
+    borderColor: TestBg.background,
   },
   changeAvatarText: {
     fontFamily: Fonts.body,
@@ -737,7 +736,7 @@ const styles = StyleSheet.create({
   },
   zoneDivider: {
     height: 1,
-    backgroundColor: Colors.border,
+    backgroundColor: TestBg.border,
     marginTop: Spacing.sm,
     marginBottom: Spacing.xl,
   },
@@ -791,26 +790,26 @@ const styles = StyleSheet.create({
   bannerPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
     borderStyle: 'dashed',
     gap: Spacing.xs,
   },
   bannerPlaceholderText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   bannerLockedContainer: {
     width: '100%',
     height: BANNER_PREVIEW_HEIGHT,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
     overflow: 'hidden',
   },
   bannerLockedContent: {
@@ -825,7 +824,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textDim,
+    color: TestBg.textDim,
     textAlign: 'center',
   },
   inputGroup: {
@@ -834,7 +833,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     marginBottom: Spacing.xs,
   },
   input: {
@@ -846,18 +845,18 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   usernamePrefix: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: Colors.textDim,
+    color: TestBg.textDim,
   },
   usernameInput: {
     fontFamily: Fonts.body,
@@ -877,13 +876,13 @@ const styles = StyleSheet.create({
     minHeight: 80,
     paddingTop: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
     borderRadius: 0,
   },
   charCount: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: Colors.textDim,
+    color: TestBg.textDim,
     textAlign: 'right',
     marginTop: Spacing.xs,
   },
@@ -895,11 +894,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
   },
   platformButtonSelected: {
     borderColor: '#F0E4D0',
@@ -909,17 +908,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
     marginBottom: Spacing.sm,
   },
   infoLabel: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   infoValue: {
     fontFamily: Fonts.body,
@@ -930,11 +929,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
   },
   devToolContent: {
     flexDirection: 'row',
@@ -952,17 +951,17 @@ const styles = StyleSheet.create({
   devToolSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   importGamesButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
   },
   importGamesContent: {
     flexDirection: 'row',
@@ -980,7 +979,7 @@ const styles = StyleSheet.create({
   importGamesSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   signOutButton: {
     flexDirection: 'row',
@@ -1002,7 +1001,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   notifRowLast: {
     borderBottomWidth: 0,
@@ -1019,7 +1018,7 @@ const styles = StyleSheet.create({
   notifSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     marginTop: 2,
   },
   appInfo: {
@@ -1030,6 +1029,6 @@ const styles = StyleSheet.create({
   appVersion: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
-    color: Colors.textDim,
+    color: TestBg.textDim,
   },
 })

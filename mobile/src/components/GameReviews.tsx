@@ -208,8 +208,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
         <Text style={styles.sectionTitle}>Reviews ({totalCount})</Text>
         {totalCount > PREVIEW_LIMIT && (
           <TouchableOpacity onPress={handleShowAll} style={styles.seeAllButton} accessibilityLabel={'See all ' + totalCount + ' reviews'} accessibilityRole="button">
-            <Text style={styles.seeAllText}>See all</Text>
-            <Ionicons name="chevron-forward" size={14} color={Colors.textMuted} />
+            <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
           </TouchableOpacity>
         )}
       </View>

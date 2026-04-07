@@ -15,7 +15,7 @@ import {
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useScrollToTop } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAuth } from '../contexts/AuthContext'
@@ -40,14 +40,34 @@ import Skeleton from '../components/Skeleton'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
+// ── COLOR SCHEME TEST ──────────────────────────────────────
+// Temporary overrides to preview a warmer, lighter palette.
+// Only affects DashboardScreen. Delete this block to revert.
+const TestBg = {
+  background: '#1A1A1C',         // Warm dark gray (was #0A0A0A)
+  surface: '#2A2A2E',            // Elevated surface (was #151515)
+  surfaceLight: '#333338',       // Brighter surface (was #1E1E1E)
+  alternate: '#1E1E21',          // Alternating section bg
+  gradientEnd: 'rgba(26, 26, 28, 0.85)',
+  gradientStart: 'rgba(26, 26, 28, 0.6)',
+  // Text bumped for contrast on lighter bg
+  textDim: '#999999',            // Was #808080 — now 4.5:1 on new bg
+  textMuted: '#A3A3A3',          // Was #8E8E8E — now 5:1 on new bg
+  borderSubtle: 'rgba(255, 255, 255, 0.08)',
+}
+// ── END COLOR SCHEME TEST ─────────────────────────────────
+
 // Background colors for section groups
 const SectionBg = {
-  base: Colors.background,        // #0f0f0f
-  alternate: '#111112',           // Subtle, blends with base
+  base: TestBg.background,
+  alternate: TestBg.alternate,
 }
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
+  const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
   useScrollToTop(scrollRef)
   const { user, profile } = useAuth()
@@ -226,14 +246,14 @@ export default function DashboardScreen() {
       <Text style={styles.groupHeaderText}>{title}</Text>
       {onSeeAll && (
         <PressableScale onPress={onSeeAll} haptic="light" accessibilityLabel={'See all ' + title} accessibilityRole="button" accessibilityHint="Shows all items in this section">
-          <Text style={styles.seeAllText}>See All</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
         </PressableScale>
       )}
     </View>
   )
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.container}>
       <ScrollView
         ref={scrollRef}
         style={styles.scrollView}
@@ -246,8 +266,9 @@ export default function DashboardScreen() {
         {/* Custom refresh indicator — negative margin hides it above content.
             Pull-down rubber-band reveals it. LayoutAnimation expands space during refresh. */}
         <View style={[styles.refreshContainer, {
-          height: REFRESH_HEIGHT,
-          marginTop: refreshing ? 0 : -REFRESH_HEIGHT,
+          height: REFRESH_HEIGHT + insets.top,
+          paddingTop: insets.top,
+          marginTop: refreshing ? 0 : -(REFRESH_HEIGHT + insets.top),
         }]}>
           <Animated.View
             style={{
@@ -264,10 +285,10 @@ export default function DashboardScreen() {
           </Animated.View>
         </View>
 
-        {/* Hero Banner - Featured Game Screenshot (at the very top) */}
+        {/* Hero Banner - Featured Game Screenshot (edge-to-edge, behind status bar) */}
         {currentBanner && (
           <PressableScale
-            style={styles.heroBannerContainer}
+            style={[styles.heroBannerContainer, { height: SCREEN_HEIGHT * 0.30 + insets.top }]}
             onPress={() => handleGamePress(currentBanner.game_id)}
             haptic="light"
             scale={0.99}
@@ -283,12 +304,12 @@ export default function DashboardScreen() {
             />
             {/* Top gradient for containment */}
             <LinearGradient
-              colors={[Colors.gradientStart, 'transparent']}
+              colors={[TestBg.gradientStart, 'transparent']}
               style={styles.heroBannerGradientTop}
             />
             {/* Bottom gradient for page continuation */}
             <LinearGradient
-              colors={['transparent', Colors.gradientEnd, Colors.background]}
+              colors={['transparent', TestBg.gradientEnd, TestBg.background]}
               locations={[0, 0.6, 1]}
               style={styles.heroBannerGradient}
             />
@@ -303,7 +324,7 @@ export default function DashboardScreen() {
         {/* YOUR GAMES Section Group */}
         {/* ═══════════════════════════════════════════════ */}
         {currentlyPlaying.length > 0 && (
-          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base }]}>
+          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base, paddingTop: currentBanner ? Spacing.lg : Spacing.lg + insets.top, marginTop: currentBanner ? -70 : 0, zIndex: 1 }]}>
             <SectionGroupHeader title="Your Games" />
 
             {/* NOW PLAYING */}
@@ -353,7 +374,7 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* SOCIAL Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate, paddingTop: (!currentBanner && currentlyPlaying.length === 0) ? Spacing.lg + insets.top : Spacing.lg, marginTop: (currentBanner && currentlyPlaying.length === 0) ? -70 : 0, zIndex: 1 }]}>
           <SectionGroupHeader title="Social" />
 
           {/* FRIENDS ARE PLAYING */}
@@ -421,7 +442,7 @@ export default function DashboardScreen() {
                   accessibilityRole="button"
                   accessibilityHint="Shows all items in this section"
                 >
-                  <Text style={styles.seeAllText}>See All</Text>
+                  <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
                 </PressableScale>
               )}
             </View>
@@ -504,7 +525,7 @@ export default function DashboardScreen() {
                               />
                             ) : (
                               <View style={[styles.communityAvatar, styles.avatarPlaceholder]}>
-                                <Ionicons name="person" size={10} color={Colors.textDim} />
+                                <Ionicons name="person" size={10} color={TestBg.textDim} />
                               </View>
                             )}
                             <Text style={styles.communityUsername} numberOfLines={1}>
@@ -559,7 +580,7 @@ export default function DashboardScreen() {
                     accessibilityRole="button"
                     accessibilityHint="Shows all items in this section"
                   >
-                    <Text style={styles.seeAllText}>See All</Text>
+                    <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
                   </PressableScale>
                 )}
               </View>
@@ -614,14 +635,14 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: TestBg.background,
   },
   scrollView: {
     flex: 1,
@@ -635,7 +656,7 @@ const styles = StyleSheet.create({
   },
   // Hero Banner - Cinematic full-width at top
   heroBannerContainer: {
-    height: 220,
+    // Height set dynamically: SCREEN_HEIGHT * 0.38 + insets.top
     position: 'relative',
   },
   heroBannerImage: {
@@ -647,7 +668,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 60,
+    height: 100,
   },
   heroBannerGradient: {
     position: 'absolute',
@@ -752,10 +773,10 @@ const styles = StyleSheet.create({
     width: 105,
     height: 140,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
-    shadowColor: Colors.background,
+    borderColor: TestBg.borderSubtle,
+    shadowColor: TestBg.background,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -767,7 +788,7 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: FontSize.xxl,
-    color: Colors.textDim,
+    color: TestBg.textDim,
   },
   // Friends game card with avatar overlay
   friendsGameCard: {
@@ -782,7 +803,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -798,16 +819,16 @@ const styles = StyleSheet.create({
   // Community Activity Cards
   communityCard: {
     width: 220,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: TestBg.borderSubtle,
   },
   communityCover: {
     width: '100%',
     height: 80,
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: TestBg.surfaceLight,
   },
   communityContent: {
     padding: Spacing.sm,
@@ -824,7 +845,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   avatarPlaceholder: {
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: TestBg.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -857,7 +878,7 @@ const styles = StyleSheet.create({
   communityGameName: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xxs,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     lineHeight: 15,
   },
 })

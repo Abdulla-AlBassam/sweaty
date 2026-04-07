@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect } from 'react'
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation, CommonActions } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { NewsArticle } from '../types'
@@ -186,7 +187,7 @@ export default function NewsSection({ refreshKey = 0, showHeader = true }: NewsS
             intensity="subtle"
           />
           <PressableScale onPress={handleSeeAll} haptic="light" accessibilityLabel="See all gaming news" accessibilityRole="button">
-            <Text style={styles.seeAll}>See All</Text>
+            <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
           </PressableScale>
         </View>
       )}

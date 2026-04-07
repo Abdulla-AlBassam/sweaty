@@ -20,6 +20,18 @@ import { Ionicons } from '@expo/vector-icons'
 import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
+
+// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
+const TestBg = {
+  background: '#1A1A1C',
+  surface: '#2A2A2E',
+  surfaceLight: '#333338',
+  border: '#2E2E32',
+  borderSubtle: 'rgba(255, 255, 255, 0.08)',
+  textDim: '#999999',
+  textMuted: '#A3A3A3',
+}
+// ── END COLOR SCHEME TEST ─────────────────────────────────
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
@@ -510,11 +522,11 @@ export default function SearchScreen() {
       <View style={styles.header}>
         {/* Search Bar */}
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
+          <Ionicons name="search" size={18} color={TestBg.textDim} style={styles.searchIcon} />
           <TextInput
             style={styles.input}
             placeholder="Search games, users, lists..."
-            placeholderTextColor={Colors.textDim}
+            placeholderTextColor={TestBg.textDim}
             value={query}
             onChangeText={setQuery}
             autoCapitalize="none"
@@ -524,7 +536,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={clearSearch} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button" accessibilityHint="Clears search and results">
-              <Ionicons name="close-circle" size={18} color={Colors.textDim} />
+              <Ionicons name="close-circle" size={18} color={TestBg.textDim} />
             </TouchableOpacity>
           )}
         </View>
@@ -628,7 +640,7 @@ export default function SearchScreen() {
                     </Text>
                     <Text style={styles.userUsername}>@{userProfile.username}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                  <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -702,7 +714,7 @@ export default function SearchScreen() {
                           ))
                         ) : (
                           <View style={[styles.listPreviewCover, styles.listPreviewPlaceholder]}>
-                            <Ionicons name="list" size={16} color={Colors.textDim} />
+                            <Ionicons name="list" size={16} color={TestBg.textDim} />
                           </View>
                         )}
                       </View>
@@ -712,7 +724,7 @@ export default function SearchScreen() {
                           <Text style={styles.listDescription} numberOfLines={1}>{list.description}</Text>
                         )}
                       </View>
-                      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                      <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -746,7 +758,7 @@ export default function SearchScreen() {
                           ))
                         ) : (
                           <View style={[styles.listPreviewCover, styles.listPreviewPlaceholder]}>
-                            <Ionicons name="list" size={16} color={Colors.textDim} />
+                            <Ionicons name="list" size={16} color={TestBg.textDim} />
                           </View>
                         )}
                       </View>
@@ -756,7 +768,7 @@ export default function SearchScreen() {
                           {list.item_count} games • by @{list.user.username}
                         </Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+                      <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -859,7 +871,7 @@ export default function SearchScreen() {
                   {
                     color: shimmerAnim.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [Colors.textDim, Colors.text],
+                      outputRange: [TestBg.textDim, Colors.text],
                     }),
                   },
                 ]}
@@ -933,7 +945,7 @@ export default function SearchScreen() {
                   <SkeletonText width={150} height={20} style={{ marginLeft: Spacing.screenPadding, marginBottom: Spacing.md }} />
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: Spacing.cardGap }}>
                     {[1, 2, 3, 4].map((i) => (
-                      <View key={i} style={{ width: 105, height: 140, borderRadius: BorderRadius.md, backgroundColor: Colors.surface }} />
+                      <View key={i} style={{ width: 105, height: 140, borderRadius: BorderRadius.md, backgroundColor: TestBg.surface }} />
                     ))}
                   </ScrollView>
                 </View>
@@ -958,7 +970,7 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: TestBg.background,
   },
   header: {
     paddingHorizontal: Spacing.screenPadding,
@@ -967,10 +979,10 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
   },
@@ -1015,7 +1027,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     textAlign: 'center',
   },
   errorText: {
@@ -1040,7 +1052,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   userAvatar: {
     width: 44,
@@ -1048,7 +1060,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   userAvatarPlaceholder: {
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1069,7 +1081,7 @@ const styles = StyleSheet.create({
   userUsername: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     marginTop: 2,
   },
   gamesGrid: {
@@ -1085,9 +1097,9 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_WIDTH * (4 / 3), // 3:4 aspect ratio
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: TestBg.borderSubtle,
   },
   gridPlaceholder: {
     justifyContent: 'center',
@@ -1097,7 +1109,7 @@ const styles = StyleSheet.create({
   gridPlaceholderText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     textAlign: 'center',
   },
   recentSection: {
@@ -1115,7 +1127,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     lineHeight: 17,
-    color: Colors.textDim,
+    color: TestBg.textDim,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     flex: 1,
@@ -1123,7 +1135,7 @@ const styles = StyleSheet.create({
   },
   clearText: {
     fontFamily: Fonts.body,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     fontSize: FontSize.sm,
   },
   recentSearchesList: {
@@ -1132,20 +1144,20 @@ const styles = StyleSheet.create({
   recentChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     paddingRight: Spacing.md,
     paddingVertical: Spacing.xs,
     paddingLeft: Spacing.xs,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
     gap: Spacing.sm,
   },
   recentChipImage: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: TestBg.surfaceLight,
   },
   recentChipText: {
     fontFamily: Fonts.body,
@@ -1157,7 +1169,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.xl,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderRadius: BorderRadius.md,
     padding: 3,
   },
@@ -1173,7 +1185,7 @@ const styles = StyleSheet.create({
   browseTabText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   browseTabTextActive: {
     color: '#F0E4D0',
@@ -1189,13 +1201,13 @@ const styles = StyleSheet.create({
   communityEmptyText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.md,
-    color: Colors.textSecondary,
+    color: TestBg.textMuted,
     marginBottom: Spacing.xs,
   },
   communityEmptySubtext: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     textAlign: 'center',
   },
   discoverSection: {
@@ -1225,7 +1237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   userInfoSkeleton: {
     flex: 1,
@@ -1241,9 +1253,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
   },
   filterPillActive: {
     backgroundColor: 'rgba(240, 228, 208, 0.18)',
@@ -1253,7 +1265,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     lineHeight: 20,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   filterPillTextActive: {
     fontFamily: Fonts.bodySemiBold,
@@ -1266,7 +1278,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   listPreviewCovers: {
     flexDirection: 'row',
@@ -1277,9 +1289,9 @@ const styles = StyleSheet.create({
     width: 32,
     height: 44,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderWidth: 1,
-    borderColor: Colors.background,      // Border to separate overlapping covers
+    borderColor: TestBg.background,      // Border to separate overlapping covers
   },
   listPreviewPlaceholder: {
     alignItems: 'center',
@@ -1297,13 +1309,13 @@ const styles = StyleSheet.create({
   listDescription: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     marginTop: 2,
   },
   listMeta: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: Colors.textDim,
+    color: TestBg.textDim,
     marginTop: 4,
   },
 })

@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native'
 import { useNavigation, CommonActions } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
@@ -59,7 +60,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
           )}
         </View>
         <PressableScale onPress={handleSeeAll} haptic="light" accessibilityLabel={'See all games in ' + list.title} accessibilityRole="button" accessibilityHint="Shows all games in this list">
-          <Text style={styles.seeAll}>See All</Text>
+          <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
         </PressableScale>
       </View>
       <ScrollView

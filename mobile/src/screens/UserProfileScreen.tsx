@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -6,11 +6,11 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  RefreshControl,
+  Animated,
   Dimensions,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -35,8 +35,22 @@ import { ProfileSkeleton } from '../components/skeletons'
 import { GamingPlatform } from '../types'
 import SweatDropIcon from '../components/SweatDropIcon'
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const BANNER_HEIGHT = 180
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
+
+// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
+const TestBg = {
+  background: '#1A1A1C',
+  alternate: '#1E1E21',
+  surface: '#2A2A2E',
+  surfaceLight: '#333338',
+  border: '#2E2E32',
+  borderSubtle: 'rgba(255, 255, 255, 0.08)',
+  textDim: '#999999',
+  textMuted: '#A3A3A3',
+  gradientSubtle: 'rgba(26, 26, 28, 0.3)',
+  gradientMedium: 'rgba(26, 26, 28, 0.6)',
+}
+// ── END COLOR SCHEME TEST ─────────────────────────────────
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -90,6 +104,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const { username } = route.params
   const { user } = useAuth()
   const nav = useNavigation()
+  const insets = useSafeAreaInsets()
+  const scrollY = useRef(new Animated.Value(0)).current
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [gameLogs, setGameLogs] = useState<GameLog[]>([])
@@ -382,7 +398,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
@@ -392,13 +408,13 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         <ScrollView style={styles.scrollView}>
           <ProfileSkeleton />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     )
   }
 
   if (!profile) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
@@ -406,38 +422,42 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           <Text style={styles.headerTitle}>not found</Text>
         </View>
         <View style={styles.centered}>
-          <Ionicons name="person-outline" size={64} color={Colors.textDim} />
+          <Ionicons name="person-outline" size={64} color={TestBg.textDim} />
           <Text style={styles.errorText}>user not found</Text>
         </View>
-      </SafeAreaView>
+      </View>
     )
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>@{profile.username}</Text>
       </View>
 
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={'#F0E4D0'}
-            colors={['#F0E4D0']}
-          />
-        }
+        bounces={true}
+        overScrollMode="never"
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
       >
         {/* Banner */}
         {profile.banner_url ? (
-          <View style={styles.bannerContainer}>
+          <Animated.View style={[styles.bannerContainer, { height: SCREEN_HEIGHT * 0.30 + insets.top }, {
+            transform: [
+              { translateY: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [-100, 0], extrapolateRight: 'clamp' }) },
+              { scale: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [1.5, 1], extrapolateRight: 'clamp' }) },
+            ],
+          }]}>
             <Image
               source={{ uri: profile.banner_url }}
               style={styles.banner}
@@ -445,14 +465,16 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               accessibilityLabel={(profile.display_name || profile.username) + ' profile banner'}
             />
             <LinearGradient
-              colors={[Colors.gradientSubtle, Colors.gradientMedium, Colors.background]}
-              locations={[0, 0.5, 1]}
+              colors={[TestBg.gradientMedium, 'transparent']}
+              style={styles.bannerGradientTop}
+            />
+            <LinearGradient
+              colors={['transparent', TestBg.gradientMedium, TestBg.background]}
+              locations={[0, 0.6, 1]}
               style={styles.bannerGradient}
             />
-          </View>
-        ) : (
-          <View style={styles.bannerPlaceholder} />
-        )}
+          </Animated.View>
+        ) : null}
 
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile.banner_url && styles.profileSectionWithBanner]}>
@@ -460,7 +482,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessible={false} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Ionicons name="person" size={40} color={Colors.textDim} />
+              <Ionicons name="person" size={40} color={TestBg.textDim} />
             </View>
           )}
 
@@ -561,7 +583,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         </View>
 
         {/* Favorites */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: TestBg.alternate, paddingBottom: Spacing.xl }]}>
           <Text style={styles.sectionTitle}>Favorites</Text>
           {favorites.length > 0 ? (
             <View style={styles.favoritesRow}>
@@ -597,7 +619,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
         {/* Recently Logged */}
         {gameLogs.length > 0 && (
-          <View style={styles.recentlyLoggedSection}>
+          <View style={[styles.recentlyLoggedSection, { backgroundColor: TestBg.background, paddingBottom: Spacing.xl }]}>
             <Text style={styles.sectionTitle}>Recently Logged</Text>
             <ScrollView
               horizontal
@@ -632,7 +654,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
         {/* Lists - Only show if user has public lists with games */}
         {publicLists.length > 0 && (
-          <View style={styles.listsSection}>
+          <View style={[styles.listsSection, { backgroundColor: TestBg.alternate, paddingBottom: Spacing.xl }]}>
             <Text style={styles.sectionTitle}>Lists</Text>
             <ScrollView
               horizontal
@@ -653,7 +675,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         )}
 
         {/* Library */}
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: TestBg.background, paddingBottom: Spacing.xl }]}>
           <Text style={styles.sectionTitle}>Library</Text>
 
           {groupedLogs.length > 0 ? (
@@ -681,7 +703,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                   <Text style={styles.libraryRowLabel}>{group.label}</Text>
                   <View style={styles.libraryRowRight}>
                     <Text style={styles.libraryRowCount}>{group.logs.length}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                    <Ionicons name="chevron-forward" size={16} color={TestBg.textDim} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -693,7 +715,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
             </View>
           )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Followers/Following Modal */}
       {profile && (
@@ -704,14 +726,14 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           type={followersModalType}
         />
       )}
-    </SafeAreaView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: TestBg.background,
   },
   header: {
     flexDirection: 'row',
@@ -719,7 +741,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   backButton: {
     padding: Spacing.sm,
@@ -738,7 +760,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontFamily: Fonts.body,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     fontSize: FontSize.md,
     marginTop: Spacing.md,
   },
@@ -755,25 +777,32 @@ const styles = StyleSheet.create({
   },
   bannerContainer: {
     width: SCREEN_WIDTH,
-    height: BANNER_HEIGHT,
+    // height set dynamically via inline style
     position: 'relative',
   },
   banner: {
     width: '100%',
     height: '100%',
   },
-  bannerGradient: {
+  bannerGradientTop: {
     position: 'absolute',
     top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+  },
+  bannerGradient: {
+    position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    height: '50%',
   },
   bannerPlaceholder: {
     height: 0,
   },
   profileSectionWithBanner: {
-    marginTop: -60,
+    marginTop: -70,
   },
   nameRow: {
     flexDirection: 'row',
@@ -787,7 +816,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarPlaceholder: {
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -799,7 +828,7 @@ const styles = StyleSheet.create({
   username: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     marginTop: Spacing.xs,
   },
   followRow: {
@@ -815,7 +844,7 @@ const styles = StyleSheet.create({
   followText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   followNumber: {
     fontFamily: Fonts.bodySemiBold,
@@ -824,7 +853,7 @@ const styles = StyleSheet.create({
   bio: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     textAlign: 'center',
     marginTop: Spacing.md,
   },
@@ -840,7 +869,7 @@ const styles = StyleSheet.create({
   followingButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.textMuted,
+    borderColor: TestBg.textMuted,
   },
   followButtonText: {
     fontFamily: Fonts.bodySemiBold,
@@ -856,7 +885,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
     marginHorizontal: Spacing.screenPadding,
   },
   stat: {
@@ -866,7 +895,7 @@ const styles = StyleSheet.create({
   statSeparator: {
     width: 1,
     height: '60%',
-    backgroundColor: Colors.border,
+    backgroundColor: TestBg.border,
     alignSelf: 'center',
   },
   statValue: {
@@ -877,7 +906,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     marginTop: Spacing.xs,
   },
   ranksSection: {
@@ -902,9 +931,9 @@ const styles = StyleSheet.create({
     width: 105,
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: TestBg.borderSubtle,
   },
   section: {
     paddingHorizontal: Spacing.screenPadding,
@@ -932,7 +961,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: TestBg.border,
     backgroundColor: 'transparent',
   },
   filterTabSelected: {
@@ -945,14 +974,14 @@ const styles = StyleSheet.create({
   filterTabText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   filterTabTextSelected: {
     fontFamily: Fonts.bodySemiBold,
     color: '#F0E4D0',
   },
   filterTabTextDimmed: {
-    color: Colors.textDim,
+    color: TestBg.textDim,
   },
   libraryRows: {
     marginTop: Spacing.sm,
@@ -965,7 +994,7 @@ const styles = StyleSheet.create({
   },
   libraryRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderBottomColor: TestBg.border,
   },
   libraryRowLabel: {
     fontFamily: Fonts.body,
@@ -980,7 +1009,7 @@ const styles = StyleSheet.create({
   libraryRowCount: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   gamesGrid: {
     flexDirection: 'row',
@@ -995,9 +1024,9 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: TestBg.borderSubtle,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',
@@ -1023,7 +1052,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
     marginTop: Spacing.md,
   },
   favoritesRow: {
@@ -1040,12 +1069,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   favoriteCoverPlaceholder: {
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyFavorites: {
-    backgroundColor: Colors.surface,
+    backgroundColor: TestBg.surface,
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
@@ -1053,7 +1082,7 @@ const styles = StyleSheet.create({
   emptyFavoritesText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.textMuted,
+    color: TestBg.textMuted,
   },
   // Lists section styles
   listsSection: {
