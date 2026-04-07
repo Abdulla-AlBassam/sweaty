@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -118,9 +118,8 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
   const isOwnProfile = user?.id === profile?.id
 
-  // Filter tabs configuration
+  // Filter tabs configuration (no "All" — grouped view is the default)
   const filterTabs = [
-    { key: 'all', label: 'All' },
     { key: 'playing', label: 'Playing' },
     { key: 'completed', label: 'Completed' },
     { key: 'played', label: 'Played' },
@@ -154,6 +153,25 @@ export default function UserProfileScreen({ navigation, route }: Props) {
     }
     return gameLogs.filter(log => log.status === selectedFilter)
   })()
+
+  // Group logs by status for the default view
+  const STATUS_ORDER = ['playing', 'completed', 'played', 'want_to_play', 'on_hold', 'dropped']
+  const groupedLogs = useMemo(() => {
+    return STATUS_ORDER
+      .map(status => ({
+        status,
+        label: STATUS_LABELS[status] || status,
+        logs: gameLogs
+          .filter(log => log.status === status)
+          .sort((a, b) => {
+            if (a.rating !== null && b.rating !== null) return b.rating - a.rating
+            if (a.rating !== null) return -1
+            if (b.rating !== null) return 1
+            return 0
+          }),
+      }))
+      .filter(group => group.logs.length > 0)
+  }, [gameLogs])
 
   useEffect(() => {
     console.log('=== USER PROFILE SCREEN MOUNTED === username:', username)
@@ -416,7 +434,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               accessibilityLabel={(profile.display_name || profile.username) + ' profile banner'}
             />
             <LinearGradient
-              colors={['rgba(15, 15, 15, 0.3)', 'rgba(15, 15, 15, 0.6)', Colors.background]}
+              colors={[Colors.gradientSubtle, Colors.gradientMedium, Colors.background]}
               locations={[0, 0.5, 1]}
               style={styles.bannerGradient}
             />
@@ -428,7 +446,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile.banner_url && styles.profileSectionWithBanner]}>
           {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessibilityLabel={(profile.display_name || profile.username) + ' profile picture'} />
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessible={false} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Ionicons name="person" size={40} color={Colors.textDim} />
@@ -624,81 +642,40 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Library</Text>
 
-          {/* Filter Tabs */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterTabsContainer}
-            contentContainerStyle={styles.filterTabsContent}
-          >
-            {filterTabs.map((tab) => {
-              const count = getStatusCount(tab.key)
-              const isSelected = selectedFilter === tab.key
-              return (
+          {groupedLogs.length > 0 ? (
+            <View style={styles.libraryRows}>
+              {groupedLogs.map((group, index) => (
                 <TouchableOpacity
-                  key={tab.key}
+                  key={group.status}
                   style={[
-                    styles.filterTab,
-                    isSelected && styles.filterTabSelected,
-                    count === 0 && !isSelected && styles.filterTabDimmed,
+                    styles.libraryRow,
+                    index < groupedLogs.length - 1 && styles.libraryRowBorder,
                   ]}
-                  onPress={() => setSelectedFilter(tab.key)}
-                  accessibilityLabel={tab.label + ' ' + count + ' games'}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: isSelected }}
-                >
-                  <Text
-                    style={[
-                      styles.filterTabText,
-                      isSelected && styles.filterTabTextSelected,
-                      count === 0 && !isSelected && styles.filterTabTextDimmed,
-                    ]}
-                  >
-                    {tab.label} ({count})
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </ScrollView>
-
-          {filteredGameLogs.length > 0 ? (
-            <View style={styles.gamesGrid}>
-              {filteredGameLogs.map((log) => (
-                <TouchableOpacity
-                  key={log.id}
-                  style={styles.gameCard}
-                  onPress={() => handleGamePress(log.game_id)}
-                  accessibilityLabel={log.game?.name || 'Game'}
+                  onPress={() => {
+                    if (profile?.id) {
+                      navigation.dispatch(
+                        CommonActions.navigate({
+                          name: 'LibraryStatus',
+                          params: { userId: profile.id, status: group.status },
+                        })
+                      )
+                    }
+                  }}
+                  accessibilityLabel={group.label + ', ' + group.logs.length + ' games'}
                   accessibilityRole="button"
                 >
-                  {log.game?.cover_url ? (
-                    <Image
-                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
-                      style={styles.gameCover}
-                      accessibilityLabel={log.game.name + ' cover art'}
-                    />
-                  ) : (
-                    <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                      <SweatDropIcon size={20} variant="static" />
-                    </View>
-                  )}
-                  {(log.rating || log.review) && (
-                    <View style={styles.ratingBelow}>
-                      {log.rating && <StarRating rating={log.rating} size={12} filledOnly />}
-                      {log.review && log.review.trim().length > 0 && (
-                        <Ionicons name="chatbubble-outline" size={12} color={Colors.accent} style={log.rating ? { marginLeft: 4 } : undefined} />
-                      )}
-                    </View>
-                  )}
+                  <Text style={styles.libraryRowLabel}>{group.label}</Text>
+                  <View style={styles.libraryRowRight}>
+                    <Text style={styles.libraryRowCount}>{group.logs.length}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
           ) : (
             <View style={styles.emptyState}>
               <SweatDropIcon size={48} variant="static" />
-              <Text style={styles.emptyText}>
-                {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
-              </Text>
+              <Text style={styles.emptyText}>No games logged yet</Text>
             </View>
           )}
         </View>
@@ -932,7 +909,7 @@ const styles = StyleSheet.create({
   filterTab: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    borderRadius: 20,
+    borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: 'transparent',
@@ -956,10 +933,38 @@ const styles = StyleSheet.create({
   filterTabTextDimmed: {
     color: Colors.textDim,
   },
+  libraryRows: {
+    marginTop: Spacing.sm,
+  },
+  libraryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.lg,
+  },
+  libraryRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  libraryRowLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.text,
+  },
+  libraryRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  libraryRowCount: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
   gamesGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,                                   // 8px gap for 4-column layout
+    gap: Spacing.sm,                            // 8px gap for 4-column layout
   },
   gameCard: {
     width: '23%',                             // ~4 columns with gaps

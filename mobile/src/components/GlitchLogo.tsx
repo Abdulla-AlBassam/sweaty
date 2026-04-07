@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet } from 'react-native'
+import { Colors } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 
 /**
@@ -85,16 +86,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   cyanLayer: {
-    color: '#5A5A5A', // Gray
+    color: Colors.textDim, // Gray
     opacity: 0.5,
     transform: [{ translateX: -1 }],
   },
   magentaLayer: {
-    color: '#2D6B4A', // Forest green
+    color: Colors.accent, // Forest green
     opacity: 0.5,
     transform: [{ translateX: 1 }],
   },
   mainText: {
-    color: '#ffffff',
+    color: Colors.textBright,
   },
 })

@@ -62,10 +62,11 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
         style={styles.avatarContainer}
         onPress={() => onUserPress?.(user.id, user.username)}
         accessibilityLabel={'View ' + displayName + ' profile'}
+        accessibilityHint="Opens user profile"
         accessibilityRole="button"
       >
         {user.avatar_url ? (
-          <Image source={{ uri: user.avatar_url }} style={styles.avatar} accessibilityLabel={displayName + ' avatar'} />
+          <Image source={{ uri: user.avatar_url }} style={styles.avatar} accessible={false} />
         ) : (
           <View style={styles.avatarPlaceholder}>
             <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
@@ -78,6 +79,8 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
           <Text
             style={styles.username}
             onPress={() => onUserPress?.(user.id, user.username)}
+            accessibilityRole="link"
+            accessibilityHint="Opens user profile"
           >
             {displayName}
           </Text>
@@ -85,6 +88,8 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
           <Text
             style={styles.gameName}
             onPress={() => onGamePress?.(game.id)}
+            accessibilityRole="link"
+            accessibilityHint="Opens game details"
           >
             {game.name}
           </Text>
@@ -92,7 +97,7 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
 
         {hasReview && (
           <View style={styles.reviewRow}>
-            <Ionicons name="chatbubble-outline" size={11} color={Colors.textDim} style={styles.reviewIcon} />
+            <Ionicons name="chatbubble-outline" size={11} color={Colors.textDim} style={styles.reviewIcon} accessible={false} />
             <Text style={styles.reviewSnippet} numberOfLines={3}>
               {review!.trim()}
             </Text>
@@ -110,8 +115,8 @@ export default function ActivityItem({ activity, onUserPress, onGamePress, isLas
       </View>
 
       {coverUrl && (
-        <TouchableOpacity onPress={() => onGamePress?.(game.id)} style={styles.coverContainer} accessibilityLabel={'View ' + game.name} accessibilityRole="button">
-          <Image source={{ uri: coverUrl }} style={styles.cover} accessibilityLabel={game.name + ' cover art'} />
+        <TouchableOpacity onPress={() => onGamePress?.(game.id)} style={styles.coverContainer} accessibilityLabel={'View ' + game.name} accessibilityRole="button" accessibilityHint="Opens game details">
+          <Image source={{ uri: coverUrl }} style={styles.cover} accessible={false} />
         </TouchableOpacity>
       )}
     </View>
@@ -179,7 +184,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs + 2,
   },
   reviewIcon: {
-    marginTop: 4,
+    marginTop: Spacing.xs,
   },
   reviewSnippet: {
     flex: 1,

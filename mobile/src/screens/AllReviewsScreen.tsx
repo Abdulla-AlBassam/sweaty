@@ -167,6 +167,9 @@ export default function AllReviewsScreen({ navigation, route }: Props) {
         <TouchableOpacity
           style={styles.userSection}
           onPress={() => handleUserPress(review.user.username, review.user.id)}
+          accessibilityLabel={(review.user.display_name || review.user.username) + ' profile'}
+          accessibilityRole="button"
+          accessibilityHint="Opens user profile"
         >
           <Text style={styles.username}>{review.user.display_name || review.user.username}</Text>
           {review.user.avatar_url ? (
@@ -201,11 +204,13 @@ export default function AllReviewsScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backText}>Game</Text>
-        </TouchableOpacity>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back to game" accessibilityRole="button" accessibilityHint="Returns to game details">
+            <Text style={styles.backText}>Game</Text>
+          </TouchableOpacity>
+        </View>
         <Text style={styles.headerTitle} numberOfLines={1}>Reviews of {gameName}</Text>
-        <View style={styles.headerSpacer} />
+        <View style={{ flex: 1 }} />
       </View>
 
       <KeyboardAvoidingView
@@ -225,6 +230,7 @@ export default function AllReviewsScreen({ navigation, route }: Props) {
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
+            removeClippedSubviews={true}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -268,6 +274,9 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   backButton: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
     paddingRight: Spacing.sm,
   },
   backText: {
@@ -276,14 +285,10 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   headerTitle: {
-    flex: 1,
     fontFamily: Fonts.display,
     fontSize: FontSize.md,
     color: Colors.text,
     textAlign: 'center',
-  },
-  headerSpacer: {
-    width: 40,
   },
   centered: {
     flex: 1,

@@ -7,6 +7,8 @@ export const Colors = {
   surface: '#151515',         // Card/surface background
   surfaceLight: '#1E1E1E',    // Elevated elements
   surfaceBright: '#282828',   // Highlighted elements
+  surfaceTranslucent: 'rgba(21, 21, 21, 0.7)',  // Frosted surface (auth forms)
+  surfaceLightTranslucent: 'rgba(26, 26, 26, 0.9)',  // Translucent input fields (auth)
 
   // PRIMARY ACCENT (Forest Green) - Primary actions only
   // Use for: Primary buttons, active filters, progress bars
@@ -16,6 +18,7 @@ export const Colors = {
   accentSoft: '#4A9E6E',      // Soft green for text
   accentDark: '#0F2A1C',      // Dark green tint
   accentGlow: 'rgba(45, 107, 74, 0.2)',  // Subtle glow
+  accentSubtle: 'rgba(45, 107, 74, 0.12)',  // Subtle tint for highlighted items
 
   // SECONDARY ACCENT (Gray) - Interactive text elements
   // Use for: Game titles, usernames, "See All" links
@@ -58,6 +61,7 @@ export const Colors = {
 
   // Status colors - Refined palette
   error: '#ef4444',           // Red
+  errorGlow: 'rgba(239, 68, 68, 0.2)',  // Error background tint
   warning: '#f59e0b',         // Amber
   success: '#2D6B4A',         // Forest green
 
@@ -76,6 +80,15 @@ export const Colors = {
   overlayLight: 'rgba(0, 0, 0, 0.4)', // Light overlay (banners, subtle tints)
   overlay: 'rgba(0, 0, 0, 0.5)',      // Standard modal overlay
   overlayDark: 'rgba(0, 0, 0, 0.8)',  // Heavy overlay
+
+  // Background-tinted overlays (for gradients that blend into background)
+  gradientStart: 'rgba(10, 10, 10, 0.6)',      // Banner top fade
+  gradientEnd: 'rgba(10, 10, 10, 0.85)',        // Banner bottom fade
+  gradientSubtle: 'rgba(15, 15, 15, 0.3)',      // Profile banner light fade
+  gradientMedium: 'rgba(15, 15, 15, 0.6)',      // Profile banner medium fade
+  edgeFadeLight: 'rgba(15, 15, 15, 0.7)',       // Auth screen edge gradient
+  edgeFadeHeavy: 'rgba(15, 15, 15, 0.9)',       // Auth screen edge gradient (top)
+  edgeFadeMax: 'rgba(15, 15, 15, 0.95)',        // Auth screen edge gradient (bottom)
 
   // Platform brand colors
   platformPlayStation: '#006FCD',

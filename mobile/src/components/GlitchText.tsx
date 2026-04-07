@@ -1,12 +1,10 @@
 import React from 'react'
-import { Text, TextStyle, ViewStyle } from 'react-native'
+import { Text, TextStyle } from 'react-native'
 
 interface GlitchTextProps {
   text: string
   style?: TextStyle
-  containerStyle?: ViewStyle
   intensity?: 'subtle' | 'medium' | 'heavy'
-  enabled?: boolean
 }
 
 /**

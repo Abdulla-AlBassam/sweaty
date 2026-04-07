@@ -43,8 +43,6 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Trailers</Text>
-
       {/* YouTube Player */}
       <View style={styles.playerContainer}>
         <YoutubePlayer
@@ -59,10 +57,7 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
         />
       </View>
 
-      {/* Video title */}
-      <Text style={styles.videoTitle}>{currentVideo.name || 'trailer'}</Text>
-
-      {/* Video selector if multiple trailers */}
+      {/* Video selector pills */}
       {videos.length > 1 && (
         <ScrollView
           horizontal
@@ -110,26 +105,13 @@ const styles = StyleSheet.create({
   container: {
     marginTop: Spacing.lg,
   },
-  sectionTitle: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.sm,
-    color: Colors.text,
-    lineHeight: 20,
-    marginBottom: Spacing.sm,
-  },
   playerContainer: {
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
     backgroundColor: Colors.surface,
   },
-  videoTitle: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginTop: Spacing.sm,
-  },
   videoSelectorScroll: {
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
   },
   videoSelectorContent: {
     flexDirection: 'row',

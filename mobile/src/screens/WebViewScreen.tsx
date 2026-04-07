@@ -176,8 +176,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   loadingBar: {
     position: 'absolute',
-    top: 100,
+    top: 56,
     left: 0,
     right: 0,
     zIndex: 100,

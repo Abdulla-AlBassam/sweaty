@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Image,
   FlatList,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
@@ -36,6 +38,20 @@ interface LibraryGame {
 
 export default function CreateListModal({ visible, onClose, onCreated }: CreateListModalProps) {
   const { user } = useAuth()
+  const titleInputRef = useRef<TextInput>(null)
+  const focusTimeoutRef = useRef<NodeJS.Timeout>(undefined)
+
+  // Auto-focus title input when modal opens
+  useEffect(() => {
+    if (visible) {
+      focusTimeoutRef.current = setTimeout(() => {
+        titleInputRef.current?.focus()
+      }, 300)
+    }
+    return () => {
+      if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current)
+    }
+  }, [visible])
 
   // Form state
   const [title, setTitle] = useState('')
@@ -219,7 +235,10 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
       onRequestClose={onClose}
       accessibilityViewIsModal={true}
     >
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
@@ -252,6 +271,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Title</Text>
             <TextInput
+              ref={titleInputRef}
               style={styles.input}
               placeholder="My awesome list"
               placeholderTextColor={Colors.textDim}
@@ -450,12 +470,16 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                 <LoadingSpinner size="small" color={Colors.accent} />
               </View>
             ) : libraryGames.length > 0 ? (
-              <View style={styles.libraryGrid}>
-                {libraryGames.map((game) => {
+              <FlatList
+                data={libraryGames}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={4}
+                scrollEnabled={false}
+                columnWrapperStyle={styles.libraryRow}
+                renderItem={({ item: game }) => {
                   const selected = isGameSelected(game.id)
                   return (
                     <TouchableOpacity
-                      key={game.id}
                       style={styles.libraryGame}
                       onPress={() => toggleGameSelection(game)}
                       accessibilityLabel={`${selected ? 'Deselect' : 'Select'} ${game.name}`}
@@ -480,8 +504,8 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
                       )}
                     </TouchableOpacity>
                   )
-                })}
-              </View>
+                }}
+              />
             ) : (
               <View style={styles.emptyLibrary}>
                 <Text style={styles.emptyLibraryText}>No games in your library yet</Text>
@@ -497,7 +521,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
             </View>
           )}
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }
@@ -519,6 +543,9 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: Spacing.xs,
     width: 80,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     flex: 1,
@@ -738,10 +765,9 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
   },
-  libraryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  libraryRow: {
     gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   libraryGame: {
     position: 'relative',

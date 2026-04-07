@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   Modal,
   TouchableOpacity,
   FlatList,
+  Alert,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
@@ -29,6 +30,7 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
   const [gameInLists, setGameInLists] = useState<Set<string>>(new Set())
   const [loadingLists, setLoadingLists] = useState<Set<string>>(new Set())
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const initialGameInListsRef = useRef<Set<string>>(new Set())
 
   // Check which lists contain this game
   useEffect(() => {
@@ -61,6 +63,7 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
       }
 
       setGameInLists(inLists)
+      initialGameInListsRef.current = new Set(inLists)
     }
 
     if (visible) {
@@ -101,6 +104,26 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
 
     // Refetch to update counts
     refetch()
+  }
+
+  const handleDismiss = () => {
+    const initial = initialGameInListsRef.current
+    const current = gameInLists
+
+    // Check if selections have changed
+    const hasChanges =
+      initial.size !== current.size ||
+      [...initial].some((id) => !current.has(id)) ||
+      [...current].some((id) => !initial.has(id))
+
+    if (hasChanges) {
+      Alert.alert('Discard changes?', 'You have unsaved changes.', [
+        { text: 'Keep Editing', style: 'cancel' },
+        { text: 'Discard', style: 'destructive', onPress: () => onClose() },
+      ])
+    } else {
+      onClose()
+    }
   }
 
   const handleCreateList = () => {
@@ -180,13 +203,13 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
         visible={visible}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={onClose}
+        onRequestClose={handleDismiss}
         accessibilityViewIsModal={true}
       >
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
+            <TouchableOpacity onPress={handleDismiss} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
               <Ionicons name="close" size={24} color={Colors.text} />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
@@ -251,8 +274,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   closeButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -272,7 +295,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   headerSpacer: {
-    width: 40,
+    width: 44,
   },
   loadingContainer: {
     flex: 1,

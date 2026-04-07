@@ -51,6 +51,14 @@ export default function EditFavoritesModal({
   const [isSearchMode, setIsSearchMode] = useState(false)
   const [activeSlotIndex, setActiveSlotIndex] = useState<number | null>(null)
   const searchInputRef = useRef<TextInput>(null)
+  const focusTimeoutRef = useRef<NodeJS.Timeout>(undefined)
+
+  // Cleanup focus timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     if (visible) {
@@ -102,7 +110,7 @@ export default function EditFavoritesModal({
     setIsSearchMode(true)
     setQuery('')
     setSearchResults([])
-    setTimeout(() => {
+    focusTimeoutRef.current = setTimeout(() => {
       searchInputRef.current?.focus()
     }, 100)
   }
@@ -376,8 +384,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
-    maxHeight: '85%',
+    maxHeight: '90%',
     minHeight: '50%',
+    flex: 1,
   },
   header: {
     flexDirection: 'row',

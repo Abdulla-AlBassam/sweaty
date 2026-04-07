@@ -249,7 +249,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to previous screen">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>loading...</Text>
@@ -265,7 +265,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to previous screen">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>not found</Text>
@@ -320,7 +320,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['transparent', 'rgba(15,15,15,0.6)', Colors.background]}
+              colors={['transparent', Colors.gradientMedium, Colors.background]}
               locations={[0.3, 0.7, 1]}
               style={styles.bannerGradient}
             />
@@ -333,7 +333,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         {/* Cover and Info */}
         <View style={styles.gameInfo}>
           {coverUrl ? (
-            <Image source={{ uri: coverUrl }} style={styles.cover} accessibilityLabel={game.name + ' cover art'} />
+            <Image source={{ uri: coverUrl }} style={styles.cover} accessible={false} />
           ) : (
             <View style={[styles.cover, styles.coverPlaceholder]}>
               <SweatDropIcon size={40} variant="static" />
@@ -359,7 +359,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                   <Image
                     source={require('../../assets/images/opencritic-icon.png')}
                     style={[styles.ocIcon, { tintColor: getOpenCriticColor(openCriticData.tier) }]}
-                    accessibilityLabel="OpenCritic score"
+                    accessible={false}
                   />
                   <Text style={[styles.ratingScore, { color: getOpenCriticColor(openCriticData.tier) }]}>
                     {openCriticData.score}
@@ -409,7 +409,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         {(friendsWhoPlayed.length > 0 || reviewers.length > 0) && (
           <View style={styles.friendsSection}>
             <Text style={styles.sectionTitle}>Played by</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled={true}>
               {/* Friends first */}
               {friendsWhoPlayed.map((friend) => {
                 const friendReview = reviewers.find(r => r.user.id === friend.id)
@@ -428,10 +428,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                     }
                     accessibilityLabel={(friend.display_name || friend.username) + (friendReview ? ' review' : ' profile')}
                     accessibilityRole="button"
+                    accessibilityHint={friendReview ? 'Opens review' : 'Opens user profile'}
                   >
                     <View style={styles.playedByAvatarContainer}>
                       {friend.avatar_url ? (
-                        <Image source={{ uri: friend.avatar_url }} style={styles.playedByAvatar} />
+                        <Image source={{ uri: friend.avatar_url }} style={styles.playedByAvatar} accessible={false} />
                       ) : (
                         <View style={[styles.playedByAvatar, styles.friendAvatarPlaceholder]}>
                           <Ionicons name="person" size={16} color={Colors.textMuted} />
@@ -464,10 +465,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                     })}
                     accessibilityLabel={(reviewer.user.display_name || reviewer.user.username) + ' review'}
                     accessibilityRole="button"
+                    accessibilityHint="Opens review"
                   >
                     <View style={styles.playedByAvatarContainer}>
                       {reviewer.user.avatar_url ? (
-                        <Image source={{ uri: reviewer.user.avatar_url }} style={styles.playedByAvatar} />
+                        <Image source={{ uri: reviewer.user.avatar_url }} style={styles.playedByAvatar} accessible={false} />
                       ) : (
                         <View style={[styles.playedByAvatar, styles.friendAvatarPlaceholder]}>
                           <Ionicons name="person" size={16} color={Colors.textMuted} />
@@ -504,6 +506,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.similarGamesRow}
+              nestedScrollEnabled={true}
             >
               {game.similarGames.map((similarGame) => (
                 <TouchableOpacity
@@ -512,9 +515,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                   onPress={() => navigation.push('GameDetail', { gameId: similarGame.id })}
                   accessibilityLabel={similarGame.name}
                   accessibilityRole="button"
+                  accessibilityHint="Opens game details"
                 >
                   {similarGame.coverUrl ? (
-                    <Image source={{ uri: similarGame.coverUrl }} style={styles.similarGameCover} accessibilityLabel={similarGame.name + ' cover art'} />
+                    <Image source={{ uri: similarGame.coverUrl }} style={styles.similarGameCover} accessible={false} />
                   ) : (
                     <View style={[styles.similarGameCover, styles.similarGamePlaceholder]}>
                       <SweatDropIcon size={24} variant="static" />
@@ -532,7 +536,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
       {/* Floating Header - overlaid on banner */}
       <View style={[styles.floatingHeader, { paddingTop: insets.top + Spacing.xs }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.floatingButton} accessibilityLabel="Go back" accessibilityRole="button">
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.floatingButton} accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to previous screen">
           <Ionicons name="chevron-back" size={22} color={Colors.text} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -584,7 +588,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: Colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -638,10 +642,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   cover: {
-    width: 120,
-    height: 160,
+    width: SCREEN_WIDTH * 0.3,
+    aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
-    shadowColor: '#000',
+    shadowColor: Colors.background,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -706,7 +710,7 @@ const styles = StyleSheet.create({
   ratingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
   },
   ocIcon: {
     width: 16,
@@ -767,7 +771,7 @@ const styles = StyleSheet.create({
   },
   playedByAvatarContainer: {
     position: 'relative',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   playedByAvatar: {
     width: 48,

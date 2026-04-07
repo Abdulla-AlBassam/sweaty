@@ -92,7 +92,7 @@ export default function WatchScreen() {
           <View style={styles.videoMeta}>
             <Image source={{ uri: item.channelAvatar }} style={styles.channelAvatar} accessibilityLabel={`${item.channel} avatar`} />
             <Text style={styles.channelName}>{item.channel}</Text>
-            <Text style={styles.metaSeparator}>|</Text>
+            <Text style={styles.metaSeparator} accessible={false}>|</Text>
             <Text style={styles.timeAgo}>{formatTimeAgo(item.publishedAt)}</Text>
           </View>
         </View>
@@ -103,17 +103,19 @@ export default function WatchScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <PressableScale
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          haptic="light"
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </PressableScale>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          <PressableScale
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            haptic="light"
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
+            <Ionicons name="chevron-back" size={24} color={Colors.text} />
+          </PressableScale>
+        </View>
         <Text style={styles.headerTitle}>Watch</Text>
-        <View style={styles.headerSpacer} />
+        <View style={{ flex: 1 }} />
       </View>
 
       {isLoading && !refreshing ? (
@@ -142,7 +144,7 @@ export default function WatchScreen() {
               colors={[Colors.accent]}
             />
           }
-          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+          ItemSeparatorComponent={() => <View style={styles.itemSeparator} accessible={false} />}
         />
       )}
     </SafeAreaView>
@@ -157,15 +159,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -173,9 +174,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
     color: Colors.text,
-  },
-  headerSpacer: {
-    width: 40,
   },
   loadingContainer: {
     flex: 1,

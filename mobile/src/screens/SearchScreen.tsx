@@ -71,6 +71,7 @@ interface SearchCuratedList {
   slug: string
   title: string
   description: string | null
+  game_ids: number[]
   game_count: number
   preview_games: Array<{
     id: number
@@ -122,6 +123,9 @@ export default function SearchScreen() {
   }, [])
 
   // Shimmer animation for "Ask Sweaty" text
+  // useNativeDriver: false is required here because this animates a color
+  // property (text color via interpolate), which is not supported by the
+  // native animation driver.
   const shimmerAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
@@ -297,6 +301,7 @@ export default function SearchScreen() {
             slug: list.slug,
             title: list.title,
             description: list.description,
+            game_ids: list.game_ids || [],
             game_count: list.game_ids?.length || 0,
             preview_games,
           }
@@ -483,6 +488,7 @@ export default function SearchScreen() {
         params: {
           listSlug: list.slug,
           listTitle: list.title,
+          gameIds: list.game_ids,
         },
       })
     )
@@ -517,7 +523,7 @@ export default function SearchScreen() {
             accessibilityLabel="Search for games, users, or lists"
           />
           {query.length > 0 && (
-            <TouchableOpacity onPress={clearSearch} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button">
+            <TouchableOpacity onPress={clearSearch} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button" accessibilityHint="Clears search and results">
               <Ionicons name="close-circle" size={18} color={Colors.textDim} />
             </TouchableOpacity>
           )}
@@ -532,6 +538,7 @@ export default function SearchScreen() {
               accessibilityLabel="Games"
               accessibilityRole="button"
               accessibilityState={{ selected: searchFilter === 'games' }}
+              accessibilityHint="Filters results to show games"
             >
               <Text style={[styles.filterPillText, searchFilter === 'games' && styles.filterPillTextActive]}>
                 Games
@@ -543,6 +550,7 @@ export default function SearchScreen() {
               accessibilityLabel="Users"
               accessibilityRole="button"
               accessibilityState={{ selected: searchFilter === 'users' }}
+              accessibilityHint="Filters results to show users"
             >
               <Text style={[styles.filterPillText, searchFilter === 'users' && styles.filterPillTextActive]}>
                 Users
@@ -554,6 +562,7 @@ export default function SearchScreen() {
               accessibilityLabel="Lists"
               accessibilityRole="button"
               accessibilityState={{ selected: searchFilter === 'lists' }}
+              accessibilityHint="Filters results to show lists"
             >
               <Text style={[styles.filterPillText, searchFilter === 'lists' && styles.filterPillTextActive]}>
                 Lists
@@ -602,6 +611,7 @@ export default function SearchScreen() {
                   onPress={() => handleUserPress(userProfile)}
                   accessibilityLabel={'View ' + userProfile.username + ' profile'}
                   accessibilityRole="button"
+                  accessibilityHint="Opens user profile"
                 >
                   {userProfile.avatar_url ? (
                     <Image source={{ uri: userProfile.avatar_url }} style={styles.userAvatar} accessibilityLabel={userProfile.username + ' avatar'} />
@@ -675,6 +685,7 @@ export default function SearchScreen() {
                       onPress={() => handleCuratedListPress(list)}
                       accessibilityLabel={list.title}
                       accessibilityRole="button"
+                      accessibilityHint="Opens curated list"
                     >
                       {/* Preview game covers */}
                       <View style={styles.listPreviewCovers}>
@@ -718,6 +729,7 @@ export default function SearchScreen() {
                       onPress={() => handleUserListPress(list)}
                       accessibilityLabel={list.title + ' by ' + list.user.username}
                       accessibilityRole="button"
+                      accessibilityHint="Opens user list"
                     >
                       {/* Preview game covers */}
                       <View style={styles.listPreviewCovers}>
@@ -795,7 +807,7 @@ export default function SearchScreen() {
             <View style={styles.recentSection}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.recentSectionTitle}>Recent Searches</Text>
-                <TouchableOpacity onPress={clearRecentSearches} accessibilityLabel="Clear recent searches" accessibilityRole="button">
+                <TouchableOpacity onPress={clearRecentSearches} accessibilityLabel="Clear recent searches" accessibilityRole="button" accessibilityHint="Removes all recent searches">
                   <Text style={styles.clearText}>Clear</Text>
                 </TouchableOpacity>
               </View>
@@ -837,6 +849,7 @@ export default function SearchScreen() {
             scale={0.92}
             accessibilityLabel="Ask Sweaty for recommendations"
             accessibilityRole="button"
+            accessibilityHint="Opens AI game recommendations"
           >
             <SweatDropIcon size={48} variant="default" />
             {!hasUsedAI && (

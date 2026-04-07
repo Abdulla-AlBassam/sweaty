@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { View, Animated, StyleSheet, ViewStyle } from 'react-native'
-import { Colors } from '../constants/colors'
+import { Colors, BorderRadius } from '../constants/colors'
 
 interface SkeletonProps {
   width: number | string
@@ -12,7 +12,7 @@ interface SkeletonProps {
 export default function Skeleton({
   width,
   height,
-  borderRadius = 4,
+  borderRadius = BorderRadius.xs,
   style,
 }: SkeletonProps) {
   const pulseAnim = useRef(new Animated.Value(0.3)).current
@@ -67,7 +67,7 @@ export function SkeletonText({
   height?: number
   style?: ViewStyle
 }) {
-  return <Skeleton width={width} height={height} borderRadius={4} style={style} />
+  return <Skeleton width={width} height={height} borderRadius={BorderRadius.xs} style={style} />
 }
 
 const styles = StyleSheet.create({

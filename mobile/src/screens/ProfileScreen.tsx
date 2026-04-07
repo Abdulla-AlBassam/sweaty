@@ -20,7 +20,7 @@ import { usePremium } from '../hooks/usePremium'
 import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { getIGDBImageUrl } from '../constants'
+import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
 import { supabase } from '../lib/supabase'
 import XPProgressBar from '../components/XPProgressBar'
 import LogGameModal from '../components/LogGameModal'
@@ -46,6 +46,8 @@ const GRID_PADDING = Spacing.screenPadding * 2  // 32px total horizontal padding
 const GRID_GAP = 8                              // Smaller gap for more columns
 const GRID_GAPS = GRID_GAP * 3                  // 3 gaps for 4 columns
 const GAME_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GRID_GAPS) / 4
+
+const FAVORITE_SLOTS = [0, 1, 2, 3, 4] as const
 
 interface FavoriteGame {
   id: number
@@ -102,9 +104,8 @@ export default function ProfileScreen() {
     profile?.subscription_expires_at
   )
 
-  // Filter tabs configuration
+  // Filter tabs configuration (no "All" — grouped view is the default)
   const filterTabs = [
-    { key: 'all', label: 'All' },
     { key: 'playing', label: 'Playing' },
     { key: 'completed', label: 'Completed' },
     { key: 'played', label: 'Played' },
@@ -182,6 +183,26 @@ export default function ProfileScreen() {
 
     return filtered
   }, [gameLogs, selectedFilter, advancedFilter, sortType])
+
+  // Group logs by status for the default view
+  const STATUS_ORDER = ['playing', 'completed', 'played', 'want_to_play', 'on_hold', 'dropped']
+  const groupedLogs = useMemo(() => {
+    return STATUS_ORDER
+      .map(status => ({
+        status,
+        label: STATUS_LABELS[status] || status,
+        logs: gameLogs
+          .filter(log => log.status === status)
+          .sort((a, b) => {
+            if (a.rating !== null && b.rating !== null) return b.rating - a.rating
+            if (a.rating !== null) return -1
+            if (b.rating !== null) return 1
+            return 0
+          }),
+      }))
+      .filter(group => group.logs.length > 0)
+  }, [gameLogs])
+
   const username = profile?.username || ''
 
   // Calculate stats
@@ -338,7 +359,7 @@ export default function ProfileScreen() {
             />
             {/* Gradient overlay for blending */}
             <LinearGradient
-              colors={['rgba(15, 15, 15, 0.3)', 'rgba(15, 15, 15, 0.6)', Colors.background]}
+              colors={[Colors.gradientSubtle, Colors.gradientMedium, Colors.background]}
               locations={[0, 0.5, 1]}
               style={styles.bannerGradient}
             />
@@ -350,6 +371,7 @@ export default function ProfileScreen() {
                 style={styles.settingsButton}
                 accessibilityLabel="Settings"
                 accessibilityRole="button"
+                accessibilityHint="Opens profile settings"
               >
                 <Ionicons name="settings-outline" size={24} color={Colors.text} />
               </TouchableOpacity>
@@ -366,6 +388,7 @@ export default function ProfileScreen() {
                 style={styles.settingsButton}
                 accessibilityLabel="Settings"
                 accessibilityRole="button"
+                accessibilityHint="Opens profile settings"
               >
                 <Ionicons name="settings-outline" size={24} color={Colors.text} />
               </TouchableOpacity>
@@ -376,7 +399,7 @@ export default function ProfileScreen() {
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile?.banner_url && styles.profileSectionWithBanner]}>
           {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessibilityLabel={displayName + ' avatar'} />
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessible={false} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
@@ -401,6 +424,7 @@ export default function ProfileScreen() {
               }}
               accessibilityLabel={followers + ' followers'}
               accessibilityRole="button"
+              accessibilityHint="Shows followers list"
             >
               <Text style={styles.followText}>
                 <Text style={styles.followNumber}>{followers}</Text> followers
@@ -413,6 +437,7 @@ export default function ProfileScreen() {
               }}
               accessibilityLabel={following + ' following'}
               accessibilityRole="button"
+              accessibilityHint="Shows following list"
             >
               <Text style={styles.followText}>
                 <Text style={styles.followNumber}>{following}</Text> following
@@ -460,12 +485,13 @@ export default function ProfileScreen() {
               style={styles.editButton}
               accessibilityLabel="Edit favorites"
               accessibilityRole="button"
+              accessibilityHint="Opens favourite games editor"
             >
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.favoritesRow}>
-            {[0, 1, 2, 3, 4].map((index) => {
+            {FAVORITE_SLOTS.map((index) => {
               const game = favorites[index]
               if (game) {
                 const coverUrl = game.cover_url
@@ -559,6 +585,7 @@ export default function ProfileScreen() {
                   style={styles.newListButton}
                   accessibilityLabel="Create new list"
                   accessibilityRole="button"
+                  accessibilityHint="Opens list creation form"
                 >
                   <Ionicons name="add" size={18} color={Colors.accent} />
                   <Text style={styles.newListButtonText}>New</Text>
@@ -586,98 +613,43 @@ export default function ProfileScreen() {
 
         {/* Library */}
         <View style={styles.librarySection}>
-          <View style={styles.libraryHeader}>
-            <Text style={styles.sectionTitle}>Library</Text>
-            <TouchableOpacity
-              style={styles.filterButton}
-              onPress={() => setIsFilterModalVisible(true)}
-              accessibilityLabel="Library filters"
-              accessibilityRole="button"
-            >
-              <Ionicons name="options-outline" size={20} color={hasActiveAdvancedFilters ? Colors.accent : Colors.textMuted} />
-              {hasActiveAdvancedFilters && <View style={styles.filterBadge} />}
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.sectionTitle}>Library</Text>
 
-          {/* Filter Tabs */}
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.filterTabsContainer}
-            contentContainerStyle={styles.filterTabsContent}
-          >
-            {filterTabs.map((tab) => {
-              const count = getStatusCount(tab.key)
-              const isSelected = selectedFilter === tab.key
-              return (
+          {groupedLogs.length > 0 ? (
+            <View style={styles.libraryRows}>
+              {groupedLogs.map((group, index) => (
                 <TouchableOpacity
-                  key={tab.key}
+                  key={group.status}
                   style={[
-                    styles.filterTab,
-                    isSelected && styles.filterTabSelected,
-                    count === 0 && !isSelected && styles.filterTabDimmed,
+                    styles.libraryRow,
+                    index < groupedLogs.length - 1 && styles.libraryRowBorder,
                   ]}
-                  onPress={() => setSelectedFilter(tab.key)}
-                  accessibilityLabel={tab.label + ' (' + count + ')'}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: isSelected }}
-                >
-                  <Text
-                    style={[
-                      styles.filterTabText,
-                      isSelected && styles.filterTabTextSelected,
-                      count === 0 && !isSelected && styles.filterTabTextDimmed,
-                    ]}
-                  >
-                    {tab.label} ({count})
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </ScrollView>
-
-          {filteredGameLogs.length > 0 ? (
-            <View style={styles.gamesGrid}>
-              {filteredGameLogs.map((log) => (
-                <TouchableOpacity
-                  key={log.id}
-                  style={styles.gameCard}
-                  onPress={() => handleGamePress(log)}
-                  accessibilityLabel={log.game?.name || 'Game'}
+                  onPress={() => {
+                    if (user?.id) {
+                      navigation.dispatch(
+                        CommonActions.navigate({
+                          name: 'LibraryStatus',
+                          params: { userId: user.id, status: group.status },
+                        })
+                      )
+                    }
+                  }}
+                  accessibilityLabel={group.label + ', ' + group.logs.length + ' games'}
                   accessibilityRole="button"
-                  accessibilityHint="Opens game details"
                 >
-                  {log.game?.cover_url ? (
-                    <Image
-                      source={{ uri: getIGDBImageUrl(log.game.cover_url, 'coverBig2x') }}
-                      style={styles.gameCover}
-                      accessibilityLabel={(log.game?.name || 'Game') + ' cover art'}
-                    />
-                  ) : (
-                    <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-                      <SweatDropIcon size={20} variant="static" />
-                    </View>
-                  )}
-                  {(log.rating || log.review) && (
-                    <View style={styles.ratingBelow}>
-                      {log.rating && <StarRating rating={log.rating} size={12} filledOnly />}
-                      {log.review && log.review.trim().length > 0 && (
-                        <Ionicons name="chatbubble-outline" size={12} color={Colors.accent} style={log.rating ? { marginLeft: 4 } : undefined} />
-                      )}
-                    </View>
-                  )}
+                  <Text style={styles.libraryRowLabel}>{group.label}</Text>
+                  <View style={styles.libraryRowRight}>
+                    <Text style={styles.libraryRowCount}>{group.logs.length}</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
           ) : (
             <View style={styles.emptyState}>
               <SweatDropIcon size={48} variant="static" />
-              <Text style={styles.emptyText}>
-                {gameLogs.length === 0 ? 'No games logged yet' : 'No games in this category'}
-              </Text>
-              {gameLogs.length === 0 && (
-                <Text style={styles.emptySubtext}>Search for games to start tracking!</Text>
-              )}
+              <Text style={styles.emptyText}>No games logged yet</Text>
+              <Text style={styles.emptySubtext}>Search for games to start tracking!</Text>
             </View>
           )}
         </View>
@@ -984,61 +956,35 @@ const styles = StyleSheet.create({
   },
   librarySection: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.xxl,                // 32px above section
+    paddingTop: Spacing.xxl,
   },
-  libraryHeader: {
+  libraryRows: {
+    marginTop: Spacing.sm,
+  },
+  libraryRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: Spacing.md,
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.lg,
   },
-  filterButton: {
-    padding: Spacing.sm,
-    position: 'relative',
+  libraryRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  filterBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.accent,
+  libraryRowLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.text,
   },
-  filterTabsContainer: {
-    marginBottom: Spacing.xxl,              // 32px below filters
-    marginHorizontal: -Spacing.screenPadding,
+  libraryRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
-  filterTabsContent: {
-    paddingHorizontal: Spacing.screenPadding,
-    gap: Spacing.cardGap,                   // 12px gap between pills
-  },
-  filterTab: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: 'transparent',
-  },
-  filterTabSelected: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  filterTabDimmed: {
-    opacity: 0.5,
-  },
-  filterTabText: {
+  libraryRowCount: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
-  },
-  filterTabTextSelected: {
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.background,
-  },
-  filterTabTextDimmed: {
-    color: Colors.textDim,
   },
   gamesGrid: {
     flexDirection: 'row',

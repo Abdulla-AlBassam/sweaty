@@ -16,6 +16,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import PressableScale from './PressableScale'
 
 interface UserProfile {
   id: string
@@ -179,16 +180,16 @@ export default function FollowersModal({
     const isLoadingThis = loadingFollow === item.id
 
     return (
-      <TouchableOpacity
+      <PressableScale
         style={styles.userRow}
         onPress={() => handleUserPress(item)}
-        activeOpacity={0.7}
+        haptic="light"
         accessibilityLabel={`View ${item.display_name || item.username} profile`}
         accessibilityRole="button"
       >
         {/* Avatar */}
         {item.avatar_url ? (
-          <Image source={{ uri: item.avatar_url }} style={styles.avatar} accessibilityLabel={`${item.display_name || item.username} avatar`} />
+          <Image source={{ uri: item.avatar_url }} style={styles.avatar} accessible={false} />
         ) : (
           <View style={[styles.avatar, styles.avatarPlaceholder]}>
             <Text style={styles.avatarText}>
@@ -233,7 +234,7 @@ export default function FollowersModal({
             )}
           </TouchableOpacity>
         )}
-      </TouchableOpacity>
+      </PressableScale>
     )
   }
 

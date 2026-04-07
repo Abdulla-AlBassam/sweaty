@@ -531,7 +531,7 @@ export default function LogGameModal({
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Game Info - Tappable to view game details */}
             <TouchableOpacity style={styles.gameInfo} onPress={handleGamePress} activeOpacity={0.7} accessibilityLabel={`View ${game.name} details`} accessibilityRole="button">
               {imageUrl ? (

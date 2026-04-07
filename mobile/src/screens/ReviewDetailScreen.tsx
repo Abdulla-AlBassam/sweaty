@@ -143,11 +143,13 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color={Colors.text} />
-          </TouchableOpacity>
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to previous screen">
+              <Ionicons name="chevron-back" size={22} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.headerTitle}>Review</Text>
-          <View style={{ width: 36 }} />
+          <View style={{ flex: 1 }} />
         </View>
         <View style={styles.centered}>
           <LoadingSpinner />
@@ -160,11 +162,13 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color={Colors.text} />
-          </TouchableOpacity>
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to previous screen">
+              <Ionicons name="chevron-back" size={22} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.headerTitle}>Review</Text>
-          <View style={{ width: 36 }} />
+          <View style={{ flex: 1 }} />
         </View>
         <View style={styles.centered}>
           <Text style={styles.errorText}>Review not found</Text>
@@ -176,11 +180,13 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={22} color={Colors.text} />
-        </TouchableOpacity>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to previous screen">
+            <Ionicons name="chevron-back" size={22} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
         <Text style={styles.headerTitle}>Review</Text>
-        <View style={{ width: 36 }} />
+        <View style={{ flex: 1 }} />
       </View>
 
       <KeyboardAvoidingView
@@ -196,7 +202,7 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
           {/* Top row: user info left, poster right */}
           <View style={styles.topRow}>
             <View style={styles.topLeft}>
-              <TouchableOpacity onPress={handleUserPress} style={styles.userRow}>
+              <TouchableOpacity onPress={handleUserPress} style={styles.userRow} accessibilityLabel={(review.user.display_name || review.user.username) + ' profile'} accessibilityRole="button" accessibilityHint="Opens user profile">
                 {review.user.avatar_url ? (
                   <Image source={{ uri: review.user.avatar_url }} style={styles.avatar} />
                 ) : (
@@ -209,7 +215,7 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleGamePress}>
+              <TouchableOpacity onPress={handleGamePress} accessibilityLabel={gameName} accessibilityRole="button" accessibilityHint="Opens game details">
                 <Text style={styles.gameName}>{gameName}</Text>
               </TouchableOpacity>
               {review.rating && (
@@ -221,7 +227,7 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
             </View>
 
             {coverUrl && (
-              <TouchableOpacity onPress={handleGamePress} style={styles.coverContainer}>
+              <TouchableOpacity onPress={handleGamePress} style={styles.coverContainer} accessibilityLabel={gameName + ' cover'} accessibilityRole="button" accessibilityHint="Opens game details">
                 <Image source={{ uri: coverUrl }} style={styles.gameCover} />
               </TouchableOpacity>
             )}
@@ -261,7 +267,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
@@ -328,7 +333,7 @@ const styles = StyleSheet.create({
   },
   gameCover: {
     width: 80,
-    height: 107,
+    aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
   },
   gameName: {

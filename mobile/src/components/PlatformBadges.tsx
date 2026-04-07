@@ -42,9 +42,9 @@ export default function PlatformBadges({ platforms, size = 'medium' }: PlatformB
             ]}
           >
             {config.library === 'fa5' ? (
-              <FontAwesome5 name={config.icon} size={iconSize} color="#FFFFFF" />
+              <FontAwesome5 name={config.icon} size={iconSize} color={Colors.textBright} />
             ) : (
-              <MaterialCommunityIcons name={config.icon as any} size={iconSize} color="#FFFFFF" />
+              <MaterialCommunityIcons name={config.icon as any} size={iconSize} color={Colors.textBright} />
             )}
           </View>
         )

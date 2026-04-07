@@ -31,6 +31,7 @@ function GlitchResultButton({ onPress }: { onPress: () => void }) {
   const [isGlitching, setIsGlitching] = useState(false)
   const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
   const scaleAnim = useRef(new Animated.Value(1)).current
+  const glitchTimeoutRef = useRef<NodeJS.Timeout>(undefined)
 
   useEffect(() => {
     const glitchInterval = setInterval(() => {
@@ -54,18 +55,21 @@ function GlitchResultButton({ onPress }: { onPress: () => void }) {
           }),
         ]).start()
 
-        setTimeout(() => {
+        glitchTimeoutRef.current = setTimeout(() => {
           setIsGlitching(false)
           setGlitchOffset({ x: 0, y: 0 })
         }, 50 + Math.random() * 60)
       }
     }, 400)
 
-    return () => clearInterval(glitchInterval)
+    return () => {
+      clearInterval(glitchInterval)
+      if (glitchTimeoutRef.current) clearTimeout(glitchTimeoutRef.current)
+    }
   }, [scaleAnim])
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.8} accessibilityLabel="Add game to log" accessibilityRole="button">
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8} accessibilityLabel="Add game to log" accessibilityRole="button" accessibilityHint="Opens game logging form">
       <Animated.View style={[styles.addButtonContainer, { transform: [{ scale: scaleAnim }] }]}>
         {/* Cyan layer */}
         <View
@@ -146,6 +150,8 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
   const titleGlitchAnim = useRef(new Animated.Value(0)).current
 
   // Search input glitch effect (only when focused)
+  const searchGlitchTimeoutRef = useRef<NodeJS.Timeout>(undefined)
+
   useEffect(() => {
     if (!isFocused) return
 
@@ -157,14 +163,17 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
           y: (Math.random() - 0.5) * 2,
         })
 
-        setTimeout(() => {
+        searchGlitchTimeoutRef.current = setTimeout(() => {
           setIsSearchGlitching(false)
           setSearchGlitchOffset({ x: 0, y: 0 })
         }, 60 + Math.random() * 80)
       }
     }, 300)
 
-    return () => clearInterval(glitchInterval)
+    return () => {
+      clearInterval(glitchInterval)
+      if (searchGlitchTimeoutRef.current) clearTimeout(searchGlitchTimeoutRef.current)
+    }
   }, [isFocused])
 
   // Title glitch animation loop
@@ -310,6 +319,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
         activeOpacity={0.7}
         accessibilityLabel={item.name}
         accessibilityRole="button"
+        accessibilityHint="Opens game logging form"
       >
         {coverUrl ? (
           <Image source={{ uri: coverUrl }} style={styles.gameCover} accessibilityLabel={`${item.name} cover art`} />
@@ -373,6 +383,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
             <View style={styles.titleContainer}>
               {/* Cyan layer */}
               <Animated.Text
+                accessible={false}
                 style={[
                   styles.headerTitleLayer,
                   styles.headerTitleCyan,
@@ -396,6 +407,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
               </Animated.Text>
               {/* Green layer */}
               <Animated.Text
+                accessible={false}
                 style={[
                   styles.headerTitleLayer,
                   styles.headerTitleGreen,
@@ -418,9 +430,9 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
                 quick log
               </Animated.Text>
               {/* Main white title */}
-              <Text style={styles.headerTitle}>quick log</Text>
+              <Text accessible={true} style={styles.headerTitle}>quick log</Text>
             </View>
-            <TouchableOpacity onPress={handleClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button">
+            <TouchableOpacity onPress={handleClose} style={styles.closeButton} accessibilityLabel="Close" accessibilityRole="button" accessibilityHint="Closes quick log modal">
               <Ionicons name="close" size={24} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
@@ -488,7 +500,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
                 accessibilityLabel="Search for a game to log"
               />
               {query.length > 0 && (
-                <TouchableOpacity onPress={() => setQuery('')} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button">
+                <TouchableOpacity onPress={() => setQuery('')} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button" accessibilityHint="Clears the search field">
                   <Ionicons name="close-circle" size={20} color={Colors.textDim} />
                 </TouchableOpacity>
               )}
@@ -567,7 +579,7 @@ const styles = StyleSheet.create({
   dragHandle: {
     width: 40,
     height: 4,
-    backgroundColor: Colors.textDim,
+    backgroundColor: Colors.textMuted,
     borderRadius: 2,
   },
   header: {
@@ -649,6 +661,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: Spacing.md,
+    minHeight: 44,
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
     color: Colors.text,

@@ -36,7 +36,7 @@ function StreamsSkeleton() {
           <View key={i} style={styles.streamCard}>
             <View style={styles.skeletonThumbnail} />
             <View style={[styles.skeletonText, { width: 80, marginTop: Spacing.sm }]} />
-            <View style={[styles.skeletonText, { width: 50, marginTop: 4 }]} />
+            <View style={[styles.skeletonText, { width: 50, marginTop: Spacing.xs }]} />
           </View>
         ))}
       </ScrollView>
@@ -207,11 +207,11 @@ const styles = StyleSheet.create({
     left: Spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: Colors.overlay,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: BorderRadius.xs,
-    gap: 4,
+    gap: Spacing.xs,
   },
   liveDotSmall: {
     width: 6,
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   viewerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: Spacing.xs,
     marginTop: 2,
   },
   viewerCount: {

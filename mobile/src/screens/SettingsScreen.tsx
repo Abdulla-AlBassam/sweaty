@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TextInput,
-  TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
+import PressableScale from '../components/PressableScale'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -54,9 +54,7 @@ export default function SettingsScreen() {
   const [gamingPlatforms, setGamingPlatforms] = useState<GamingPlatform[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
-  const [isSavingBanner, setIsSavingBanner] = useState(false)
   const [bannerSelectorVisible, setBannerSelectorVisible] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
   const [usernameError, setUsernameError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -70,26 +68,44 @@ export default function SettingsScreen() {
     }
   }, [profile])
 
-  useEffect(() => {
+  const hasChanges = useMemo(() => {
     const originalDisplayName = profile?.display_name || ''
     const originalBio = profile?.bio || ''
     const originalUsername = profile?.username || ''
     const originalAvatar = profile?.avatar_url || null
+    const originalBanner = profile?.banner_url || null
     const originalPlatforms = profile?.gaming_platforms || []
 
-    // Check if platforms arrays are different
     const platformsChanged =
       gamingPlatforms.length !== originalPlatforms.length ||
       gamingPlatforms.some(p => !originalPlatforms.includes(p))
 
-    setHasChanges(
+    return (
       displayName !== originalDisplayName ||
       bio !== originalBio ||
       username !== originalUsername ||
       avatarUrl !== originalAvatar ||
+      bannerUrl !== originalBanner ||
       platformsChanged
     )
-  }, [displayName, bio, username, avatarUrl, gamingPlatforms, profile])
+  }, [displayName, bio, username, avatarUrl, bannerUrl, gamingPlatforms, profile])
+
+  // Warn on unsaved changes when navigating away
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (!hasChanges) return
+      e.preventDefault()
+      Alert.alert(
+        'Discard changes?',
+        'You have unsaved changes. Are you sure you want to leave?',
+        [
+          { text: 'Keep editing', style: 'cancel' },
+          { text: 'Discard', style: 'destructive', onPress: () => navigation.dispatch(e.data.action) },
+        ]
+      )
+    })
+    return unsubscribe
+  }, [hasChanges, navigation])
 
   const validateUsername = (value: string): boolean => {
     if (value.length < 3) {
@@ -118,13 +134,13 @@ export default function SettingsScreen() {
     }
   }
 
-  const togglePlatform = (platform: GamingPlatform) => {
+  const togglePlatform = useCallback((platform: GamingPlatform) => {
     setGamingPlatforms(prev =>
       prev.includes(platform)
         ? prev.filter(p => p !== platform)
         : [...prev, platform]
     )
-  }
+  }, [])
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -141,7 +157,23 @@ export default function SettingsScreen() {
     })
 
     if (!result.canceled && result.assets[0]) {
-      await uploadAvatar(result.assets[0].uri)
+      const asset = result.assets[0]
+
+      // Validate file size (5MB limit)
+      if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+        Alert.alert('File too large', 'Please select an image under 5MB.')
+        return
+      }
+
+      // Validate file type
+      const ext = asset.uri.split('.').pop()?.toLowerCase()
+      const allowedTypes = ['jpg', 'jpeg', 'png', 'webp', 'heic']
+      if (ext && !allowedTypes.includes(ext)) {
+        Alert.alert('Unsupported format', 'Please select a JPG, PNG, or WEBP image.')
+        return
+      }
+
+      await uploadAvatar(asset.uri)
     }
   }
 
@@ -155,12 +187,9 @@ export default function SettingsScreen() {
       const fileName = `${user.id}-${Date.now()}.${ext}`
       const filePath = `avatars/${fileName}`
 
-      // Read the file as base64
+      // Read the file
       const response = await fetch(uri)
-      const blob = await response.blob()
-
-      // Convert blob to ArrayBuffer
-      const arrayBuffer = await new Response(blob).arrayBuffer()
+      const arrayBuffer = await response.arrayBuffer()
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -187,7 +216,7 @@ export default function SettingsScreen() {
   }
 
   const handleSave = async () => {
-    if (!user || !hasChanges) return
+    if (!user || !hasChanges || isSaving) return
 
     // Validate username
     if (!validateUsername(username)) {
@@ -196,12 +225,18 @@ export default function SettingsScreen() {
 
     // Check if username is taken (if changed)
     if (username !== profile?.username) {
-      const { data: existing } = await supabase
+      const { data: existing, error: checkError } = await supabase
         .from('profiles')
         .select('id')
         .eq('username', username)
         .neq('id', user.id)
         .single()
+
+      // PGRST116 = no rows found (username available) — that's expected
+      if (checkError && checkError.code !== 'PGRST116') {
+        Alert.alert('Error', 'Could not verify username availability. Please try again.')
+        return
+      }
 
       if (existing) {
         setUsernameError('username is already taken')
@@ -215,9 +250,10 @@ export default function SettingsScreen() {
         .from('profiles')
         .update({
           avatar_url: avatarUrl,
+          banner_url: bannerUrl,
           display_name: displayName.trim() || null,
           username: username,
-          bio: bio.trim() || null,
+          bio: bio.trim().slice(0, 160) || null,
           gaming_platforms: gamingPlatforms,
           updated_at: new Date().toISOString(),
         })
@@ -245,46 +281,27 @@ export default function SettingsScreen() {
     )
   }
 
-  const handleBannerSelect = async (banner: { url: string; gameName: string }) => {
-    if (!user) return
-
-    setIsSavingBanner(true)
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          banner_url: banner.url,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id)
-
-      if (error) throw error
-
-      setBannerUrl(banner.url)
-      setBannerSelectorVisible(false)
-      await refreshProfile()
-      Alert.alert('Success', `Banner set to ${banner.gameName}`)
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to update banner')
-    } finally {
-      setIsSavingBanner(false)
-    }
+  const handleBannerSelect = (banner: { url: string; gameName: string }) => {
+    setBannerUrl(banner.url)
+    setBannerSelectorVisible(false)
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button">
+        <PressableScale onPress={() => navigation.goBack()} containerStyle={styles.backButton} haptic="light" accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to profile">
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={styles.headerTitle}>SETTINGS</Text>
-        <TouchableOpacity
+        <PressableScale
           onPress={handleSave}
           disabled={!hasChanges || isSaving || !!usernameError}
-          style={styles.saveButton}
+          containerStyle={styles.saveButton}
+          haptic="medium"
           accessibilityLabel="Save changes"
           accessibilityRole="button"
+          accessibilityHint="Saves profile changes"
         >
           {isSaving ? (
             <LoadingSpinner size="small" color={Colors.accent} />
@@ -293,7 +310,7 @@ export default function SettingsScreen() {
               SAVE
             </Text>
           )}
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       <KeyboardAvoidingView
@@ -303,7 +320,7 @@ export default function SettingsScreen() {
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
-            <TouchableOpacity onPress={pickImage} disabled={isUploadingAvatar} accessibilityLabel="Change profile picture" accessibilityRole="button">
+            <PressableScale onPress={pickImage} disabled={isUploadingAvatar} haptic="light" accessibilityLabel="Change profile picture" accessibilityRole="button">
               {isUploadingAvatar ? (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
                   <LoadingSpinner size="large" color={Colors.accent} />
@@ -318,21 +335,22 @@ export default function SettingsScreen() {
               <View style={styles.avatarEditBadge}>
                 <Ionicons name="camera" size={16} color={Colors.text} />
               </View>
-            </TouchableOpacity>
+            </PressableScale>
             <Text style={styles.changeAvatarText}>Change avatar</Text>
           </View>
 
           {/* Banner Section */}
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
-              <Text style={styles.sectionTitle}>Profile Banner</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Profile Banner</Text>
               <PremiumBadge size="small" />
             </View>
 
             {isPremium ? (
-              <TouchableOpacity
+              <PressableScale
                 style={styles.bannerPreviewContainer}
                 onPress={() => setBannerSelectorVisible(true)}
+                haptic="light"
                 accessibilityLabel="Change profile banner"
                 accessibilityRole="button"
               >
@@ -345,12 +363,11 @@ export default function SettingsScreen() {
                       accessibilityLabel="Current profile banner"
                     />
                     <LinearGradient
-                      colors={['transparent', 'rgba(0,0,0,0.6)']}
+                      colors={['transparent', Colors.overlay]}
                       style={styles.bannerPreviewGradient}
                     />
                     <View style={styles.bannerEditOverlay}>
-                      <Ionicons name="create-outline" size={20} color={Colors.text} />
-                      <Text style={styles.bannerEditText}>Change Banner</Text>
+                      <Ionicons name="create-outline" size={18} color={Colors.text} />
                     </View>
                   </View>
                 ) : (
@@ -359,7 +376,7 @@ export default function SettingsScreen() {
                     <Text style={styles.bannerPlaceholderText}>Tap to select a banner</Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             ) : (
               <View style={styles.bannerLockedContainer}>
                 <View style={styles.bannerLockedContent}>
@@ -377,7 +394,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>Profile</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Display name</Text>
+              <Text style={styles.inputLabel} nativeID="displayNameLabel">Display name</Text>
               <TextInput
                 style={styles.input}
                 value={displayName}
@@ -386,11 +403,12 @@ export default function SettingsScreen() {
                 placeholderTextColor={Colors.textDim}
                 maxLength={50}
                 accessibilityLabel="Display name"
+                accessibilityLabelledBy="displayNameLabel"
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Username</Text>
+              <Text style={styles.inputLabel} nativeID="usernameLabel">Username</Text>
               <View style={styles.usernameInputContainer}>
                 <Text style={styles.usernamePrefix}>@</Text>
                 <TextInput
@@ -403,6 +421,7 @@ export default function SettingsScreen() {
                   autoCapitalize="none"
                   autoCorrect={false}
                   accessibilityLabel="Username"
+                  accessibilityLabelledBy="usernameLabel"
                 />
               </View>
               {usernameError && (
@@ -411,7 +430,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Bio</Text>
+              <Text style={styles.inputLabel} nativeID="bioLabel">Bio</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={bio}
@@ -422,6 +441,7 @@ export default function SettingsScreen() {
                 numberOfLines={4}
                 textAlignVertical="top"
                 accessibilityLabel="Bio"
+                accessibilityLabelledBy="bioLabel"
               />
               <Text style={styles.charCount}>{bio.length}/160</Text>
             </View>
@@ -434,14 +454,16 @@ export default function SettingsScreen() {
               {PLATFORM_OPTIONS.map((platform) => {
                 const isSelected = gamingPlatforms.includes(platform.key)
                 return (
-                  <TouchableOpacity
+                  <PressableScale
                     key={platform.key}
+                    containerStyle={{ flex: 1 }}
                     style={[
                       styles.platformButton,
                       isSelected && styles.platformButtonSelected,
                     ]}
                     onPress={() => togglePlatform(platform.key)}
-                    activeOpacity={0.7}
+                    haptic="selection"
+                    scale={0.94}
                     accessibilityLabel={platform.key.charAt(0).toUpperCase() + platform.key.slice(1)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
@@ -451,24 +473,28 @@ export default function SettingsScreen() {
                     ) : (
                       <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? Colors.accent : Colors.textMuted} />
                     )}
-                  </TouchableOpacity>
+                  </PressableScale>
                 )
               })}
             </View>
 
           </View>
 
+          {/* ── Secondary Zone ── */}
+          <View style={styles.zoneDivider} />
+
           {/* Developer Tools - Only visible to developer */}
           {profile?.username === 'abdulla' && (
-            <View style={styles.section}>
+            <View style={styles.sectionCompact}>
               <View style={styles.sectionTitleRow}>
-                <Text style={styles.sectionTitle}>developer tools</Text>
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Developer Tools</Text>
                 <PremiumBadge size="small" variant="developer" />
               </View>
 
-              <TouchableOpacity
+              <PressableScale
                 style={styles.devToolButton}
                 onPress={() => navigation.navigate('AdminHeroBanners')}
+                haptic="light"
               >
                 <View style={styles.devToolContent}>
                   <Ionicons name="images-outline" size={24} color={Colors.accent} />
@@ -478,11 +504,12 @@ export default function SettingsScreen() {
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
-              </TouchableOpacity>
+              </PressableScale>
 
-              <TouchableOpacity
+              <PressableScale
                 style={[styles.devToolButton, { marginTop: Spacing.sm }]}
                 onPress={() => navigation.navigate('AdminCuratedLists')}
+                haptic="light"
               >
                 <View style={styles.devToolContent}>
                   <Ionicons name="list-outline" size={24} color={Colors.accent} />
@@ -492,27 +519,23 @@ export default function SettingsScreen() {
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           )}
 
-          {/* Account Info */}
-          <View style={styles.section}>
+          {/* Account */}
+          <View style={styles.sectionCompact}>
             <Text style={styles.sectionTitle}>Account</Text>
 
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{user?.email}</Text>
+              <Text style={styles.infoValue} selectable>{user?.email || 'Not available'}</Text>
             </View>
-          </View>
 
-          {/* Import Games */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Import Games</Text>
-
-            <TouchableOpacity
+            <PressableScale
               style={styles.importGamesButton}
               onPress={() => navigation.navigate('PlatformConnections')}
+              haptic="light"
             >
               <View style={styles.importGamesContent}>
                 <Ionicons name="cloud-download-outline" size={24} color={Colors.accent} />
@@ -524,15 +547,15 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           {/* Actions */}
-          <View style={styles.section}>
-            <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} accessibilityLabel="Sign out" accessibilityRole="button">
+          <View style={styles.sectionCompact}>
+            <PressableScale style={styles.signOutButton} onPress={handleSignOut} haptic="medium" accessibilityLabel="Sign out" accessibilityRole="button" accessibilityHint="Signs out of your account">
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
               <Text style={styles.signOutText}>SIGN OUT</Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           {/* App Version */}
@@ -548,7 +571,6 @@ export default function SettingsScreen() {
         onClose={() => setBannerSelectorVisible(false)}
         onSelect={handleBannerSelect}
         currentBannerUrl={bannerUrl}
-        isLoading={isSavingBanner}
       />
     </SafeAreaView>
   )
@@ -562,7 +584,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
+    paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
@@ -635,17 +657,28 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: Spacing.xl,
   },
+  sectionCompact: {
+    marginBottom: Spacing.lg,
+  },
+  zoneDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
   sectionTitle: {
     fontFamily: Fonts.display,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.sm,
     color: Colors.text,
-    marginBottom: Spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: Spacing.sectionHeaderBelow,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sectionHeaderBelow,
   },
   bannerPreviewContainer: {
     width: '100%',
@@ -671,19 +704,14 @@ const styles = StyleSheet.create({
   },
   bannerEditOverlay: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
+    bottom: Spacing.sm,
+    right: Spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.overlay,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-  },
-  bannerEditText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.text,
   },
   bannerPlaceholder: {
     width: '100%',
@@ -729,7 +757,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   inputLabel: {
-    fontFamily: Fonts.body,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     marginBottom: Spacing.xs,
@@ -809,6 +837,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
     marginBottom: Spacing.sm,
   },
   infoLabel: {
@@ -856,6 +886,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   importGamesContent: {
     flexDirection: 'row',

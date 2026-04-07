@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { View, Text, Image, StyleSheet } from 'react-native'
+import { View, Image, StyleSheet } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import SweatDropIcon from './SweatDropIcon'
-import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
+import { Colors, Spacing, BorderRadius } from '../constants/colors'
 import { getIGDBImageUrl } from '../constants'
 import PressableScale from './PressableScale'
 
@@ -105,11 +105,5 @@ const styles = StyleSheet.create({
     borderColor: Colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  title: {
-    fontSize: FontSize.xs,
-    color: Colors.text,
-    marginTop: Spacing.xs,
-    textAlign: 'center',
   },
 })

@@ -111,6 +111,15 @@ export default function CuratedListDetailScreen() {
     )
   }
 
+  // Each row height: card height (CARD_WIDTH * 4/3) + marginBottom (GAP)
+  const ITEM_HEIGHT = CARD_WIDTH * (4 / 3) + GAP
+
+  const getItemLayout = (_data: ArrayLike<GameItem> | null | undefined, index: number) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * Math.floor(index / NUM_COLUMNS),
+    index,
+  })
+
   const renderGame = ({ item, index }: { item: GameItem; index: number }) => (
     <TouchableOpacity
       style={styles.gameCard}
@@ -145,6 +154,7 @@ export default function CuratedListDetailScreen() {
           onPress={() => navigation.goBack()}
           accessibilityLabel="Go back"
           accessibilityRole="button"
+          accessibilityHint="Returns to previous screen"
         >
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </TouchableOpacity>
@@ -166,6 +176,8 @@ export default function CuratedListDetailScreen() {
           contentContainerStyle={styles.gridContent}
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews={true}
+          getItemLayout={getItemLayout}
         />
       )}
     </SafeAreaView>
@@ -187,8 +199,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -198,7 +210,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   headerSpacer: {
-    width: 40,
+    width: 44,
   },
   loadingContainer: {
     flex: 1,

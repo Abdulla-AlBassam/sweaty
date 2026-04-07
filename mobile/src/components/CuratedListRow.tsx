@@ -58,7 +58,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
             <Text style={styles.description} numberOfLines={1}>{list.description}</Text>
           )}
         </View>
-        <PressableScale onPress={handleSeeAll} haptic="light" accessibilityLabel={'See all games in ' + list.title} accessibilityRole="button">
+        <PressableScale onPress={handleSeeAll} haptic="light" accessibilityLabel={'See all games in ' + list.title} accessibilityRole="button" accessibilityHint="Shows all games in this list">
           <Text style={styles.seeAll}>See All</Text>
         </PressableScale>
       </View>
@@ -82,7 +82,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
               <Image
                 source={{ uri: getIGDBImageUrl(game.cover_url, 'coverBig') }}
                 style={styles.cover}
-                accessibilityLabel={game.name + ' cover art'}
+                accessible={false}
               />
             ) : (
               <View style={[styles.cover, styles.placeholderCover]}>

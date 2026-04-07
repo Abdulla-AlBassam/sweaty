@@ -226,7 +226,7 @@ export default function AIRecommendScreen() {
           </View>
         </PressableScale>
 
-        <SweatDropIcon size={24} variant="static" />
+        <View style={styles.headerSpacer} />
 
         <View style={styles.headerSpacer} />
       </View>

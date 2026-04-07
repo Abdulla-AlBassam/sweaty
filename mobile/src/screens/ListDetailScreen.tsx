@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   Image,
   StyleSheet,
@@ -232,16 +233,18 @@ export default function ListDetailScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-          >
-            <Ionicons name="chevron-back" size={24} color={Colors.text} />
-          </TouchableOpacity>
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+              accessibilityLabel="Go back"
+              accessibilityRole="button"
+            >
+              <Ionicons name="chevron-back" size={24} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
           <Text style={styles.headerTitle}>List</Text>
-          <View style={styles.headerSpacer} />
+          <View style={{ flex: 1 }} />
         </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
@@ -257,59 +260,61 @@ export default function ListDetailScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </TouchableOpacity>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
+            <Ionicons name="chevron-back" size={24} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
 
         <Text style={styles.headerTitle} numberOfLines={1}>
           {list?.title || 'List'}
         </Text>
 
-        {isOwner ? (
-          <View style={styles.headerActions}>
-            {isEditMode ? (
-              <TouchableOpacity
-                style={styles.doneButton}
-                onPress={() => setIsEditMode(false)}
-                accessibilityLabel="Done editing"
-                accessibilityRole="button"
-              >
-                <Text style={styles.doneButtonText}>Done</Text>
-              </TouchableOpacity>
-            ) : (
-              <>
+        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+          {isOwner ? (
+            <View style={styles.headerActions}>
+              {isEditMode ? (
                 <TouchableOpacity
-                  style={styles.headerButton}
-                  onPress={() => setIsEditMode(true)}
-                  accessibilityLabel="Edit list"
+                  style={styles.doneButton}
+                  onPress={() => setIsEditMode(false)}
+                  accessibilityLabel="Done editing"
                   accessibilityRole="button"
                 >
-                  <Ionicons name="pencil" size={20} color={Colors.text} />
+                  <Text style={styles.doneButtonText}>Done</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.headerButton}
-                  onPress={handleDeleteList}
-                  disabled={isDeleting}
-                  accessibilityLabel="Delete list"
-                  accessibilityRole="button"
-                >
-                  {isDeleting ? (
-                    <LoadingSpinner size="small" color={Colors.error} />
-                  ) : (
-                    <Ionicons name="trash-outline" size={20} color={Colors.error} />
-                  )}
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        ) : (
-          <View style={styles.headerSpacer} />
-        )}
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.headerButton}
+                    onPress={() => setIsEditMode(true)}
+                    accessibilityLabel="Edit list"
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="pencil" size={20} color={Colors.text} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.headerButton}
+                    onPress={handleDeleteList}
+                    disabled={isDeleting}
+                    accessibilityLabel="Delete list"
+                    accessibilityRole="button"
+                  >
+                    {isDeleting ? (
+                      <LoadingSpinner size="small" color={Colors.error} />
+                    ) : (
+                      <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {isLoading ? (
@@ -419,12 +424,16 @@ export default function ListDetailScreen() {
                   <LoadingSpinner size="small" color={Colors.accent} />
                 </View>
               ) : libraryGames.length > 0 ? (
-                <View style={styles.libraryGrid}>
-                  {libraryGames.map((game) => {
+                <FlatList
+                  data={libraryGames}
+                  keyExtractor={(item) => item.id.toString()}
+                  numColumns={4}
+                  scrollEnabled={false}
+                  columnWrapperStyle={styles.libraryRow}
+                  renderItem={({ item: game }) => {
                     const inList = isGameInList(game.id)
                     return (
                       <TouchableOpacity
-                        key={game.id}
                         style={styles.libraryGame}
                         onPress={() => handleAddGame(game)}
                         accessibilityLabel={`${inList ? 'Remove' : 'Add'} ${game.name}`}
@@ -448,8 +457,8 @@ export default function ListDetailScreen() {
                         )}
                       </TouchableOpacity>
                     )
-                  })}
-                </View>
+                  }}
+                />
               ) : (
                 <View style={styles.emptyLibrary}>
                   <Text style={styles.emptyLibraryText}>No games in your library</Text>
@@ -467,10 +476,14 @@ export default function ListDetailScreen() {
             )}
 
             {(list?.items?.length || 0) > 0 ? (
-              <View style={styles.gamesGrid}>
-                {list?.items?.map((item) => (
+              <FlatList
+                data={list?.items || []}
+                keyExtractor={(item) => item.id.toString()}
+                numColumns={3}
+                scrollEnabled={false}
+                columnWrapperStyle={styles.gamesRow}
+                renderItem={({ item }) => (
                   <TouchableOpacity
-                    key={item.id}
                     style={styles.gameCard}
                     onPress={() => handleGamePress(item.game.id)}
                     onLongPress={() => isOwner && isEditMode && handleGameLongPress(item.game.id, item.game.name)}
@@ -493,8 +506,8 @@ export default function ListDetailScreen() {
                       </View>
                     )}
                   </TouchableOpacity>
-                ))}
-              </View>
+                )}
+              />
             ) : (
               <View style={styles.emptyList}>
                 <SweatDropIcon size={40} variant="static" />
@@ -523,7 +536,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
@@ -536,15 +548,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    flex: 1,
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
     color: Colors.text,
     textAlign: 'center',
     marginHorizontal: Spacing.sm,
-  },
-  headerSpacer: {
-    width: 40,
   },
   headerActions: {
     flexDirection: 'row',
@@ -685,7 +693,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   searchResultInList: {
-    backgroundColor: Colors.accent + '20',
+    backgroundColor: Colors.accentSubtle,
   },
   searchResultCover: {
     width: 32,
@@ -717,10 +725,9 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
   },
-  libraryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  libraryRow: {
     gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
   libraryGame: {
     position: 'relative',
@@ -764,10 +771,9 @@ const styles = StyleSheet.create({
   listSection: {
     padding: Spacing.lg,
   },
-  gamesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  gamesRow: {
     gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
   gameCard: {
     width: '30%',

@@ -79,7 +79,7 @@ export default function NewsScreen() {
           </Text>
           <View style={styles.articleMeta}>
             <Text style={styles.sourceName}>{item.source}</Text>
-            <Text style={styles.separator}>|</Text>
+            <Text style={styles.separator} accessible={false}>|</Text>
             <Text style={styles.timeAgo}>{formatTimeAgo(item.publishedAt)}</Text>
           </View>
         </View>
@@ -91,17 +91,19 @@ export default function NewsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <PressableScale
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          haptic="light"
-          accessibilityLabel="Go back"
-          accessibilityRole="button"
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors.text} />
-        </PressableScale>
+        <View style={{ flex: 1, alignItems: 'flex-start' }}>
+          <PressableScale
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            haptic="light"
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
+            <Ionicons name="chevron-back" size={24} color={Colors.text} />
+          </PressableScale>
+        </View>
         <Text style={styles.headerTitle}>Gaming News</Text>
-        <View style={styles.headerSpacer} />
+        <View style={{ flex: 1 }} />
       </View>
 
       {/* Content */}
@@ -131,7 +133,7 @@ export default function NewsScreen() {
               colors={[Colors.accent]}
             />
           }
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ItemSeparatorComponent={() => <View style={styles.separator} accessible={false} />}
         />
       )}
     </SafeAreaView>
@@ -146,15 +148,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -162,9 +163,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
     color: Colors.text,
-  },
-  headerSpacer: {
-    width: 40,
   },
   loadingContainer: {
     flex: 1,

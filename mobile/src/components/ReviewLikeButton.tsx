@@ -125,6 +125,8 @@ export default function ReviewLikeButton({
       onPress={handlePress}
       activeOpacity={0.7}
       disabled={isLoading}
+      accessibilityLabel={`${isLiked ? 'Unlike' : 'Like'} review${likeCount > 0 ? `, ${likeCount} likes` : ''}`}
+      accessibilityRole="button"
     >
       <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
         <Ionicons

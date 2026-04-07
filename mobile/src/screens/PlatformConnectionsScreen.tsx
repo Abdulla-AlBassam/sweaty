@@ -446,8 +446,8 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   },
   connectButtonWrapper: {
     position: 'relative',
-    height: 40,
+    minHeight: 44,
     width: 130,
   },
   connectButtonLayer: {

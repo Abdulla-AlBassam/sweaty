@@ -11,6 +11,7 @@ import {
   ImageBackground,
   Modal,
   Alert,
+  Dimensions,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SweatDropIcon from '../components/SweatDropIcon'
@@ -156,21 +157,21 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
       {/* Edge gradients for smooth blending */}
       <LinearGradient
-        colors={['rgba(15, 15, 15, 0.9)', 'transparent']}
+        colors={[Colors.edgeFadeHeavy, 'transparent']}
         style={styles.edgeGradientTop}
       />
       <LinearGradient
-        colors={['transparent', 'rgba(15, 15, 15, 0.95)']}
+        colors={['transparent', Colors.edgeFadeMax]}
         style={styles.edgeGradientBottom}
       />
       <LinearGradient
-        colors={['rgba(15, 15, 15, 0.7)', 'transparent']}
+        colors={[Colors.edgeFadeLight, 'transparent']}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={styles.edgeGradientLeft}
       />
       <LinearGradient
-        colors={['transparent', 'rgba(15, 15, 15, 0.7)']}
+        colors={['transparent', Colors.edgeFadeLight]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={styles.edgeGradientRight}
@@ -295,8 +296,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       </KeyboardAvoidingView>
 
       {/* Forgot Password Modal */}
-      <Modal
-        visible={showForgotPassword}
+      {showForgotPassword && <Modal
+        visible={true}
         animationType="fade"
         transparent
         onRequestClose={() => setShowForgotPassword(false)}
@@ -346,7 +347,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             </View>
           </View>
         </View>
-      </Modal>
+      </Modal>}
     </ImageBackground>
   )
 }
@@ -357,7 +358,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    backgroundColor: Colors.overlayDark,
   },
   edgeGradientTop: {
     position: 'absolute',
@@ -412,7 +413,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   errorContainer: {
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    backgroundColor: Colors.errorGlow,
     borderWidth: 1,
     borderColor: Colors.error,
     borderRadius: BorderRadius.md,
@@ -426,11 +427,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   formCard: {
-    backgroundColor: 'rgba(21, 21, 21, 0.7)',
+    backgroundColor: Colors.surfaceTranslucent,
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: Colors.borderSubtle,
   },
   form: {
     gap: Spacing.md,
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(26, 26, 26, 0.9)',
+    backgroundColor: Colors.surfaceLightTranslucent,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
@@ -490,7 +491,7 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     fontSize: FontSize.sm,
     paddingHorizontal: Spacing.md,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowColor: Colors.overlayDark,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
@@ -498,7 +499,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(26, 26, 26, 0.9)',
+    backgroundColor: Colors.surfaceLightTranslucent,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
@@ -547,7 +548,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     width: '100%',
-    maxWidth: 400,
+    maxWidth: Math.min(400, Dimensions.get('window').width - 32),
   },
   modalTitle: {
     fontFamily: Fonts.displaySemiBold,

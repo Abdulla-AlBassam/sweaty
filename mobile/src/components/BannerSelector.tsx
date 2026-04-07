@@ -241,7 +241,7 @@ export default function BannerSelector({
                 {isLoading ? (
                   <LoadingSpinner size="small" color={Colors.text} />
                 ) : (
-                  <Text style={styles.confirmText}>Save</Text>
+                  <Ionicons name="checkmark-circle" size={22} color={Colors.background} />
                 )}
               </TouchableOpacity>
             ) : (
@@ -380,18 +380,15 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.sm,
   },
   confirmButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   confirmButtonDisabled: {
     backgroundColor: Colors.surfaceLight,
-  },
-  confirmText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.background,
   },
   searchContainer: {
     padding: Spacing.md,

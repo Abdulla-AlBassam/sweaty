@@ -225,7 +225,7 @@ export default function DashboardScreen() {
     <View style={styles.groupHeader}>
       <Text style={styles.groupHeaderText}>{title}</Text>
       {onSeeAll && (
-        <PressableScale onPress={onSeeAll} haptic="light" accessibilityLabel={'See all ' + title} accessibilityRole="button">
+        <PressableScale onPress={onSeeAll} haptic="light" accessibilityLabel={'See all ' + title} accessibilityRole="button" accessibilityHint="Shows all items in this section">
           <Text style={styles.seeAllText}>See All</Text>
         </PressableScale>
       )}
@@ -273,6 +273,7 @@ export default function DashboardScreen() {
             scale={0.99}
             accessibilityLabel={currentBanner.game_name}
             accessibilityRole="button"
+            accessibilityHint="Opens game details"
           >
             <Image
               source={{ uri: currentBanner.screenshot_url }}
@@ -282,12 +283,12 @@ export default function DashboardScreen() {
             />
             {/* Top gradient for containment */}
             <LinearGradient
-              colors={['rgba(10,10,10,0.6)', 'transparent']}
+              colors={[Colors.gradientStart, 'transparent']}
               style={styles.heroBannerGradientTop}
             />
             {/* Bottom gradient for page continuation */}
             <LinearGradient
-              colors={['transparent', 'rgba(10,10,10,0.85)', '#0A0A0A']}
+              colors={['transparent', Colors.gradientEnd, Colors.background]}
               locations={[0, 0.6, 1]}
               style={styles.heroBannerGradient}
             />
@@ -391,7 +392,7 @@ export default function DashboardScreen() {
               <View style={styles.emptyStateContainer}>
                 <Text style={styles.emptyStateText}>
                   None of your friends are playing right now.{'\n'}
-                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')}>
+                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')} accessibilityRole="link">
                     Find people to follow
                   </Text>
                 </Text>
@@ -418,6 +419,7 @@ export default function DashboardScreen() {
                   haptic="light"
                   accessibilityLabel={"See all Friends' Favorites"}
                   accessibilityRole="button"
+                  accessibilityHint="Shows all items in this section"
                 >
                   <Text style={styles.seeAllText}>See All</Text>
                 </PressableScale>
@@ -454,7 +456,7 @@ export default function DashboardScreen() {
               <View style={styles.emptyStateContainer}>
                 <Text style={styles.emptyStateText}>
                   Follow people to see their favorite games here.{'\n'}
-                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')}>
+                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')} accessibilityRole="link">
                     Find people to follow
                   </Text>
                 </Text>
@@ -555,6 +557,7 @@ export default function DashboardScreen() {
                     haptic="light"
                     accessibilityLabel={'See all Because You Loved ' + (basedOnGame?.name || '')}
                     accessibilityRole="button"
+                    accessibilityHint="Shows all items in this section"
                   >
                     <Text style={styles.seeAllText}>See All</Text>
                   </PressableScale>
@@ -665,7 +668,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
     lineHeight: 20,
-    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowColor: Colors.overlayDark,
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
@@ -681,7 +684,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+    borderBottomColor: Colors.borderSubtle,
     marginBottom: Spacing.md,
   },
   groupHeaderText: {
@@ -752,7 +755,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.borderSubtle,
-    shadowColor: '#000',
+    shadowColor: Colors.background,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -812,7 +815,7 @@ const styles = StyleSheet.create({
   communityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   communityAvatar: {
     width: 18,
@@ -828,7 +831,7 @@ const styles = StyleSheet.create({
   communityUsername: {
     flex: 1,
     fontFamily: Fonts.bodyMedium,
-    fontSize: 11,
+    fontSize: FontSize.xxs,
     color: Colors.textSecondary,
     lineHeight: 15,
   },
@@ -836,11 +839,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    marginLeft: 4,
+    marginLeft: Spacing.xs,
   },
   communityRatingText: {
     fontFamily: Fonts.bodyMedium,
-    fontSize: 11,
+    fontSize: FontSize.xxs,
     color: Colors.gold,
     lineHeight: 15,
   },
@@ -849,11 +852,11 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.text,
     lineHeight: 16,
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   communityGameName: {
     fontFamily: Fonts.body,
-    fontSize: 11,
+    fontSize: FontSize.xxs,
     color: Colors.textMuted,
     lineHeight: 15,
   },

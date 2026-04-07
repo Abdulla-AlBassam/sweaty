@@ -24,6 +24,7 @@ import AllReviewsScreen from '../screens/AllReviewsScreen'
 import ReviewDetailScreen from '../screens/ReviewDetailScreen'
 import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
+import LibraryStatusScreen from '../screens/LibraryStatusScreen'
 
 // Types
 export type AuthStackParamList = {
@@ -52,6 +53,7 @@ export type MainStackParamList = {
   News: undefined
   Watch: undefined
   WebView: { url: string; title: string }
+  LibraryStatus: { userId: string; status: string }
   // Admin routes (developer only)
   AdminHeroBanners: undefined
   AdminCuratedLists: undefined
@@ -174,6 +176,13 @@ function MainNavigator() {
         options={{
           animation: 'slide_from_bottom',
           presentation: 'modal',
+        }}
+      />
+      <MainStack.Screen
+        name="LibraryStatus"
+        component={LibraryStatusScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
       {/* Admin screens (developer only) */}
