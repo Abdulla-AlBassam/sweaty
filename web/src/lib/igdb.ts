@@ -95,6 +95,7 @@ export interface IGDBGame {
   }
   first_release_date?: number // Unix timestamp
   genres?: { id: number; name: string }[]
+  themes?: { id: number; name: string }[]
   platforms?: { id: number; name: string }[]
   rating?: number
   rating_count?: number
