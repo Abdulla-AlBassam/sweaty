@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -9,13 +9,21 @@ import {
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useNavigation, CommonActions } from '@react-navigation/native'
+import { useNavigation, useRoute, CommonActions, RouteProp } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { useYouTube } from '../hooks/useYouTube'
-import { YouTubeVideo } from '../types'
+import { useNews } from '../hooks/useNews'
+import { YouTubeVideo, NewsArticle } from '../types'
 import PressableScale from '../components/PressableScale'
+
+type WatchTab = 'all' | 'videos' | 'news'
+type WatchRouteParams = { initialTab?: WatchTab }
+
+type FeedItem =
+  | { type: 'video'; data: YouTubeVideo }
+  | { type: 'article'; data: NewsArticle }
 
 function formatTimeAgo(dateString: string): string {
   const now = new Date()
@@ -47,61 +55,152 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&nbsp;/g, ' ')
 }
 
-export default function WatchScreen() {
-  const navigation = useNavigation()
-  const { videos, isLoading, error, refetch } = useYouTube(50)
-  const [refreshing, setRefreshing] = useState(false)
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true)
-    await refetch()
-    setRefreshing(false)
-  }, [refetch])
-
-  const handleVideoPress = (video: YouTubeVideo) => {
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'WebView',
-        params: {
-          url: video.videoUrl,
-          title: video.channel,
-        },
-      })
-    )
-  }
-
-  const renderVideo = ({ item }: { item: YouTubeVideo }) => (
+function VideoCard({ video, onPress }: { video: YouTubeVideo; onPress: () => void }) {
+  return (
     <PressableScale
-      onPress={() => handleVideoPress(item)}
+      onPress={onPress}
       haptic="light"
       scale={0.98}
-      accessibilityLabel={`${decodeHtmlEntities(item.title)} by ${item.channel}`}
+      accessibilityLabel={`${decodeHtmlEntities(video.title)} by ${video.channel}`}
       accessibilityRole="button"
     >
       <View style={styles.videoCard}>
         <Image
-          source={{ uri: item.thumbnail }}
-          style={styles.thumbnail}
+          source={{ uri: video.thumbnail }}
+          style={styles.videoThumbnail}
           resizeMode="cover"
-          accessibilityLabel={`Thumbnail for ${decodeHtmlEntities(item.title)}`}
         />
-        <View style={styles.videoContent}>
-          <Text style={styles.videoTitle} numberOfLines={2}>
-            {decodeHtmlEntities(item.title)}
+        <View style={styles.cardBody}>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {decodeHtmlEntities(video.title)}
           </Text>
-          <View style={styles.videoMeta}>
-            <Image source={{ uri: item.channelAvatar }} style={styles.channelAvatar} accessibilityLabel={`${item.channel} avatar`} />
-            <Text style={styles.channelName}>{item.channel}</Text>
-            <Text style={styles.metaSeparator} accessible={false}>|</Text>
-            <Text style={styles.timeAgo}>{formatTimeAgo(item.publishedAt)}</Text>
+          <View style={styles.cardMeta}>
+            <Image source={{ uri: video.channelAvatar }} style={styles.channelAvatar} />
+            <Text style={styles.metaSource}>{video.channel}</Text>
+            <Text style={styles.metaSeparator}>|</Text>
+            <Text style={styles.metaTime}>{formatTimeAgo(video.publishedAt)}</Text>
           </View>
         </View>
       </View>
     </PressableScale>
   )
+}
+
+function ArticleCard({ article, onPress }: { article: NewsArticle; onPress: () => void }) {
+  return (
+    <PressableScale
+      onPress={onPress}
+      haptic="light"
+      scale={0.98}
+      accessibilityLabel={decodeHtmlEntities(article.title)}
+      accessibilityRole="button"
+    >
+      <View style={styles.articleCard}>
+        {article.thumbnail ? (
+          <Image
+            source={{ uri: article.thumbnail }}
+            style={styles.articleThumbnail}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.articleThumbnail, styles.articlePlaceholder]}>
+            <Ionicons name="newspaper-outline" size={24} color={Colors.textDim} />
+          </View>
+        )}
+        <View style={styles.articleBody}>
+          <Text style={styles.cardTitle} numberOfLines={3}>
+            {decodeHtmlEntities(article.title)}
+          </Text>
+          <View style={styles.cardMeta}>
+            <View style={styles.newsTag}>
+              <Text style={styles.newsTagText}>NEWS</Text>
+            </View>
+            <Text style={styles.metaSource}>{article.source}</Text>
+            <Text style={styles.metaSeparator}>|</Text>
+            <Text style={styles.metaTime}>{formatTimeAgo(article.publishedAt)}</Text>
+          </View>
+        </View>
+      </View>
+    </PressableScale>
+  )
+}
+
+const TABS: { key: WatchTab; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'videos', label: 'Videos' },
+  { key: 'news', label: 'News' },
+]
+
+export default function WatchScreen() {
+  const navigation = useNavigation()
+  const route = useRoute<RouteProp<{ Watch: WatchRouteParams }, 'Watch'>>()
+  const { videos, isLoading: videosLoading, error: videosError, refetch: refetchVideos } = useYouTube(50)
+  const { articles, isLoading: newsLoading, error: newsError, refetch: refetchNews } = useNews(50)
+  const [refreshing, setRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState<WatchTab>(route.params?.initialTab || 'all')
+
+  const isLoading = videosLoading || newsLoading
+  const hasError = videosError && newsError
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([refetchVideos(), refetchNews()])
+    setRefreshing(false)
+  }, [refetchVideos, refetchNews])
+
+  const feedItems: FeedItem[] = useMemo(() => {
+    if (activeTab === 'videos') {
+      return videos.map((v) => ({ type: 'video' as const, data: v }))
+    }
+    if (activeTab === 'news') {
+      return articles.map((a) => ({ type: 'article' as const, data: a }))
+    }
+    // 'all' - interleave by publishedAt descending
+    const allItems: FeedItem[] = [
+      ...videos.map((v) => ({ type: 'video' as const, data: v })),
+      ...articles.map((a) => ({ type: 'article' as const, data: a })),
+    ]
+    allItems.sort((a, b) => {
+      const dateA = new Date(a.data.publishedAt).getTime()
+      const dateB = new Date(b.data.publishedAt).getTime()
+      return dateB - dateA
+    })
+    return allItems
+  }, [videos, articles, activeTab])
+
+  const handleVideoPress = (video: YouTubeVideo) => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'WebView',
+        params: { url: video.videoUrl, title: video.channel },
+      })
+    )
+  }
+
+  const handleArticlePress = (article: NewsArticle) => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'WebView',
+        params: { url: article.url, title: article.source },
+      })
+    )
+  }
+
+  const renderItem = ({ item }: { item: FeedItem }) => {
+    if (item.type === 'video') {
+      return <VideoCard video={item.data} onPress={() => handleVideoPress(item.data)} />
+    }
+    return <ArticleCard article={item.data} onPress={() => handleArticlePress(item.data)} />
+  }
+
+  const getItemKey = (item: FeedItem, index: number) => {
+    if (item.type === 'video') return `video-${item.data.id}-${index}`
+    return `article-${item.data.id}-${index}`
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1, alignItems: 'flex-start' }}>
           <PressableScale
@@ -118,22 +217,45 @@ export default function WatchScreen() {
         <View style={{ flex: 1 }} />
       </View>
 
+      {/* Tabs */}
+      <View style={styles.tabBar}>
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key
+          return (
+            <PressableScale
+              key={tab.key}
+              onPress={() => setActiveTab(tab.key)}
+              haptic="light"
+              style={[styles.tab, isActive && styles.tabActive]}
+              accessibilityLabel={`${tab.label} tab`}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                {tab.label}
+              </Text>
+            </PressableScale>
+          )
+        })}
+      </View>
+
+      {/* Content */}
       {isLoading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <LoadingSpinner size="large" color={Colors.accent} />
         </View>
-      ) : error ? (
+      ) : hasError ? (
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load videos</Text>
-          <PressableScale onPress={refetch} haptic="light" accessibilityLabel="Retry loading videos" accessibilityRole="button">
+          <Text style={styles.errorText}>Failed to load content</Text>
+          <PressableScale onPress={onRefresh} haptic="light" accessibilityLabel="Retry" accessibilityRole="button">
             <Text style={styles.retryText}>Tap to retry</Text>
           </PressableScale>
         </View>
       ) : (
         <FlatList
-          data={videos}
-          renderItem={renderVideo}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
+          data={feedItems}
+          renderItem={renderItem}
+          keyExtractor={getItemKey}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -144,7 +266,7 @@ export default function WatchScreen() {
               colors={[Colors.accent]}
             />
           }
-          ItemSeparatorComponent={() => <View style={styles.itemSeparator} accessible={false} />}
+          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
         />
       )}
     </SafeAreaView>
@@ -175,6 +297,38 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     color: Colors.text,
   },
+  // Tabs
+  tabBar: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    gap: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  tab: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  tabActive: {
+    backgroundColor: Colors.cream,
+    borderColor: Colors.cream,
+  },
+  tabText: {
+    fontFamily: Fonts.mono,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tabTextActive: {
+    color: Colors.background,
+  },
+  // Loading / Error
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -197,30 +351,35 @@ const styles = StyleSheet.create({
     color: Colors.accent,
     textTransform: 'uppercase',
   },
+  // List
   listContent: {
     padding: Spacing.lg,
   },
+  itemSeparator: {
+    height: Spacing.md,
+  },
+  // Video Card
   videoCard: {
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
   },
-  thumbnail: {
+  videoThumbnail: {
     width: '100%',
     aspectRatio: 16 / 9,
     backgroundColor: Colors.surfaceLight,
   },
-  videoContent: {
+  cardBody: {
     padding: Spacing.md,
   },
-  videoTitle: {
+  cardTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.text,
     lineHeight: 22,
     marginBottom: Spacing.sm,
   },
-  videoMeta: {
+  cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
@@ -231,7 +390,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: Colors.surfaceLight,
   },
-  channelName: {
+  metaSource: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
     color: Colors.textDim,
@@ -242,12 +401,42 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },
-  itemSeparator: {
-    height: Spacing.md,
-  },
-  timeAgo: {
+  metaTime: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
     color: Colors.textDim,
+  },
+  // Article Card
+  articleCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+    flexDirection: 'row',
+  },
+  articleThumbnail: {
+    width: 120,
+    height: 100,
+    backgroundColor: Colors.surfaceLight,
+  },
+  articlePlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  articleBody: {
+    flex: 1,
+    padding: Spacing.md,
+    justifyContent: 'center',
+  },
+  newsTag: {
+    backgroundColor: Colors.surfaceBright,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
+  },
+  newsTagText: {
+    fontFamily: Fonts.mono,
+    fontSize: 9,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
   },
 })

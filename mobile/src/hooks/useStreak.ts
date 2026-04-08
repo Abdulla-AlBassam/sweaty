@@ -91,7 +91,7 @@ export function useStreak() {
       // Show toast notification
       if (showToast) {
         Toast.show({
-          type: 'success',
+          type: 'streak',
           text1: toastMessage,
           position: 'top',
           visibilityTime: 2000,

@@ -86,6 +86,28 @@ const toastConfig: ToastConfig = {
       }}
     />
   ),
+  streak: (props) => (
+    <BaseToast
+      {...props}
+      style={{
+        borderLeftColor: Colors.fire,
+        backgroundColor: Colors.surface,
+        borderRadius: 8,
+        borderLeftWidth: 3,
+      }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 15,
+        fontFamily: Fonts.bodySemiBold,
+        color: Colors.fire,
+      }}
+      text2Style={{
+        fontSize: 13,
+        fontFamily: Fonts.body,
+        color: Colors.textMuted,
+      }}
+    />
+  ),
 }
 
 const theme = {

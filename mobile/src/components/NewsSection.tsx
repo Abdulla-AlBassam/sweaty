@@ -167,7 +167,8 @@ export default function NewsSection({ refreshKey = 0, showHeader = true }: NewsS
   const handleSeeAll = () => {
     navigation.dispatch(
       CommonActions.navigate({
-        name: 'News',
+        name: 'Watch',
+        params: { initialTab: 'news' },
       })
     )
   }

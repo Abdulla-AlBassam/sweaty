@@ -553,6 +553,11 @@ export default function DashboardScreen() {
                           colors={['transparent', 'rgba(42, 42, 46, 0.9)']}
                           style={styles.communityCoverGradient}
                         />
+                        <View style={styles.communityGameBadge}>
+                          <Text style={styles.communityGameName} numberOfLines={1}>
+                            {review.game.name}
+                          </Text>
+                        </View>
                       </View>
                       <View style={styles.communityContent}>
                         <View style={styles.communityHeader}>
@@ -577,11 +582,8 @@ export default function DashboardScreen() {
                             </View>
                           )}
                         </View>
-                        <Text style={styles.communityReviewText} numberOfLines={2}>
+                        <Text style={styles.communityReviewText} numberOfLines={3}>
                           {review.review}
-                        </Text>
-                        <Text style={styles.communityGameName} numberOfLines={1}>
-                          {review.game.name}
                         </Text>
                       </View>
                     </PressableScale>
@@ -597,7 +599,7 @@ export default function DashboardScreen() {
         {/* WATCH Section Group */}
         {/* ═══════════════════════════════════════════════ */}
         <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
-          <SectionGroupHeader title="Watch" onSeeAll={() => navigation.navigate('Watch' as never)} />
+          <SectionGroupHeader title="Videos & News" onSeeAll={() => navigation.navigate('Watch' as never)} />
 
           {/* YouTube Videos (header hidden - parent group says "Watch") */}
           <WatchSection refreshKey={refreshCount} showHeader={false} />
@@ -804,6 +806,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  communityCoverGradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 36,
+    zIndex: 1,
+  },
   communityCoverGradient: {
     position: 'absolute',
     bottom: 0,
@@ -856,12 +866,22 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.text,
     lineHeight: 16,
-    marginBottom: Spacing.xs,
+  },
+  communityGameBadge: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    zIndex: 2,
+    maxWidth: '80%',
+    backgroundColor: 'rgba(26, 26, 28, 0.7)',
+    borderTopRightRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   communityGameName: {
-    fontFamily: Fonts.body,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xxs,
     color: TestBg.textMuted,
-    lineHeight: 15,
+    lineHeight: 14,
   },
 })

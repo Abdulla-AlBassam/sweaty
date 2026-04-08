@@ -17,7 +17,6 @@ import ListDetailScreen from '../screens/ListDetailScreen'
 import AIRecommendScreen from '../screens/AIRecommendScreen'
 import PlatformConnectionsScreen from '../screens/PlatformConnectionsScreen'
 import PlayStationImportScreen from '../screens/PlayStationImportScreen'
-import NewsScreen from '../screens/NewsScreen'
 import WatchScreen from '../screens/WatchScreen'
 import WebViewScreen from '../screens/WebViewScreen'
 import AllReviewsScreen from '../screens/AllReviewsScreen'
@@ -51,8 +50,7 @@ export type MainStackParamList = {
   AIRecommend: undefined
   PlatformConnections: undefined
   PlayStationImport: undefined
-  News: undefined
-  Watch: undefined
+  Watch: { initialTab?: 'all' | 'videos' | 'news' } | undefined
   WebView: { url: string; title: string }
   LibraryStatus: { userId: string; status: string }
   RankProgress: undefined
@@ -154,13 +152,6 @@ function MainNavigator() {
       <MainStack.Screen
         name="PlayStationImport"
         component={PlayStationImportScreen}
-        options={{
-          animation: 'slide_from_right',
-        }}
-      />
-      <MainStack.Screen
-        name="News"
-        component={NewsScreen}
         options={{
           animation: 'slide_from_right',
         }}

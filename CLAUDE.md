@@ -1136,6 +1136,33 @@ Created brand logo variants with RGB glitch effect.
 
 ---
 
+## Next Up: Category Tags for Watch Section
+
+Auto-tag videos and news articles by category based on title keyword matching, then let users filter the Watch feed by category.
+
+**Categories & keyword triggers:**
+| Category | Keywords |
+|----------|----------|
+| Review | "review", "before you buy", "worth it", "verdict" |
+| News | "announced", "reveals", "confirmed", "update", "patch", "report" |
+| Trailer | "trailer", "teaser", "gameplay reveal", "cinematic" |
+| Guide | "guide", "tips", "how to", "walkthrough", "tutorial", "best weapons" |
+| List | "top 10", "top 5", "top 20", "best", "worst", "ranking" |
+| Opinion | "rant", "hot take", "overrated", "underrated", "unpopular opinion" |
+| Analysis | "analysis", "breakdown", "explained", "deep dive", "everything we know" |
+| General | Fallback for anything that doesn't match |
+
+**Implementation plan:**
+1. Create a `categorise(title: string)` helper that scans the title against keyword lists and returns the first matching category (or "General")
+2. In `WatchScreen.tsx`, add a horizontal row of category pills below the existing All/Videos/News tabs
+3. Tapping a pill filters the feed to that category; tapping again deselects (shows all)
+4. Apply categorisation to both videos and news articles in the unified feed
+5. On the dashboard `WatchSection.tsx`, show category as a small tag on each card (no filtering needed there)
+
+**Files to modify:**
+- `mobile/src/screens/WatchScreen.tsx` - Add category filter UI + categorise logic
+- `mobile/src/components/WatchSection.tsx` - Add category tag on cards
+
 ## Upcoming Features (Backlog)
 
 Ideas ranked by implementation difficulty:
