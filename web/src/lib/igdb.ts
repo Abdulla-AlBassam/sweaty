@@ -741,7 +741,8 @@ export async function getPopularityForGames(gameIds: number[]): Promise<Map<numb
 //   Tier 1: IGDB similar_games (community-curated)
 //   Tier 2: Same developer with genre overlap
 //   Tier 3: Genre + theme discovery (broadest net)
-// Uses parent_game field to reliably filter DLCs instead of relying on category alone.
+// Uses parent_game + version_parent fields to filter DLCs and edition variants.
+// Franchise results are genre-gated to prevent broad franchises (e.g. "Marvel") from polluting results.
 export async function getSmartSimilarGames(gameId: number, limit: number = 15, platforms?: string[], excludePcOnly: boolean = false): Promise<Game[]> {
   const platformFilter = buildPlatformFilter(platforms)
   const TAG = '[SmartSimilar]'
@@ -749,13 +750,14 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
   // Shared fields we request for every candidate game batch
   const GAME_FIELDS = `name, slug, summary, cover.image_id, first_release_date,
     genres.id, genres.name, themes.id, themes.name, platforms.name,
-    total_rating, category, parent_game`
+    total_rating, total_rating_count, category, parent_game, version_parent`
 
-  // Central filter: valid category, not a DLC (parent_game is null), not a special edition
-  function isValidCandidate(g: IGDBGame & { parent_game?: number | null }): boolean {
+  // Central filter: valid category, not a DLC/expansion/edition
+  function isValidCandidate(g: IGDBGame & { parent_game?: number | null; version_parent?: number | null }): boolean {
     if (!VALID_CATEGORIES.includes(g.category || 0)) return false
     if (g.parent_game) return false          // has a parent → it's DLC/expansion content
-    if (isSpecialEdition(g.name || '')) return false
+    if (g.version_parent) return false       // has a version parent → it's an edition variant (GOTY, Deluxe, etc.)
+    if (isSpecialEdition(g.name || '')) return false  // keyword fallback for unlabelled editions
     return true
   }
 
@@ -763,7 +765,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
     // ── Step 1: Fetch base game data ──────────────────────────
     const gameBody = `
       fields name, similar_games, genres.id, genres.name, themes.id, themes.name,
-             franchises, collection,
+             franchise, franchises, collections,
              involved_companies.company.id, involved_companies.company.name, involved_companies.developer;
       where id = ${gameId};
     `
@@ -772,8 +774,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
       similar_games?: number[]
       genres?: { id: number; name: string }[]
       themes?: { id: number; name: string }[]
+      franchise?: number
       franchises?: number[]
-      collection?: number
+      collections?: number[]
       involved_companies?: Array<{
         company: { id: number; name: string }
         developer: boolean
@@ -795,8 +798,9 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
     console.log(TAG, 'Genres:', game.genres?.map(g => g.name).join(', ') || 'none')
     console.log(TAG, 'Themes:', game.themes?.map(t => t.name).join(', ') || 'none')
     console.log(TAG, 'Developer:', primaryDeveloper?.name || 'none',
+      '| Franchise:', game.franchise || 'none',
       '| Franchises:', game.franchises?.length || 0,
-      '| Collection:', game.collection || 'none',
+      '| Collections:', game.collections?.length || 0,
       '| similar_games:', game.similar_games?.length || 0)
 
     // Buckets per tier
@@ -815,49 +819,87 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
         where id = (${unique.join(',')}) & cover != null & ${platformFilter};
         limit 50;
       `
-      const results = await igdbFetch('games', body) as (IGDBGame & { parent_game?: number | null })[]
+      const results = await igdbFetch('games', body) as (IGDBGame & { parent_game?: number | null; version_parent?: number | null })[]
       const valid = (results || []).filter(isValidCandidate)
       console.log(TAG, `${tag}: ${valid.length}/${results?.length || 0} valid`)
       return valid
     }
 
-    // ── Tier 0: FRANCHISE ─────────────────────────────────────
-    if (game.franchises && game.franchises.length > 0) {
-      try {
-        const franchiseQuery = `
-          fields name, games;
-          where id = (${game.franchises.join(',')});
-        `
-        const franchiseData = await igdbFetch('franchises', franchiseQuery) as Array<{ name?: string; games?: number[] }>
-        const franchiseIds: number[] = []
-        for (const f of franchiseData || []) {
-          if (f?.games) franchiseIds.push(...f.games)
-        }
-        const results = await fetchAndFilter(franchiseIds, 'FRANCHISE')
-        tier0Games.push(...results)
-      } catch (e) {
-        console.log(TAG, 'Franchise query failed:', e)
-      }
-    }
-
-    // ── Tier 0b: COLLECTION ───────────────────────────────────
-    if (game.collection) {
+    // ── Tier 0a: COLLECTIONS (series-level, most specific) ───
+    // Collections = specific series (e.g. "Spider-Man series"), preferred over franchises
+    if (game.collections && game.collections.length > 0) {
       try {
         const collectionQuery = `
           fields name, games;
-          where id = ${game.collection};
+          where id = (${game.collections.join(',')});
         `
         const collectionData = await igdbFetch('collections', collectionQuery) as Array<{ name?: string; games?: number[] }>
-        if (collectionData?.[0]?.games) {
-          const results = await fetchAndFilter(collectionData[0].games, 'COLLECTION')
-          tier0Games.push(...results)
+        const collectionIds: number[] = []
+        for (const c of collectionData || []) {
+          if (c?.games) {
+            console.log(TAG, `Collection "${c.name}": ${c.games.length} games`)
+            collectionIds.push(...c.games)
+          }
         }
+        const results = await fetchAndFilter(collectionIds, 'COLLECTION')
+        tier0Games.push(...results)
       } catch (e) {
         console.log(TAG, 'Collection query failed:', e)
       }
     }
 
-    // ── Tier 0 fallback: name-based search when franchise/collection is empty ──
+    // ── Tier 0b: FRANCHISE (broader umbrella, genre-gated) ───
+    // Franchises can be very broad (e.g. "Marvel" includes fighting games,
+    // strategy games, etc.). Require at least 1 genre overlap with the seed
+    // game so Spider-Man 2 won't pull in Marvel vs Capcom.
+    const allFranchiseIds = [
+      ...(game.franchise ? [game.franchise] : []),
+      ...(game.franchises || []),
+    ]
+    const uniqueFranchiseIds = [...new Set(allFranchiseIds)]
+
+    if (uniqueFranchiseIds.length > 0 && baseGenreIds.size > 0) {
+      try {
+        const franchiseQuery = `
+          fields name, games;
+          where id = (${uniqueFranchiseIds.join(',')});
+        `
+        const franchiseData = await igdbFetch('franchises', franchiseQuery) as Array<{ name?: string; games?: number[] }>
+        const franchiseGameIds: number[] = []
+        for (const f of franchiseData || []) {
+          if (f?.games) {
+            console.log(TAG, `Franchise "${f.name}": ${f.games.length} games`)
+            franchiseGameIds.push(...f.games)
+          }
+        }
+
+        // Fetch candidates but require genre overlap to narrow broad franchises
+        const candidateIds = [...new Set(franchiseGameIds)].filter(id => id !== gameId).slice(0, 50)
+        if (candidateIds.length > 0) {
+          const body = `
+            fields ${GAME_FIELDS};
+            where id = (${candidateIds.join(',')}) & cover != null & ${platformFilter};
+            limit 50;
+          `
+          const results = await igdbFetch('games', body) as (IGDBGame & { parent_game?: number | null; version_parent?: number | null })[]
+          const valid = (results || []).filter(g => {
+            if (!isValidCandidate(g)) return false
+            // Genre gate: at least 1 shared genre with seed game
+            const gGenreIds = g.genres?.map(genre => genre.id) || []
+            return gGenreIds.some(id => baseGenreIds.has(id))
+          })
+          // Dedupe against collection results already in tier0
+          const existingIds = new Set(tier0Games.map(g => g.id))
+          const newResults = valid.filter(g => !existingIds.has(g.id))
+          console.log(TAG, `FRANCHISE (genre-gated): ${newResults.length}/${results?.length || 0} valid`)
+          tier0Games.push(...newResults)
+        }
+      } catch (e) {
+        console.log(TAG, 'Franchise query failed:', e)
+      }
+    }
+
+    // ── Tier 0 fallback: name-based search when collection/franchise is empty ──
     if (tier0Games.length === 0 && game.name) {
       try {
         const baseName = game.name
@@ -875,7 +917,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
             where cover != null & total_rating != null & total_rating >= 70;
             limit 20;
           `
-          const searchResults = await igdbFetch('games', searchQuery) as (IGDBGame & { parent_game?: number | null })[]
+          const searchResults = await igdbFetch('games', searchQuery) as (IGDBGame & { parent_game?: number | null; version_parent?: number | null })[]
           const valid = (searchResults || []).filter(g => g.id !== gameId && isValidCandidate(g))
           console.log(TAG, `NAME FALLBACK: ${valid.length} valid`)
           tier0Games.push(...valid)
@@ -912,7 +954,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
             where id = (${devGameIds.slice(0, 30).join(',')}) & cover != null & ${platformFilter};
             limit 30;
           `
-          const devGames = await igdbFetch('games', body) as (IGDBGame & { parent_game?: number | null })[]
+          const devGames = await igdbFetch('games', body) as (IGDBGame & { parent_game?: number | null; version_parent?: number | null })[]
           const valid = (devGames || []).filter(g => {
             if (!isValidCandidate(g)) return false
             const devGenreIds = g.genres?.map(genre => genre.id) || []
@@ -927,18 +969,20 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
     }
 
     // ── Tier 3: GENRE + THEME DISCOVERY ──────────────────────
-    // Find highly-rated games that share 2+ genres AND 1+ themes with the base game.
+    // Find well-known, highly-rated games that share 2+ genres AND 1+ themes.
     // This is the broadest discovery tier — surfaces games the user wouldn't find
     // through series or developer alone.
+    // Gated by total_rating_count >= 20 to exclude obscure titles that
+    // inflate ratings with few votes.
     if (baseGenreIds.size >= 2) {
       try {
         // Pick up to 3 genre IDs and up to 2 theme IDs for the query
         const genreArr = [...baseGenreIds].slice(0, 3)
         const themeArr = [...baseThemeIds].slice(0, 2)
 
-        // IGDB WHERE: must match at least one genre (we filter for 2+ overlap in JS)
-        // and have a decent rating to keep quality high
-        let whereClause = `genres = (${genreArr.join(',')}) & cover != null & total_rating >= 70 & total_rating_count >= 5 & category = (${VALID_CATEGORIES.join(',')}) & id != ${gameId} & ${platformFilter}`
+        // IGDB WHERE: must match at least one genre (we filter for 2+ overlap in JS),
+        // have a decent rating, AND enough ratings to be a known title
+        let whereClause = `genres = (${genreArr.join(',')}) & cover != null & total_rating >= 70 & total_rating_count >= 20 & category = (${VALID_CATEGORIES.join(',')}) & id != ${gameId} & parent_game = null & ${platformFilter}`
         if (themeArr.length > 0) {
           whereClause += ` & themes = (${themeArr.join(',')})`
         }
@@ -949,7 +993,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
           sort total_rating desc;
           limit 40;
         `
-        const discoveryResults = await igdbFetch('games', discoveryQuery) as (IGDBGame & { parent_game?: number | null })[]
+        const discoveryResults = await igdbFetch('games', discoveryQuery) as (IGDBGame & { parent_game?: number | null; version_parent?: number | null })[]
 
         // Post-filter: must have 2+ genre overlap, valid candidate
         const valid = (discoveryResults || []).filter(g => {
@@ -959,7 +1003,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
           return genreOverlap >= 2
         })
 
-        console.log(TAG, `GENRE+THEME DISCOVERY: ${valid.length}/${discoveryResults?.length || 0} valid (2+ genre overlap)`)
+        console.log(TAG, `GENRE+THEME DISCOVERY: ${valid.length}/${discoveryResults?.length || 0} valid (2+ genre overlap, 20+ ratings)`)
         tier3Games.push(...valid)
       } catch (e) {
         console.log(TAG, 'Genre+theme discovery failed:', e)
