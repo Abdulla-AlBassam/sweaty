@@ -217,11 +217,13 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
-  // Get 2025 Essentials curated list (or first available)
+  // Shuffle a random curated list on each refresh
   const featuredCuratedList = useMemo(() => {
-    const essentials = curatedLists.find(list => list.slug === '2025-essentials')
-    return essentials || curatedLists[0] || null
-  }, [curatedLists])
+    if (curatedLists.length === 0) return null
+    const index = Math.floor(Math.random() * curatedLists.length)
+    return curatedLists[index]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [curatedLists, refreshCount])
 
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
@@ -323,11 +325,11 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* YOUR GAMES Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        {currentlyPlaying.length > 0 && (
-          <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base, paddingTop: currentBanner ? Spacing.lg : Spacing.lg + insets.top, marginTop: currentBanner ? -70 : 0, zIndex: 1 }]}>
-            <SectionGroupHeader title="Your Games" />
+        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base, paddingTop: currentBanner ? Spacing.lg : Spacing.lg + insets.top, marginTop: currentBanner ? -70 : 0, zIndex: 1 }]}>
+          <SectionGroupHeader title="Your Games" />
 
-            {/* NOW PLAYING */}
+          {/* NOW PLAYING */}
+          {currentlyPlaying.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeader}>
                 <View style={styles.sectionTitleRow}>
@@ -368,19 +370,74 @@ export default function DashboardScreen() {
                 })}
               </ScrollView>
             </View>
-          </View>
-        )}
+          )}
+
+          {/* BECAUSE YOU LOVED */}
+          {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.forYouTitle}>
+                  Because You Loved{' '}
+                  <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
+                </Text>
+                {becauseYouLovedGames.length > 10 && (
+                  <PressableScale
+                    onPress={() => navigation.navigate('CuratedListDetail', {
+                      listSlug: 'because-you-loved',
+                      listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
+                      gameIds: becauseYouLovedGames.map(g => g.id),
+                      games: becauseYouLovedGames,
+                    })}
+                    haptic="light"
+                    accessibilityLabel={'See all Because You Loved ' + (basedOnGame?.name || '')}
+                    accessibilityRole="button"
+                    accessibilityHint="Shows all items in this section"
+                  >
+                    <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
+                  </PressableScale>
+                )}
+              </View>
+              {lovedLoading ? (
+                <HorizontalSkeleton />
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalScroll}
+                >
+                  {becauseYouLovedGames.slice(0, 10).map((game) => (
+                    <PressableScale
+                      key={game.id}
+                      onPress={() => handleGamePress(game.id)}
+                      haptic="light"
+                      scale={0.95}
+                      accessibilityLabel={game.name}
+                      accessibilityRole="button"
+                      accessibilityHint="Opens game details"
+                    >
+                      <Image
+                        source={{ uri: getIGDBImageUrl(game.coverUrl) }}
+                        style={styles.gameCover}
+                        accessibilityLabel={game.name + ' cover art'}
+                      />
+                    </PressableScale>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )}
+        </View>
 
         {/* ═══════════════════════════════════════════════ */}
-        {/* SOCIAL Section Group */}
+        {/* FRIENDS Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate, paddingTop: (!currentBanner && currentlyPlaying.length === 0) ? Spacing.lg + insets.top : Spacing.lg, marginTop: (currentBanner && currentlyPlaying.length === 0) ? -70 : 0, zIndex: 1 }]}>
-          <SectionGroupHeader title="Social" />
+        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+          <SectionGroupHeader title="Friends" />
 
           {/* FRIENDS ARE PLAYING */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Friends Are Playing</Text>
+              <Text style={styles.sectionTitle}>Playing Now</Text>
             </View>
             {friendsLoading ? (
               <HorizontalSkeleton />
@@ -424,7 +481,7 @@ export default function DashboardScreen() {
           {/* FRIENDS' FAVORITES */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Friends' Favorites</Text>
+              <Text style={styles.sectionTitle}>Their Favorites</Text>
               {friendsFavorites.length > 10 && (
                 <PressableScale
                   onPress={() => navigation.navigate('CuratedListDetail', {
@@ -484,137 +541,15 @@ export default function DashboardScreen() {
               </View>
             )}
           </View>
-
-            {/* COMMUNITY ACTIVITY */}
-            {(communityLoading || communityReviews.length > 0) && (
-              <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Community Activity</Text>
-                </View>
-                {communityLoading ? (
-                  <HorizontalSkeleton />
-                ) : (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalScroll}
-                  >
-                    {communityReviews.slice(0, 10).map((review) => (
-                      <PressableScale
-                        key={review.id}
-                        onPress={() => handleGamePress(review.game.id)}
-                        haptic="light"
-                        scale={0.95}
-                        style={styles.communityCard}
-                        accessibilityLabel={(review.user.display_name || review.user.username) + ' review of ' + review.game.name}
-                        accessibilityRole="button"
-                        accessibilityHint="Opens game details"
-                      >
-                        <Image
-                          source={{ uri: getIGDBImageUrl(review.game.cover_url) }}
-                          style={styles.communityCover}
-                          accessibilityLabel={review.game.name + ' cover art'}
-                        />
-                        <View style={styles.communityContent}>
-                          <View style={styles.communityHeader}>
-                            {review.user.avatar_url ? (
-                              <Image
-                                source={{ uri: review.user.avatar_url }}
-                                style={styles.communityAvatar}
-                                accessibilityLabel={(review.user.display_name || review.user.username) + ' avatar'}
-                              />
-                            ) : (
-                              <View style={[styles.communityAvatar, styles.avatarPlaceholder]}>
-                                <Ionicons name="person" size={10} color={TestBg.textDim} />
-                              </View>
-                            )}
-                            <Text style={styles.communityUsername} numberOfLines={1}>
-                              {review.user.display_name || review.user.username}
-                            </Text>
-                            {review.rating && (
-                              <View style={styles.communityRating}>
-                                <Ionicons name="star" size={10} color={Colors.gold} />
-                                <Text style={styles.communityRatingText}>{review.rating}</Text>
-                              </View>
-                            )}
-                          </View>
-                          <Text style={styles.communityReviewText} numberOfLines={2}>
-                            {review.review}
-                          </Text>
-                          <Text style={styles.communityGameName} numberOfLines={1}>
-                            {review.game.name}
-                          </Text>
-                        </View>
-                      </PressableScale>
-                    ))}
-                  </ScrollView>
-                )}
-              </View>
-            )}
         </View>
 
         {/* ═══════════════════════════════════════════════ */}
-        {/* FOR YOU Section Group */}
+        {/* DISCOVER Section Group */}
         {/* ═══════════════════════════════════════════════ */}
         <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base }]}>
-          <SectionGroupHeader title="For You" />
+          <SectionGroupHeader title="Discover" />
 
-          {/* BECAUSE YOU LOVED */}
-          {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.forYouTitle}>
-                  Because You Loved{' '}
-                  <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
-                </Text>
-                {becauseYouLovedGames.length > 10 && (
-                  <PressableScale
-                    onPress={() => navigation.navigate('CuratedListDetail', {
-                      listSlug: 'because-you-loved',
-                      listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
-                      gameIds: becauseYouLovedGames.map(g => g.id),
-                      games: becauseYouLovedGames,
-                    })}
-                    haptic="light"
-                    accessibilityLabel={'See all Because You Loved ' + (basedOnGame?.name || '')}
-                    accessibilityRole="button"
-                    accessibilityHint="Shows all items in this section"
-                  >
-                    <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
-                  </PressableScale>
-                )}
-              </View>
-              {lovedLoading ? (
-                <HorizontalSkeleton />
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalScroll}
-                >
-                  {becauseYouLovedGames.slice(0, 10).map((game) => (
-                    <PressableScale
-                      key={game.id}
-                      onPress={() => handleGamePress(game.id)}
-                      haptic="light"
-                      scale={0.95}
-                      accessibilityLabel={game.name}
-                      accessibilityRole="button"
-                      accessibilityHint="Opens game details"
-                    >
-                      <Image
-                        source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                        style={styles.gameCover}
-                        accessibilityLabel={game.name + ' cover art'}
-                      />
-                    </PressableScale>
-                  ))}
-                </ScrollView>
-              )}
-            </View>
-          )}
-
-          {/* 2025 ESSENTIALS */}
+          {/* RANDOM CURATED LIST (shuffles on refresh) */}
           {listsLoading ? (
             <View style={styles.listsLoading}>
               <LoadingSpinner size="large" />
@@ -622,6 +557,73 @@ export default function DashboardScreen() {
           ) : featuredCuratedList ? (
             <CuratedListRow list={featuredCuratedList} />
           ) : null}
+
+          {/* COMMUNITY ACTIVITY */}
+          {(communityLoading || communityReviews.length > 0) && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Community Activity</Text>
+              </View>
+              {communityLoading ? (
+                <HorizontalSkeleton />
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.horizontalScroll}
+                >
+                  {communityReviews.slice(0, 10).map((review) => (
+                    <PressableScale
+                      key={review.id}
+                      onPress={() => handleGamePress(review.game.id)}
+                      haptic="light"
+                      scale={0.95}
+                      style={styles.communityCard}
+                      accessibilityLabel={(review.user.display_name || review.user.username) + ' review of ' + review.game.name}
+                      accessibilityRole="button"
+                      accessibilityHint="Opens game details"
+                    >
+                      <Image
+                        source={{ uri: getIGDBImageUrl(review.game.cover_url) }}
+                        style={styles.communityCover}
+                        accessibilityLabel={review.game.name + ' cover art'}
+                      />
+                      <View style={styles.communityContent}>
+                        <View style={styles.communityHeader}>
+                          {review.user.avatar_url ? (
+                            <Image
+                              source={{ uri: review.user.avatar_url }}
+                              style={styles.communityAvatar}
+                              accessibilityLabel={(review.user.display_name || review.user.username) + ' avatar'}
+                            />
+                          ) : (
+                            <View style={[styles.communityAvatar, styles.avatarPlaceholder]}>
+                              <Ionicons name="person" size={10} color={TestBg.textDim} />
+                            </View>
+                          )}
+                          <Text style={styles.communityUsername} numberOfLines={1}>
+                            {review.user.display_name || review.user.username}
+                          </Text>
+                          {review.rating && (
+                            <View style={styles.communityRating}>
+                              <Ionicons name="star" size={10} color={Colors.gold} />
+                              <Text style={styles.communityRatingText}>{review.rating}</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.communityReviewText} numberOfLines={2}>
+                          {review.review}
+                        </Text>
+                        <Text style={styles.communityGameName} numberOfLines={1}>
+                          {review.game.name}
+                        </Text>
+                      </View>
+                    </PressableScale>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )}
         </View>
 
         {/* ═══════════════════════════════════════════════ */}

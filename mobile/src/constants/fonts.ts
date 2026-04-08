@@ -1,11 +1,12 @@
 // Font family constants
-// BBH Bogle - Display font (headlines, logo, section titles)
+// Montserrat - Display font (headlines, logo, section titles)
 // Geist - Body font (everything else)
 // Space Mono - Terminal/cyberpunk elements
 
 export const Fonts = {
-  // Display font - BBH Bogle
-  display: 'BBHBogle',
+  // Display font - Montserrat
+  display: 'Montserrat-Bold',
+  displaySemiBold: 'Montserrat-SemiBold',
 
   // Body font - Geist (with weight variants)
   body: 'Geist-Regular',
@@ -19,7 +20,8 @@ export const Fonts = {
 
 // Font files to load (must match filenames in assets/fonts/)
 export const FontAssets = {
-  'BBHBogle': require('../../assets/fonts/BBHBogle-Regular.ttf'),
+  'Montserrat-Bold': require('../../assets/fonts/Montserrat-Bold.ttf'),
+  'Montserrat-SemiBold': require('../../assets/fonts/Montserrat-SemiBold.ttf'),
   'Geist-Regular': require('../../assets/fonts/Geist-Regular.ttf'),
   'Geist-Medium': require('../../assets/fonts/Geist-Medium.ttf'),
   'Geist-SemiBold': require('../../assets/fonts/Geist-SemiBold.ttf'),
@@ -30,19 +32,19 @@ export const FontAssets = {
 // Typography presets for consistent styling
 // Every preset includes lineHeight (1.4–1.5× fontSize) for cross-device consistency
 export const Typography = {
-  // Display styles (BBH Bogle)
+  // Display styles (Montserrat)
   logo: {
-    fontFamily: 'BBHBogle',
+    fontFamily: 'Montserrat-Bold',
     fontSize: 24,
     lineHeight: 34,
   },
   headline: {
-    fontFamily: 'BBHBogle',
+    fontFamily: 'Montserrat-Bold',
     fontSize: 26,
     lineHeight: 36,
   },
   sectionTitle: {
-    fontFamily: 'BBHBogle',
+    fontFamily: 'Montserrat-Bold',
     fontSize: 18,
     lineHeight: 26,
   },
