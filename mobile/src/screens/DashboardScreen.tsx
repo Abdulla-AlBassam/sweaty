@@ -25,7 +25,7 @@ import { Ionicons } from '@expo/vector-icons'
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 import { useGameLogs, useCuratedLists, useCommunityReviews } from '../hooks/useSupabase'
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
-import { useBecauseYouLoved, useFriendsFavorites } from '../hooks/useRecommendations'
+import { useFriendsFavorites } from '../hooks/useRecommendations'
 import { usePlatformFilter } from '../hooks/usePlatformFilter'
 import { useHeroBanners } from '../hooks/useHeroBanners'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -82,8 +82,7 @@ export default function DashboardScreen() {
   // Friends playing
   const { games: friendsPlaying, isLoading: friendsLoading, refetch: refetchFriends } = useFriendsPlaying(user?.id)
 
-  // Personalized recommendations (filtered by user's platform preferences and PC-only setting)
-  const { basedOnGame, recommendations: becauseYouLovedGames, isLoading: lovedLoading, refetch: refetchLoved } = useBecauseYouLoved(user?.id, platforms, excludePcOnly)
+  // Personalized recommendations
   const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
 
   // Community activity (recent reviews)
@@ -201,13 +200,12 @@ export default function DashboardScreen() {
       refetchLogs(),
       refetchLists(),
       refetchFriends(),
-      refetchLoved(),
       refetchFavorites(),
       refetchCommunity(),
     ])
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setRefreshing(false)
-  }, [refetchLogs, refetchLists, refetchFriends, refetchLoved, refetchFavorites, refetchCommunity, shuffleBanner])
+  }, [refetchLogs, refetchLists, refetchFriends, refetchFavorites, refetchCommunity, shuffleBanner])
 
 
   // Currently playing games
@@ -217,11 +215,14 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
-  // Shuffle a random curated list on each refresh
-  const featuredCuratedList = useMemo(() => {
-    if (curatedLists.length === 0) return null
-    const index = Math.floor(Math.random() * curatedLists.length)
-    return curatedLists[index]
+  // Pick two different random curated lists on each refresh
+  const [forYouCuratedList, featuredCuratedList] = useMemo(() => {
+    if (curatedLists.length === 0) return [null, null]
+    if (curatedLists.length === 1) return [curatedLists[0], null]
+    const i = Math.floor(Math.random() * curatedLists.length)
+    let j = Math.floor(Math.random() * (curatedLists.length - 1))
+    if (j >= i) j++ // ensure different index
+    return [curatedLists[i], curatedLists[j]]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [curatedLists, refreshCount])
 
@@ -372,59 +373,9 @@ export default function DashboardScreen() {
             </View>
           )}
 
-          {/* BECAUSE YOU LOVED */}
-          {(lovedLoading || (basedOnGame && becauseYouLovedGames.length > 0)) && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.forYouTitle}>
-                  Because You Loved{' '}
-                  <Text style={styles.accentText}>{basedOnGame?.name || '...'}</Text>
-                </Text>
-                {becauseYouLovedGames.length > 10 && (
-                  <PressableScale
-                    onPress={() => navigation.navigate('CuratedListDetail', {
-                      listSlug: 'because-you-loved',
-                      listTitle: `Because You Loved ${basedOnGame?.name || ''}`,
-                      gameIds: becauseYouLovedGames.map(g => g.id),
-                      games: becauseYouLovedGames,
-                    })}
-                    haptic="light"
-                    accessibilityLabel={'See all Because You Loved ' + (basedOnGame?.name || '')}
-                    accessibilityRole="button"
-                    accessibilityHint="Shows all items in this section"
-                  >
-                    <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
-                  </PressableScale>
-                )}
-              </View>
-              {lovedLoading ? (
-                <HorizontalSkeleton />
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalScroll}
-                >
-                  {becauseYouLovedGames.slice(0, 10).map((game) => (
-                    <PressableScale
-                      key={game.id}
-                      onPress={() => handleGamePress(game.id)}
-                      haptic="light"
-                      scale={0.95}
-                      accessibilityLabel={game.name}
-                      accessibilityRole="button"
-                      accessibilityHint="Opens game details"
-                    >
-                      <Image
-                        source={{ uri: getIGDBImageUrl(game.coverUrl) }}
-                        style={styles.gameCover}
-                        accessibilityLabel={game.name + ' cover art'}
-                      />
-                    </PressableScale>
-                  ))}
-                </ScrollView>
-              )}
-            </View>
+          {/* RANDOM CURATED LIST (For You section, shuffles on refresh) */}
+          {forYouCuratedList && (
+            <CuratedListRow list={forYouCuratedList} />
           )}
         </View>
 
