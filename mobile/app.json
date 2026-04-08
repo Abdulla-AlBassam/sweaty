@@ -20,11 +20,17 @@
           "icon": "./assets/notification-icon.png",
           "color": "#0A0A0A"
         }
-      ]
+      ],
+      "expo-dev-client",
+      "expo-apple-authentication"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sweaty.app"
+      "bundleIdentifier": "com.sweaty.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.sweaty.app",
@@ -37,6 +43,11 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e90f0361-4435-411f-a4d6-6b89ba19945c"
+      }
     }
   }
 }

@@ -4,6 +4,7 @@ import { Session, User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
 import Constants from 'expo-constants'
+import * as AppleAuthentication from 'expo-apple-authentication'
 
 interface AuthContextType {
   session: Session | null
@@ -13,6 +14,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>
   signUp: (email: string, password: string, username: string, displayName: string) => Promise<{ error: Error | null; needsEmailVerification?: boolean }>
   signInWithGoogle: () => Promise<{ error: Error | null; needsUsername?: boolean }>
+  signInWithApple: () => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   refreshProfile: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: Error | null }>
@@ -206,6 +208,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const signInWithApple = async (): Promise<{ error: Error | null }> => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      })
+
+      if (!credential.identityToken) {
+        return { error: new Error('No identity token received from Apple') }
+      }
+
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      })
+
+      if (error) return { error: error as Error }
+
+      // Apple provides name ONLY on first sign-in. Capture it now.
+      if (credential.fullName) {
+        const firstName = credential.fullName.givenName || ''
+        const lastName = credential.fullName.familyName || ''
+        const displayName = [firstName, lastName].filter(Boolean).join(' ')
+
+        if (displayName) {
+          const { data: { user: currentUser } } = await supabase.auth.getUser()
+          if (currentUser) {
+            await supabase
+              .from('profiles')
+              .update({ display_name: displayName })
+              .eq('id', currentUser.id)
+          }
+        }
+      }
+
+      return { error: null }
+    } catch (err: any) {
+      if (err.code === 'ERR_REQUEST_CANCELED') {
+        return { error: null }
+      }
+      return { error: err as Error }
+    }
+  }
+
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: 'sweaty://auth/reset-password',
@@ -214,7 +262,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signInWithGoogle, signOut, refreshProfile, resetPassword }}>
+    <AuthContext.Provider value={{ session, user, profile, isLoading, signIn, signUp, signInWithGoogle, signInWithApple, signOut, refreshProfile, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )

@@ -32,11 +32,12 @@ type LoginScreenProps = {
 }
 
 export default function LoginScreen({ navigation }: LoginScreenProps) {
-  const { signIn, signInWithGoogle, resetPassword } = useAuth()
+  const { signIn, signInWithGoogle, signInWithApple, resetPassword } = useAuth()
   const [emailOrUsername, setEmailOrUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [isAppleLoading, setIsAppleLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -112,6 +113,22 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       setError('an error occurred. please try again.')
     } finally {
       setIsGoogleLoading(false)
+    }
+  }
+
+  const handleAppleLogin = async () => {
+    setIsAppleLoading(true)
+    setError(null)
+
+    try {
+      const { error: appleError } = await signInWithApple()
+      if (appleError) {
+        setError('apple sign-in failed. please try again.')
+      }
+    } catch (err) {
+      setError('an error occurred. please try again.')
+    } finally {
+      setIsAppleLoading(false)
     }
   }
 
@@ -244,9 +261,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.button, isLoading && styles.buttonDisabled]}
+                  style={[styles.button, (isLoading || isGoogleLoading || isAppleLoading) && styles.buttonDisabled]}
                   onPress={handleLogin}
-                  disabled={isLoading}
+                  disabled={isLoading || isGoogleLoading || isAppleLoading}
                   accessibilityLabel="Sign in"
                   accessibilityRole="button"
                 >
@@ -266,9 +283,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
                 {/* Google Sign In */}
                 <TouchableOpacity
-                  style={[styles.googleButton, isGoogleLoading && styles.buttonDisabled]}
+                  style={[styles.googleButton, (isGoogleLoading || isAppleLoading) && styles.buttonDisabled]}
                   onPress={handleGoogleLogin}
-                  disabled={isGoogleLoading}
+                  disabled={isGoogleLoading || isAppleLoading || isLoading}
                   accessibilityLabel="Sign in with Google"
                   accessibilityRole="button"
                 >
@@ -278,6 +295,24 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
                     <>
                       <Ionicons name="logo-google" size={20} color={Colors.text} />
                       <Text style={styles.googleButtonText}>CONTINUE WITH GOOGLE</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Apple Sign In */}
+                <TouchableOpacity
+                  style={[styles.googleButton, (isAppleLoading || isGoogleLoading) && styles.buttonDisabled]}
+                  onPress={handleAppleLogin}
+                  disabled={isAppleLoading || isGoogleLoading || isLoading}
+                  accessibilityLabel="Sign in with Apple"
+                  accessibilityRole="button"
+                >
+                  {isAppleLoading ? (
+                    <LoadingSpinner size="small" color={Colors.text} />
+                  ) : (
+                    <>
+                      <Ionicons name="logo-apple" size={20} color={Colors.text} />
+                      <Text style={styles.googleButtonText}>CONTINUE WITH APPLE</Text>
                     </>
                   )}
                 </TouchableOpacity>
