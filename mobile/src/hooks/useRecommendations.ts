@@ -38,11 +38,11 @@ interface FriendsFavoritesData {
 }
 
 // ============================================
-// BECAUSE YOU LOVED HOOK (AI-POWERED)
+// BECAUSE YOU LOVED HOOK (IGDB-first, AI fallback)
 // ============================================
 
-// Uses AI to generate personalized recommendations based on user's gaming history
-// Falls back to IGDB-based recommendations if AI fails
+// Uses the 4-tier IGDB algorithm first (franchise → similar_games → developer → genre+theme).
+// Falls back to AI only when IGDB returns too few results.
 export function useBecauseYouLoved(userId: string | undefined, platforms?: string[] | null, excludePcOnly: boolean = false) {
   const [basedOnGame, setBasedOnGame] = useState<Game | null>(null)
   const [recommendations, setRecommendations] = useState<Game[]>([])
@@ -52,7 +52,7 @@ export function useBecauseYouLoved(userId: string | undefined, platforms?: strin
   const [isCached, setIsCached] = useState(false)
   const [rateLimit, setRateLimit] = useState<{ remaining: number; limit: number } | null>(null)
 
-  const fetchAI = useCallback(async (forceRefresh: boolean = false) => {
+  const fetchRecommendations = useCallback(async (forceRefresh: boolean = false) => {
     if (!userId) {
       setIsLoading(false)
       setBasedOnGame(null)
@@ -64,51 +64,44 @@ export function useBecauseYouLoved(userId: string | undefined, platforms?: strin
     setError(null)
 
     try {
-      // Try the new AI endpoint first
-      let url = `${API_CONFIG.baseUrl}/api/ai/personalized-recommendations?user_id=${userId}&list_type=because_you_loved`
-
-      if (forceRefresh) {
-        url += '&refresh=true'
+      // ── Primary: IGDB 4-tier algorithm ──────────────────────
+      let url = `${API_CONFIG.baseUrl}/api/recommendations/because-you-loved?user_id=${userId}`
+      if (platforms && platforms.length > 0) {
+        url += `&platforms=${platforms.join(',')}`
+      }
+      if (excludePcOnly) {
+        url += '&exclude_pc_only=true'
       }
 
-      console.log('[BecauseYouLoved] Fetching AI recommendations...')
+      console.log('[BecauseYouLoved] Fetching IGDB recommendations...')
       const response = await fetch(url)
 
       if (!response.ok) {
-        // If rate limited, show a message but don't fall back
-        if (response.status === 429) {
-          const data = await response.json()
-          setRateLimit({ remaining: 0, limit: data.limit || 5 })
-          throw new Error('Daily AI recommendation limit reached')
-        }
-        throw new Error('AI recommendations failed')
+        throw new Error('IGDB recommendations failed')
       }
 
       const data: BecauseYouLovedData = await response.json()
-      console.log('[BecauseYouLoved] AI Response:', JSON.stringify(data, null, 2))
+      console.log('[BecauseYouLoved] IGDB returned', data.recommendations?.length || 0, 'recs')
 
-      if (data.recommendations && data.recommendations.length > 0) {
+      if (data.recommendations && data.recommendations.length >= 3) {
         setBasedOnGame(data.basedOnGame)
         setRecommendations(data.recommendations)
-        setExplanation(data.explanation || null)
-        setIsCached(data.cached || false)
-        if (data.rateLimit) {
-          setRateLimit(data.rateLimit)
-        }
-        return // Success with AI
+        setExplanation(null)
+        setIsCached(false)
+        return // Success
       }
 
-      // If AI returned no results, fall back to IGDB-based endpoint
-      console.log('[BecauseYouLoved] AI returned no results, falling back to IGDB...')
-      await fetchIGDBFallback()
+      // ── Fallback: AI endpoint if IGDB returned too few ──────
+      console.log('[BecauseYouLoved] IGDB returned <3 results, trying AI fallback...')
+      await fetchAIFallback(forceRefresh)
     } catch (err) {
-      console.error('[BecauseYouLoved] AI Error:', err)
+      console.error('[BecauseYouLoved] IGDB Error:', err)
 
-      // Try fallback to IGDB-based recommendations
+      // Try AI as fallback
       try {
-        await fetchIGDBFallback()
+        await fetchAIFallback(forceRefresh)
       } catch (fallbackErr) {
-        console.error('[BecauseYouLoved] Fallback also failed:', fallbackErr)
+        console.error('[BecauseYouLoved] AI fallback also failed:', fallbackErr)
         setError(err instanceof Error ? err.message : 'Failed to load recommendations')
         setBasedOnGame(null)
         setRecommendations([])
@@ -116,34 +109,43 @@ export function useBecauseYouLoved(userId: string | undefined, platforms?: strin
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [userId, platforms, excludePcOnly])
 
-  const fetchIGDBFallback = async () => {
+  const fetchAIFallback = async (forceRefresh: boolean = false) => {
     if (!userId) return
 
-    let url = `${API_CONFIG.baseUrl}/api/recommendations/because-you-loved?user_id=${userId}`
+    let url = `${API_CONFIG.baseUrl}/api/ai/personalized-recommendations?user_id=${userId}&list_type=because_you_loved`
+    if (forceRefresh) url += '&refresh=true'
 
+    console.log('[BecauseYouLoved] Trying AI fallback...')
     const response = await fetch(url)
 
     if (!response.ok) {
-      throw new Error('Failed to fetch recommendations')
+      if (response.status === 429) {
+        const data = await response.json()
+        setRateLimit({ remaining: 0, limit: data.limit || 5 })
+      }
+      throw new Error('AI recommendations failed')
     }
 
-    const data = await response.json()
-    console.log('[BecauseYouLoved] IGDB Fallback Response:', JSON.stringify(data, null, 2))
-    setBasedOnGame(data.basedOnGame)
-    setRecommendations(data.recommendations || [])
-    setExplanation(null)
-    setIsCached(false)
+    const data: BecauseYouLovedData = await response.json()
+
+    if (data.recommendations && data.recommendations.length > 0) {
+      setBasedOnGame(data.basedOnGame)
+      setRecommendations(data.recommendations)
+      setExplanation(data.explanation || null)
+      setIsCached(data.cached || false)
+      if (data.rateLimit) setRateLimit(data.rateLimit)
+    }
   }
 
   useEffect(() => {
-    fetchAI(false)
-  }, [fetchAI])
+    fetchRecommendations(false)
+  }, [fetchRecommendations])
 
   const refresh = useCallback(() => {
-    return fetchAI(true)
-  }, [fetchAI])
+    return fetchRecommendations(true)
+  }, [fetchRecommendations])
 
   return {
     basedOnGame,
