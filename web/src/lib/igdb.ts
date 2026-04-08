@@ -816,9 +816,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
     const directSimilarIds = game.similar_games || []
     for (const id of directSimilarIds) addScore(id, 5)
 
-    // Fire source queries in two parallel waves (2 concurrent = safe for IGDB 4 req/s limit)
-
-    // Wave 1: 2nd-hop + collections
+    // Fire all source queries in parallel (Pro plan: 60s timeout)
     await Promise.all([
       // Source B: 2nd-hop -- similar_games of similar_games (+2 per link)
       (async () => {
@@ -826,8 +824,8 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
         try {
           const hopData = await igdbFetch('games', `
             fields id, similar_games;
-            where id = (${directSimilarIds.slice(0, 20).join(',')});
-            limit 20;
+            where id = (${directSimilarIds.slice(0, 25).join(',')});
+            limit 25;
           `) as Array<{ id: number; similar_games?: number[] }>
 
           for (const g of hopData || []) {
@@ -854,10 +852,7 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
           }
         } catch (e) { console.log(TAG, 'Collection failed:', e) }
       })(),
-    ])
 
-    // Wave 2: franchise + developer
-    await Promise.all([
       // Source D: Franchise siblings (+3)
       (async () => {
         const ids = [...new Set([
@@ -920,11 +915,11 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
     if (candidateScores.size === 0) return []
 
     // ── Step 3: Fetch candidate details in batches ───────────
-    // Cap at 100 (2 batch fetches) to stay within Vercel's function timeout
+    // Fetch top 200 candidates (Pro plan: 60s timeout)
     const rankedIds = [...candidateScores.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([id]) => id)
-      .slice(0, 100)
+      .slice(0, 200)
 
     const allCandidates: (IGDBGame & { parent_game?: number | null; version_parent?: number | null })[] = []
     for (let i = 0; i < rankedIds.length; i += 50) {
