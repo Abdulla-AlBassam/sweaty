@@ -548,6 +548,7 @@ export interface CommunityReview {
     id: number
     name: string
     cover_url: string | null
+    screenshot_urls: string[] | null
   }
   rating: number | null
   review: string
@@ -576,7 +577,7 @@ export function useCommunityReviews() {
           user_id,
           game_id,
           profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url),
-          games_cache!game_logs_game_id_fkey (id, name, cover_url)
+          games_cache!game_logs_game_id_fkey (id, name, cover_url, screenshot_urls)
         `)
         .not('review', 'is', null)
         .neq('review', '')
@@ -599,6 +600,7 @@ export function useCommunityReviews() {
             id: log.games_cache.id,
             name: log.games_cache.name,
             cover_url: log.games_cache.cover_url,
+            screenshot_urls: log.games_cache.screenshot_urls || null,
           },
           rating: log.rating,
           review: log.review,

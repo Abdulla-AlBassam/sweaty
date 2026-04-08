@@ -388,13 +388,14 @@ export async function getGamesByIds(ids: number[]): Promise<Game[]> {
 
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating;
+           genres.name, platforms.name, total_rating,
+           screenshots.image_id;
     where id = (${ids.join(',')});
     limit ${ids.length};
   `
 
   const games = await igdbFetch('games', body) as IGDBGame[]
-  return games.map(game => transformGame(game))
+  return games.map(game => transformGame(game, { includeScreenshots: true }))
 }
 
 // Get recent games released within the last N months

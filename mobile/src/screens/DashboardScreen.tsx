@@ -523,7 +523,15 @@ export default function DashboardScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.horizontalScroll}
                 >
-                  {communityReviews.slice(0, 10).map((review) => (
+                  {communityReviews.slice(0, 10).map((review, index) => {
+                    // Pick a screenshot with variety — different index for same game
+                    const screenshots = review.game.screenshot_urls
+                    const screenshotUrl = screenshots && screenshots.length > 0
+                      ? screenshots[index % screenshots.length]
+                      : null
+                    const imageUrl = screenshotUrl || getIGDBImageUrl(review.game.cover_url)
+
+                    return (
                     <PressableScale
                       key={review.id}
                       onPress={() => handleGamePress(review.game.id)}
@@ -534,11 +542,18 @@ export default function DashboardScreen() {
                       accessibilityRole="button"
                       accessibilityHint="Opens game details"
                     >
-                      <Image
-                        source={{ uri: getIGDBImageUrl(review.game.cover_url) }}
-                        style={styles.communityCover}
-                        accessibilityLabel={review.game.name + ' cover art'}
-                      />
+                      <View style={styles.communityCoverWrap}>
+                        <Image
+                          source={{ uri: imageUrl }}
+                          style={styles.communityCover}
+                          resizeMode="cover"
+                          accessibilityLabel={review.game.name + ' screenshot'}
+                        />
+                        <LinearGradient
+                          colors={['transparent', 'rgba(42, 42, 46, 0.9)']}
+                          style={styles.communityCoverGradient}
+                        />
+                      </View>
                       <View style={styles.communityContent}>
                         <View style={styles.communityHeader}>
                           {review.user.avatar_url ? (
@@ -570,7 +585,8 @@ export default function DashboardScreen() {
                         </Text>
                       </View>
                     </PressableScale>
-                  ))}
+                    )
+                  })}
                 </ScrollView>
               )}
             </View>
@@ -771,20 +787,34 @@ const styles = StyleSheet.create({
   },
   // Community Activity Cards
   communityCard: {
-    width: 220,
+    width: 240,
     backgroundColor: TestBg.surface,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: TestBg.borderSubtle,
   },
-  communityCover: {
+  communityCoverWrap: {
+    position: 'relative',
     width: '100%',
-    height: 80,
+    height: 120,
     backgroundColor: TestBg.surfaceLight,
   },
+  communityCover: {
+    width: '100%',
+    height: '100%',
+  },
+  communityCoverGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 40,
+  },
   communityContent: {
-    padding: Spacing.sm,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.sm + 2,
   },
   communityHeader: {
     flexDirection: 'row',

@@ -92,6 +92,7 @@ export async function POST() {
       genres: game.genres,
       platforms: game.platforms,
       rating: game.rating,
+      screenshot_urls: game.screenshotUrls || [],
       cached_at: new Date().toISOString()
     }))
 
