@@ -816,47 +816,55 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
     const directSimilarIds = game.similar_games || []
     for (const id of directSimilarIds) addScore(id, 5)
 
-    // Source B: 2nd-hop -- similar_games of similar_games (+2 per link)
-    // A game linked by 3 different 1st-hop games gets +6, signalling genuine relevance
-    if (directSimilarIds.length > 0) {
-      try {
-        const hopData = await igdbFetch('games', `
-          fields id, similar_games;
-          where id = (${directSimilarIds.slice(0, 25).join(',')});
-          limit 25;
-        `) as Array<{ id: number; similar_games?: number[] }>
+    // Fire source queries in two parallel waves (2 concurrent = safe for IGDB 4 req/s limit)
 
-        for (const g of hopData || []) {
-          for (const id of (g.similar_games || []).slice(0, 10)) {
-            addScore(id, 2)
+    // Wave 1: 2nd-hop + collections
+    await Promise.all([
+      // Source B: 2nd-hop -- similar_games of similar_games (+2 per link)
+      (async () => {
+        if (directSimilarIds.length === 0) return
+        try {
+          const hopData = await igdbFetch('games', `
+            fields id, similar_games;
+            where id = (${directSimilarIds.slice(0, 20).join(',')});
+            limit 20;
+          `) as Array<{ id: number; similar_games?: number[] }>
+
+          for (const g of hopData || []) {
+            for (const id of (g.similar_games || []).slice(0, 10)) {
+              addScore(id, 2)
+            }
           }
-        }
-        console.log(TAG, `2nd-hop: expanded through ${hopData?.length || 0} games`)
-      } catch (e) { console.log(TAG, '2nd-hop failed:', e) }
-    }
+          console.log(TAG, `2nd-hop: expanded through ${hopData?.length || 0} games`)
+        } catch (e) { console.log(TAG, '2nd-hop failed:', e) }
+      })(),
 
-    // Source C: Collection siblings (+4) -- same series
-    if (game.collections && game.collections.length > 0) {
-      try {
-        const data = await igdbFetch('collections', `
-          fields name, games;
-          where id = (${game.collections.join(',')});
-        `) as Array<{ name?: string; games?: number[] }>
+      // Source C: Collection siblings (+4) -- same series
+      (async () => {
+        if (!game.collections?.length) return
+        try {
+          const data = await igdbFetch('collections', `
+            fields name, games;
+            where id = (${game.collections.join(',')});
+          `) as Array<{ name?: string; games?: number[] }>
 
-        for (const c of data || []) {
-          console.log(TAG, `Collection "${c.name}": ${c.games?.length || 0} games`)
-          for (const id of c.games || []) addScore(id, 4)
-        }
-      } catch (e) { console.log(TAG, 'Collection failed:', e) }
-    }
+          for (const c of data || []) {
+            console.log(TAG, `Collection "${c.name}": ${c.games?.length || 0} games`)
+            for (const id of c.games || []) addScore(id, 4)
+          }
+        } catch (e) { console.log(TAG, 'Collection failed:', e) }
+      })(),
+    ])
 
-    // Source D: Franchise siblings (+3) -- broader umbrella
-    {
-      const ids = [...new Set([
-        ...(game.franchise ? [game.franchise] : []),
-        ...(game.franchises || []),
-      ])]
-      if (ids.length > 0) {
+    // Wave 2: franchise + developer
+    await Promise.all([
+      // Source D: Franchise siblings (+3)
+      (async () => {
+        const ids = [...new Set([
+          ...(game.franchise ? [game.franchise] : []),
+          ...(game.franchises || []),
+        ])]
+        if (ids.length === 0) return
         try {
           const data = await igdbFetch('franchises', `
             fields name, games;
@@ -868,24 +876,25 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
             for (const id of f.games || []) addScore(id, 3)
           }
         } catch (e) { console.log(TAG, 'Franchise failed:', e) }
-      }
-    }
+      })(),
 
-    // Source E: Developer's other games (+2)
-    if (primaryDeveloper?.id) {
-      try {
-        const data = await igdbFetch('involved_companies', `
-          fields game;
-          where company = ${primaryDeveloper.id} & developer = true;
-          limit 100;
-        `) as Array<{ game?: number }>
+      // Source E: Developer's other games (+2)
+      (async () => {
+        if (!primaryDeveloper?.id) return
+        try {
+          const data = await igdbFetch('involved_companies', `
+            fields game;
+            where company = ${primaryDeveloper.id} & developer = true;
+            limit 100;
+          `) as Array<{ game?: number }>
 
-        for (const ic of data || []) {
-          if (ic.game) addScore(ic.game, 2)
-        }
-        console.log(TAG, `Developer "${primaryDeveloper.name}": ${data?.length || 0} games`)
-      } catch (e) { console.log(TAG, 'Developer failed:', e) }
-    }
+          for (const ic of data || []) {
+            if (ic.game) addScore(ic.game, 2)
+          }
+          console.log(TAG, `Developer "${primaryDeveloper.name}": ${data?.length || 0} games`)
+        } catch (e) { console.log(TAG, 'Developer failed:', e) }
+      })(),
+    ])
 
     // Source F: Genre+theme fallback if pool is too thin
     if (candidateScores.size < 15 && baseGenreIds.size >= 2) {
@@ -911,11 +920,11 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
     if (candidateScores.size === 0) return []
 
     // ── Step 3: Fetch candidate details in batches ───────────
-    // Fetch highest base-scored first so we don't waste API calls on weak candidates
+    // Cap at 100 (2 batch fetches) to stay within Vercel's function timeout
     const rankedIds = [...candidateScores.entries()]
       .sort((a, b) => b[1] - a[1])
       .map(([id]) => id)
-      .slice(0, 200)
+      .slice(0, 100)
 
     const allCandidates: (IGDBGame & { parent_game?: number | null; version_parent?: number | null })[] = []
     for (let i = 0; i < rankedIds.length; i += 50) {
