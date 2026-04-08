@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { getSmartSimilarGames, getGameById, getPopularityForGames } from '@/lib/igdb'
+import { getSmartSimilarGames, getGameById } from '@/lib/igdb'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,7 +13,9 @@ interface Game {
   coverUrl: string | null
 }
 
-// API Version: 2 - Uses franchises for series recommendations
+const TAG = '[BecauseYouLoved]'
+
+// API Version: 4 - Smart tiered recommendations with relative rating threshold
 // GET /api/recommendations/because-you-loved?user_id=xxx&platforms=playstation,pc&exclude_pc_only=true
 export async function GET(request: Request) {
   try {
@@ -21,150 +23,179 @@ export async function GET(request: Request) {
     const userId = searchParams.get('user_id')
     const platformsParam = searchParams.get('platforms')
 
-    // Parse platforms param for filtering recommendations
     const platforms = platformsParam
       ? platformsParam.split(',').map(p => p.trim().toLowerCase()).filter(Boolean)
       : undefined
 
-    // Parse exclude_pc_only param
     const excludePcOnly = searchParams.get('exclude_pc_only') === 'true'
 
     if (!userId) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
     }
 
-    console.log('[BecauseYouLoved] API v2 - Franchise-based recommendations', platforms ? `(platforms: ${platforms.join(',')})` : '(all platforms)', excludePcOnly ? '(excluding PC-only)' : '')
+    console.log(TAG, 'API v4 - Tiered recommendations',
+      platforms ? `(platforms: ${platforms.join(',')})` : '(all platforms)',
+      excludePcOnly ? '(excluding PC-only)' : '')
 
-    // Get user's highly rated games (4.5+ stars) - just get game_id and rating
-    const { data: lovedGames, error: logsError } = await supabase
+    // ── Step 1: Get ALL rated games to compute relative threshold ──
+    const { data: allRatedGames, error: logsError } = await supabase
       .from('game_logs')
-      .select('game_id, rating')
+      .select('game_id, rating, updated_at')
       .eq('user_id', userId)
-      .gte('rating', 4.5)
       .not('rating', 'is', null)
       .order('rating', { ascending: false })
 
     if (logsError) {
-      console.error('[BecauseYouLoved] Error fetching loved games:', logsError)
+      console.error(TAG, 'Error fetching rated games:', logsError)
       return NextResponse.json({ error: 'Failed to fetch user games' }, { status: 500 })
     }
 
-    if (!lovedGames || lovedGames.length === 0) {
-      console.log('[BecauseYouLoved] No games rated 4+ stars found for user:', userId)
+    if (!allRatedGames || allRatedGames.length === 0) {
+      console.log(TAG, 'No rated games found for user:', userId)
+      return NextResponse.json({
+        basedOnGame: null,
+        recommendations: [],
+        message: 'No rated games found',
+        debug: { totalRated: 0 }
+      })
+    }
+
+    // ── Step 2: Compute relative threshold ────────────────────
+    // Use the user's top 20% of ratings, with a floor of 3.5
+    // This handles both generous raters (who give everything 5s)
+    // and harsh raters (whose top game might be 4.0)
+    const ratings = allRatedGames.map(g => Number(g.rating)).sort((a, b) => b - a)
+    const top20pctIndex = Math.max(0, Math.ceil(ratings.length * 0.2) - 1)
+    const relativeThreshold = Math.max(3.5, ratings[top20pctIndex])
+
+    const lovedGames = allRatedGames.filter(g => Number(g.rating) >= relativeThreshold)
+
+    console.log(TAG, `${allRatedGames.length} rated games, threshold: ${relativeThreshold}★ (top 20%), ${lovedGames.length} candidates`)
+
+    if (lovedGames.length === 0) {
       return NextResponse.json({
         basedOnGame: null,
         recommendations: [],
         message: 'No highly rated games found',
-        debug: { gamesRated4Plus: 0 }
+        debug: { totalRated: allRatedGames.length, threshold: relativeThreshold }
       })
     }
 
-    // Log ALL game IDs found so we can debug
-    console.log('[BecauseYouLoved] Found', lovedGames.length, 'games rated 4+ stars')
-    console.log('[BecauseYouLoved] Game IDs:', lovedGames.map(g => `${g.game_id} (${g.rating}★)`).join(', '))
+    // ── Step 3: Score and rank seed candidates ────────────────
+    // Weight by rating AND recency so we recommend based on
+    // what the user is into NOW, not just all-time favourites.
+    const now = Date.now()
+    const scoredCandidates = lovedGames.map(g => {
+      const rating = Number(g.rating)
+      const updatedAt = g.updated_at ? new Date(g.updated_at).getTime() : 0
+      const daysSinceUpdate = (now - updatedAt) / (1000 * 60 * 60 * 24)
 
-    // Get all game IDs in user's library (to exclude from recommendations)
+      // Recency multiplier: 1.0 for today, decays to 0.5 over ~6 months
+      const recencyMultiplier = 0.5 + 0.5 / (1 + daysSinceUpdate / 180)
+
+      return {
+        ...g,
+        score: rating * recencyMultiplier,
+      }
+    })
+
+    // Sort by weighted score descending, then add randomness
+    // by shuffling within similar-score tiers (±0.3 score range)
+    scoredCandidates.sort((a, b) => b.score - a.score)
+
+    // Take top candidates, shuffle those within close score range for variety
+    const topScore = scoredCandidates[0].score
+    const closeRange = scoredCandidates.filter(g => g.score >= topScore - 0.3)
+    const rest = scoredCandidates.filter(g => g.score < topScore - 0.3)
+
+    // Shuffle the close-range group
+    for (let i = closeRange.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[closeRange[i], closeRange[j]] = [closeRange[j], closeRange[i]]
+    }
+
+    const gamesToTry = [...closeRange, ...rest].slice(0, 10)
+
+    console.log(TAG, `Trying ${gamesToTry.length} seeds (top score: ${topScore.toFixed(2)}, close-range: ${closeRange.length}):`,
+      gamesToTry.map(g => `${g.game_id} (${g.rating}★, score: ${g.score.toFixed(2)})`).join(', '))
+
+    // ── Step 4: Get user's full library for exclusion ─────────
     const { data: allLogs } = await supabase
       .from('game_logs')
       .select('game_id')
       .eq('user_id', userId)
 
     const userGameIds = new Set(allLogs?.map(log => log.game_id) || [])
-    console.log('[BecauseYouLoved] User has', userGameIds.size, 'total games in library (will exclude from recs)')
+    console.log(TAG, 'User library size:', userGameIds.size, '(will exclude)')
 
-    // Shuffle all loved games randomly for variety on each refresh
-    const shuffled = [...lovedGames].sort(() => Math.random() - 0.5)
-    const gamesToTry = shuffled.slice(0, Math.min(shuffled.length, 15))
-
-    console.log('[BecauseYouLoved] Will try', gamesToTry.length, 'games in this order:', gamesToTry.map(g => g.game_id).join(', '))
-
+    // ── Step 5: Try each seed until we get enough recs ────────
     for (const selectedLog of gamesToTry) {
       const gameId = selectedLog.game_id
 
-      // Fetch game info from IGDB directly
       const gameInfo = await getGameById(gameId)
-
       if (!gameInfo) {
-        console.log('[BecauseYouLoved] Could not fetch game info for ID:', gameId)
+        console.log(TAG, 'Could not fetch game info for ID:', gameId)
         continue
       }
 
       const basedOnGame: Game = {
         id: gameInfo.id,
         name: gameInfo.name,
-        coverUrl: gameInfo.coverUrl
+        coverUrl: gameInfo.coverUrl,
       }
 
-      console.log('[BecauseYouLoved] Trying:', basedOnGame.name, '(ID:', gameId, ', rating:', selectedLog.rating, '★)')
+      console.log(TAG, `Trying: ${basedOnGame.name} (${gameId}, ${selectedLog.rating}★, score: ${selectedLog.score.toFixed(2)})`)
 
-      // Get smart similar games from IGDB - request 150 to have room after filtering
+      // getSmartSimilarGames already sorts by tier then PopScore
       const similarGames = await getSmartSimilarGames(basedOnGame.id, 150, platforms, excludePcOnly)
-      console.log('[BecauseYouLoved] IGDB returned', similarGames.length, 'similar games for', basedOnGame.name)
+      console.log(TAG, 'IGDB returned', similarGames.length, 'similar games')
 
-      // Filter out games already in user's library
-      const filteredGames = similarGames.filter(game => !userGameIds.has(game.id))
-      console.log('[BecauseYouLoved] After filtering user library:', filteredGames.length, 'games remaining')
-
-      // Fetch PopScore (popularity) data for the filtered games
-      const gameIds = filteredGames.map(g => g.id)
-      const popularityMap = await getPopularityForGames(gameIds)
-      console.log('[BecauseYouLoved] Got PopScore data for', popularityMap.size, 'games')
-
-      // Sort by PopScore (most popular first), then by original order for games without PopScore
-      const sortedGames = [...filteredGames].sort((a, b) => {
-        const aPopularity = popularityMap.get(a.id) || 0
-        const bPopularity = popularityMap.get(b.id) || 0
-        return bPopularity - aPopularity
-      })
-
-      // Return all recommendations (up to 100) - mobile app will show 10 with "See All"
-      const recommendations = sortedGames
+      // Filter out user's library
+      const recommendations = similarGames
+        .filter(game => !userGameIds.has(game.id))
         .slice(0, 100)
         .map(game => ({
           id: game.id,
           name: game.name,
-          coverUrl: game.coverUrl
+          coverUrl: game.coverUrl,
         }))
 
-      console.log('[BecauseYouLoved] Returning', recommendations.length, 'recommendations')
+      console.log(TAG, 'After library filter:', recommendations.length, 'recommendations')
 
-      // If we found at least 3 recommendations, return them
       if (recommendations.length >= 3) {
-        console.log('[BecauseYouLoved] SUCCESS! Returning', recommendations.length, 'recs for', basedOnGame.name)
-        console.log('[BecauseYouLoved] Top 5 by PopScore:', recommendations.slice(0, 5).map(r => r.name).join(', '))
+        console.log(TAG, `SUCCESS: ${recommendations.length} recs for ${basedOnGame.name}`)
+        console.log(TAG, 'Top 5:', recommendations.slice(0, 5).map(r => r.name).join(', '))
         return NextResponse.json({
           basedOnGame,
           recommendations,
-          apiVersion: 3, // v3: Now sorted by PopScore
+          apiVersion: 4,
           debug: {
-            gamesRated4Plus: lovedGames.length,
-            gamesTried: gamesToTry.map(g => g.game_id).indexOf(selectedLog) + 1,
-            gamesWithPopScore: popularityMap.size,
-            sortedByPopScore: true
+            totalRated: allRatedGames.length,
+            threshold: relativeThreshold,
+            seedScore: selectedLog.score,
+            seedRating: selectedLog.rating,
           }
         }, {
-          headers: {
-            'Cache-Control': 'no-store, no-cache, must-revalidate',
-          }
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' },
         })
       }
 
-      console.log('[BecauseYouLoved] Not enough recs for', basedOnGame.name, '- trying next game')
+      console.log(TAG, 'Not enough recs for', basedOnGame.name, '- trying next seed')
     }
 
-    // If no game returned enough recommendations, return empty
-    console.log('[BecauseYouLoved] FAILED - no games returned sufficient recommendations after trying all', gamesToTry.length)
+    console.log(TAG, 'FAILED - no seed returned 3+ recommendations after trying', gamesToTry.length)
     return NextResponse.json({
       basedOnGame: null,
       recommendations: [],
       message: 'Could not find recommendations',
       debug: {
-        gamesRated4Plus: lovedGames.length,
-        allTriedGameIds: gamesToTry.map(g => g.game_id)
+        totalRated: allRatedGames.length,
+        threshold: relativeThreshold,
+        triedSeeds: gamesToTry.map(g => g.game_id),
       }
     })
   } catch (error) {
-    console.error('[BecauseYouLoved] Error:', error)
+    console.error(TAG, 'Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
