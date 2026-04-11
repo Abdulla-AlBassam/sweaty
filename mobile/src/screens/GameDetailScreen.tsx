@@ -13,8 +13,9 @@ import {
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
+import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
+import PressableScale from '../components/PressableScale'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -346,6 +347,31 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     Linking.openURL(url).catch(() => {})
   }
 
+  // Map RAWG store_id to a brand icon. Unknowns fall back to a neutral storefront.
+  const renderStoreIcon = (storeId: number) => {
+    const size = 22
+    const color = Colors.textMuted
+    switch (storeId) {
+      case 1: // Steam
+        return <FontAwesome5 name="steam" size={size} color={color} />
+      case 2: // Xbox Store
+      case 7: // Xbox 360 Store
+        return <FontAwesome5 name="xbox" size={size} color={color} />
+      case 3: // PlayStation Store
+        return <FontAwesome5 name="playstation" size={size} color={color} />
+      case 4: // App Store
+        return <FontAwesome5 name="app-store-ios" size={size} color={color} />
+      case 6: // Nintendo Store
+        return <MaterialCommunityIcons name="nintendo-switch" size={size} color={color} />
+      case 8: // Google Play
+        return <FontAwesome5 name="google-play" size={size} color={color} />
+      case 9: // itch.io
+        return <FontAwesome5 name="itch-io" size={size} color={color} />
+      default: // GOG, Epic, anything else
+        return <Ionicons name="storefront-outline" size={size} color={color} />
+    }
+  }
+
   // Get color based on OpenCritic tier
   const getOpenCriticColor = (tier: string | null) => {
     switch (tier) {
@@ -654,30 +680,26 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <TrailerSection videos={game.videos} />
         )}
 
-        {/* Where to buy (RAWG stores) */}
+        {/* Where to buy (RAWG stores) — icon-only tiles matching Settings platform tiles */}
         {rawg && rawg.stores.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Where to buy</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.storesRow}
-              nestedScrollEnabled={true}
-            >
+            <View style={styles.storesRow}>
               {rawg.stores.map((store) => (
-                <TouchableOpacity
+                <PressableScale
                   key={store.storeId}
-                  style={styles.storeChip}
+                  style={styles.storeTile}
                   onPress={() => openStore(store.url)}
+                  haptic="light"
+                  scale={0.94}
                   accessibilityLabel={`Open ${store.name}`}
                   accessibilityRole="link"
                   accessibilityHint="Opens the game in this store"
                 >
-                  <Text style={styles.storeChipText}>{store.name}</Text>
-                  <Ionicons name="open-outline" size={14} color={Colors.textMuted} />
-                </TouchableOpacity>
+                  {renderStoreIcon(store.storeId)}
+                </PressableScale>
               ))}
-            </ScrollView>
+            </View>
             <View style={styles.sectionSeparator} />
           </View>
         )}
@@ -993,26 +1015,22 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxs,
     color: Colors.textMuted,
   },
-  // Where to buy — store chips
+  // Where to buy — icon-only tiles matching platform tiles on SettingsScreen
   storesRow: {
-    gap: Spacing.sm,
-    paddingRight: Spacing.lg,
-  },
-  storeChip: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surface,
-    borderWidth: 0.5,
-    borderColor: Colors.borderSubtle,
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
   },
-  storeChipText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.sm,
-    color: Colors.text,
+  storeTile: {
+    minWidth: 60,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   // RAWG attribution (ToS requirement)
   rawgAttribution: {
