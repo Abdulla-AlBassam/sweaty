@@ -487,23 +487,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               <Text style={styles.year}>{formattedReleaseDate}</Text>
             )}
 
-            {/* Playtime + ESRB pills (hidden when RAWG returns nothing) */}
-            {(rawg?.playtimeHours || rawg?.esrbRating) && (
-              <View style={styles.metaPillsRow}>
-                {rawg?.playtimeHours ? (
-                  <View style={styles.metaPill}>
-                    <Ionicons name="time-outline" size={12} color={Colors.textMuted} />
-                    <Text style={styles.metaPillText}>~{rawg.playtimeHours}h</Text>
-                  </View>
-                ) : null}
-                {rawg?.esrbRating ? (
-                  <View style={styles.metaPill}>
-                    <Text style={styles.metaPillText}>{rawg.esrbRating}</Text>
-                  </View>
-                ) : null}
-              </View>
-            )}
-
             {game.genres && game.genres.length > 0 && (
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
@@ -536,14 +519,11 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               )}
               {communityStats.averageRating ? (
                 <View style={styles.ratingItem}>
-                  <Ionicons name="star" size={18} color={Colors.gold} />
+                  <SweatDropIcon size={18} variant="static" />
                   <Text style={styles.ratingText}>{communityStats.averageRating}</Text>
+                  <Ionicons name="star" size={16} color={Colors.cream} />
                 </View>
               ) : null}
-              <View style={styles.ratingItem}>
-                <SweatDropIcon size={18} variant="static" />
-                <Text style={styles.ratingText}>{communityStats.totalLogs || 0}</Text>
-              </View>
             </View>
           </View>
         </View>
@@ -556,6 +536,24 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.gameModeText}>{mode}</Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {/* Playtime + ESRB icons — sit directly above the summary */}
+        {(rawg?.playtimeHours || rawg?.esrbRating) && (
+          <View style={styles.metaIconsRow}>
+            {rawg?.playtimeHours ? (
+              <View style={styles.metaIconItem}>
+                <Ionicons name="time-outline" size={16} color={Colors.textMuted} />
+                <Text style={styles.metaIconText}>~{rawg.playtimeHours}h</Text>
+              </View>
+            ) : null}
+            {rawg?.esrbRating ? (
+              <View style={styles.metaIconItem}>
+                <Ionicons name="shield-outline" size={16} color={Colors.textMuted} />
+                <Text style={styles.metaIconText}>{rawg.esrbRating}</Text>
+              </View>
+            ) : null}
           </View>
         )}
 
@@ -957,28 +955,22 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
   },
-  // Playtime / ESRB pills under the release date
-  metaPillsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.xs,
-  },
-  metaPill: {
+  // Playtime + ESRB inline icons, sitting above the summary
+  metaIconsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 0.5,
-    borderColor: Colors.borderSubtle,
+    gap: Spacing.lg,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
   },
-  metaPillText: {
+  metaIconItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metaIconText: {
     fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xxs,
+    fontSize: FontSize.xs,
     color: Colors.textMuted,
   },
   // Metacritic score — square badge in the ratings row
