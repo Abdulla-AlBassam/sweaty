@@ -5,6 +5,8 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
+  ScrollView,
+  Dimensions,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import FormattedText from './FormattedText'
@@ -40,8 +42,11 @@ interface GameReviewsProps {
   refreshKey?: number
 }
 
-const PREVIEW_LIMIT = 3
+const PREVIEW_LIMIT = 8
 const FETCH_POOL = 20 // Fetch more to find the highest-liked
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.82)
 
 export default function GameReviews({ gameId, gameName, refreshKey }: GameReviewsProps) {
   const { user } = useAuth()
@@ -210,6 +215,14 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
     )
   }
 
+  const handleCardPress = (review: Review) => {
+    navigation.navigate('ReviewDetail', {
+      gameLogId: review.id,
+      gameName,
+      gameId,
+    })
+  }
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -220,55 +233,76 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
           </TouchableOpacity>
         )}
       </View>
-      {reviews.map((review) => (
-        <View key={review.id} style={styles.reviewCard}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.cardsRow}
+        decelerationRate="fast"
+        snapToInterval={CARD_WIDTH + Spacing.md}
+        snapToAlignment="start"
+        nestedScrollEnabled={true}
+      >
+        {reviews.map((review) => (
           <TouchableOpacity
-            style={styles.userRow}
-            onPress={() => handleUserPress(review.user.username, review.user.id)}
-            accessibilityLabel={'View ' + (review.user.display_name || review.user.username) + ' profile'}
+            key={review.id}
+            style={styles.reviewCard}
+            activeOpacity={0.85}
+            onPress={() => handleCardPress(review)}
+            accessibilityLabel={'Review by ' + (review.user.display_name || review.user.username)}
             accessibilityRole="button"
+            accessibilityHint="Opens full review"
           >
-            {review.user.avatar_url ? (
-              <Image source={{ uri: review.user.avatar_url }} style={styles.avatar} accessibilityLabel={(review.user.display_name || review.user.username) + ' avatar'} />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>
-                  {(review.user.display_name || review.user.username)[0].toUpperCase()}
-                </Text>
-              </View>
-            )}
-            <View style={styles.userInfo}>
-              <Text style={styles.displayName}>
-                {review.user.display_name || review.user.username}
-              </Text>
-              <Text style={styles.username}>@{review.user.username}</Text>
-            </View>
-            <View style={styles.reviewMeta}>
-              {review.rating && (
-                <View style={styles.ratingBadge}>
-                  <StarRating rating={review.rating} size={12} />
+            <TouchableOpacity
+              style={styles.userRow}
+              onPress={() => handleUserPress(review.user.username, review.user.id)}
+              accessibilityLabel={'View ' + (review.user.display_name || review.user.username) + ' profile'}
+              accessibilityRole="button"
+            >
+              {review.user.avatar_url ? (
+                <Image source={{ uri: review.user.avatar_url }} style={styles.avatar} accessibilityLabel={(review.user.display_name || review.user.username) + ' avatar'} />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <Text style={styles.avatarText}>
+                    {(review.user.display_name || review.user.username)[0].toUpperCase()}
+                  </Text>
                 </View>
               )}
-              <Text style={styles.timeText}>{getRelativeTime(review.created_at)}</Text>
+              <View style={styles.userInfo}>
+                <Text style={styles.displayName} numberOfLines={1}>
+                  {review.user.display_name || review.user.username}
+                </Text>
+                <Text style={styles.username} numberOfLines={1}>@{review.user.username}</Text>
+              </View>
+              <View style={styles.reviewMeta}>
+                {review.rating && (
+                  <View style={styles.ratingBadge}>
+                    <StarRating rating={review.rating} size={12} />
+                  </View>
+                )}
+                <Text style={styles.timeText}>{getRelativeTime(review.created_at)}</Text>
+              </View>
+            </TouchableOpacity>
+
+            <FormattedText style={styles.reviewText} numberOfLines={5}>{review.review}</FormattedText>
+
+            {/* Aligned social row — heart + comment on the same baseline */}
+            <View style={styles.socialSection}>
+              <ReviewLikeButton
+                gameLogId={review.id}
+                initialLikeCount={review.likeCount || 0}
+                initialIsLiked={review.isLiked || false}
+                size="small"
+              />
+              <ReviewComments
+                gameLogId={review.id}
+                initialCommentCount={review.commentCount || 0}
+                previewMode={true}
+                onPreviewPress={() => handleCardPress(review)}
+              />
             </View>
           </TouchableOpacity>
-          <FormattedText style={styles.reviewText} numberOfLines={4}>{review.review}</FormattedText>
-
-          {/* Likes and Comments */}
-          <View style={styles.socialSection}>
-            <ReviewLikeButton
-              gameLogId={review.id}
-              initialLikeCount={review.likeCount || 0}
-              initialIsLiked={review.isLiked || false}
-              size="small"
-            />
-            <ReviewComments
-              gameLogId={review.id}
-              initialCommentCount={review.commentCount || 0}
-            />
-          </View>
-        </View>
-      ))}
+        ))}
+      </ScrollView>
     </View>
   )
 }
@@ -323,16 +357,24 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     marginTop: Spacing.xs,
   },
+  cardsRow: {
+    gap: Spacing.md,
+    paddingRight: Spacing.lg,
+  },
+  // Edge-lit card: surface fill, rounded corners, subtle top highlight line
+  // to mimic `shadow-[inset_0_1px_0_white/15]`
   reviewCard: {
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    width: CARD_WIDTH,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    padding: Spacing.lg,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   avatar: {
     width: 36,
@@ -385,12 +427,16 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 20,
+    minHeight: 100,
   },
+  // Centred so heart + count and comment + count share a single baseline
   socialSection: {
     marginTop: Spacing.md,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    flexWrap: 'wrap',
-    gap: Spacing.lg,
+    alignItems: 'center',
+    gap: Spacing.xl,
   },
 })

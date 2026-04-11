@@ -56,7 +56,7 @@ interface StarIconProps {
   color?: string
 }
 
-function StarIcon({ starNumber, rating, size = 32, color = Colors.gold }: StarIconProps) {
+function StarIcon({ starNumber, rating, size = 32, color = Colors.cream }: StarIconProps) {
   if (!rating) {
     return <Ionicons name="star-outline" size={size} color={Colors.textDim} />
   }

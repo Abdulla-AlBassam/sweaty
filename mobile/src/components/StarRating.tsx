@@ -38,7 +38,7 @@ function StarIcon({
 export default function StarRating({
   rating,
   size = 16,
-  color = Colors.gold,
+  color = Colors.cream,
   showEmpty = false,
   filledOnly = false
 }: StarRatingProps) {
@@ -88,7 +88,7 @@ export default function StarRating({
 export function CompactStarRating({
   rating,
   size = 14,
-  color = Colors.gold
+  color = Colors.cream
 }: Omit<StarRatingProps, 'showEmpty'>) {
   if (!rating) {
     return null

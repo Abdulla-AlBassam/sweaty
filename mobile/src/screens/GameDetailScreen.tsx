@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
+import EsrbBadge from '../components/EsrbBadge'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -521,7 +522,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                 <View style={styles.ratingItem}>
                   <SweatDropIcon size={18} variant="static" />
                   <Text style={styles.ratingText}>{communityStats.averageRating}</Text>
-                  <Ionicons name="star" size={16} color={Colors.cream} />
                 </View>
               ) : null}
             </View>
@@ -539,7 +539,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* Playtime + ESRB icons — sit directly above the summary */}
+        {/* Playtime + ESRB badge — sit directly above the summary */}
         {(rawg?.playtimeHours || rawg?.esrbRating) && (
           <View style={styles.metaIconsRow}>
             {rawg?.playtimeHours ? (
@@ -548,12 +548,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.metaIconText}>~{rawg.playtimeHours}h</Text>
               </View>
             ) : null}
-            {rawg?.esrbRating ? (
-              <View style={styles.metaIconItem}>
-                <Ionicons name="shield-outline" size={16} color={Colors.textMuted} />
-                <Text style={styles.metaIconText}>{rawg.esrbRating}</Text>
-              </View>
-            ) : null}
+            {rawg?.esrbRating ? <EsrbBadge rating={rawg.esrbRating} size={38} /> : null}
           </View>
         )}
 

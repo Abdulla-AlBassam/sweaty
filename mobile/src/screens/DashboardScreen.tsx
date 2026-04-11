@@ -437,7 +437,7 @@ export default function DashboardScreen() {
                           </Text>
                           {review.rating && (
                             <View style={styles.communityRating}>
-                              <Ionicons name="star" size={10} color={Colors.gold} />
+                              <Ionicons name="star" size={10} color={Colors.cream} />
                               <Text style={styles.communityRatingText}>{review.rating}</Text>
                             </View>
                           )}
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
   communityRatingText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xxs,
-    color: Colors.gold,
+    color: Colors.cream,
     lineHeight: 15,
   },
   communityReviewText: {
