@@ -1,4 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#1a1a1a"/>
-  <text x="256" y="380" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="380" font-weight="bold" fill="#22c55e">S</text>
+  <rect width="512" height="512" rx="100" fill="white"/>
+
+  <!-- Bottom CD - Lightest gray -->
+  <ellipse cx="256" cy="320" rx="170" ry="34" fill="#E5E5E5"/>
+  <circle cx="256" cy="320" r="170" fill="#D4D4D4"/>
+  <circle cx="256" cy="320" r="51" fill="white"/>
+  <circle cx="256" cy="320" r="42" fill="#F5F5F5"/>
+
+  <!-- Middle CD - Medium gray -->
+  <ellipse cx="256" cy="256" rx="170" ry="34" fill="#D4D4D4"/>
+  <circle cx="256" cy="256" r="170" fill="#A3A3A3"/>
+  <circle cx="256" cy="256" r="51" fill="white"/>
+  <circle cx="256" cy="256" r="42" fill="#E5E5E5"/>
+
+  <!-- Top CD - Darkest gray -->
+  <ellipse cx="256" cy="192" rx="170" ry="34" fill="#A3A3A3"/>
+  <circle cx="256" cy="192" r="170" fill="#737373"/>
+  <circle cx="256" cy="192" r="51" fill="white"/>
+  <circle cx="256" cy="192" r="42" fill="#D4D4D4"/>
 </svg>

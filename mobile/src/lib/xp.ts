@@ -94,12 +94,12 @@ export function getLevel(xp: number): LevelInfo {
 
 // Get badge/ring color based on level
 export function getBadgeColor(level: number): string {
-  if (level >= 15) return '#F0E4D0' // Cream for Sweat (brand colour)
-  if (level >= 13) return '#FFD700' // Gold for Icon/Mythic
-  if (level >= 10) return '#8B5CF6' // Purple for Master+
-  if (level >= 7) return '#3B82F6'  // Blue for Expert+
-  if (level >= 4) return '#E0E0E0'  // Off-white for Dedicated+
-  return '#6B7280'                   // Gray for lower levels
+  if (level >= 15) return '#C0C8D0' // Silver for Sweat (brand colour)
+  if (level >= 13) return '#C0C8D0' // Silver for Icon/Mythic
+  if (level >= 10) return '#A0A8B0' // Muted silver for Master+
+  if (level >= 7) return '#8A9098'  // Darker silver for Expert+
+  if (level >= 4) return '#6B7280'  // Warm gray for Dedicated+
+  return '#4B5563'                   // Dark gray for lower levels
 }
 
 // Legacy exports for backwards compatibility

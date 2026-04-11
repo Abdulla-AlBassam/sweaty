@@ -264,6 +264,8 @@ const styles = StyleSheet.create({
     height: 67,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surfaceLight,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',

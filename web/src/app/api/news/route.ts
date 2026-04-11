@@ -161,10 +161,11 @@ async function fetchAllNews(): Promise<NewsArticle[]> {
   return sortedArticles
 }
 
-// GET /api/news?limit=10
+// GET /api/news?limit=10&offset=0
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const limit = parseInt(searchParams.get('limit') || '10')
+  const offset = parseInt(searchParams.get('offset') || '0')
 
   // Validate limit
   if (isNaN(limit) || limit < 1 || limit > 50) {
@@ -179,8 +180,11 @@ export async function GET(request: NextRequest) {
 
     // Check cache
     if (cachedNews && (now - cacheTimestamp) < CACHE_DURATION) {
+      const sliced = cachedNews.slice(offset, offset + limit)
       return NextResponse.json({
-        articles: cachedNews.slice(0, limit),
+        articles: sliced,
+        total: cachedNews.length,
+        hasMore: offset + limit < cachedNews.length,
         cached: true,
         cacheAge: Math.round((now - cacheTimestamp) / 1000),
       })
@@ -193,8 +197,11 @@ export async function GET(request: NextRequest) {
     cachedNews = articles
     cacheTimestamp = now
 
+    const sliced = articles.slice(offset, offset + limit)
     return NextResponse.json({
-      articles: articles.slice(0, limit),
+      articles: sliced,
+      total: articles.length,
+      hasMore: offset + limit < articles.length,
       cached: false,
     })
   } catch (error) {
@@ -202,8 +209,11 @@ export async function GET(request: NextRequest) {
 
     // Return cached data if available, even if stale
     if (cachedNews) {
+      const sliced = cachedNews.slice(offset, offset + limit)
       return NextResponse.json({
-        articles: cachedNews.slice(0, limit),
+        articles: sliced,
+        total: cachedNews.length,
+        hasMore: offset + limit < cachedNews.length,
         cached: true,
         stale: true,
       })

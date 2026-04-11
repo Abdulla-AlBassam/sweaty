@@ -1,5 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0a0a0a"/>
-  <text x="600" y="280" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="120" font-weight="bold" fill="#22c55e">Sweaty</text>
-  <text x="600" y="380" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="36" fill="#a1a1aa">Track, rate, and share your video game journey</text>
+
+  <!-- CD stack logo (left side) -->
+  <g transform="translate(280, 155)">
+    <!-- Bottom CD - Lightest -->
+    <ellipse cx="120" cy="240" rx="120" ry="24" fill="#E5E5E5"/>
+    <circle cx="120" cy="240" r="120" fill="#D4D4D4"/>
+    <circle cx="120" cy="240" r="36" fill="#0a0a0a"/>
+    <circle cx="120" cy="240" r="30" fill="#F5F5F5"/>
+
+    <!-- Middle CD -->
+    <ellipse cx="120" cy="195" rx="120" ry="24" fill="#D4D4D4"/>
+    <circle cx="120" cy="195" r="120" fill="#A3A3A3"/>
+    <circle cx="120" cy="195" r="36" fill="#0a0a0a"/>
+    <circle cx="120" cy="195" r="30" fill="#E5E5E5"/>
+
+    <!-- Top CD - Darkest -->
+    <ellipse cx="120" cy="150" rx="120" ry="24" fill="#A3A3A3"/>
+    <circle cx="120" cy="150" r="120" fill="#737373"/>
+    <circle cx="120" cy="150" r="36" fill="#0a0a0a"/>
+    <circle cx="120" cy="150" r="30" fill="#D4D4D4"/>
+  </g>
+
+  <text x="560" y="310" font-family="system-ui, -apple-system, sans-serif" font-size="120" font-weight="bold" fill="#22c55e">Sweaty</text>
+  <text x="560" y="380" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="#a1a1aa">Track, rate, and share your video game journey</text>
 </svg>

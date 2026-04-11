@@ -16,15 +16,6 @@ import { useAuth } from '../contexts/AuthContext'
 import { useActivityFeed, useOwnActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 
-// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
-const TestBg = {
-  background: '#1A1A1C',
-  surface: '#2A2A2E',
-  border: '#2E2E32',
-  textDim: '#999999',
-  textMuted: '#A3A3A3',
-}
-// ── END COLOR SCHEME TEST ─────────────────────────────────
 import { Fonts } from '../constants/fonts'
 import { MainStackParamList } from '../navigation'
 import ActivityItemComponent from '../components/ActivityItem'
@@ -219,9 +210,9 @@ export default function ActivityScreen() {
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
             {activeCategory === 'reviews' ? (
-              <Ionicons name="chatbubble-outline" size={48} color={TestBg.textDim} style={styles.emptyIcon} />
+              <Ionicons name="chatbubble-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
             ) : activeTab === 'friends' && activeCategory === 'all' ? (
-              <Ionicons name="people-outline" size={48} color={TestBg.textDim} style={styles.emptyIcon} />
+              <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
             ) : (
               <View style={styles.emptyIcon}>
                 <SweatDropIcon size={48} variant="static" />
@@ -260,7 +251,7 @@ export default function ActivityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: TestBg.background,
+    backgroundColor: Colors.background,
   },
   header: {
     paddingHorizontal: Spacing.screenPadding,
@@ -289,23 +280,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
   },
   pillActive: {
-    backgroundColor: 'rgba(240, 228, 208, 0.18)',
-    borderColor: '#F0E4D0',
+    backgroundColor: 'rgba(192, 200, 208, 0.18)',
+    borderColor: Colors.cream,
   },
   pillText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     lineHeight: 20,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   pillTextActive: {
     fontFamily: Fonts.bodySemiBold,
-    color: '#F0E4D0',
+    color: Colors.cream,
   },
   scrollView: {
     flex: 1,
@@ -330,7 +321,7 @@ const styles = StyleSheet.create({
     paddingLeft: Spacing.xs,
   },
   dateGroupCard: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
   },
@@ -354,7 +345,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     lineHeight: 22,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: Spacing.xl,
   },

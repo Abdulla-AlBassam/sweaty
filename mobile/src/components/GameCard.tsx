@@ -86,8 +86,13 @@ const styles = StyleSheet.create({
   cover: {
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -101,7 +106,7 @@ const styles = StyleSheet.create({
   placeholder: {
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.borderSubtle,
     alignItems: 'center',
     justifyContent: 'center',

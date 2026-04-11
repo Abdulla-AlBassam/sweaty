@@ -348,17 +348,20 @@ export default function EditFavoritesModal({
 
               {/* Save Button */}
               <View style={styles.footer}>
+                {favorites.length < 5 && (
+                  <Text style={styles.favCountHint}>{favorites.length}/5 selected — pick {5 - favorites.length} more</Text>
+                )}
                 <TouchableOpacity
-                  style={styles.saveButton}
+                  style={[styles.saveButton, favorites.length < 5 && styles.saveButtonDisabled]}
                   onPress={handleSave}
-                  disabled={isSaving}
+                  disabled={isSaving || favorites.length < 5}
                   accessibilityLabel="Save favorites"
                   accessibilityRole="button"
                 >
                   {isSaving ? (
                     <LoadingSpinner size="small" color={Colors.background} />
                   ) : (
-                    <Text style={styles.saveButtonText}>Save Favorites</Text>
+                    <Text style={[styles.saveButtonText, favorites.length < 5 && styles.saveButtonTextDisabled]}>Save Favorites</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -421,7 +424,7 @@ const styles = StyleSheet.create({
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.sm,
+    gap: Spacing.xs,
   },
   favoriteSlot: {
     flex: 1,
@@ -431,6 +434,13 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   favoriteCoverPlaceholder: {
     backgroundColor: Colors.background,
@@ -514,6 +524,13 @@ const styles = StyleSheet.create({
     height: 53,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surfaceLight,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   resultCoverPlaceholder: {
     alignItems: 'center',
@@ -534,6 +551,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
+  favCountHint: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
   saveButton: {
     backgroundColor: Colors.accent,
     paddingVertical: Spacing.md,
@@ -541,9 +565,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  saveButtonDisabled: {
+    backgroundColor: Colors.surfaceLight,
+  },
   saveButtonText: {
     fontFamily: Fonts.bodySemiBold,
     color: Colors.background,
     fontSize: FontSize.md,
+  },
+  saveButtonTextDisabled: {
+    color: Colors.textDim,
   },
 })

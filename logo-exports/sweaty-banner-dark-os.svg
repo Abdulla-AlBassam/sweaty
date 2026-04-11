@@ -1,0 +1,21 @@
+<svg width="1500" height="500" viewBox="0 0 1500 500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="500" fill="#1A1A1C"/>
+
+  <text y="300" font-family="Montserrat, -apple-system, sans-serif" font-weight="700" font-size="96" fill="#F5F5F5">
+    <tspan x="302">J</tspan>
+    <tspan x="413">in the c</tspan>
+    <tspan x="793">mmunity</tspan>
+  </text>
+
+  <!-- First O: CD (bright lightest shade), larger hole for inline visibility -->
+  <ellipse cx="388" cy="266" rx="7" ry="34" fill="#FAFAFA"/>
+  <circle cx="388" cy="266" r="34" fill="#F0F0F0"/>
+  <circle cx="388" cy="266" r="13" fill="white"/>
+  <circle cx="388" cy="266" r="10" fill="#FAFAFA"/>
+
+  <!-- Second O: CD (bright darkest shade) -->
+  <ellipse cx="768" cy="266" rx="7" ry="34" fill="#C8C8C8"/>
+  <circle cx="768" cy="266" r="34" fill="#A3A3A3"/>
+  <circle cx="768" cy="266" r="13" fill="white"/>
+  <circle cx="768" cy="266" r="10" fill="#E0E0E0"/>
+</svg>

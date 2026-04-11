@@ -495,7 +495,7 @@ export default function PlayStationImportScreen() {
         {/* Summary Banner */}
         <View style={styles.summaryBanner}>
           <View style={styles.summaryLeft}>
-            <SweatDropIcon size={24} variant="loading" />
+            <LoadingSpinner size={24} />
             <Text style={styles.summaryText}>
               {remainingGames.length} games remaining
             </Text>
@@ -1051,6 +1051,13 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surfaceLight,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',

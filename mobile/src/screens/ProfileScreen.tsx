@@ -6,10 +6,12 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Pressable,
+  Modal,
   Animated,
   Dimensions,
 } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation, CommonActions, useScrollToTop } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -19,21 +21,6 @@ import { useUserLists } from '../hooks/useLists'
 import { usePremium } from '../hooks/usePremium'
 import { calculateXP, getLevel } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
-
-// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
-const TestBg = {
-  background: '#1A1A1C',
-  alternate: '#1E1E21',
-  surface: '#2A2A2E',
-  surfaceLight: '#333338',
-  border: '#2E2E32',
-  borderSubtle: 'rgba(255, 255, 255, 0.08)',
-  textDim: '#999999',
-  textMuted: '#A3A3A3',
-  gradientSubtle: 'rgba(26, 26, 28, 0.3)',
-  gradientMedium: 'rgba(26, 26, 28, 0.6)',
-}
-// ── END COLOR SCHEME TEST ─────────────────────────────────
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
 import { supabase } from '../lib/supabase'
@@ -61,6 +48,8 @@ const GRID_GAP = 8                              // Smaller gap for more columns
 const GRID_GAPS = GRID_GAP * 3                  // 3 gaps for 4 columns
 const GAME_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GRID_GAPS) / 4
 
+const FAV_GAP = Spacing.xs
+const FAV_CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - FAV_GAP * 4) / 5
 const FAVORITE_SLOTS = [0, 1, 2, 3, 4] as const
 
 interface FavoriteGame {
@@ -106,6 +95,7 @@ export default function ProfileScreen() {
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
+  const [avatarExpanded, setAvatarExpanded] = useState(false)
 
   // Advanced filter state
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false)
@@ -353,8 +343,33 @@ export default function ProfileScreen() {
     refetchLists()
   }
 
+  const hasBanner = !!profile?.banner_url
+  const profileBannerHeight = SCREEN_HEIGHT * 0.25 + insets.top
+
   return (
     <View style={styles.container}>
+      {/* Fixed header - fades out when banner scrolls away */}
+      <Animated.View style={[styles.fixedHeader, {
+        opacity: scrollY.interpolate({
+          inputRange: [0, profileBannerHeight * 0.5],
+          outputRange: [1, 0],
+          extrapolate: 'clamp',
+        }),
+      }]} pointerEvents="box-none">
+        <View style={[styles.header, { paddingTop: insets.top + Spacing.lg }]} pointerEvents="auto">
+          <Text style={styles.headerTitle}>profile</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Settings' as never)}
+            style={styles.settingsButton}
+            accessibilityLabel="Settings"
+            accessibilityRole="button"
+            accessibilityHint="Opens profile settings"
+          >
+            <View style={styles.iconBackdrop}><Ionicons name="settings-outline" size={20} color={Colors.text} /></View>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+
       <Animated.ScrollView
         ref={scrollRef}
         style={styles.scrollView}
@@ -367,73 +382,45 @@ export default function ProfileScreen() {
           { useNativeDriver: true }
         )}
       >
-        {/* Banner with Header */}
-        {profile?.banner_url ? (
-          <Animated.View style={[styles.bannerContainer, { height: SCREEN_HEIGHT * 0.30 + insets.top }, {
+        {/* Full-bleed banner */}
+        {hasBanner ? (
+          <Animated.View style={[styles.bannerContainer, { height: profileBannerHeight }, {
             transform: [
               { translateY: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [-100, 0], extrapolateRight: 'clamp' }) },
               { scale: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [1.5, 1], extrapolateRight: 'clamp' }) },
             ],
           }]}>
             <Image
-              source={{ uri: profile.banner_url }}
+              source={{ uri: profile!.banner_url! }}
               style={styles.banner}
               resizeMode="cover"
               accessibilityLabel="Profile banner"
             />
-            {/* Top gradient for status bar readability */}
             <LinearGradient
-              colors={[TestBg.gradientMedium, 'transparent']}
+              colors={[Colors.gradientMedium, 'transparent']}
               style={styles.bannerGradientTop}
             />
-            {/* Bottom gradient for blending */}
             <LinearGradient
-              colors={['transparent', TestBg.gradientMedium, TestBg.background]}
+              colors={['transparent', Colors.gradientMedium, Colors.background]}
               locations={[0, 0.6, 1]}
               style={styles.bannerGradient}
             />
-            {/* Header overlaid on banner */}
-            <View style={[styles.headerOverBanner, { paddingTop: insets.top + Spacing.sm }]}>
-              <Text style={styles.headerTitle}>profile</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Settings' as never)}
-                style={styles.settingsButton}
-                accessibilityLabel="Settings"
-                accessibilityRole="button"
-                accessibilityHint="Opens profile settings"
-              >
-                <View style={styles.iconBackdrop}><Ionicons name="settings-outline" size={20} color={Colors.text} /></View>
-              </TouchableOpacity>
-            </View>
           </Animated.View>
         ) : (
-          <>
-            <View style={[styles.bannerPlaceholder, { height: insets.top }]} />
-            {/* Header without banner */}
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>profile</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate('Settings' as never)}
-                style={styles.settingsButton}
-                accessibilityLabel="Settings"
-                accessibilityRole="button"
-                accessibilityHint="Opens profile settings"
-              >
-                <View style={styles.iconBackdrop}><Ionicons name="settings-outline" size={20} color={Colors.text} /></View>
-              </TouchableOpacity>
-            </View>
-          </>
+          <View style={{ height: insets.top + Spacing.lg + 28 + Spacing.md }} />
         )}
 
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile?.banner_url && styles.profileSectionWithBanner]}>
-          {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessible={false} />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
-            </View>
-          )}
+          <Pressable onPress={() => profile?.avatar_url && setAvatarExpanded(true)}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessible={false} />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <Text style={styles.avatarText}>{displayName[0].toUpperCase()}</Text>
+              </View>
+            )}
+          </Pressable>
 
           <View style={styles.nameRow}>
             <Text style={styles.displayName}>{displayName}</Text>
@@ -501,7 +488,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Favorites */}
-        <View style={[styles.favoritesSection, { backgroundColor: TestBg.alternate }]}>
+        <View style={[styles.favoritesSection, { backgroundColor: Colors.alternate }]}>
           <View style={styles.favoritesTitleRow}>
             <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Favorites</Text>
             <TouchableOpacity
@@ -549,7 +536,7 @@ export default function ProfileScreen() {
                   accessibilityRole="button"
                 >
                   <View style={[styles.favoriteCover, styles.emptyFavoriteSlot]}>
-                    <Ionicons name="add" size={20} color={TestBg.textDim} />
+                    <Ionicons name="add" size={20} color={Colors.textDim} />
                   </View>
                 </TouchableOpacity>
               )
@@ -559,7 +546,7 @@ export default function ProfileScreen() {
 
         {/* Recently Logged */}
         {gameLogs.length > 0 && (
-          <View style={[styles.recentlyLoggedSection, { backgroundColor: TestBg.background }]}>
+          <View style={[styles.recentlyLoggedSection, { backgroundColor: Colors.background }]}>
             <Text style={styles.sectionTitle}>Recently Logged</Text>
             <ScrollView
               horizontal
@@ -601,7 +588,7 @@ export default function ProfileScreen() {
           )
 
           return listsWithGames.length > 0 ? (
-            <View style={[styles.listsSection, { backgroundColor: TestBg.alternate }]}>
+            <View style={[styles.listsSection, { backgroundColor: Colors.alternate }]}>
               <View style={styles.listsTitleRow}>
                 <Text style={styles.sectionTitle}>Lists</Text>
                 <TouchableOpacity
@@ -611,7 +598,7 @@ export default function ProfileScreen() {
                   accessibilityRole="button"
                   accessibilityHint="Opens list creation form"
                 >
-                  <Ionicons name="add" size={18} color={'rgba(240, 228, 208, 0.6)'} />
+                  <Ionicons name="add" size={18} color={'rgba(192, 200, 208, 0.6)'} />
                   <Text style={styles.newListButtonText}>New</Text>
                 </TouchableOpacity>
               </View>
@@ -636,7 +623,7 @@ export default function ProfileScreen() {
         })()}
 
         {/* Library */}
-        <View style={[styles.librarySection, { backgroundColor: TestBg.background }]}>
+        <View style={[styles.librarySection, { backgroundColor: Colors.background }]}>
           <Text style={styles.sectionTitle}>Library</Text>
 
           {groupedLogs.length > 0 ? (
@@ -664,7 +651,7 @@ export default function ProfileScreen() {
                   <Text style={styles.libraryRowLabel}>{group.label}</Text>
                   <View style={styles.libraryRowRight}>
                     <Text style={styles.libraryRowCount}>{group.logs.length}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={TestBg.textDim} />
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -725,6 +712,13 @@ export default function ProfileScreen() {
         />
       )}
 
+      {/* Avatar Lightbox */}
+      <Modal visible={avatarExpanded} transparent animationType="fade" onRequestClose={() => setAvatarExpanded(false)}>
+        <Pressable style={styles.avatarModalOverlay} onPress={() => setAvatarExpanded(false)}>
+          <Image source={{ uri: profile?.avatar_url || '' }} style={styles.avatarModalImage} />
+        </Pressable>
+      </Modal>
+
       {/* Create List Modal */}
       <CreateListModal
         visible={isCreateListModalVisible}
@@ -749,7 +743,18 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: TestBg.background,
+    backgroundColor: Colors.background,
+  },
+  avatarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarModalImage: {
+    width: 280,
+    height: 280,
+    borderRadius: 140,
   },
   scrollView: {
     flex: 1,
@@ -771,7 +776,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    height: 100,
+    height: 140,
   },
   bannerGradient: {
     position: 'absolute',
@@ -780,35 +785,31 @@ const styles = StyleSheet.create({
     right: 0,
     height: '50%',
   },
-  bannerPlaceholder: {
-    // Height set dynamically to insets.top
-  },
-  headerOverBanner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.md,
-  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  fixedHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   headerTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.xl,
+    lineHeight: 28,
     color: Colors.cream,
     textTransform: 'uppercase',
     letterSpacing: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
   },
   settingsButton: {
     padding: Spacing.xs,
@@ -844,7 +845,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
@@ -852,7 +853,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 40,
-    color: '#F0E4D0',
+    color: Colors.cream,
   },
   displayName: {
     fontFamily: Fonts.display,
@@ -862,7 +863,7 @@ const styles = StyleSheet.create({
   username: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
   followCounts: {
@@ -873,7 +874,7 @@ const styles = StyleSheet.create({
   followText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   followNumber: {
     fontFamily: Fonts.bodySemiBold,
@@ -882,7 +883,7 @@ const styles = StyleSheet.create({
   bio: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
     marginTop: Spacing.md,
   },
@@ -894,7 +895,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
     marginHorizontal: Spacing.lg,
   },
   stat: {
@@ -904,7 +905,7 @@ const styles = StyleSheet.create({
   statSeparator: {
     width: 1,
     height: '60%',
-    backgroundColor: TestBg.border,
+    backgroundColor: Colors.border,
     alignSelf: 'center',
   },
   statValue: {
@@ -915,7 +916,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
   ranksSection: {
@@ -947,30 +948,37 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: 'rgba(240, 228, 208, 0.6)',
+    color: 'rgba(192, 200, 208, 0.6)',
   },
   favoritesRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
+    justifyContent: 'flex-start',
+    gap: FAV_GAP,
   },
   favoriteSlot: {
-    flex: 1,
+    width: FAV_CARD_WIDTH,
   },
   favoriteCover: {
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   favoriteCoverPlaceholder: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyFavoriteSlot: {
     borderStyle: 'dashed',
-    borderColor: TestBg.textDim,
-    backgroundColor: TestBg.surface,
+    borderColor: Colors.textDim,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -993,9 +1001,14 @@ const styles = StyleSheet.create({
     width: 105,
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
-    backgroundColor: TestBg.surface,
-    borderWidth: 1,
-    borderColor: TestBg.borderSubtle,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   librarySection: {
     paddingHorizontal: Spacing.screenPadding,
@@ -1013,7 +1026,7 @@ const styles = StyleSheet.create({
   },
   libraryRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   libraryRowLabel: {
     fontFamily: Fonts.body,
@@ -1028,7 +1041,7 @@ const styles = StyleSheet.create({
   libraryRowCount: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   gamesGrid: {
     flexDirection: 'row',
@@ -1042,9 +1055,14 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
-    backgroundColor: TestBg.surface,
-    borderWidth: 1,
-    borderColor: TestBg.borderSubtle,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',
@@ -1065,19 +1083,19 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
   },
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: Spacing.md,
   },
   emptySubtext: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textDim,
+    color: Colors.textDim,
     marginTop: Spacing.xs,
   },
   // Lists section styles
@@ -1100,7 +1118,7 @@ const styles = StyleSheet.create({
   newListButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: 'rgba(240, 228, 208, 0.6)',
+    color: 'rgba(192, 200, 208, 0.6)',
     marginLeft: 4,
   },
   listsScroll: {
@@ -1122,27 +1140,27 @@ const styles = StyleSheet.create({
   seeAllListsText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: 'rgba(240, 228, 208, 0.6)',
+    color: 'rgba(192, 200, 208, 0.6)',
   },
   emptyListsState: {
     alignItems: 'center',
     paddingVertical: Spacing.xl,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
   },
   emptyListsText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: Spacing.md,
     marginBottom: Spacing.md,
   },
   createListButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    backgroundColor: 'rgba(192, 200, 208, 0.18)',
     borderWidth: 1,
-    borderColor: '#F0E4D0',
+    borderColor: Colors.cream,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.md,
@@ -1150,7 +1168,7 @@ const styles = StyleSheet.create({
   createListButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
-    color: '#F0E4D0',
+    color: Colors.cream,
     marginLeft: Spacing.xs,
   },
 })

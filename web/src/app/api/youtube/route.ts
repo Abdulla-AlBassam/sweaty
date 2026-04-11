@@ -140,10 +140,11 @@ async function fetchAllVideos(): Promise<YouTubeVideo[]> {
   )
 }
 
-// GET /api/youtube?limit=10
+// GET /api/youtube?limit=10&offset=0
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const limit = parseInt(searchParams.get('limit') || '10')
+  const offset = parseInt(searchParams.get('offset') || '0')
 
   if (isNaN(limit) || limit < 1 || limit > 50) {
     return NextResponse.json(
@@ -157,8 +158,11 @@ export async function GET(request: NextRequest) {
 
     // Check cache
     if (cachedVideos && (now - cacheTimestamp) < CACHE_DURATION) {
+      const sliced = cachedVideos.slice(offset, offset + limit)
       return NextResponse.json({
-        videos: cachedVideos.slice(0, limit),
+        videos: sliced,
+        total: cachedVideos.length,
+        hasMore: offset + limit < cachedVideos.length,
         cached: true,
         cacheAge: Math.round((now - cacheTimestamp) / 1000),
       })
@@ -169,16 +173,22 @@ export async function GET(request: NextRequest) {
     cachedVideos = videos
     cacheTimestamp = now
 
+    const sliced = videos.slice(offset, offset + limit)
     return NextResponse.json({
-      videos: videos.slice(0, limit),
+      videos: sliced,
+      total: videos.length,
+      hasMore: offset + limit < videos.length,
       cached: false,
     })
   } catch (error) {
     console.error('YouTube fetch error:', error)
 
     if (cachedVideos) {
+      const sliced = cachedVideos.slice(offset, offset + limit)
       return NextResponse.json({
-        videos: cachedVideos.slice(0, limit),
+        videos: sliced,
+        total: cachedVideos.length,
+        hasMore: offset + limit < cachedVideos.length,
         cached: true,
         stale: true,
       })

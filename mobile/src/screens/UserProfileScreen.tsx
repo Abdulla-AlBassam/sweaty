@@ -6,6 +6,8 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Pressable,
+  Modal,
   Animated,
   Dimensions,
 } from 'react-native'
@@ -36,21 +38,8 @@ import { GamingPlatform } from '../types'
 import SweatDropIcon from '../components/SweatDropIcon'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
-
-// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
-const TestBg = {
-  background: '#1A1A1C',
-  alternate: '#1E1E21',
-  surface: '#2A2A2E',
-  surfaceLight: '#333338',
-  border: '#2E2E32',
-  borderSubtle: 'rgba(255, 255, 255, 0.08)',
-  textDim: '#999999',
-  textMuted: '#A3A3A3',
-  gradientSubtle: 'rgba(26, 26, 28, 0.3)',
-  gradientMedium: 'rgba(26, 26, 28, 0.6)',
-}
-// ── END COLOR SCHEME TEST ─────────────────────────────────
+const FAV_GAP = Spacing.xs
+const FAV_CARD_WIDTH = (SCREEN_WIDTH - Spacing.screenPadding * 2 - FAV_GAP * 4) / 5
 
 type Props = NativeStackScreenProps<MainStackParamList, 'UserProfile'>
 
@@ -115,6 +104,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
   const [followingCount, setFollowingCount] = useState(0)
   const [isFollowing, setIsFollowing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [avatarExpanded, setAvatarExpanded] = useState(false)
   const [isFollowLoading, setIsFollowLoading] = useState(false)
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
@@ -422,7 +412,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           <Text style={styles.headerTitle}>not found</Text>
         </View>
         <View style={styles.centered}>
-          <Ionicons name="person-outline" size={64} color={TestBg.textDim} />
+          <Ionicons name="person-outline" size={64} color={Colors.textDim} />
           <Text style={styles.errorText}>user not found</Text>
         </View>
       </View>
@@ -465,11 +455,11 @@ export default function UserProfileScreen({ navigation, route }: Props) {
               accessibilityLabel={(profile.display_name || profile.username) + ' profile banner'}
             />
             <LinearGradient
-              colors={[TestBg.gradientMedium, 'transparent']}
+              colors={[Colors.gradientMedium, 'transparent']}
               style={styles.bannerGradientTop}
             />
             <LinearGradient
-              colors={['transparent', TestBg.gradientMedium, TestBg.background]}
+              colors={['transparent', Colors.gradientMedium, Colors.background]}
               locations={[0, 0.6, 1]}
               style={styles.bannerGradient}
             />
@@ -478,13 +468,15 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
         {/* Profile Info - Vertical Layout */}
         <View style={[styles.profileSection, profile.banner_url && styles.profileSectionWithBanner]}>
-          {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessible={false} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <Ionicons name="person" size={40} color={TestBg.textDim} />
-            </View>
-          )}
+          <Pressable onPress={() => profile.avatar_url && setAvatarExpanded(true)}>
+            {profile.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} accessible={false} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Ionicons name="person" size={40} color={Colors.textDim} />
+              </View>
+            )}
+          </Pressable>
 
           <View style={styles.nameRow}>
             <Text style={styles.displayName}>
@@ -553,37 +545,29 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* Stats Row */}
+        {/* Stats + Level Ring */}
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.totalGames}</Text>
             <Text style={styles.statLabel}>games</Text>
           </View>
-          <View style={styles.statSeparator} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.completed}</Text>
             <Text style={styles.statLabel}>completed</Text>
           </View>
-          <View style={styles.statSeparator} />
+          <XPProgressBar levelInfo={getLevel(calculateXP(gameLogs, followerCount))} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.playing}</Text>
             <Text style={styles.statLabel}>playing</Text>
           </View>
-          <View style={styles.statSeparator} />
           <View style={styles.stat}>
             <Text style={styles.statValue}>{stats.averageRating ? stats.averageRating : '—'}</Text>
             <Text style={styles.statLabel}>avg rating</Text>
           </View>
         </View>
 
-
-        {/* Rank */}
-        <View style={styles.ranksSection}>
-          <XPProgressBar levelInfo={getLevel(calculateXP(gameLogs, followerCount))} />
-        </View>
-
         {/* Favorites */}
-        <View style={[styles.section, { backgroundColor: TestBg.alternate, paddingBottom: Spacing.xl }]}>
+        <View style={[styles.section, { backgroundColor: Colors.alternate, paddingBottom: Spacing.xl }]}>
           <Text style={styles.sectionTitle}>Favorites</Text>
           {favorites.length > 0 ? (
             <View style={styles.favoritesRow}>
@@ -619,7 +603,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
         {/* Recently Logged */}
         {gameLogs.length > 0 && (
-          <View style={[styles.recentlyLoggedSection, { backgroundColor: TestBg.background, paddingBottom: Spacing.xl }]}>
+          <View style={[styles.recentlyLoggedSection, { backgroundColor: Colors.background, paddingBottom: Spacing.xl }]}>
             <Text style={styles.sectionTitle}>Recently Logged</Text>
             <ScrollView
               horizontal
@@ -654,7 +638,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 
         {/* Lists - Only show if user has public lists with games */}
         {publicLists.length > 0 && (
-          <View style={[styles.listsSection, { backgroundColor: TestBg.alternate, paddingBottom: Spacing.xl }]}>
+          <View style={[styles.listsSection, { backgroundColor: Colors.alternate, paddingBottom: Spacing.xl }]}>
             <Text style={styles.sectionTitle}>Lists</Text>
             <ScrollView
               horizontal
@@ -675,7 +659,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         )}
 
         {/* Library */}
-        <View style={[styles.section, { backgroundColor: TestBg.background, paddingBottom: Spacing.xl }]}>
+        <View style={[styles.section, { backgroundColor: Colors.background, paddingBottom: Spacing.xl }]}>
           <Text style={styles.sectionTitle}>Library</Text>
 
           {groupedLogs.length > 0 ? (
@@ -703,7 +687,7 @@ export default function UserProfileScreen({ navigation, route }: Props) {
                   <Text style={styles.libraryRowLabel}>{group.label}</Text>
                   <View style={styles.libraryRowRight}>
                     <Text style={styles.libraryRowCount}>{group.logs.length}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={TestBg.textDim} />
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
                   </View>
                 </TouchableOpacity>
               ))}
@@ -726,6 +710,13 @@ export default function UserProfileScreen({ navigation, route }: Props) {
           type={followersModalType}
         />
       )}
+
+      {/* Avatar Lightbox */}
+      <Modal visible={avatarExpanded} transparent animationType="fade" onRequestClose={() => setAvatarExpanded(false)}>
+        <Pressable style={styles.avatarModalOverlay} onPress={() => setAvatarExpanded(false)}>
+          <Image source={{ uri: profile?.avatar_url || '' }} style={styles.avatarModalImage} />
+        </Pressable>
+      </Modal>
     </View>
   )
 }
@@ -733,7 +724,18 @@ export default function UserProfileScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: TestBg.background,
+    backgroundColor: Colors.background,
+  },
+  avatarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarModalImage: {
+    width: 280,
+    height: 280,
+    borderRadius: 140,
   },
   header: {
     flexDirection: 'row',
@@ -741,7 +743,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   backButton: {
     padding: Spacing.sm,
@@ -760,7 +762,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontFamily: Fonts.body,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     fontSize: FontSize.md,
     marginTop: Spacing.md,
   },
@@ -816,7 +818,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarPlaceholder: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -828,7 +830,7 @@ const styles = StyleSheet.create({
   username: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
   followRow: {
@@ -844,7 +846,7 @@ const styles = StyleSheet.create({
   followText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   followNumber: {
     fontFamily: Fonts.bodySemiBold,
@@ -853,14 +855,14 @@ const styles = StyleSheet.create({
   bio: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
     marginTop: Spacing.md,
   },
   followButton: {
-    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    backgroundColor: 'rgba(192, 200, 208, 0.18)',
     borderWidth: 1,
-    borderColor: '#F0E4D0',
+    borderColor: Colors.cream,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -869,11 +871,11 @@ const styles = StyleSheet.create({
   followingButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: TestBg.textMuted,
+    borderColor: Colors.textMuted,
   },
   followButtonText: {
     fontFamily: Fonts.bodySemiBold,
-    color: '#F0E4D0',
+    color: Colors.cream,
     fontSize: FontSize.sm,
   },
   followingButtonText: {
@@ -881,12 +883,14 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
     paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.sm,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: TestBg.border,
-    marginHorizontal: Spacing.screenPadding,
+    borderColor: Colors.border,
+    marginHorizontal: Spacing.lg,
   },
   stat: {
     alignItems: 'center',
@@ -895,7 +899,7 @@ const styles = StyleSheet.create({
   statSeparator: {
     width: 1,
     height: '60%',
-    backgroundColor: TestBg.border,
+    backgroundColor: Colors.border,
     alignSelf: 'center',
   },
   statValue: {
@@ -906,7 +910,7 @@ const styles = StyleSheet.create({
   statLabel: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: Spacing.xs,
   },
   ranksSection: {
@@ -931,9 +935,14 @@ const styles = StyleSheet.create({
     width: 105,
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
-    backgroundColor: TestBg.surface,
-    borderWidth: 1,
-    borderColor: TestBg.borderSubtle,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   section: {
     paddingHorizontal: Spacing.screenPadding,
@@ -961,12 +970,12 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
     backgroundColor: 'transparent',
   },
   filterTabSelected: {
-    backgroundColor: 'rgba(240, 228, 208, 0.18)',
-    borderColor: '#F0E4D0',
+    backgroundColor: 'rgba(192, 200, 208, 0.18)',
+    borderColor: Colors.cream,
   },
   filterTabDimmed: {
     opacity: 0.5,
@@ -974,14 +983,14 @@ const styles = StyleSheet.create({
   filterTabText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   filterTabTextSelected: {
     fontFamily: Fonts.bodySemiBold,
-    color: '#F0E4D0',
+    color: Colors.cream,
   },
   filterTabTextDimmed: {
-    color: TestBg.textDim,
+    color: Colors.textDim,
   },
   libraryRows: {
     marginTop: Spacing.sm,
@@ -994,7 +1003,7 @@ const styles = StyleSheet.create({
   },
   libraryRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   libraryRowLabel: {
     fontFamily: Fonts.body,
@@ -1009,7 +1018,7 @@ const styles = StyleSheet.create({
   libraryRowCount: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   gamesGrid: {
     flexDirection: 'row',
@@ -1024,9 +1033,14 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
-    backgroundColor: TestBg.surface,
-    borderWidth: 1,
-    borderColor: TestBg.borderSubtle,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',
@@ -1052,29 +1066,36 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: Spacing.md,
   },
   favoritesRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
+    justifyContent: 'flex-start',
+    gap: FAV_GAP,
   },
   favoriteSlot: {
-    flex: 1,
+    width: FAV_CARD_WIDTH,
   },
   favoriteCover: {
     width: '100%',
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   favoriteCoverPlaceholder: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyFavorites: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     padding: Spacing.lg,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
@@ -1082,7 +1103,7 @@ const styles = StyleSheet.create({
   emptyFavoritesText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   // Lists section styles
   listsSection: {

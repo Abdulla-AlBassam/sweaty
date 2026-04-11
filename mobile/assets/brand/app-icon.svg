@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 240 240" fill="none">
+  <rect width="240" height="240" fill="white"/>
+
+  <!-- Bottom CD - Lightest gray -->
+  <ellipse cx="120" cy="150" rx="80" ry="16" fill="#E5E5E5"/>
+  <circle cx="120" cy="150" r="80" fill="#D4D4D4"/>
+  <circle cx="120" cy="150" r="24" fill="white"/>
+  <circle cx="120" cy="150" r="20" fill="#F5F5F5"/>
+
+  <!-- Middle CD - Medium gray -->
+  <ellipse cx="120" cy="120" rx="80" ry="16" fill="#D4D4D4"/>
+  <circle cx="120" cy="120" r="80" fill="#A3A3A3"/>
+  <circle cx="120" cy="120" r="24" fill="white"/>
+  <circle cx="120" cy="120" r="20" fill="#E5E5E5"/>
+
+  <!-- Top CD - Darkest gray -->
+  <ellipse cx="120" cy="90" rx="80" ry="16" fill="#A3A3A3"/>
+  <circle cx="120" cy="90" r="80" fill="#737373"/>
+  <circle cx="120" cy="90" r="24" fill="white"/>
+  <circle cx="120" cy="90" r="20" fill="#D4D4D4"/>
+</svg>

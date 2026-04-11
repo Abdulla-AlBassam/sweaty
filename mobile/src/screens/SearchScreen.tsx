@@ -10,8 +10,6 @@ import {
   Image,
   RefreshControl,
   Dimensions,
-  Animated,
-  Easing,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useNavigation, CommonActions, useScrollToTop } from '@react-navigation/native'
@@ -21,17 +19,6 @@ import { MainStackParamList } from '../navigation'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 
-// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
-const TestBg = {
-  background: '#1A1A1C',
-  surface: '#2A2A2E',
-  surfaceLight: '#333338',
-  border: '#2E2E32',
-  borderSubtle: 'rgba(255, 255, 255, 0.08)',
-  textDim: '#999999',
-  textMuted: '#A3A3A3',
-}
-// ── END COLOR SCHEME TEST ─────────────────────────────────
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
@@ -43,13 +30,15 @@ import GameCard from '../components/GameCard'
 import HorizontalGameList from '../components/HorizontalGameList'
 import CuratedListRow from '../components/CuratedListRow'
 import UserListRow from '../components/UserListRow'
+import HeroBannerCarousel from '../components/HeroBannerCarousel'
 import SweatDropIcon from '../components/SweatDropIcon'
-import PressableScale from '../components/PressableScale'
 import { SkeletonCircle, SkeletonText } from '../components/Skeleton'
 import { GameCardSkeletonGrid } from '../components/skeletons'
+import { useHeroBanners, HeroBanner } from '../hooks/useHeroBanners'
 
 // Calculate card width to match CuratedListDetailScreen grid
 const SCREEN_WIDTH = Dimensions.get('window').width
+const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const GRID_PADDING = Spacing.lg * 2 // padding on both sides
 const GAP = Spacing.md
 const NUM_COLUMNS = 3
@@ -109,8 +98,13 @@ interface SearchUserList {
   }>
 }
 
-const RECENT_SEARCHES_KEY = 'sweaty_recent_searches'
-const MAX_RECENT_SEARCHES = 5
+const RECENT_SEARCHES_KEY = 'sweaty_recent_searches_v2'
+const MAX_RECENT_SEARCHES = 8
+
+type RecentSearchItem =
+  | { type: 'game'; id: number; name: string; coverUrl?: string | null }
+  | { type: 'user'; id: string; username: string; displayName?: string | null; avatarUrl?: string | null }
+  | { type: 'list'; id: string; title: string; slug?: string; gameIds?: number[] }
 
 export default function SearchScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<MainStackParamList>>()
@@ -120,49 +114,11 @@ export default function SearchScreen() {
   const { platforms, platformsParam, excludePcOnly } = usePlatformFilter()
   const { lists: curatedLists, refetch: refetchLists } = useCuratedLists(excludePcOnly)
   const { lists: publicLists, isLoading: isLoadingPublicLists, refetch: refetchPublicLists } = usePublicLists()
+  const { banners, refetch: refetchBanners } = useHeroBanners()
 
   // Toggle between curated lists and community user lists
   type BrowseMode = 'curated' | 'community'
   const [browseMode, setBrowseMode] = useState<BrowseMode>('curated')
-
-  // Track whether user has used AI before
-  const [hasUsedAI, setHasUsedAI] = useState(false)
-
-  useEffect(() => {
-    AsyncStorage.getItem('sweaty_ai_used').then((value) => {
-      if (value) setHasUsedAI(true)
-    })
-  }, [])
-
-  // Shimmer animation for "Ask Sweaty" text
-  // useNativeDriver: false is required here because this animates a color
-  // property (text color via interpolate), which is not supported by the
-  // native animation driver.
-  const shimmerAnim = useRef(new Animated.Value(0)).current
-
-  useEffect(() => {
-    if (hasUsedAI) return
-    const shimmer = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.delay(3000),
-        Animated.timing(shimmerAnim, {
-          toValue: 0,
-          duration: 2000,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.delay(1000),
-      ])
-    )
-    shimmer.start()
-    return () => shimmer.stop()
-  }, [])
 
   const [query, setQuery] = useState('')
   const [searchFilter, setSearchFilter] = useState<SearchFilter>('games')
@@ -170,10 +126,13 @@ export default function SearchScreen() {
   const [userResults, setUserResults] = useState<SearchUser[]>([])
   const [curatedListResults, setCuratedListResults] = useState<SearchCuratedList[]>([])
   const [userListResults, setUserListResults] = useState<SearchUserList[]>([])
-  const [recentSearches, setRecentSearches] = useState<SearchGame[]>([])
+  const [recentSearches, setRecentSearches] = useState<RecentSearchItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [bannerShuffleKey, setBannerShuffleKey] = useState(0)
+  const [searchFocused, setSearchFocused] = useState(false)
+  const inputRef = useRef<TextInput>(null)
 
   // Discovery section states
   const [trendingGames, setTrendingGames] = useState<DiscoveryGame[]>([])
@@ -220,14 +179,16 @@ export default function SearchScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
+    setBannerShuffleKey(k => k + 1)
     await Promise.all([
       loadTrendingGames(),
       loadCommunityGames(),
       refetchLists(),
       refetchPublicLists(),
+      refetchBanners(),
     ])
     setRefreshing(false)
-  }, [refetchLists, refetchPublicLists])
+  }, [refetchLists, refetchPublicLists, refetchBanners])
 
   const loadRecentSearches = async () => {
     try {
@@ -240,11 +201,12 @@ export default function SearchScreen() {
     }
   }
 
-  const saveRecentSearch = async (game: SearchGame) => {
+  const saveRecentSearch = async (item: RecentSearchItem) => {
     try {
+      const itemKey = `${item.type}-${item.id}`
       const updated = [
-        game,
-        ...recentSearches.filter((g) => g.id !== game.id),
+        item,
+        ...recentSearches.filter((r) => `${r.type}-${r.id}` !== itemKey),
       ].slice(0, MAX_RECENT_SEARCHES)
       setRecentSearches(updated)
       await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated))
@@ -449,12 +411,24 @@ export default function SearchScreen() {
     return () => clearTimeout(timeoutId)
   }, [query, platformsParam, user])
 
+  const handleBannerPress = useCallback((gameId: number) => {
+    if (gameId) {
+      navigation.dispatch(
+        CommonActions.navigate({
+          name: 'GameDetail',
+          params: { gameId },
+        })
+      )
+    }
+  }, [navigation])
+
   const handleGamePress = (gameId: number) => {
-    const game = gameResults.find((g) => g.id === gameId) || recentSearches.find((g) => g.id === gameId)
+    const game = gameResults.find((g) => g.id === gameId)
     if (game) {
-      saveRecentSearch(game)
+      saveRecentSearch({ type: 'game', id: game.id, name: game.name, coverUrl: game.coverUrl || game.cover_url })
     }
     Keyboard.dismiss()
+    setSearchFocused(false)
 
     navigation.dispatch(
       CommonActions.navigate({
@@ -465,7 +439,9 @@ export default function SearchScreen() {
   }
 
   const handleUserPress = (userProfile: SearchUser) => {
+    saveRecentSearch({ type: 'user', id: userProfile.id, username: userProfile.username, displayName: userProfile.display_name, avatarUrl: userProfile.avatar_url })
     Keyboard.dismiss()
+    setSearchFocused(false)
     navigation.dispatch(
       CommonActions.navigate({
         name: 'UserProfile',
@@ -481,6 +457,7 @@ export default function SearchScreen() {
     setUserResults([])
     setCuratedListResults([])
     setUserListResults([])
+    setSearchFocused(false)
     Keyboard.dismiss()
   }
 
@@ -492,8 +469,9 @@ export default function SearchScreen() {
   const hasResults = userResults.length > 0 || gameResults.length > 0 || curatedListResults.length > 0 || userListResults.length > 0
 
   const handleCuratedListPress = (list: SearchCuratedList) => {
+    saveRecentSearch({ type: 'list', id: list.id, title: list.title, slug: list.slug, gameIds: list.game_ids })
     Keyboard.dismiss()
-    // Navigate to CuratedListDetail with the list info
+    setSearchFocused(false)
     navigation.dispatch(
       CommonActions.navigate({
         name: 'CuratedListDetail',
@@ -507,7 +485,9 @@ export default function SearchScreen() {
   }
 
   const handleUserListPress = (list: SearchUserList) => {
+    saveRecentSearch({ type: 'list', id: list.id, title: list.title })
     Keyboard.dismiss()
+    setSearchFocused(false)
     navigation.dispatch(
       CommonActions.navigate({
         name: 'ListDetail',
@@ -516,19 +496,56 @@ export default function SearchScreen() {
     )
   }
 
+  const handleRecentItemPress = (item: RecentSearchItem) => {
+    Keyboard.dismiss()
+    setSearchFocused(false)
+    if (item.type === 'game') {
+      navigation.dispatch(CommonActions.navigate({ name: 'GameDetail', params: { gameId: item.id } }))
+    } else if (item.type === 'user') {
+      navigation.dispatch(CommonActions.navigate({ name: 'UserProfile', params: { username: item.username, userId: item.id } }))
+    } else if (item.type === 'list') {
+      if (item.slug && item.gameIds) {
+        navigation.dispatch(CommonActions.navigate({ name: 'CuratedListDetail', params: { listSlug: item.slug, listTitle: item.title, gameIds: item.gameIds } }))
+      } else {
+        navigation.dispatch(CommonActions.navigate({ name: 'ListDetail', params: { listId: item.id } }))
+      }
+    }
+  }
+
+  const removeRecentItem = async (item: RecentSearchItem) => {
+    const itemKey = `${item.type}-${item.id}`
+    const updated = recentSearches.filter((r) => `${r.type}-${r.id}` !== itemKey)
+    setRecentSearches(updated)
+    await AsyncStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated))
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Search Header */}
-      <View style={styles.header}>
-        {/* Search Bar */}
+      {/* Header */}
+      <View style={styles.headerTitle}>
+        <Text style={styles.title}>search</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('AIRecommend')}
+          style={styles.aiHeaderButton}
+          accessibilityLabel="Ask Sweaty AI"
+          accessibilityRole="button"
+        >
+          <SweatDropIcon size={27} variant="static" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchBarWrapper}>
         <View style={styles.searchBar}>
-          <Ionicons name="search" size={18} color={TestBg.textDim} style={styles.searchIcon} />
+          <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
           <TextInput
+            ref={inputRef}
             style={styles.input}
             placeholder="Search games, users, lists..."
-            placeholderTextColor={TestBg.textDim}
+            placeholderTextColor={Colors.textDim}
             value={query}
             onChangeText={setQuery}
+            onFocus={() => setSearchFocused(true)}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
@@ -536,7 +553,7 @@ export default function SearchScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={clearSearch} style={styles.clearButton} accessibilityLabel="Clear search" accessibilityRole="button" accessibilityHint="Clears search and results">
-              <Ionicons name="close-circle" size={18} color={TestBg.textDim} />
+              <Ionicons name="close-circle" size={18} color={Colors.textDim} />
             </TouchableOpacity>
           )}
         </View>
@@ -585,7 +602,79 @@ export default function SearchScreen() {
       </View>
 
       {/* Content */}
-      {isLoading ? (
+      {searchFocused && !query && recentSearches.length > 0 ? (
+        <View style={styles.recentOverlay}>
+          <View style={styles.recentHeader}>
+            <Text style={styles.recentTitle}>Recent</Text>
+            <TouchableOpacity onPress={clearRecentSearches} accessibilityLabel="Clear recent searches" accessibilityRole="button">
+              <Text style={styles.clearText}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+          {recentSearches.map((item) => {
+            const key = `${item.type}-${item.id}`
+            return (
+              <TouchableOpacity
+                key={key}
+                style={styles.recentRow}
+                onPress={() => handleRecentItemPress(item)}
+                accessibilityRole="button"
+              >
+                {item.type === 'game' && (
+                  <>
+                    {item.coverUrl ? (
+                      <Image source={{ uri: getIGDBImageUrl(item.coverUrl, 'coverSmall') }} style={styles.recentGameCover} />
+                    ) : (
+                      <View style={[styles.recentGameCover, styles.recentPlaceholder]}>
+                        <Ionicons name="game-controller-outline" size={14} color={Colors.textDim} />
+                      </View>
+                    )}
+                    <View style={styles.recentInfo}>
+                      <Text style={styles.recentName} numberOfLines={1}>{item.name}</Text>
+                      <Text style={styles.recentType}>Game</Text>
+                    </View>
+                  </>
+                )}
+                {item.type === 'user' && (
+                  <>
+                    {item.avatarUrl ? (
+                      <Image source={{ uri: item.avatarUrl }} style={styles.recentAvatar} />
+                    ) : (
+                      <View style={[styles.recentAvatar, styles.recentPlaceholder]}>
+                        <Text style={styles.recentAvatarLetter}>
+                          {(item.displayName || item.username)[0].toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.recentInfo}>
+                      <Text style={styles.recentName} numberOfLines={1}>{item.displayName || item.username}</Text>
+                      <Text style={styles.recentType}>@{item.username}</Text>
+                    </View>
+                  </>
+                )}
+                {item.type === 'list' && (
+                  <>
+                    <View style={[styles.recentListIcon, styles.recentPlaceholder]}>
+                      <Ionicons name="list" size={14} color={Colors.textDim} />
+                    </View>
+                    <View style={styles.recentInfo}>
+                      <Text style={styles.recentName} numberOfLines={1}>{item.title}</Text>
+                      <Text style={styles.recentType}>List</Text>
+                    </View>
+                  </>
+                )}
+                <TouchableOpacity
+                  onPress={() => removeRecentItem(item)}
+                  style={styles.recentRemove}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityLabel="Remove from recent"
+                >
+                  <Ionicons name="close" size={16} color={Colors.textDim} />
+                </TouchableOpacity>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      ) : isLoading ? (
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.searchSkeletonContent}>
           {/* Users skeleton */}
           <View style={styles.section}>
@@ -640,7 +729,7 @@ export default function SearchScreen() {
                     </Text>
                     <Text style={styles.userUsername}>@{userProfile.username}</Text>
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
+                  <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -714,7 +803,7 @@ export default function SearchScreen() {
                           ))
                         ) : (
                           <View style={[styles.listPreviewCover, styles.listPreviewPlaceholder]}>
-                            <Ionicons name="list" size={16} color={TestBg.textDim} />
+                            <Ionicons name="list" size={16} color={Colors.textDim} />
                           </View>
                         )}
                       </View>
@@ -724,7 +813,7 @@ export default function SearchScreen() {
                           <Text style={styles.listDescription} numberOfLines={1}>{list.description}</Text>
                         )}
                       </View>
-                      <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
+                      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -758,7 +847,7 @@ export default function SearchScreen() {
                           ))
                         ) : (
                           <View style={[styles.listPreviewCover, styles.listPreviewPlaceholder]}>
-                            <Ionicons name="list" size={16} color={TestBg.textDim} />
+                            <Ionicons name="list" size={16} color={Colors.textDim} />
                           </View>
                         )}
                       </View>
@@ -768,7 +857,7 @@ export default function SearchScreen() {
                           {list.item_count} games • by @{list.user.username}
                         </Text>
                       </View>
-                      <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
+                      <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -809,107 +898,53 @@ export default function SearchScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={'#F0E4D0'}
-              colors={['#F0E4D0']}
+              tintColor={Colors.background}
+              colors={[Colors.background]}
             />
           }
         >
-          {/* Recent Searches - First section, right below search bar */}
-          {recentSearches.length > 0 && (
-            <View style={styles.recentSection}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.recentSectionTitle}>Recent Searches</Text>
-                <TouchableOpacity onPress={clearRecentSearches} accessibilityLabel="Clear recent searches" accessibilityRole="button" accessibilityHint="Removes all recent searches">
-                  <Text style={styles.clearText}>Clear</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.recentSearchesList}
-              >
-                {recentSearches.map((game) => (
-                  <TouchableOpacity
-                    key={game.id}
-                    style={styles.recentChip}
-                    onPress={() => handleGamePress(game.id)}
-                    accessibilityLabel={game.name}
-                    accessibilityRole="button"
-                    accessibilityHint="Opens game details"
-                  >
-                    {(game.coverUrl || game.cover_url) && (
-                      <Image
-                        source={{ uri: getIGDBImageUrl(game.coverUrl || game.cover_url) }}
-                        style={styles.recentChipImage}
-                        accessibilityLabel={game.name + ' cover art'}
-                      />
-                    )}
-                    <Text style={styles.recentChipText} numberOfLines={1}>
-                      {game.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
+          {/* Hero Banner Carousel - Full bleed */}
+          {banners.length > 0 && (
+            <View style={styles.heroBannerContainer}>
+              <HeroBannerCarousel
+                banners={banners}
+                height={SCREEN_HEIGHT * 0.28}
+                onBannerPress={handleBannerPress}
+                shuffleTrigger={bannerShuffleKey}
+              />
             </View>
           )}
 
-          {/* Ask Sweaty - AI Recommendations */}
-          <PressableScale
-            style={styles.aiLogoContainer}
-            onPress={() => navigation.navigate('AIRecommend')}
-            haptic="light"
-            scale={0.92}
-            accessibilityLabel="Ask Sweaty for recommendations"
-            accessibilityRole="button"
-            accessibilityHint="Opens AI game recommendations"
-          >
-            <SweatDropIcon size={48} variant="default" />
-            {!hasUsedAI && (
-              <Animated.Text
-                style={[
-                  styles.aiLabel,
-                  {
-                    color: shimmerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [TestBg.textDim, Colors.text],
-                    }),
-                  },
-                ]}
+          {/* ═══ Browse Toggle + Trending + Popular ═══ */}
+          <View style={[styles.sectionGroup, { backgroundColor: Colors.background, paddingTop: 0, paddingBottom: 0 }]}>
+            {/* Browse Mode Toggle */}
+            <View style={styles.browseToggle}>
+              <TouchableOpacity
+                style={[styles.browseTab, browseMode === 'curated' && styles.browseTabActive]}
+                onPress={() => setBrowseMode('curated')}
+                accessibilityLabel="Curated lists"
+                accessibilityRole="tab"
+                accessibilityState={{ selected: browseMode === 'curated' }}
               >
-                Ask Sweaty
-              </Animated.Text>
-            )}
-          </PressableScale>
+                <Text style={[styles.browseTabText, browseMode === 'curated' && styles.browseTabTextActive]}>
+                  Curated
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.browseTab, browseMode === 'community' && styles.browseTabActive]}
+                onPress={() => setBrowseMode('community')}
+                accessibilityLabel="Community lists"
+                accessibilityRole="tab"
+                accessibilityState={{ selected: browseMode === 'community' }}
+              >
+                <Text style={[styles.browseTabText, browseMode === 'community' && styles.browseTabTextActive]}>
+                  Community
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* Browse Mode Toggle */}
-          <View style={styles.browseToggle}>
-            <TouchableOpacity
-              style={[styles.browseTab, browseMode === 'curated' && styles.browseTabActive]}
-              onPress={() => setBrowseMode('curated')}
-              accessibilityLabel="Curated lists"
-              accessibilityRole="tab"
-              accessibilityState={{ selected: browseMode === 'curated' }}
-            >
-              <Text style={[styles.browseTabText, browseMode === 'curated' && styles.browseTabTextActive]}>
-                Curated
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.browseTab, browseMode === 'community' && styles.browseTabActive]}
-              onPress={() => setBrowseMode('community')}
-              accessibilityLabel="Community lists"
-              accessibilityRole="tab"
-              accessibilityState={{ selected: browseMode === 'community' }}
-            >
-              <Text style={[styles.browseTabText, browseMode === 'community' && styles.browseTabTextActive]}>
-                Community
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {browseMode === 'curated' ? (
-            <>
-              {/* Discovery Section - Dynamic Lists */}
+            {/* Trending + Popular (only in curated mode) */}
+            {browseMode === 'curated' && (
               <View style={styles.discoverSection}>
                 {/* Trending Games from IGDB (global trending) */}
                 <View style={styles.discoveryRow}>
@@ -931,36 +966,56 @@ export default function SearchScreen() {
                   />
                 </View>
               </View>
+            )}
 
-              {/* Curated Discovery Lists */}
-              {curatedLists.map((list) => (
-                <CuratedListRow key={list.id} list={list} />
-              ))}
-            </>
-          ) : (
-            <>
-              {/* Community User Lists */}
-              {isLoadingPublicLists ? (
-                <View style={styles.communityLoading}>
-                  <SkeletonText width={150} height={20} style={{ marginLeft: Spacing.screenPadding, marginBottom: Spacing.md }} />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: Spacing.cardGap }}>
-                    {[1, 2, 3, 4].map((i) => (
-                      <View key={i} style={{ width: 105, height: 140, borderRadius: BorderRadius.md, backgroundColor: TestBg.surface }} />
-                    ))}
-                  </ScrollView>
-                </View>
-              ) : publicLists.length > 0 ? (
-                publicLists.map((list) => (
-                  <UserListRow key={list.id} list={list} />
-                ))
-              ) : (
-                <View style={styles.communityEmpty}>
-                  <Text style={styles.communityEmptyText}>No community lists yet.</Text>
-                  <Text style={styles.communityEmptySubtext}>Create a list and make it public to see it here.</Text>
-                </View>
-              )}
-            </>
-          )}
+            {/* Community User Lists (only in community mode) */}
+            {browseMode === 'community' && (
+              <>
+                {isLoadingPublicLists ? (
+                  <View style={styles.communityLoading}>
+                    <SkeletonText width={150} height={20} style={{ marginLeft: Spacing.screenPadding, marginBottom: Spacing.md }} />
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.screenPadding, gap: Spacing.cardGap }}>
+                      {[1, 2, 3, 4].map((i) => (
+                        <View key={i} style={{ width: 105, height: 140, borderRadius: BorderRadius.md, backgroundColor: Colors.surface }} />
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : publicLists.length > 0 ? (
+                  publicLists.map((list) => (
+                    <UserListRow key={list.id} list={list} />
+                  ))
+                ) : (
+                  <View style={styles.communityEmpty}>
+                    <Text style={styles.communityEmptyText}>No community lists yet.</Text>
+                    <Text style={styles.communityEmptySubtext}>Create a list and make it public to see it here.</Text>
+                  </View>
+                )}
+              </>
+            )}
+          </View>
+          {/* ═══ End Browse Section ═══ */}
+
+          {/* Curated Discovery Lists - chunked into groups of 3 with alternating backgrounds */}
+          {browseMode === 'curated' && (() => {
+            const chunks: Array<typeof curatedLists> = []
+            for (let i = 0; i < curatedLists.length; i += 3) {
+              chunks.push(curatedLists.slice(i, i + 3))
+            }
+            return chunks.map((chunk, chunkIndex) => (
+              <View
+                key={`curated-chunk-${chunkIndex}`}
+                style={[
+                  styles.sectionGroup,
+                  { backgroundColor: chunkIndex % 2 === 0 ? Colors.background : Colors.alternate },
+                  chunkIndex === 0 && { paddingTop: 0 },
+                ]}
+              >
+                {chunk.map((list) => (
+                  <CuratedListRow key={list.id} list={list} />
+                ))}
+              </View>
+            ))
+          })()}
         </ScrollView>
       )}
     </SafeAreaView>
@@ -970,19 +1025,38 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: TestBg.background,
+    backgroundColor: Colors.background,
   },
-  header: {
+  headerTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.screenPadding,
-    paddingVertical: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
+  aiHeaderButton: {
+    padding: Spacing.xs,
+  },
+  title: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
+    lineHeight: 28,
+    color: Colors.cream,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 2,
+  },
+  searchBarWrapper: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.md,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
   },
@@ -999,24 +1073,19 @@ const styles = StyleSheet.create({
   clearButton: {
     padding: Spacing.sm,
   },
-  aiLogoContainer: {
-    alignItems: 'center',
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xxl,
-    gap: Spacing.sm,
-  },
-  aiLabel: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
-    lineHeight: 17,
-    letterSpacing: 0.5,
+  heroBannerContainer: {
+    width: SCREEN_WIDTH,
+    marginTop: 0,
   },
   scrollView: {
     flex: 1,
   },
   browseContent: {
-    paddingTop: Spacing.lg,
     paddingBottom: Spacing.xxxl,
+  },
+  sectionGroup: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
   },
   centered: {
     flex: 1,
@@ -1027,7 +1096,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
   },
   errorText: {
@@ -1052,7 +1121,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   userAvatar: {
     width: 44,
@@ -1060,7 +1129,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   userAvatarPlaceholder: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1081,7 +1150,7 @@ const styles = StyleSheet.create({
   userUsername: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: 2,
   },
   gamesGrid: {
@@ -1097,9 +1166,14 @@ const styles = StyleSheet.create({
     width: CARD_WIDTH,
     height: CARD_WIDTH * (4 / 3), // 3:4 aspect ratio
     borderRadius: BorderRadius.md,
-    backgroundColor: TestBg.surface,
-    borderWidth: 1,
-    borderColor: TestBg.borderSubtle,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gridPlaceholder: {
     justifyContent: 'center',
@@ -1109,13 +1183,81 @@ const styles = StyleSheet.create({
   gridPlaceholderText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
   },
-  recentSection: {
-    paddingTop: Spacing.sm,
+  recentOverlay: {
+    flex: 1,
     paddingHorizontal: Spacing.screenPadding,
+  },
+  recentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: Spacing.md,
+  },
+  recentTitle: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  clearText: {
+    fontFamily: Fonts.body,
+    color: Colors.textMuted,
+    fontSize: FontSize.sm,
+  },
+  recentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm + 2,
+    gap: Spacing.md,
+  },
+  recentGameCover: {
+    width: 36,
+    height: 48,
+    borderRadius: BorderRadius.sm,
+    backgroundColor: Colors.surface,
+  },
+  recentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+  },
+  recentListIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.sm,
+  },
+  recentPlaceholder: {
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  recentAvatarLetter: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  recentInfo: {
+    flex: 1,
+  },
+  recentName: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    lineHeight: 20,
+  },
+  recentType: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+    marginTop: 1,
+  },
+  recentRemove: {
+    padding: Spacing.xs,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -1123,53 +1265,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.sectionHeaderBelow,
   },
-  recentSectionTitle: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
-    lineHeight: 17,
-    color: TestBg.textDim,
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    flex: 1,
-    marginRight: Spacing.sm,
-  },
-  clearText: {
-    fontFamily: Fonts.body,
-    color: TestBg.textMuted,
-    fontSize: FontSize.sm,
-  },
-  recentSearchesList: {
-    gap: Spacing.sm,
-  },
-  recentChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: TestBg.surface,
-    paddingRight: Spacing.md,
-    paddingVertical: Spacing.xs,
-    paddingLeft: Spacing.xs,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    borderColor: TestBg.border,
-    gap: Spacing.sm,
-  },
-  recentChipImage: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: TestBg.surfaceLight,
-  },
-  recentChipText: {
-    fontFamily: Fonts.body,
-    color: Colors.text,
-    fontSize: FontSize.sm,
-    maxWidth: 120,
-  },
   browseToggle: {
     flexDirection: 'row',
     marginHorizontal: Spacing.screenPadding,
+    marginTop: Spacing.md,
     marginBottom: Spacing.xl,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     padding: 3,
   },
@@ -1180,15 +1281,15 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   browseTabActive: {
-    backgroundColor: 'rgba(240, 228, 208, 0.08)',
+    backgroundColor: 'rgba(192, 200, 208, 0.08)',
   },
   browseTabText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   browseTabTextActive: {
-    color: '#F0E4D0',
+    color: Colors.cream,
   },
   communityLoading: {
     paddingTop: Spacing.lg,
@@ -1201,28 +1302,28 @@ const styles = StyleSheet.create({
   communityEmptyText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.md,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
   communityEmptySubtext: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
   },
   discoverSection: {
-    marginTop: Spacing.lg,
+    marginTop: 0,
   },
   discoveryRow: {
-    marginBottom: Spacing.xxl,
+    marginBottom: Spacing.lg,
   },
   discoveryRowTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.text,
     lineHeight: 24,
-    marginLeft: Spacing.screenPadding,
-    marginBottom: Spacing.sectionHeaderBelow,
+    paddingHorizontal: Spacing.screenPadding,
+    marginBottom: Spacing.md,
   },
   searchSkeletonContent: {
     paddingBottom: Spacing.xl,
@@ -1237,7 +1338,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   userInfoSkeleton: {
     flex: 1,
@@ -1253,23 +1354,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
   },
   filterPillActive: {
-    backgroundColor: 'rgba(240, 228, 208, 0.18)',
-    borderColor: '#F0E4D0',
+    backgroundColor: 'rgba(192, 200, 208, 0.18)',
+    borderColor: Colors.cream,
   },
   filterPillText: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     lineHeight: 20,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   filterPillTextActive: {
     fontFamily: Fonts.bodySemiBold,
-    color: '#F0E4D0',
+    color: Colors.cream,
   },
   // List search styles
   listRow: {
@@ -1278,7 +1379,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   listPreviewCovers: {
     flexDirection: 'row',
@@ -1289,9 +1390,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 44,
     borderRadius: BorderRadius.sm,
-    backgroundColor: TestBg.surface,
-    borderWidth: 1,
-    borderColor: TestBg.background,      // Border to separate overlapping covers
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,      // Border to separate overlapping covers
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   listPreviewPlaceholder: {
     alignItems: 'center',
@@ -1309,13 +1415,13 @@ const styles = StyleSheet.create({
   listDescription: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: 2,
   },
   listMeta: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: TestBg.textDim,
+    color: Colors.textDim,
     marginTop: 4,
   },
 })

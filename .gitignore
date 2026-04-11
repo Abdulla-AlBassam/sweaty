@@ -6,6 +6,10 @@ node_modules/
 .env.local
 .env.*.local
 
+# Credentials
+*-credentials.json
+*_credentials.json
+
 # IDE
 .idea/
 .vscode/

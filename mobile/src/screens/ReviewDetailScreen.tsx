@@ -280,26 +280,13 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
               size="medium"
             />
             <ReviewComments
+              key={commentRefreshKey}
               gameLogId={review.id}
               initialCommentCount={review.commentCount}
-              previewMode={true}
+              hideInput
+              onReplyRequest={setReplyingTo}
             />
           </View>
-
-          {/* Comments section label */}
-          <Text style={styles.commentsLabel}>Comments</Text>
-
-          {/* Comments list - full width below social row */}
-          <ReviewComments
-            key={commentRefreshKey}
-            gameLogId={review.id}
-            initialCommentCount={review.commentCount}
-            previewMode={false}
-            hideInput
-            hideToggle
-            autoExpand
-            onReplyRequest={setReplyingTo}
-          />
         </ScrollView>
 
         {/* Comment input - pinned at bottom */}
@@ -429,6 +416,13 @@ const styles = StyleSheet.create({
     width: 80,
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.sm,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gameName: {
     fontFamily: Fonts.display,

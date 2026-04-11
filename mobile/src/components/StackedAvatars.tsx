@@ -1,7 +1,7 @@
 import React from 'react'
-import { View, Image, Text, StyleSheet } from 'react-native'
+import { View, Image, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
-import { Fonts } from '../constants/fonts'
 
 interface User {
   id: string
@@ -13,45 +13,25 @@ interface StackedAvatarsProps {
   users: User[]
   maxDisplay?: number
   size?: number
+  inline?: boolean
 }
 
 export default function StackedAvatars({
   users,
   maxDisplay = 3,
   size = 24,
+  inline = false,
 }: StackedAvatarsProps) {
   if (users.length === 0) return null
 
   const displayUsers = users.slice(0, maxDisplay)
-  const extraCount = users.length - maxDisplay
-  const overlap = size * 0.4 // 40% overlap
+  const overlap = size * 0.3
 
   return (
-    <View style={styles.container}>
-      {/* Use row-reverse so first user appears on top */}
-      <View style={[styles.avatarRow, { flexDirection: 'row-reverse' }]}>
-        {/* Extra count badge */}
-        {extraCount > 0 && (
-          <View
-            style={[
-              styles.avatar,
-              styles.extraBadge,
-              {
-                width: size,
-                height: size,
-                borderRadius: size / 2,
-                marginLeft: 0,
-              },
-            ]}
-          >
-            <Text style={[styles.extraText, { fontSize: size * 0.45 }]}>
-              +{extraCount}
-            </Text>
-          </View>
-        )}
-
-        {/* Avatar images (reversed for proper stacking) */}
-        {displayUsers.reverse().map((user, index) => (
+    <View style={inline ? styles.containerInline : styles.container}>
+      <View style={styles.avatarRow}>
+        {/* First avatar fully visible, each next one tucked behind the previous */}
+        {displayUsers.map((user, index) => (
           <View
             key={user.id}
             style={[
@@ -60,28 +40,20 @@ export default function StackedAvatars({
                 width: size,
                 height: size,
                 borderRadius: size / 2,
-                marginLeft: index === 0 && extraCount === 0 ? 0 : -overlap,
+                marginLeft: index === 0 ? 0 : -overlap,
+                zIndex: displayUsers.length - index,
               },
             ]}
           >
             {user.avatar_url ? (
               <Image
                 source={{ uri: user.avatar_url }}
-                style={[
-                  styles.avatarImage,
-                  {
-                    width: size,
-                    height: size,
-                    borderRadius: size / 2,
-                  },
-                ]}
-                accessibilityLabel={user.username + ' avatar'}
+                style={[styles.avatarImage, { width: size, height: size, borderRadius: size / 2 }]}
+                accessibilityLabel={(user.username || 'User') + ' avatar'}
               />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={[styles.placeholderText, { fontSize: size * 0.45, lineHeight: size * 0.5 }]}>
-                  {user.username[0].toUpperCase()}
-                </Text>
+                <Ionicons name="person" size={size * 0.5} color={Colors.textDim} />
               </View>
             )}
           </View>
@@ -97,13 +69,17 @@ const styles = StyleSheet.create({
     bottom: 6,
     right: 6,
   },
+  containerInline: {
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   avatar: {
-    borderWidth: 2,
-    borderColor: Colors.borderBright,
+    borderWidth: 0.5,
+    borderColor: Colors.textDim,
     backgroundColor: Colors.surface,
     overflow: 'hidden',
     alignItems: 'center',
@@ -119,20 +95,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  placeholderText: {
-    fontFamily: Fonts.bodyBold,
-    color: Colors.accent,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
-  extraBadge: {
-    backgroundColor: Colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  extraText: {
-    fontFamily: Fonts.bodySemiBold,
-    color: Colors.text,
   },
 })

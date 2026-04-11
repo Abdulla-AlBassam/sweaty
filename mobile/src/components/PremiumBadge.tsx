@@ -12,7 +12,7 @@ import { Colors, FontSize, Spacing } from '../constants/colors'
 
 interface PremiumBadgeProps {
   size?: 'small' | 'medium' | 'large'
-  variant?: 'premium' | 'developer'
+  variant?: 'premium' | 'developer' | 'supporter'
 }
 
 // Color schemes for different badge variants
@@ -30,6 +30,13 @@ const BADGE_VARIANTS = {
     textColor: '#FFFFFF',
     iconColor: '#FFFFFF',
     label: 'DEVELOPER',
+  },
+  supporter: {
+    colors: ['#3d4a2e', '#2f3924', '#1f2618'] as const,
+    shadowColor: '#2f3924',
+    textColor: Colors.cream,
+    iconColor: Colors.cream,
+    label: 'SUPPORTER',
   },
 }
 
@@ -124,7 +131,7 @@ export default function PremiumBadge({ size = 'medium', variant = 'premium' }: P
 
         {/* Content */}
         <View style={styles.content}>
-          {variant !== 'developer' && (
+          {variant === 'premium' && (
             <Ionicons
               name="diamond"
               size={currentSize.iconSize}

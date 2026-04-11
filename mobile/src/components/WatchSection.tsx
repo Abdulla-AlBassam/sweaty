@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { View, Text, StyleSheet, Image, ScrollView } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation, CommonActions } from '@react-navigation/native'
+import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { YouTubeVideo } from '../types'
+import { YouTubeVideo, NewsArticle } from '../types'
 import { useYouTube } from '../hooks/useYouTube'
+import { useNews } from '../hooks/useNews'
 import PressableScale from './PressableScale'
 import Skeleton from './Skeleton'
+
+type FeedItem =
+  | { type: 'video'; data: YouTubeVideo }
+  | { type: 'article'; data: NewsArticle }
 
 // Format relative time
 function formatTimeAgo(dateString: string): string {
@@ -41,12 +47,7 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&nbsp;/g, ' ')
 }
 
-interface VideoCardProps {
-  video: YouTubeVideo
-  onPress: () => void
-}
-
-function VideoCard({ video, onPress }: VideoCardProps) {
+function VideoCard({ video, onPress }: { video: YouTubeVideo; onPress: () => void }) {
   return (
     <PressableScale onPress={onPress} haptic="light" scale={0.95} accessibilityLabel={decodeHtmlEntities(video.title) + ' by ' + video.channel} accessibilityRole="button" accessibilityHint="Opens video">
       <View style={styles.card}>
@@ -78,12 +79,71 @@ function VideoCard({ video, onPress }: VideoCardProps) {
   )
 }
 
-function VideoCardSkeleton() {
+function ArticleCard({ article, onPress }: { article: NewsArticle; onPress: () => void }) {
+  return (
+    <PressableScale onPress={onPress} haptic="light" scale={0.95} accessibilityLabel={decodeHtmlEntities(article.title)} accessibilityRole="button" accessibilityHint="Opens article">
+      <View style={styles.card}>
+        {article.thumbnail ? (
+          <Image
+            source={{ uri: article.thumbnail }}
+            style={styles.cardImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.cardImage, styles.articlePlaceholder]}>
+            <Ionicons name="newspaper-outline" size={32} color={Colors.textDim} />
+          </View>
+        )}
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.85)']}
+          locations={[0.35, 1]}
+          style={styles.cardOverlay}
+        />
+        <View style={styles.cardContent}>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {decodeHtmlEntities(article.title)}
+          </Text>
+          <View style={styles.cardMeta}>
+            <View style={styles.cardChannelRow}>
+              <View style={styles.newsTag}>
+                <Text style={styles.newsTagText}>NEWS</Text>
+              </View>
+              <Text style={styles.cardChannel}>{article.source}</Text>
+            </View>
+            <Text style={styles.cardTime}>{formatTimeAgo(article.publishedAt)}</Text>
+          </View>
+        </View>
+      </View>
+    </PressableScale>
+  )
+}
+
+function CardSkeleton() {
   return (
     <View style={styles.card}>
       <Skeleton width={280} height={158} style={{ borderRadius: BorderRadius.md }} />
     </View>
   )
+}
+
+// Interleave: 2 videos, 1 article, 2 videos, 1 article...
+function interleave(videos: YouTubeVideo[], articles: NewsArticle[]): FeedItem[] {
+  const items: FeedItem[] = []
+  let vi = 0
+  let ai = 0
+
+  while (vi < videos.length || ai < articles.length) {
+    // 2 videos
+    for (let i = 0; i < 2 && vi < videos.length; i++) {
+      items.push({ type: 'video', data: videos[vi++] })
+    }
+    // 1 article
+    if (ai < articles.length) {
+      items.push({ type: 'article', data: articles[ai++] })
+    }
+  }
+
+  return items
 }
 
 interface WatchSectionProps {
@@ -93,14 +153,21 @@ interface WatchSectionProps {
 
 export default function WatchSection({ refreshKey = 0, showHeader = true }: WatchSectionProps) {
   const navigation = useNavigation()
-  const { videos, isLoading, error, refetch } = useYouTube(10)
+  const { videos, isLoading: videosLoading, error: videosError, refetch: refetchVideos } = useYouTube(10)
+  const { articles, isLoading: newsLoading, error: newsError, refetch: refetchNews } = useNews(5)
+
+  const isInitialLoad = (videosLoading || newsLoading) && videos.length === 0 && articles.length === 0
+  const error = videosError && newsError && videos.length === 0 && articles.length === 0
 
   // Re-fetch when refreshKey changes (pull-to-refresh)
   useEffect(() => {
     if (refreshKey > 0) {
-      refetch()
+      refetchVideos()
+      refetchNews()
     }
-  }, [refreshKey, refetch])
+  }, [refreshKey, refetchVideos, refetchNews])
+
+  const feedItems = useMemo(() => interleave(videos, articles), [videos, articles])
 
   const handleVideoPress = (video: YouTubeVideo) => {
     navigation.dispatch(
@@ -114,20 +181,32 @@ export default function WatchSection({ refreshKey = 0, showHeader = true }: Watc
     )
   }
 
-  if (!isLoading && !error && videos.length === 0) {
+  const handleArticlePress = (article: NewsArticle) => {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'WebView',
+        params: {
+          url: article.url,
+          title: article.source,
+        },
+      })
+    )
+  }
+
+  if (!isInitialLoad && !error && feedItems.length === 0) {
     return null
   }
 
   return (
     <View style={styles.container}>
-      {isLoading ? (
+      {isInitialLoad ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          <VideoCardSkeleton />
-          <VideoCardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
         </ScrollView>
       ) : error ? (
         <View style={styles.errorContainer}>
@@ -139,13 +218,21 @@ export default function WatchSection({ refreshKey = 0, showHeader = true }: Watc
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
         >
-          {videos.map((video, index) => (
-            <VideoCard
-              key={`${video.id}-${index}`}
-              video={video}
-              onPress={() => handleVideoPress(video)}
-            />
-          ))}
+          {feedItems.map((item, index) =>
+            item.type === 'video' ? (
+              <VideoCard
+                key={`video-${item.data.id}-${index}`}
+                video={item.data}
+                onPress={() => handleVideoPress(item.data)}
+              />
+            ) : (
+              <ArticleCard
+                key={`article-${item.data.id}-${index}`}
+                article={item.data}
+                onPress={() => handleArticlePress(item.data)}
+              />
+            )
+          )}
         </ScrollView>
       )}
     </View>
@@ -171,6 +258,11 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
+  },
+  articlePlaceholder: {
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -212,6 +304,18 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+  },
+  newsTag: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: BorderRadius.xs,
+  },
+  newsTagText: {
+    fontFamily: Fonts.mono,
+    fontSize: 9,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
   },
   cardTime: {
     fontFamily: Fonts.mono,

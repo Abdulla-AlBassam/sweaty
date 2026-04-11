@@ -783,6 +783,8 @@ const styles = StyleSheet.create({
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
   },
   placeholderText: {
     fontFamily: Fonts.body,

@@ -1,335 +1,130 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { View, StyleSheet, Animated, Easing } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import { Colors } from '../constants/colors'
+import React, { useEffect, useRef } from 'react'
+import { StyleSheet, Animated, Easing } from 'react-native'
+import Svg, { Circle, Ellipse, G } from 'react-native-svg'
 
 interface SweatDropIconProps {
   size?: number
   isRefreshing?: boolean
-  variant?: 'default' | 'static' | 'loading'  // default = full animation, static = minimal, loading = pulse
+  variant?: 'default' | 'static' | 'loading'  // default = idle, static = no animation, loading = pulse
 }
 
 /**
- * Glitchy sweat drop icon with RGB chromatic aberration
- * Features:
- * - Intense RGB glitch effect
- * - Random floating/drifting motion
- * - Burst animation on refresh
+ * Sweaty CD-stack logo.
+ * Three overlapping CDs arranged sideways (horizontal stack), with narrow
+ * vertical edge-ellipses behind each disc.
  * Variants:
- * - default: Full floating + glitch animations
- * - static: Minimal glitch, no floating (for placeholders)
- * - loading: Pulsing animation (for loading states)
+ * - default / static: static render
+ * - loading: gentle pulse animation
+ * Refresh feedback: brief scale bump when `isRefreshing` turns true.
  */
+
+// ViewBox matches the finetuned source SVG: 280 × 220, CDs at cy=110
+const ORIGINAL_WIDTH = 280
+const ORIGINAL_HEIGHT = 220
+
+// Global size multiplier — bump this to make the logo larger everywhere at once
+const SIZE_MULTIPLIER = 1.2
+
+// CD positions (cx values) — left (back/lightest) to right (front/darkest)
+const CD_LAYOUT = [
+  { cx: 90, edge: '#E5E5E5', disc: '#D4D4D4', innerRing: '#F5F5F5' },  // Lightest
+  { cx: 140, edge: '#D4D4D4', disc: '#A3A3A3', innerRing: '#E5E5E5' }, // Medium
+  { cx: 190, edge: '#A3A3A3', disc: '#737373', innerRing: '#D4D4D4' }, // Darkest
+]
+const CD_CY = 110
+const CD_RADIUS = 80
+const EDGE_RX = 16
+const EDGE_RY = 80
+const HOLE_OUTER = 24
+const HOLE_INNER = 20
+
+function SweatLogo({ size }: { size: number }) {
+  const scale = size / ORIGINAL_WIDTH
+  const height = ORIGINAL_HEIGHT * scale
+
+  return (
+    <Svg width={size} height={height} viewBox={`0 0 ${ORIGINAL_WIDTH} ${ORIGINAL_HEIGHT}`}>
+      <G>
+        {CD_LAYOUT.map((cd, i) => (
+          <React.Fragment key={`cd${i}`}>
+            <Ellipse cx={cd.cx} cy={CD_CY} rx={EDGE_RX} ry={EDGE_RY} fill={cd.edge} />
+            <Circle cx={cd.cx} cy={CD_CY} r={CD_RADIUS} fill={cd.disc} />
+            <Circle cx={cd.cx} cy={CD_CY} r={HOLE_OUTER} fill="white" />
+            <Circle cx={cd.cx} cy={CD_CY} r={HOLE_INNER} fill={cd.innerRing} />
+          </React.Fragment>
+        ))}
+      </G>
+    </Svg>
+  )
+}
+
 export default function SweatDropIcon({ size = 36, isRefreshing = false, variant = 'default' }: SweatDropIconProps) {
-  // Glitch state
-  const [glitchOffset, setGlitchOffset] = useState({ x: 0, y: 0 })
-  const [isGlitching, setIsGlitching] = useState(false)
-
-  // Animated values for floating
-  const floatX = useRef(new Animated.Value(0)).current
-  const floatY = useRef(new Animated.Value(0)).current
-
-  // Animated values for burst effect
-  const burstScale = useRef(new Animated.Value(1)).current
-  const burstRotation = useRef(new Animated.Value(0)).current
-  const cyanBurst = useRef(new Animated.Value(0)).current
-  const greenBurst = useRef(new Animated.Value(0)).current
-
-  // Animated value for scale flicker during glitch
-  const glitchScale = useRef(new Animated.Value(1)).current
-
-  // Animated value for loading pulse
+  const scaledSize = Math.round(size * SIZE_MULTIPLIER)
   const loadingPulse = useRef(new Animated.Value(1)).current
+  const refreshScale = useRef(new Animated.Value(1)).current
 
   // Loading pulse animation
   useEffect(() => {
-    if (variant === 'loading') {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(loadingPulse, {
-            toValue: 1.15,
-            duration: 600,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(loadingPulse, {
-            toValue: 1,
-            duration: 600,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ])
-      )
-      pulse.start()
-      return () => pulse.stop()
-    }
+    if (variant !== 'loading') return
+
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(loadingPulse, {
+          toValue: 1.15,
+          duration: 600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(loadingPulse, {
+          toValue: 1,
+          duration: 600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    )
+    pulse.start()
+    return () => pulse.stop()
   }, [variant, loadingPulse])
 
-  // Intensified random glitch effect (reduced for static/loading variants)
+  // Simple scale bump when refresh is triggered
   useEffect(() => {
-    // Glitch settings based on variant
-    const glitchChance = variant === 'default' ? 0.35 : variant === 'loading' ? 0.2 : 0.1
-    const glitchIntensity = variant === 'default' ? 1 : 0.5
-    const interval = variant === 'default' ? 250 : 400
+    if (!isRefreshing) return
 
-    const glitchInterval = setInterval(() => {
-      if (Math.random() < glitchChance) {
-        setIsGlitching(true)
+    Animated.sequence([
+      Animated.timing(refreshScale, {
+        toValue: 1.2,
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(refreshScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 180,
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [isRefreshing, refreshScale])
 
-        // Offset based on variant intensity
-        setGlitchOffset({
-          x: (Math.random() - 0.5) * 8 * glitchIntensity,
-          y: (Math.random() - 0.5) * 6 * glitchIntensity,
-        })
-
-        // Random scale flicker
-        Animated.sequence([
-          Animated.timing(glitchScale, {
-            toValue: 0.9 + Math.random() * 0.3, // Random between 0.9-1.2
-            duration: 50,
-            useNativeDriver: true,
-          }),
-          Animated.timing(glitchScale, {
-            toValue: 1,
-            duration: 50,
-            useNativeDriver: true,
-          }),
-        ]).start()
-
-        // Reset after short duration
-        setTimeout(() => {
-          setIsGlitching(false)
-          setGlitchOffset({ x: 0, y: 0 })
-        }, 60 + Math.random() * 100)
-      }
-    }, interval)
-
-    return () => clearInterval(glitchInterval)
-  }, [glitchScale, variant])
-
-  // Floating/drifting animation - only for default variant
-  useEffect(() => {
-    if (variant !== 'default') return
-
-    const createFloatAnimation = () => {
-      // Pick random destination within bounds
-      const targetX = (Math.random() - 0.5) * 20 // ±10px
-      const targetY = (Math.random() - 0.5) * 12 // ±6px
-      const duration = 1500 + Math.random() * 2000 // 1.5-3.5 seconds
-
-      Animated.parallel([
-        Animated.timing(floatX, {
-          toValue: targetX,
-          duration,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(floatY, {
-          toValue: targetY,
-          duration,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        // Occasionally do a sudden "teleport" jump
-        if (Math.random() < 0.15) {
-          // Quick jump to new position
-          const jumpX = (Math.random() - 0.5) * 30
-          const jumpY = (Math.random() - 0.5) * 16
-
-          Animated.parallel([
-            Animated.timing(floatX, {
-              toValue: jumpX,
-              duration: 80,
-              useNativeDriver: true,
-            }),
-            Animated.timing(floatY, {
-              toValue: jumpY,
-              duration: 80,
-              useNativeDriver: true,
-            }),
-          ]).start(() => createFloatAnimation())
-        } else {
-          createFloatAnimation()
-        }
-      })
-    }
-
-    createFloatAnimation()
-
-    return () => {
-      floatX.stopAnimation()
-      floatY.stopAnimation()
-    }
-  }, [floatX, floatY, variant])
-
-  // Burst animation when refresh is triggered
-  useEffect(() => {
-    if (isRefreshing) {
-      // Epic burst sequence
-      Animated.parallel([
-        // Scale pulse: grow big, shrink small, normalize
-        Animated.sequence([
-          Animated.timing(burstScale, {
-            toValue: 1.5,
-            duration: 150,
-            easing: Easing.out(Easing.exp),
-            useNativeDriver: true,
-          }),
-          Animated.timing(burstScale, {
-            toValue: 0.7,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.spring(burstScale, {
-            toValue: 1,
-            friction: 3,
-            tension: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-        // Spin rotation
-        Animated.sequence([
-          Animated.timing(burstRotation, {
-            toValue: 1,
-            duration: 300,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(burstRotation, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-        // Cyan layer explodes outward
-        Animated.sequence([
-          Animated.timing(cyanBurst, {
-            toValue: 1,
-            duration: 150,
-            useNativeDriver: true,
-          }),
-          Animated.timing(cyanBurst, {
-            toValue: 0,
-            duration: 300,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-        ]),
-        // Green layer explodes outward (opposite direction)
-        Animated.sequence([
-          Animated.timing(greenBurst, {
-            toValue: 1,
-            duration: 150,
-            useNativeDriver: true,
-          }),
-          Animated.timing(greenBurst, {
-            toValue: 0,
-            duration: 300,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start()
-    }
-  }, [isRefreshing, burstScale, burstRotation, cyanBurst, greenBurst])
-
-  // Interpolate rotation
-  const rotationInterpolate = burstRotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  })
-
-  // Interpolate burst offsets for RGB layers
-  const cyanBurstOffset = cyanBurst.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -15],
-  })
-
-  const greenBurstOffset = greenBurst.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 15],
-  })
-
-  // Container size varies by variant (default needs extra space for floating)
-  const containerWidth = variant === 'default' ? size + 40 : size + 10
-  const containerHeight = variant === 'default' ? size + 20 : size + 10
-
-  // Build transform array based on variant
-  const getTransforms = () => {
-    const transforms: any[] = []
-    if (variant === 'default') {
-      transforms.push({ translateX: floatX }, { translateY: floatY })
-    }
-    if (variant === 'loading') {
-      transforms.push({ scale: loadingPulse })
-    }
-    transforms.push({ scale: burstScale }, { rotate: rotationInterpolate })
-    return transforms
+  const transforms: { scale: Animated.Value }[] = []
+  if (variant === 'loading') {
+    transforms.push({ scale: loadingPulse })
   }
+  transforms.push({ scale: refreshScale })
 
   return (
     <Animated.View
       style={[
         styles.container,
         {
-          width: containerWidth,
-          height: containerHeight,
-          transform: getTransforms(),
-        }
+          width: scaledSize + 10,
+          height: scaledSize + 10,
+          transform: transforms,
+        },
       ]}
     >
-      {/* Cyan layer (offset left) */}
-      <Animated.View
-        style={[
-          styles.iconLayer,
-          {
-            opacity: 0.6,
-            transform: [
-              { translateX: Animated.add(
-                cyanBurstOffset,
-                isGlitching ? -2 + glitchOffset.x : -2
-              )},
-              { translateY: isGlitching ? glitchOffset.y : 0 },
-              { scale: glitchScale },
-            ],
-          },
-        ]}
-      >
-        <Ionicons name="water" size={size} color={Colors.textDim} />
-      </Animated.View>
-
-      {/* Green layer (offset right) */}
-      <Animated.View
-        style={[
-          styles.iconLayer,
-          {
-            opacity: 0.6,
-            transform: [
-              { translateX: Animated.add(
-                greenBurstOffset,
-                isGlitching ? 2 - glitchOffset.x : 2
-              )},
-              { translateY: isGlitching ? -glitchOffset.y : 0 },
-              { scale: glitchScale },
-            ],
-          },
-        ]}
-      >
-        <Ionicons name="water" size={size} color={Colors.accent} />
-      </Animated.View>
-
-      {/* Main white icon */}
-      <Animated.View
-        style={[
-          styles.iconLayer,
-          {
-            transform: [{ scale: glitchScale }],
-          }
-        ]}
-      >
-        <Ionicons name="water" size={size} color={Colors.textBright} />
-      </Animated.View>
+      <SweatLogo size={scaledSize} />
     </Animated.View>
   )
 }
@@ -338,8 +133,5 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  iconLayer: {
-    position: 'absolute',
   },
 })

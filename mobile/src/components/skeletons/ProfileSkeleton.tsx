@@ -40,7 +40,7 @@ export default function ProfileSkeleton() {
       <View style={styles.section}>
         <SkeletonText width={70} height={16} style={styles.sectionTitle} />
         <View style={styles.favoritesRow}>
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4, 5].map((i) => (
             <View key={i} style={styles.favoriteSlot}>
               <Skeleton width="100%" height={0} style={styles.favoriteCover} />
             </View>
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: Spacing.md,
+    gap: Spacing.xs,
   },
   favoriteSlot: {
     flex: 1,

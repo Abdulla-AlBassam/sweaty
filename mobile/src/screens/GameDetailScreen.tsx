@@ -7,7 +7,9 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Pressable,
   Dimensions,
+  Linking,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -26,10 +28,12 @@ import LogGameModal from '../components/LogGameModal'
 import StarRating from '../components/StarRating'
 import TrailerSection from '../components/TrailerSection'
 import TwitchStreamsSection from '../components/TwitchStreamsSection'
+import GameReviews from '../components/GameReviews'
 import { GameDetailSkeleton } from '../components/skeletons'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const BANNER_HEIGHT = SCREEN_WIDTH * 0.75
+
 
 type Props = NativeStackScreenProps<MainStackParamList, 'GameDetail'>
 
@@ -42,6 +46,23 @@ interface SimilarGame {
   id: number
   name: string
   coverUrl: string | null
+}
+
+interface StoreLink {
+  storeId: number
+  name: string
+  url: string
+}
+
+interface RawgEnrichment {
+  rawgId: number | null
+  rawgSlug: string | null
+  metacritic: number | null
+  playtimeHours: number | null
+  releasedDate: string | null
+  esrbRating: string | null
+  gameModes: string[]
+  stores: StoreLink[]
 }
 
 interface GameDetails {
@@ -76,10 +97,15 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets()
 
   const [game, setGame] = useState<GameDetails | null>(null)
+  const [rawg, setRawg] = useState<RawgEnrichment | null>(null)
   const [userLog, setUserLog] = useState<UserGameLog | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [summaryExpanded, setSummaryExpanded] = useState(false)
+  const [reviewRefreshKey, setReviewRefreshKey] = useState(0)
+  const [coverOverlayVisible, setCoverOverlayVisible] = useState(false)
+  const coverOverlayOpacity = useRef(new Animated.Value(0)).current
+  const coverModalScale = useRef(new Animated.Value(0.3)).current
   const scrollY = useRef(new Animated.Value(0)).current
 
   // Fetch ratings data
@@ -119,6 +145,27 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     fetchGameDetails()
     fetchReviewers()
   }, [gameId])
+
+  // Fetch RAWG enrichment (Metacritic, playtime, ESRB, stores, game modes, exact date)
+  // once we have the core game info. Failures return silently so the screen degrades.
+  useEffect(() => {
+    if (!game?.name) return
+    const slug = game.slug || ''
+    const releaseDateRaw = game.firstReleaseDate || game.first_release_date
+    const year = releaseDateRaw ? new Date(releaseDateRaw).getFullYear() : ''
+    const url = `${API_CONFIG.baseUrl}/api/games/${gameId}/rawg?name=${encodeURIComponent(game.name)}&slug=${encodeURIComponent(slug)}&year=${year}`
+    let cancelled = false
+    fetch(url)
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (cancelled || !data || typeof data !== 'object') return
+        setRawg(data as RawgEnrichment)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [gameId, game?.name, game?.slug, game?.firstReleaseDate, game?.first_release_date])
 
   useEffect(() => {
     if (user) {
@@ -220,7 +267,43 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     fetchUserLog()
     fetchReviewers()
     refetchCommunityStats()
+    setReviewRefreshKey(k => k + 1)
   }, [fetchUserLog, fetchReviewers, refetchCommunityStats])
+
+  const openCoverModal = useCallback(() => {
+    setCoverOverlayVisible(true)
+    coverOverlayOpacity.setValue(0)
+    coverModalScale.setValue(0.3)
+    Animated.parallel([
+      Animated.timing(coverOverlayOpacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      Animated.spring(coverModalScale, {
+        toValue: 1,
+        friction: 8,
+        tension: 80,
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [coverOverlayOpacity, coverModalScale])
+
+  const closeCoverModal = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(coverOverlayOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(coverModalScale, {
+        toValue: 0.3,
+        friction: 10,
+        tension: 60,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setCoverOverlayVisible(false))
+  }, [coverOverlayOpacity, coverModalScale])
 
   // Pull-to-refresh handler
   const getCoverUrl = () => {
@@ -232,6 +315,35 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     const date = game?.firstReleaseDate || game?.first_release_date
     if (!date) return null
     return new Date(date).getFullYear()
+  }
+
+  // Prefer RAWG exact date when available, otherwise fall back to the IGDB date.
+  // Formatted in British style (e.g., "24 March 2023").
+  const getFormattedReleaseDate = () => {
+    const raw =
+      rawg?.releasedDate || game?.firstReleaseDate || game?.first_release_date
+    if (!raw) return null
+    try {
+      return new Date(raw).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    } catch {
+      return null
+    }
+  }
+
+  // Metacritic band colour (green 75+, yellow 50-74, red <50), matching
+  // Metacritic's own conventions so users read it instantly.
+  const getMetacriticColor = (score: number) => {
+    if (score >= 75) return Colors.openCriticMighty
+    if (score >= 50) return Colors.openCriticFair
+    return Colors.openCriticWeak
+  }
+
+  const openStore = (url: string) => {
+    Linking.openURL(url).catch(() => {})
   }
 
   // Get color based on OpenCritic tier
@@ -252,7 +364,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back" accessibilityRole="button" accessibilityHint="Returns to previous screen">
             <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>loading...</Text>
+          <View style={{ flex: 1 }} />
         </View>
         <ScrollView style={styles.scrollView}>
           <GameDetailSkeleton />
@@ -280,6 +392,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
   const coverUrl = getCoverUrl()
   const releaseYear = getReleaseYear()
+  const formattedReleaseDate = getFormattedReleaseDate()
 
   return (
     <View style={styles.container}>
@@ -320,7 +433,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               resizeMode="cover"
             />
             <LinearGradient
-              colors={['transparent', Colors.gradientMedium, Colors.background]}
+              colors={['transparent', Colors.gradientEnd, Colors.background]}
               locations={[0.3, 0.7, 1]}
               style={styles.bannerGradient}
             />
@@ -332,19 +445,39 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         <View style={styles.contentBelowBanner}>
         {/* Cover and Info */}
         <View style={styles.gameInfo}>
-          {coverUrl ? (
-            <Image source={{ uri: coverUrl }} style={styles.cover} accessible={false} />
-          ) : (
-            <View style={[styles.cover, styles.coverPlaceholder]}>
-              <SweatDropIcon size={40} variant="static" />
-            </View>
-          )}
+          <Pressable onPress={coverUrl ? openCoverModal : undefined} accessibilityLabel="Enlarge cover" accessibilityRole="button">
+            {coverUrl ? (
+              <Image source={{ uri: coverUrl }} style={styles.cover} accessible={false} />
+            ) : (
+              <View style={[styles.cover, styles.coverPlaceholder]}>
+                <SweatDropIcon size={40} variant="static" />
+              </View>
+            )}
+          </Pressable>
 
           <View style={styles.infoContainer}>
             <Text style={styles.title}>{game.name}</Text>
-            {releaseYear && (
-              <Text style={styles.year}>{releaseYear}</Text>
+            {formattedReleaseDate && (
+              <Text style={styles.year}>{formattedReleaseDate}</Text>
             )}
+
+            {/* Playtime + ESRB pills (hidden when RAWG returns nothing) */}
+            {(rawg?.playtimeHours || rawg?.esrbRating) && (
+              <View style={styles.metaPillsRow}>
+                {rawg?.playtimeHours ? (
+                  <View style={styles.metaPill}>
+                    <Ionicons name="time-outline" size={12} color={Colors.textMuted} />
+                    <Text style={styles.metaPillText}>~{rawg.playtimeHours}h</Text>
+                  </View>
+                ) : null}
+                {rawg?.esrbRating ? (
+                  <View style={styles.metaPill}>
+                    <Text style={styles.metaPillText}>{rawg.esrbRating}</Text>
+                  </View>
+                ) : null}
+              </View>
+            )}
+
             {game.genres && game.genres.length > 0 && (
               <Text style={styles.genres}>{game.genres.slice(0, 3).join(', ')}</Text>
             )}
@@ -354,7 +487,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
             {/* Ratings Row */}
             <View style={styles.ratingsRow}>
-              {openCriticData?.score && (
+              {openCriticData?.score != null && openCriticData.score >= 0 && (
                 <View style={styles.ratingItem}>
                   <Image
                     source={require('../../assets/images/opencritic-icon.png')}
@@ -364,6 +497,15 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                   <Text style={[styles.ratingScore, { color: getOpenCriticColor(openCriticData.tier) }]}>
                     {openCriticData.score}
                   </Text>
+                </View>
+              )}
+              {rawg?.metacritic != null && (
+                <View style={styles.ratingItem}>
+                  <View style={[styles.metacriticBadge, { borderColor: getMetacriticColor(rawg.metacritic) }]}>
+                    <Text style={[styles.metacriticScore, { color: getMetacriticColor(rawg.metacritic) }]}>
+                      {rawg.metacritic}
+                    </Text>
+                  </View>
                 </View>
               )}
               {communityStats.averageRating ? (
@@ -379,6 +521,17 @@ export default function GameDetailScreen({ navigation, route }: Props) {
             </View>
           </View>
         </View>
+
+        {/* Game modes chips (singleplayer / multiplayer / co-op) */}
+        {rawg && rawg.gameModes.length > 0 && (
+          <View style={styles.gameModesRow}>
+            {rawg.gameModes.map((mode) => (
+              <View key={mode} style={styles.gameModeChip}>
+                <Text style={styles.gameModeText}>{mode}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* Summary */}
         {game.summary && (
@@ -440,7 +593,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                       )}
                       {friendReview && (
                         <View style={styles.reviewBadge}>
-                          <Ionicons name="chatbubble-outline" size={12} color={Colors.text} />
+                          <Ionicons name="chatbubble-outline" size={14} color={Colors.text} />
                         </View>
                       )}
                     </View>
@@ -476,7 +629,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                         </View>
                       )}
                       <View style={styles.reviewBadge}>
-                        <Ionicons name="chatbubble-outline" size={12} color={Colors.text} />
+                        <Ionicons name="chatbubble-outline" size={14} color={Colors.text} />
                       </View>
                     </View>
                     {reviewer.rating && (
@@ -490,12 +643,43 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
+        {/* Community Reviews - sorted by most liked */}
+        <GameReviews gameId={gameId} gameName={game.name} refreshKey={reviewRefreshKey} />
+
         {/* Live on Twitch */}
         <TwitchStreamsSection gameName={game.name} />
 
         {/* Trailers */}
         {game.videos && game.videos.length > 0 && (
           <TrailerSection videos={game.videos} />
+        )}
+
+        {/* Where to buy (RAWG stores) */}
+        {rawg && rawg.stores.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Where to buy</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.storesRow}
+              nestedScrollEnabled={true}
+            >
+              {rawg.stores.map((store) => (
+                <TouchableOpacity
+                  key={store.storeId}
+                  style={styles.storeChip}
+                  onPress={() => openStore(store.url)}
+                  accessibilityLabel={`Open ${store.name}`}
+                  accessibilityRole="link"
+                  accessibilityHint="Opens the game in this store"
+                >
+                  <Text style={styles.storeChipText}>{store.name}</Text>
+                  <Ionicons name="open-outline" size={14} color={Colors.textMuted} />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.sectionSeparator} />
+          </View>
         )}
 
         {/* Similar games */}
@@ -531,6 +715,18 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
+        {/* RAWG attribution (required by their ToS when displaying RAWG data) */}
+        {rawg?.rawgId && (
+          <TouchableOpacity
+            style={styles.rawgAttribution}
+            onPress={() => Linking.openURL('https://rawg.io').catch(() => {})}
+            accessibilityLabel="Powered by RAWG"
+            accessibilityRole="link"
+          >
+            <Text style={styles.rawgAttributionText}>Powered by RAWG</Text>
+          </TouchableOpacity>
+        )}
+
         </View>
       </Animated.ScrollView>
 
@@ -563,6 +759,18 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         onSaveSuccess={handleLogSaveSuccess}
       />
 
+      {/* Enlarged cover overlay */}
+      {coverOverlayVisible && (
+        <Pressable style={styles.coverOverlay} onPress={closeCoverModal}>
+          <Animated.View style={[styles.coverOverlayBackdrop, { opacity: coverOverlayOpacity }]} />
+          <Animated.Image
+            source={{ uri: coverUrl || '' }}
+            style={[styles.coverExpanded, { opacity: coverOverlayOpacity, transform: [{ scale: coverModalScale }] }]}
+            resizeMode="contain"
+          />
+        </Pressable>
+      )}
+
     </View>
   )
 }
@@ -588,7 +796,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.overlayLight,
+    backgroundColor: 'rgba(26, 26, 28, 0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -645,6 +853,8 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.3,
     aspectRatio: 3 / 4,
     borderRadius: BorderRadius.md,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
     shadowColor: Colors.background,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
@@ -664,7 +874,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: Fonts.display,
     fontSize: FontSize.xl,
-    color: Colors.text,
+    color: Colors.cream,
     marginBottom: Spacing.xs,
   },
   year: {
@@ -725,13 +935,107 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
   },
+  // Playtime / ESRB pills under the release date
+  metaPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+  },
+  metaPillText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.xxs,
+    color: Colors.textMuted,
+  },
+  // Metacritic score — square badge in the ratings row
+  metacriticBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    minWidth: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metacriticScore: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSize.sm,
+  },
+  // Game modes chips (singleplayer / multiplayer / co-op)
+  gameModesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.md,
+  },
+  gameModeChip: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+  },
+  gameModeText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.xxs,
+    color: Colors.textMuted,
+  },
+  // Where to buy — store chips
+  storesRow: {
+    gap: Spacing.sm,
+    paddingRight: Spacing.lg,
+  },
+  storeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+  },
+  storeChipText: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+  },
+  // RAWG attribution (ToS requirement)
+  rawgAttribution: {
+    alignItems: 'center',
+    marginTop: Spacing.xl,
+    paddingVertical: Spacing.sm,
+  },
+  rawgAttributionText: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xxs,
+    color: Colors.textDim,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   section: {
     marginTop: Spacing.lg,
   },
   sectionTitle: {
-    fontFamily: Fonts.bodyMedium,
+    fontFamily: Fonts.display,
     fontSize: FontSize.sm,
-    color: Colors.text,
+    color: Colors.cream,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
     lineHeight: 20,
     marginBottom: Spacing.sm,
   },
@@ -741,7 +1045,7 @@ const styles = StyleSheet.create({
   summaryText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: Colors.text,
+    color: Colors.textMuted,
     lineHeight: 22,
   },
   summaryFade: {
@@ -778,7 +1082,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: Colors.borderBright,
+    borderColor: Colors.border,
   },
   reviewBadge: {
     position: 'absolute',
@@ -787,7 +1091,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: Colors.surfaceBright,
+    backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
@@ -804,12 +1108,27 @@ const styles = StyleSheet.create({
     width: 105,
     height: 140,
     borderRadius: BorderRadius.sm,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.borderSubtle,
   },
   similarGamePlaceholder: {
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  coverOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  coverOverlayBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  coverExpanded: {
+    width: SCREEN_WIDTH * 0.75,
+    aspectRatio: 3 / 4,
+    borderRadius: BorderRadius.lg,
   },
 })

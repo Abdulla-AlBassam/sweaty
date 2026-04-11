@@ -40,7 +40,8 @@ interface GameReviewsProps {
   refreshKey?: number
 }
 
-const PREVIEW_LIMIT = 2
+const PREVIEW_LIMIT = 3
+const FETCH_POOL = 20 // Fetch more to find the highest-liked
 
 export default function GameReviews({ gameId, gameName, refreshKey }: GameReviewsProps) {
   const { user } = useAuth()
@@ -64,7 +65,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
 
       setTotalCount(count || 0)
 
-      // Fetch only a preview (2 reviews)
+      // Fetch a pool of reviews so we can sort by likes and pick the best
       const { data, error } = await supabase
         .from('game_logs')
         .select(`
@@ -77,7 +78,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
         .eq('game_id', gameId)
         .not('review', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(PREVIEW_LIMIT)
+        .limit(FETCH_POOL)
 
       if (error) throw error
 
@@ -143,7 +144,14 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
         }
       }
 
-      setReviews(formattedReviews)
+      // Sort by most liked first, then by newest as tiebreaker
+      formattedReviews.sort((a, b) => {
+        const likeDiff = (b.likeCount || 0) - (a.likeCount || 0)
+        if (likeDiff !== 0) return likeDiff
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
+
+      setReviews(formattedReviews.slice(0, PREVIEW_LIMIT))
     } catch (error) {
       console.error('Error fetching reviews:', error)
     } finally {
@@ -244,7 +252,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
               <Text style={styles.timeText}>{getRelativeTime(review.created_at)}</Text>
             </View>
           </TouchableOpacity>
-          <FormattedText style={styles.reviewText}>{review.review}</FormattedText>
+          <FormattedText style={styles.reviewText} numberOfLines={4}>{review.review}</FormattedText>
 
           {/* Likes and Comments */}
           <View style={styles.socialSection}>
@@ -276,9 +284,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   sectionTitle: {
-    fontFamily: Fonts.bodyMedium,
+    fontFamily: Fonts.display,
     fontSize: FontSize.sm,
-    color: Colors.text,
+    color: Colors.cream,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
     lineHeight: 20,
   },
   seeAllButton: {

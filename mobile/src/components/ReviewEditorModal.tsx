@@ -212,7 +212,7 @@ rpt();
   )
 }
 
-const CREAM = '#F0E4D0'
+const CREAM = Colors.cream
 
 const styles = StyleSheet.create({
   container: {
@@ -275,19 +275,19 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: BorderRadius.md,
-    backgroundColor: 'rgba(240, 228, 208, 0.08)',
+    backgroundColor: 'rgba(192, 200, 208, 0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(240, 228, 208, 0.15)',
+    borderColor: 'rgba(192, 200, 208, 0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   fmtBtnActive: {
-    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    backgroundColor: 'rgba(192, 200, 208, 0.18)',
     borderColor: CREAM,
   },
   fmtBtnText: {
     fontSize: 17,
-    color: 'rgba(240, 228, 208, 0.6)',
+    color: 'rgba(192, 200, 208, 0.6)',
   },
   fmtBtnTextActive: {
     color: CREAM,

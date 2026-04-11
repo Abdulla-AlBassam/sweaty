@@ -6,6 +6,7 @@ import {
   Image,
   StyleSheet,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -17,6 +18,7 @@ import { useYouTube } from '../hooks/useYouTube'
 import { useNews } from '../hooks/useNews'
 import { YouTubeVideo, NewsArticle } from '../types'
 import PressableScale from '../components/PressableScale'
+
 
 type WatchTab = 'all' | 'videos' | 'news'
 type WatchRouteParams = { initialTab?: WatchTab }
@@ -134,19 +136,54 @@ const TABS: { key: WatchTab; label: string }[] = [
 export default function WatchScreen() {
   const navigation = useNavigation()
   const route = useRoute<RouteProp<{ Watch: WatchRouteParams }, 'Watch'>>()
-  const { videos, isLoading: videosLoading, error: videosError, refetch: refetchVideos } = useYouTube(50)
-  const { articles, isLoading: newsLoading, error: newsError, refetch: refetchNews } = useNews(50)
+  const {
+    videos,
+    isLoading: videosLoading,
+    isLoadingMore: videosLoadingMore,
+    hasMore: videosHasMore,
+    error: videosError,
+    refetch: refetchVideos,
+    loadMore: loadMoreVideos,
+  } = useYouTube(15)
+  const {
+    articles,
+    isLoading: newsLoading,
+    isLoadingMore: newsLoadingMore,
+    hasMore: newsHasMore,
+    error: newsError,
+    refetch: refetchNews,
+    loadMore: loadMoreNews,
+  } = useNews(15)
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState<WatchTab>(route.params?.initialTab || 'all')
 
   const isLoading = videosLoading || newsLoading
+  const isLoadingMore = videosLoadingMore || newsLoadingMore
   const hasError = videosError && newsError
+
+  const hasMore = activeTab === 'videos'
+    ? videosHasMore
+    : activeTab === 'news'
+      ? newsHasMore
+      : videosHasMore || newsHasMore
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     await Promise.all([refetchVideos(), refetchNews()])
     setRefreshing(false)
   }, [refetchVideos, refetchNews])
+
+  const onEndReached = useCallback(() => {
+    if (activeTab === 'videos') {
+      loadMoreVideos()
+    } else if (activeTab === 'news') {
+      loadMoreNews()
+    } else {
+      // "All" tab — load more from both feeds
+      if (videosHasMore) loadMoreVideos()
+      if (newsHasMore) loadMoreNews()
+    }
+  }, [activeTab, loadMoreVideos, loadMoreNews, videosHasMore, newsHasMore])
 
   const feedItems: FeedItem[] = useMemo(() => {
     if (activeTab === 'videos') {
@@ -240,35 +277,46 @@ export default function WatchScreen() {
       </View>
 
       {/* Content */}
-      {isLoading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <LoadingSpinner size="large" color={Colors.accent} />
-        </View>
-      ) : hasError ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load content</Text>
-          <PressableScale onPress={onRefresh} haptic="light" accessibilityLabel="Retry" accessibilityRole="button">
-            <Text style={styles.retryText}>Tap to retry</Text>
-          </PressableScale>
-        </View>
-      ) : (
-        <FlatList
-          data={feedItems}
-          renderItem={renderItem}
-          keyExtractor={getItemKey}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={Colors.accent}
-              colors={[Colors.accent]}
-            />
-          }
-          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-        />
-      )}
+      <View style={[styles.sectionGroup, { backgroundColor: Colors.alternate, flex: 1 }]}>
+        {isLoading && !refreshing ? (
+          <View style={styles.loadingContainer}>
+            <LoadingSpinner size="large" color={Colors.accent} />
+          </View>
+        ) : hasError ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>Failed to load content</Text>
+            <PressableScale onPress={onRefresh} haptic="light" accessibilityLabel="Retry" accessibilityRole="button">
+              <Text style={styles.retryText}>Tap to retry</Text>
+            </PressableScale>
+          </View>
+        ) : (
+          <FlatList
+            data={feedItems}
+            renderItem={renderItem}
+            keyExtractor={getItemKey}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={Colors.accent}
+                colors={[Colors.accent]}
+              />
+            }
+            ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.4}
+            ListFooterComponent={
+              isLoadingMore ? (
+                <View style={styles.footerLoader}>
+                  <ActivityIndicator size="small" color={Colors.textDim} />
+                </View>
+              ) : null
+            }
+          />
+        )}
+      </View>
     </SafeAreaView>
   )
 }
@@ -328,6 +376,11 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: Colors.background,
   },
+  // Section Groups
+  sectionGroup: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+  },
   // Loading / Error
   loadingContainer: {
     flex: 1,
@@ -357,6 +410,10 @@ const styles = StyleSheet.create({
   },
   itemSeparator: {
     height: Spacing.md,
+  },
+  footerLoader: {
+    paddingVertical: Spacing.xl,
+    alignItems: 'center',
   },
   // Video Card
   videoCard: {

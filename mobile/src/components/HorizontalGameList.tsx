@@ -24,8 +24,8 @@ interface HorizontalGameListProps {
   isLoading?: boolean
 }
 
-const COVER_WIDTH = 110
-const COVER_HEIGHT = Math.round(COVER_WIDTH * (4 / 3))
+const COVER_WIDTH = 88
+const COVER_HEIGHT = 117
 
 export default function HorizontalGameList({
   games,
@@ -95,8 +95,8 @@ export default function HorizontalGameList({
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: Spacing.lg,
-    gap: 12,
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.cardGap,
   },
   gameItem: {
     width: COVER_WIDTH,
@@ -106,8 +106,13 @@ const styles = StyleSheet.create({
     height: COVER_HEIGHT,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   coverPlaceholder: {
     alignItems: 'center',

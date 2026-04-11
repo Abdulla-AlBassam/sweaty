@@ -2,13 +2,14 @@
 // Forest green + gray palette with refined aesthetic
 
 export const Colors = {
-  // Backgrounds - Deep blacks with depth levels
-  background: '#0A0A0A',      // Main background (deepest)
-  surface: '#151515',         // Card/surface background
-  surfaceLight: '#1E1E1E',    // Elevated elements
-  surfaceBright: '#282828',   // Highlighted elements
-  surfaceTranslucent: 'rgba(21, 21, 21, 0.7)',  // Frosted surface (auth forms)
-  surfaceLightTranslucent: 'rgba(26, 26, 26, 0.9)',  // Translucent input fields (auth)
+  // Backgrounds - Warm dark greys with depth levels
+  background: '#1A1A1C',      // Main background (warm dark grey)
+  surface: '#2A2A2E',         // Card/surface background
+  surfaceLight: '#333338',    // Elevated elements
+  surfaceBright: '#3A3A3E',   // Highlighted elements
+  alternate: '#1E1E21',       // Alternating section background
+  surfaceTranslucent: 'rgba(26, 26, 28, 0.7)',  // Frosted surface (auth forms)
+  surfaceLightTranslucent: 'rgba(51, 51, 56, 0.9)',  // Translucent input fields (auth)
 
   // PRIMARY ACCENT (Off-white) - Primary actions only
   // Use for: Primary buttons, active filters, progress bars
@@ -28,8 +29,8 @@ export const Colors = {
   cyanMuted: '#707070',       // Dimmer gray
   cyanGlow: 'rgba(138, 138, 138, 0.2)',  // Subtle glow
 
-  // BRAND ACCENT (Cream) - Section headers & brand identity
-  cream: '#F0E4D0',            // Warm cream (brand colour)
+  // BRAND ACCENT - Section headers & brand identity
+  cream: '#C0C8D0',            // Cool silver
 
   // TERTIARY ACCENT (Gold) - Achievements & ratings
   // Use for: Star ratings, achievements, special badges
@@ -46,20 +47,20 @@ export const Colors = {
   pinkGlow: 'rgba(224, 224, 224, 0.3)',  // Off-white glow
 
   // Text hierarchy — off-white primary to reduce halation on dark surfaces
-  // All values pass WCAG AA (4.5:1) on both background (#0A0A0A) and surface (#151515)
+  // All values pass WCAG AA (4.5:1) on background (#1A1A1C) and surface (#2A2A2E)
   text: '#E0E0E0',            // Primary text (soft off-white, reduces eye strain)
-  textSecondary: '#A1A1A1',   // Secondary text (~8:1 on background)
-  textMuted: '#8E8E8E',       // Muted/tertiary text (~6:1 on background, ~5.6:1 on surface)
-  textDim: '#808080',         // Disabled/very muted (~5:1 on background, ~4.6:1 on surface)
+  textSecondary: '#A1A1A1',   // Secondary text
+  textMuted: '#A3A3A3',       // Muted/tertiary text (~5:1 on background)
+  textDim: '#999999',         // Disabled/very muted (~4.5:1 on background)
 
   // Pure white — use sparingly for high-emphasis moments (badges, active states)
   textBright: '#FFFFFF',      // Pure white (use only when contrast demands it)
   textGreen: '#E0E0E0',       // Off-white text (was forest green)
 
   // Borders - Subtle definition
-  border: '#222222',          // Standard border
-  borderBright: '#333333',    // Emphasized border
-  borderSubtle: 'rgba(255, 255, 255, 0.06)', // Very subtle white border (game covers, cards)
+  border: '#2E2E32',          // Standard border
+  borderBright: '#3A3A3A',    // Emphasized border
+  borderSubtle: 'rgba(255, 255, 255, 0.08)', // Very subtle white border (game covers, cards)
   borderGlow: 'rgba(224, 224, 224, 0.15)',  // Subtle off-white tint
 
   // Status colors - Refined palette
@@ -85,13 +86,13 @@ export const Colors = {
   overlayDark: 'rgba(0, 0, 0, 0.8)',  // Heavy overlay
 
   // Background-tinted overlays (for gradients that blend into background)
-  gradientStart: 'rgba(10, 10, 10, 0.6)',      // Banner top fade
-  gradientEnd: 'rgba(10, 10, 10, 0.85)',        // Banner bottom fade
-  gradientSubtle: 'rgba(15, 15, 15, 0.3)',      // Profile banner light fade
-  gradientMedium: 'rgba(15, 15, 15, 0.6)',      // Profile banner medium fade
-  edgeFadeLight: 'rgba(15, 15, 15, 0.7)',       // Auth screen edge gradient
-  edgeFadeHeavy: 'rgba(15, 15, 15, 0.9)',       // Auth screen edge gradient (top)
-  edgeFadeMax: 'rgba(15, 15, 15, 0.95)',        // Auth screen edge gradient (bottom)
+  gradientStart: 'rgba(26, 26, 28, 0.6)',      // Banner top fade
+  gradientEnd: 'rgba(26, 26, 28, 0.85)',        // Banner bottom fade
+  gradientSubtle: 'rgba(26, 26, 28, 0.3)',      // Profile banner light fade
+  gradientMedium: 'rgba(26, 26, 28, 0.6)',      // Profile banner medium fade
+  edgeFadeLight: 'rgba(26, 26, 28, 0.7)',       // Auth screen edge gradient
+  edgeFadeHeavy: 'rgba(26, 26, 28, 0.9)',       // Auth screen edge gradient (top)
+  edgeFadeMax: 'rgba(26, 26, 28, 0.95)',        // Auth screen edge gradient (bottom)
 
   // Platform brand colors
   platformPlayStation: '#006FCD',

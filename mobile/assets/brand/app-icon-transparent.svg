@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
+  <!-- Bottom CD - Lightest gray -->
+  <ellipse cx="512" cy="640" rx="340" ry="68" fill="#E5E5E5"/>
+  <circle cx="512" cy="640" r="340" fill="#D4D4D4"/>
+  <circle cx="512" cy="640" r="102" fill="#F5F5F5"/>
+  <circle cx="512" cy="640" r="85" fill="#14181c"/>
+
+  <!-- Middle CD - Medium gray -->
+  <ellipse cx="512" cy="512" rx="340" ry="68" fill="#D4D4D4"/>
+  <circle cx="512" cy="512" r="340" fill="#A3A3A3"/>
+  <circle cx="512" cy="512" r="102" fill="#E5E5E5"/>
+  <circle cx="512" cy="512" r="85" fill="#14181c"/>
+
+  <!-- Top CD - Darkest gray -->
+  <ellipse cx="512" cy="384" rx="340" ry="68" fill="#A3A3A3"/>
+  <circle cx="512" cy="384" r="340" fill="#737373"/>
+  <circle cx="512" cy="384" r="102" fill="#D4D4D4"/>
+  <circle cx="512" cy="384" r="85" fill="#14181c"/>
+</svg>

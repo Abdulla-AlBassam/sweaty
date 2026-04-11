@@ -148,21 +148,26 @@ export async function GET(
       return NextResponse.json({ score: null, tier: null, numReviews: null })
     }
 
+    // OpenCritic returns -1 for unreviewed/unreleased games
+    const hasScore = gameData.topCriticScore >= 0
+    const score = hasScore ? Math.round(gameData.topCriticScore) : null
+    const tier = hasScore ? gameData.tier : null
+
     // Cache the result
     await supabaseAdmin
       .from('opencritic_cache')
       .upsert({
         igdb_game_id: igdbGameId,
         opencritic_id: opencriticId,
-        score: Math.round(gameData.topCriticScore),
-        tier: gameData.tier,
+        score,
+        tier,
         num_reviews: gameData.numReviews,
         cached_at: new Date().toISOString(),
       })
 
     return NextResponse.json({
-      score: Math.round(gameData.topCriticScore),
-      tier: gameData.tier,
+      score,
+      tier,
       numReviews: gameData.numReviews,
       cached: false,
     })

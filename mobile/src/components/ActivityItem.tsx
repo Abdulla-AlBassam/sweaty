@@ -225,7 +225,12 @@ const styles = StyleSheet.create({
     width: 56,
     height: 75,
     borderRadius: BorderRadius.sm,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
 })

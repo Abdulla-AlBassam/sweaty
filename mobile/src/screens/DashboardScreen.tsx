@@ -6,12 +6,9 @@ import {
   ScrollView,
   Image,
   Animated,
-  Easing,
-  LayoutAnimation,
+  RefreshControl,
   TouchableOpacity,
   Dimensions,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -27,43 +24,32 @@ import { useGameLogs, useCuratedLists, useCommunityReviews } from '../hooks/useS
 import { useFriendsPlaying } from '../hooks/useFriendsPlaying'
 import { useFriendsFavorites } from '../hooks/useRecommendations'
 import { usePlatformFilter } from '../hooks/usePlatformFilter'
-import { useHeroBanners } from '../hooks/useHeroBanners'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import CuratedListRow from '../components/CuratedListRow'
-import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
 import StackedAvatars from '../components/StackedAvatars'
 import WatchSection from '../components/WatchSection'
+import SweatDropIcon from '../components/SweatDropIcon'
 import Skeleton from '../components/Skeleton'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
-// ── COLOR SCHEME TEST ──────────────────────────────────────
-// Temporary overrides to preview a warmer, lighter palette.
-// Only affects DashboardScreen. Delete this block to revert.
-const TestBg = {
-  background: '#1A1A1C',         // Warm dark gray (was #0A0A0A)
-  surface: '#2A2A2E',            // Elevated surface (was #151515)
-  surfaceLight: '#333338',       // Brighter surface (was #1E1E1E)
-  alternate: '#1E1E21',          // Alternating section bg
-  gradientEnd: 'rgba(26, 26, 28, 0.85)',
-  gradientStart: 'rgba(26, 26, 28, 0.6)',
-  // Text bumped for contrast on lighter bg
-  textDim: '#999999',            // Was #808080 — now 4.5:1 on new bg
-  textMuted: '#A3A3A3',          // Was #8E8E8E — now 5:1 on new bg
-  borderSubtle: 'rgba(255, 255, 255, 0.08)',
-}
-// ── END COLOR SCHEME TEST ─────────────────────────────────
+function formatTimeAgo(dateString: string): string {
+  const now = new Date()
+  const date = new Date(dateString)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
 
-// Background colors for section groups
-const SectionBg = {
-  base: TestBg.background,
-  alternate: TestBg.alternate,
+  if (diffMins < 1) return 'now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffDays < 7) return `${diffDays}d ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
@@ -88,86 +74,8 @@ export default function DashboardScreen() {
   // Community activity (recent reviews)
   const { reviews: communityReviews, isLoading: communityLoading, refetch: refetchCommunity } = useCommunityReviews()
 
-  // Hero banners for featured screenshots
-  const { currentBanner, shuffleBanner, refetch: refetchBanners } = useHeroBanners()
-
   const [refreshing, setRefreshing] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
-
-  // Refresh logo animation
-  const refreshOpacity = useRef(new Animated.Value(0)).current
-  const refreshScale = useRef(new Animated.Value(0.3)).current
-  const refreshFlip = useRef(new Animated.Value(0)).current
-  const refreshFlipLoop = useRef<Animated.CompositeAnimation | null>(null)
-
-  useEffect(() => {
-    if (refreshing) {
-      // Pop in
-      Animated.parallel([
-        Animated.timing(refreshOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.spring(refreshScale, { toValue: 1, tension: 150, friction: 8, useNativeDriver: true }),
-      ]).start()
-
-      // Continuous flip
-      refreshFlip.setValue(0)
-      refreshFlipLoop.current = Animated.loop(
-        Animated.timing(refreshFlip, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        })
-      )
-      refreshFlipLoop.current.start()
-    } else {
-      // Stop flip + pop out
-      refreshFlipLoop.current?.stop()
-      Animated.parallel([
-        Animated.timing(refreshOpacity, { toValue: 0, duration: 250, useNativeDriver: true }),
-        Animated.spring(refreshScale, { toValue: 1.3, tension: 200, friction: 10, useNativeDriver: true }),
-      ]).start(() => {
-        refreshScale.setValue(0.3)
-        refreshFlip.setValue(0)
-      })
-    }
-  }, [refreshing])
-
-  const refreshRotateY = refreshFlip.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  })
-
-  // Custom pull-to-refresh: track scroll position
-  const PULL_THRESHOLD = 70
-  const REFRESH_HEIGHT = 60
-  const scrollY = useRef(new Animated.Value(0)).current
-
-  // Pull-phase animations driven by scroll position (before refresh triggers)
-  const pullOpacity = scrollY.interpolate({
-    inputRange: [-PULL_THRESHOLD, -15, 0],
-    outputRange: [1, 0.3, 0],
-    extrapolate: 'clamp',
-  })
-  const pullScale = scrollY.interpolate({
-    inputRange: [-PULL_THRESHOLD, -10, 0],
-    outputRange: [1, 0.3, 0.1],
-    extrapolate: 'clamp',
-  })
-  const pullRotateY = scrollY.interpolate({
-    inputRange: [-PULL_THRESHOLD * 2, 0],
-    outputRange: ['360deg', '0deg'],
-    extrapolate: 'clamp',
-  })
-
-  const handleScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollY.setValue(e.nativeEvent.contentOffset.y)
-  }, [scrollY])
-
-  const handleScrollEndDrag = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (e.nativeEvent.contentOffset.y < -PULL_THRESHOLD && !refreshing) {
-      onRefresh()
-    }
-  }, [refreshing, onRefresh])
 
   // Pulsing animation for "Currently Playing" indicator
   const pulseAnim = useRef(new Animated.Value(1)).current
@@ -192,10 +100,8 @@ export default function DashboardScreen() {
   }, [pulseAnim])
 
   const onRefresh = useCallback(async () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setRefreshing(true)
-    setRefreshCount((prev) => prev + 1) // Trigger news shuffle
-    shuffleBanner() // Show a different hero banner
+    setRefreshCount((prev) => prev + 1) // Trigger news shuffle + carousel re-shuffle
     await Promise.all([
       refetchLogs(),
       refetchLists(),
@@ -203,9 +109,8 @@ export default function DashboardScreen() {
       refetchFavorites(),
       refetchCommunity(),
     ])
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
     setRefreshing(false)
-  }, [refetchLogs, refetchLists, refetchFriends, refetchFavorites, refetchCommunity, shuffleBanner])
+  }, [refetchLogs, refetchLists, refetchFriends, refetchFavorites, refetchCommunity])
 
 
   // Currently playing games
@@ -260,74 +165,29 @@ export default function DashboardScreen() {
       <ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.md }]}
         showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={handleScroll}
-        onScrollEndDrag={handleScrollEndDrag}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="transparent"
+            colors={['transparent']}
+          />
+        }
       >
-        {/* Custom refresh indicator — negative margin hides it above content.
-            Pull-down rubber-band reveals it. LayoutAnimation expands space during refresh. */}
-        <View style={[styles.refreshContainer, {
-          height: REFRESH_HEIGHT + insets.top,
-          paddingTop: insets.top,
-          marginTop: refreshing ? 0 : -(REFRESH_HEIGHT + insets.top),
-        }]}>
-          <Animated.View
-            style={{
-              opacity: refreshing ? refreshOpacity : pullOpacity,
-              transform: [
-                { scale: refreshing ? refreshScale : pullScale },
-                { perspective: 800 },
-                { rotateY: refreshing ? refreshRotateY : pullRotateY },
-              ],
-            }}
-            pointerEvents="none"
-          >
-            <SweatDropIcon size={32} isRefreshing={refreshing} variant="static" />
-          </Animated.View>
-        </View>
-
-        {/* Hero Banner - Featured Game Screenshot (edge-to-edge, behind status bar) */}
-        {currentBanner && (
-          <PressableScale
-            style={[styles.heroBannerContainer, { height: SCREEN_HEIGHT * 0.30 + insets.top }]}
-            onPress={() => handleGamePress(currentBanner.game_id)}
-            haptic="light"
-            scale={0.99}
-            accessibilityLabel={currentBanner.game_name}
-            accessibilityRole="button"
-            accessibilityHint="Opens game details"
-          >
-            <Image
-              source={{ uri: currentBanner.screenshot_url }}
-              style={styles.heroBannerImage}
-              resizeMode="cover"
-              accessibilityLabel={currentBanner.game_name + ' screenshot'}
-            />
-            {/* Top gradient for containment */}
-            <LinearGradient
-              colors={[TestBg.gradientStart, 'transparent']}
-              style={styles.heroBannerGradientTop}
-            />
-            {/* Bottom gradient for page continuation */}
-            <LinearGradient
-              colors={['transparent', TestBg.gradientEnd, TestBg.background]}
-              locations={[0, 0.6, 1]}
-              style={styles.heroBannerGradient}
-            />
-            {/* Game name - subtle, bottom right */}
-            <View style={styles.heroBannerContent}>
-              <Text style={styles.heroBannerGameName}>{currentBanner.game_name}</Text>
-            </View>
-          </PressableScale>
+        {/* Pull-to-refresh logo */}
+        {refreshing && (
+          <View style={styles.refreshLogo}>
+            <LoadingSpinner size={48} />
+          </View>
         )}
 
         {/* ═══════════════════════════════════════════════ */}
-        {/* YOUR GAMES Section Group */}
+        {/* FOR YOU Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base, paddingTop: currentBanner ? Spacing.lg : Spacing.lg + insets.top, marginTop: currentBanner ? -70 : 0, zIndex: 1 }]}>
-          <SectionGroupHeader title="Your Games" />
+        <View style={[styles.sectionGroup, { backgroundColor: Colors.background }]}>
+          <SectionGroupHeader title="For You" />
 
           {/* NOW PLAYING */}
           {currentlyPlaying.length > 0 && (
@@ -382,13 +242,13 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* FRIENDS Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+        <View style={[styles.sectionGroup, { backgroundColor: Colors.alternate }]}>
           <SectionGroupHeader title="Friends" />
 
           {/* FRIENDS ARE PLAYING */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Playing Now</Text>
+              <Text style={[styles.sectionTitle, { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, color: Colors.text }]}>Playing Now</Text>
             </View>
             {friendsLoading ? (
               <HorizontalSkeleton />
@@ -413,7 +273,7 @@ export default function DashboardScreen() {
                       style={styles.gameCover}
                       accessibilityLabel={game.name + ' cover art'}
                     />
-                    <StackedAvatars users={game.friends} />
+                    <StackedAvatars users={game.friends} inline size={24} maxDisplay={4} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -432,7 +292,7 @@ export default function DashboardScreen() {
           {/* FRIENDS' FAVORITES */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Their Favorites</Text>
+              <Text style={[styles.sectionTitle, { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, color: Colors.text }]}>Their Favorites</Text>
               {friendsFavorites.length > 10 && (
                 <PressableScale
                   onPress={() => navigation.navigate('CuratedListDetail', {
@@ -477,7 +337,7 @@ export default function DashboardScreen() {
                       style={styles.gameCover}
                       accessibilityLabel={game.name + ' cover art'}
                     />
-                    <StackedAvatars users={game.friends} />
+                    <StackedAvatars users={game.friends} inline size={24} maxDisplay={4} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -497,7 +357,7 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* DISCOVER Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.base }]}>
+        <View style={[styles.sectionGroup, { backgroundColor: Colors.background }]}>
           <SectionGroupHeader title="Discover" />
 
           {/* RANDOM CURATED LIST (shuffles on refresh) */}
@@ -569,7 +429,7 @@ export default function DashboardScreen() {
                             />
                           ) : (
                             <View style={[styles.communityAvatar, styles.avatarPlaceholder]}>
-                              <Ionicons name="person" size={10} color={TestBg.textDim} />
+                              <Ionicons name="person" size={10} color={Colors.textDim} />
                             </View>
                           )}
                           <Text style={styles.communityUsername} numberOfLines={1}>
@@ -585,6 +445,9 @@ export default function DashboardScreen() {
                         <Text style={styles.communityReviewText} numberOfLines={3}>
                           {review.review}
                         </Text>
+                        <Text style={styles.communityTimestamp}>
+                          {formatTimeAgo(review.created_at)}
+                        </Text>
                       </View>
                     </PressableScale>
                     )
@@ -598,14 +461,13 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* WATCH Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: SectionBg.alternate }]}>
+        <View style={[styles.sectionGroup, { backgroundColor: Colors.alternate }]}>
           <SectionGroupHeader title="Videos & News" onSeeAll={() => navigation.navigate('Watch' as never)} />
 
           {/* YouTube Videos (header hidden - parent group says "Watch") */}
           <WatchSection refreshKey={refreshCount} showHeader={false} />
         </View>
       </ScrollView>
-
     </View>
   )
 }
@@ -613,7 +475,12 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: TestBg.background,
+    backgroundColor: Colors.background,
+  },
+  refreshLogo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
   },
   scrollView: {
     flex: 1,
@@ -621,53 +488,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
   },
-  refreshContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Hero Banner - Cinematic full-width at top
-  heroBannerContainer: {
-    // Height set dynamically: SCREEN_HEIGHT * 0.38 + insets.top
-    position: 'relative',
-  },
-  heroBannerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  heroBannerGradientTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-  },
-  heroBannerGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '50%',
-  },
-  heroBannerContent: {
-    position: 'absolute',
-    bottom: Spacing.lg,
-    left: Spacing.screenPadding,
-    right: Spacing.screenPadding,
-    alignItems: 'flex-end',
-  },
-  heroBannerGameName: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    textShadowColor: Colors.overlayDark,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
   // Section Groups
   sectionGroup: {
-    paddingTop: Spacing.lg,
-    paddingBottom: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
   },
   groupHeader: {
     flexDirection: 'row',
@@ -675,7 +499,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Spacing.md,
-    borderBottomWidth: 2,
+    borderBottomWidth: 0.5,
     borderBottomColor: Colors.cream,
     marginBottom: Spacing.md,
   },
@@ -689,7 +513,7 @@ const styles = StyleSheet.create({
   },
   // Sections
   section: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
   sectionHeader: {
     paddingHorizontal: Spacing.screenPadding,
@@ -704,10 +528,10 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   sectionTitle: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: 15,
-    color: Colors.textSecondary,
-    lineHeight: 21,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    lineHeight: 24,
     flex: 1,
     marginRight: Spacing.sm,
   },
@@ -741,13 +565,13 @@ const styles = StyleSheet.create({
   },
   // Game covers
   gameCover: {
-    width: 105,
-    height: 140,
+    width: 88,
+    height: 117,
     borderRadius: BorderRadius.md,
-    backgroundColor: TestBg.surface,
-    borderWidth: 1,
-    borderColor: TestBg.borderSubtle,
-    shadowColor: TestBg.background,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -759,12 +583,12 @@ const styles = StyleSheet.create({
   },
   placeholderText: {
     fontSize: FontSize.xxl,
-    color: TestBg.textDim,
+    color: Colors.textDim,
   },
   // Friends game card with avatar overlay
   friendsGameCard: {
     position: 'relative',
-    width: 105,
+    width: 88,
   },
   // Empty state for sections
   emptyStateContainer: {
@@ -774,7 +598,7 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -790,17 +614,17 @@ const styles = StyleSheet.create({
   // Community Activity Cards
   communityCard: {
     width: 240,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: TestBg.borderSubtle,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
   },
   communityCoverWrap: {
     position: 'relative',
     width: '100%',
     height: 120,
-    backgroundColor: TestBg.surfaceLight,
+    backgroundColor: Colors.surfaceLight,
   },
   communityCover: {
     width: '100%',
@@ -838,7 +662,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   avatarPlaceholder: {
-    backgroundColor: TestBg.surfaceLight,
+    backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -867,6 +691,12 @@ const styles = StyleSheet.create({
     color: Colors.text,
     lineHeight: 16,
   },
+  communityTimestamp: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xxs,
+    color: Colors.textDim,
+    marginTop: 4,
+  },
   communityGameBadge: {
     position: 'absolute',
     bottom: 0,
@@ -881,7 +711,7 @@ const styles = StyleSheet.create({
   communityGameName: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xxs,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     lineHeight: 14,
   },
 })

@@ -4,7 +4,7 @@
     "slug": "sweaty",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/app-icons/icon-dark.png",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "scheme": "sweaty",
@@ -22,7 +22,24 @@
         }
       ],
       "expo-dev-client",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-dynamic-app-icon",
+        {
+          "light": {
+            "image": "./assets/app-icons/icon-light.png",
+            "prerendered": true
+          },
+          "dark": {
+            "image": "./assets/app-icons/icon-dark.png",
+            "prerendered": true
+          },
+          "monochrome": {
+            "image": "./assets/app-icons/icon-monochrome.png",
+            "prerendered": true
+          }
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,

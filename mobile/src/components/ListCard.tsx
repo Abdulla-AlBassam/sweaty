@@ -177,6 +177,8 @@ const styles = StyleSheet.create({
     height: COVER_HEIGHT,
     borderRadius: BorderRadius.sm,
     overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
     // Subtle shadow for depth
     shadowColor: '#000',
     shadowOffset: { width: -2, height: 2 },

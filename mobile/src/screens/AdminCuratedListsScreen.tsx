@@ -978,6 +978,8 @@ const styles = StyleSheet.create({
     height: 53,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surfaceLight,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
   },
   coverPlaceholder: {
     alignItems: 'center',

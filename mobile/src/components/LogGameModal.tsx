@@ -487,7 +487,7 @@ export default function LogGameModal({
                   <Ionicons
                     name={item.icon as any}
                     size={22}
-                    color={selectedValue === item.value ? '#F0E4D0' : Colors.textMuted}
+                    color={selectedValue === item.value ? Colors.cream : Colors.textMuted}
                     style={styles.pickerItemIcon}
                   />
                 )}
@@ -500,7 +500,7 @@ export default function LogGameModal({
                   {item.label}
                 </Text>
                 {selectedValue === item.value && (
-                  <Ionicons name="checkmark" size={22} color={'#F0E4D0'} />
+                  <Ionicons name="checkmark" size={22} color={Colors.cream} />
                 )}
               </TouchableOpacity>
             )}
@@ -773,7 +773,7 @@ export default function LogGameModal({
                   accessibilityLabel="Create new list"
                   accessibilityRole="button"
                 >
-                  <Ionicons name="add" size={22} color={'rgba(240, 228, 208, 0.6)'} />
+                  <Ionicons name="add" size={22} color={'rgba(192, 200, 208, 0.6)'} />
                   <Text style={styles.newListButtonText}>New list</Text>
                 </TouchableOpacity>
               }
@@ -808,9 +808,9 @@ export default function LogGameModal({
                       )}
                     </View>
                     {isLoadingItem ? (
-                      <LoadingSpinner size="small" color={'#F0E4D0'} />
+                      <LoadingSpinner size="small" color={Colors.cream} />
                     ) : isInList ? (
-                      <Ionicons name="checkmark" size={22} color={'#F0E4D0'} />
+                      <Ionicons name="checkmark" size={22} color={Colors.cream} />
                     ) : (
                       <View style={styles.listEmptyCheckPicker} />
                     )}
@@ -888,6 +888,13 @@ const styles = StyleSheet.create({
     width: 50,
     height: 67,
     borderRadius: BorderRadius.sm,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gameCoverPlaceholder: {
     backgroundColor: Colors.surfaceLight,
@@ -1003,7 +1010,7 @@ const styles = StyleSheet.create({
   },
   pickerItemTextSelected: {
     fontFamily: Fonts.bodySemiBold,
-    color: '#F0E4D0',
+    color: Colors.cream,
   },
   // Rating styles
   ratingRow: {
@@ -1089,9 +1096,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButton: {
-    backgroundColor: 'rgba(240, 228, 208, 0.18)',
+    backgroundColor: 'rgba(192, 200, 208, 0.18)',
     borderWidth: 1,
-    borderColor: '#F0E4D0',
+    borderColor: Colors.cream,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     alignItems: 'center',
@@ -1103,7 +1110,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontFamily: Fonts.bodySemiBold,
-    color: '#F0E4D0',
+    color: Colors.cream,
     fontSize: FontSize.md,
   },
   // Lists styles
@@ -1134,7 +1141,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#F0E4D0',
+    backgroundColor: Colors.cream,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1158,7 +1165,7 @@ const styles = StyleSheet.create({
   createListButtonText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: 'rgba(240, 228, 208, 0.6)',
+    color: 'rgba(192, 200, 208, 0.6)',
     marginLeft: Spacing.xs,
   },
   // Lists picker styles
@@ -1183,7 +1190,7 @@ const styles = StyleSheet.create({
   newListButtonText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: 'rgba(240, 228, 208, 0.6)',
+    color: 'rgba(192, 200, 208, 0.6)',
   },
   listPickerInfo: {
     flex: 1,

@@ -1,0 +1,20 @@
+<svg width="1500" height="500" viewBox="0 0 1500 500" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1500" height="500" fill="#FFFFFF"/>
+
+  <g transform="translate(1264, 240) scale(0.7)">
+    <ellipse cx="90" cy="110" rx="16" ry="80" fill="#E5E5E5"/>
+    <circle cx="90" cy="110" r="80" fill="#D4D4D4"/>
+    <circle cx="90" cy="110" r="24" fill="white"/>
+    <circle cx="90" cy="110" r="20" fill="#F5F5F5"/>
+    <ellipse cx="140" cy="110" rx="16" ry="80" fill="#D4D4D4"/>
+    <circle cx="140" cy="110" r="80" fill="#A3A3A3"/>
+    <circle cx="140" cy="110" r="24" fill="white"/>
+    <circle cx="140" cy="110" r="20" fill="#E5E5E5"/>
+    <ellipse cx="190" cy="110" rx="16" ry="80" fill="#A3A3A3"/>
+    <circle cx="190" cy="110" r="80" fill="#737373"/>
+    <circle cx="190" cy="110" r="24" fill="white"/>
+    <circle cx="190" cy="110" r="20" fill="#D4D4D4"/>
+  </g>
+
+  <text x="1460" y="460" text-anchor="end" font-family="Montserrat, -apple-system, sans-serif" font-weight="700" font-size="48" fill="#1A1A1C">Join the community</text>
+</svg>

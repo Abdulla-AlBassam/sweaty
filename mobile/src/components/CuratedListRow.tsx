@@ -101,7 +101,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.xxl,            // 32px between sections
+    marginBottom: Spacing.lg,             // 16px between sections
   },
   header: {
     flexDirection: 'row',
@@ -138,15 +138,20 @@ const styles = StyleSheet.create({
     gap: Spacing.cardGap,                 // 12px gap between cards
   },
   gameCard: {
-    width: 105,
+    width: 88,
   },
   cover: {
-    width: 105,
-    height: 140,
+    width: 88,
+    height: 117,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
-    borderWidth: 1,
+    borderWidth: 0.5,
     borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   placeholderCover: {
     justifyContent: 'center',

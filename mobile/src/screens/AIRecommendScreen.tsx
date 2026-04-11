@@ -480,6 +480,13 @@ const styles = StyleSheet.create({
     height: 133,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',

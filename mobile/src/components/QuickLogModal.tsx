@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -13,9 +13,11 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  PanResponder,
   Easing,
 } from 'react-native'
 import SweatDropIcon from './SweatDropIcon'
+import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -103,9 +105,9 @@ function GlitchResultButton({ onPress }: { onPress: () => void }) {
           <Ionicons name="add" size={16} color={Colors.accent} />
         </View>
 
-        {/* Main white button (matches homepage) */}
+        {/* Main silver button */}
         <View style={styles.addButtonMain}>
-          <Ionicons name="add" size={16} color={Colors.background} />
+          <Ionicons name="add" size={16} color={Colors.textMuted} />
         </View>
       </Animated.View>
     </TouchableOpacity>
@@ -297,6 +299,29 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
     onClose()
   }
 
+  // Swipe down to close
+  const panResponder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => false,
+    onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 10 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+    onPanResponderMove: (_, gestureState) => {
+      if (gestureState.dy > 0) {
+        slideAnim.setValue(gestureState.dy)
+      }
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (gestureState.dy > 80 || gestureState.vy > 0.5) {
+        handleClose()
+      } else {
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          damping: 20,
+          stiffness: 90,
+          useNativeDriver: true,
+        }).start()
+      }
+    },
+  }), [slideAnim, handleClose])
+
   const getCoverUrl = (game: Game) => {
     const url = game.coverUrl || game.cover_url
     return url ? getIGDBImageUrl(url, 'coverBig2x') : null
@@ -374,7 +399,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
           style={styles.keyboardView}
         >
           {/* Drag Handle */}
-          <View style={styles.dragHandleContainer}>
+          <View style={styles.dragHandleContainer} {...panResponder.panHandlers}>
             <View style={styles.dragHandle} />
           </View>
 
@@ -511,7 +536,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
           <View style={styles.resultsContainer}>
             {isLoading ? (
               <View style={styles.centered}>
-                <SweatDropIcon size={48} variant="loading" />
+                <LoadingSpinner size="large" />
                 <Text style={styles.loadingText}>Searching...</Text>
               </View>
             ) : results.length > 0 ? (
@@ -597,14 +622,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSize.xl,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.lg,
     color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   headerTitleLayer: {
     position: 'absolute',
-    fontFamily: Fonts.display,
-    fontSize: FontSize.xl,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.lg,
+    textTransform: 'uppercase',
+    letterSpacing: 2,
   },
   headerTitleCyan: {
     color: Colors.cyan,
@@ -706,6 +735,13 @@ const styles = StyleSheet.create({
     height: 67,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surfaceLight,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
   },
   gameCoverPlaceholder: {
     alignItems: 'center',
@@ -760,7 +796,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   addButtonMain: {
-    backgroundColor: Colors.text,
+    backgroundColor: Colors.surfaceLight,
     width: 28,
     height: 28,
     borderRadius: 14,

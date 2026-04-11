@@ -32,8 +32,12 @@ async function fetchBanners() {
 
   for (const game of GAMES) {
     try {
-      // RAWG API - free tier allows requests without API key
-      const response = await fetch(`https://api.rawg.io/api/games/${game.slug}?key=c542e67aec3a4340908f9de9e86038af`)
+      // RAWG API key must be provided via env: RAWG_API_KEY=... node scripts/fetch-rawg-banners.js
+      const rawgKey = process.env.RAWG_API_KEY
+      if (!rawgKey) {
+        throw new Error('RAWG_API_KEY env var is required')
+      }
+      const response = await fetch(`https://api.rawg.io/api/games/${game.slug}?key=${rawgKey}`)
 
       if (!response.ok) {
         console.log(`✗ ${game.name} - API error: ${response.status}`)

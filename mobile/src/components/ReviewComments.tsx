@@ -379,7 +379,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
       <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7} accessibilityLabel={isExpanded ? 'Hide comments' : `Show comments${commentCount > 0 ? `, ${commentCount} comments` : ''}`} accessibilityRole="button">
         <Ionicons
           name="chatbubble-outline"
-          size={22}
+          size={18}
           color={Colors.textMuted}
         />
         {commentCount > 0 && (

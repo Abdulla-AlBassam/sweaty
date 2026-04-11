@@ -22,20 +22,12 @@ import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { MainStackParamList } from '../navigation'
 import * as ImagePicker from 'expo-image-picker'
+import * as Updates from 'expo-updates'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { ONBOARDING_STORAGE_KEY } from './OnboardingScreen'
+import { PAYWALL_STORAGE_KEY } from './PaywallScreen'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 
-// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
-const TestBg = {
-  background: '#1A1A1C',
-  surface: '#2A2A2E',
-  surfaceLight: '#333338',
-  surfaceBright: '#3A3A3E',
-  border: '#2E2E32',
-  borderSubtle: 'rgba(255, 255, 255, 0.08)',
-  textDim: '#999999',
-  textMuted: '#A3A3A3',
-}
-// ── END COLOR SCHEME TEST ─────────────────────────────────
 import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -78,6 +70,37 @@ export default function SettingsScreen() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [bannerSelectorVisible, setBannerSelectorVisible] = useState(false)
   const [usernameError, setUsernameError] = useState<string | null>(null)
+  const [currentAppIcon, setCurrentAppIcon] = useState<string>('dark')
+
+  // Read current app icon on mount (requires dev build with expo-dynamic-app-icon)
+  useEffect(() => {
+    try {
+      const { getAppIcon } = require('expo-dynamic-app-icon')
+      const name = getAppIcon()
+      if (name && name !== 'DEFAULT') {
+        setCurrentAppIcon(name)
+      }
+    } catch {
+      // Module not available (e.g. Expo Go). Ignore — user sees default.
+    }
+  }, [])
+
+  const handleAppIconChange = useCallback((name: 'light' | 'dark' | 'monochrome') => {
+    try {
+      const { setAppIcon } = require('expo-dynamic-app-icon')
+      const result = setAppIcon(name)
+      if (result === false) {
+        Alert.alert('Unable to change icon', 'Please try again.')
+        return
+      }
+      setCurrentAppIcon(name)
+    } catch {
+      Alert.alert(
+        'Development build required',
+        'Changing the app icon needs a new dev build with expo-dynamic-app-icon compiled in.'
+      )
+    }
+  }, [])
 
   useEffect(() => {
     if (profile) {
@@ -294,11 +317,37 @@ export default function SettingsScreen() {
 
   const handleSignOut = () => {
     Alert.alert(
-      'sign out',
-      'are you sure you want to sign out?',
+      'Sign Out',
+      'Are you sure you want to sign out?',
       [
-        { text: 'cancel', style: 'cancel' },
-        { text: 'sign out', style: 'destructive', onPress: signOut },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: signOut },
+      ]
+    )
+  }
+
+  const handleResetOnboarding = () => {
+    Alert.alert(
+      'Reset onboarding?',
+      'This clears the onboarding and paywall flags and reloads the app so you can walk through the flow again.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.multiRemove([ONBOARDING_STORAGE_KEY, PAYWALL_STORAGE_KEY])
+              await Updates.reloadAsync()
+            } catch (err) {
+              console.error('Reset onboarding failed:', err)
+              Alert.alert(
+                'Reset partially complete',
+                'Flags were cleared but the app could not auto-reload. Force-quit Sweaty and reopen it to see the tour.',
+              )
+            }
+          },
+        },
       ]
     )
   }
@@ -345,7 +394,7 @@ export default function SettingsScreen() {
           accessibilityHint="Saves profile changes"
         >
           {isSaving ? (
-            <LoadingSpinner size="small" color={'#F0E4D0'} />
+            <LoadingSpinner size="small" color={Colors.cream} />
           ) : (
             <Text style={[styles.saveText, (!hasChanges || !!usernameError) && styles.saveTextDisabled]}>
               SAVE
@@ -359,18 +408,20 @@ export default function SettingsScreen() {
         style={styles.keyboardView}
       >
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          {/* ═══ Group 1: Avatar + Banner (base) ═══ */}
+          <View style={[styles.sectionGroup, { backgroundColor: Colors.background }]}>
           {/* Avatar Section */}
           <View style={styles.avatarSection}>
             <PressableScale onPress={pickImage} disabled={isUploadingAvatar} haptic="light" accessibilityLabel="Change profile picture" accessibilityRole="button">
               {isUploadingAvatar ? (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <LoadingSpinner size="large" color={'#F0E4D0'} />
+                  <LoadingSpinner size="large" color={Colors.cream} />
                 </View>
               ) : avatarUrl ? (
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} accessibilityLabel="Your profile picture" />
               ) : (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Ionicons name="person" size={50} color={TestBg.textDim} />
+                  <Ionicons name="person" size={50} color={Colors.textDim} />
                 </View>
               )}
               <View style={styles.avatarEditBadge}>
@@ -409,13 +460,16 @@ export default function SettingsScreen() {
                 </View>
               ) : (
                 <View style={styles.bannerPlaceholder}>
-                  <Ionicons name="image-outline" size={24} color={TestBg.textMuted} />
+                  <Ionicons name="image-outline" size={24} color={Colors.textMuted} />
                   <Text style={styles.bannerPlaceholderText}>Tap to select a banner</Text>
                 </View>
               )}
             </PressableScale>
           </View>
+          </View>
 
+          {/* ═══ Group 2: Profile fields (alternate) ═══ */}
+          <View style={[styles.sectionGroup, { backgroundColor: Colors.alternate }]}>
           {/* Profile Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Profile</Text>
@@ -427,7 +481,7 @@ export default function SettingsScreen() {
                 value={displayName}
                 onChangeText={setDisplayName}
                 placeholder="Your display name"
-                placeholderTextColor={TestBg.textDim}
+                placeholderTextColor={Colors.textDim}
                 maxLength={50}
                 accessibilityLabel="Display name"
                 accessibilityLabelledBy="displayNameLabel"
@@ -443,7 +497,7 @@ export default function SettingsScreen() {
                   value={username}
                   onChangeText={handleUsernameChange}
                   placeholder="username"
-                  placeholderTextColor={TestBg.textDim}
+                  placeholderTextColor={Colors.textDim}
                   maxLength={20}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -463,7 +517,7 @@ export default function SettingsScreen() {
                 value={bio}
                 onChangeText={(text) => setBio(text.slice(0, 160))}
                 placeholder="Tell us about yourself..."
-                placeholderTextColor={TestBg.textDim}
+                placeholderTextColor={Colors.textDim}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -473,7 +527,10 @@ export default function SettingsScreen() {
               <Text style={styles.charCount}>{bio.length}/160</Text>
             </View>
           </View>
+          </View>
 
+          {/* ═══ Group 3: Platforms + Notifications (base) ═══ */}
+          <View style={[styles.sectionGroup, { backgroundColor: Colors.background }]}>
           {/* Gaming Platforms */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Platforms</Text>
@@ -496,9 +553,9 @@ export default function SettingsScreen() {
                     accessibilityState={{ selected: isSelected }}
                   >
                     {platform.iconLibrary === 'fa5' ? (
-                      <FontAwesome5 name={platform.icon} size={22} color={isSelected ? '#F0E4D0' : TestBg.textMuted} />
+                      <FontAwesome5 name={platform.icon} size={22} color={isSelected ? Colors.cream : Colors.textMuted} />
                     ) : (
-                      <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? '#F0E4D0' : TestBg.textMuted} />
+                      <MaterialCommunityIcons name={platform.icon as any} size={22} color={isSelected ? Colors.cream : Colors.textMuted} />
                     )}
                   </PressableScale>
                 )
@@ -507,8 +564,32 @@ export default function SettingsScreen() {
 
           </View>
 
-          {/* ── Secondary Zone ── */}
-          <View style={styles.zoneDivider} />
+          {/* App Icon */}
+          <View style={styles.sectionCompact}>
+            <Text style={styles.sectionTitle}>App Icon</Text>
+            <View style={styles.iconPickerRow}>
+              {([
+                { key: 'light', label: 'Light', source: require('../../assets/app-icons/icon-light.png') },
+                { key: 'dark', label: 'Dark', source: require('../../assets/app-icons/icon-dark.png') },
+                { key: 'monochrome', label: 'Mono', source: require('../../assets/app-icons/icon-monochrome.png') },
+              ] as const).map((opt) => {
+                const selected = currentAppIcon === opt.key
+                return (
+                  <PressableScale
+                    key={opt.key}
+                    onPress={() => handleAppIconChange(opt.key)}
+                    style={[styles.iconOption, selected && styles.iconOptionSelected]}
+                    haptic="light"
+                  >
+                    <Image source={opt.source} style={styles.iconOptionImage} />
+                    <Text style={[styles.iconOptionLabel, selected && styles.iconOptionLabelSelected]}>
+                      {opt.label}
+                    </Text>
+                  </PressableScale>
+                )
+              })}
+            </View>
+          </View>
 
           {/* Notifications */}
           <View style={styles.sectionCompact}>
@@ -556,7 +637,10 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
+          </View>
 
+          {/* ═══ Group 4: Developer Tools + Account (alternate) ═══ */}
+          <View style={[styles.sectionGroup, { backgroundColor: Colors.alternate }]}>
           {/* Developer Tools - Only visible to developer */}
           {profile?.username === 'abdulla' && (
             <View style={styles.sectionCompact}>
@@ -571,13 +655,13 @@ export default function SettingsScreen() {
                 haptic="light"
               >
                 <View style={styles.devToolContent}>
-                  <Ionicons name="images-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
+                  <Ionicons name="images-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
                   <View style={styles.devToolText}>
                     <Text style={styles.devToolTitle}>Hero Banners</Text>
                     <Text style={styles.devToolSubtitle}>Manage homepage featured banners</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
               </PressableScale>
 
               <PressableScale
@@ -586,13 +670,58 @@ export default function SettingsScreen() {
                 haptic="light"
               >
                 <View style={styles.devToolContent}>
-                  <Ionicons name="list-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
+                  <Ionicons name="list-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
                   <View style={styles.devToolText}>
                     <Text style={styles.devToolTitle}>Curated Lists</Text>
                     <Text style={styles.devToolSubtitle}>Manage discovery lists</Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+              </PressableScale>
+
+              <PressableScale
+                style={[styles.devToolButton, { marginTop: Spacing.sm }]}
+                onPress={handleResetOnboarding}
+                haptic="medium"
+              >
+                <View style={styles.devToolContent}>
+                  <Ionicons name="refresh-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
+                  <View style={styles.devToolText}>
+                    <Text style={styles.devToolTitle}>Reset Onboarding</Text>
+                    <Text style={styles.devToolSubtitle}>Clear flags and replay the tour</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+              </PressableScale>
+
+              <PressableScale
+                style={[styles.devToolButton, { marginTop: Spacing.sm }]}
+                onPress={() => navigation.navigate('PersonalisationPreview')}
+                haptic="light"
+              >
+                <View style={styles.devToolContent}>
+                  <Ionicons name="person-circle-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
+                  <View style={styles.devToolText}>
+                    <Text style={styles.devToolTitle}>Preview Personalisation</Text>
+                    <Text style={styles.devToolSubtitle}>View the screen without saving</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+              </PressableScale>
+
+              <PressableScale
+                style={[styles.devToolButton, { marginTop: Spacing.sm }]}
+                onPress={() => navigation.navigate('PaywallPreview')}
+                haptic="light"
+              >
+                <View style={styles.devToolContent}>
+                  <Ionicons name="ribbon-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
+                  <View style={styles.devToolText}>
+                    <Text style={styles.devToolTitle}>Preview Paywall</Text>
+                    <Text style={styles.devToolSubtitle}>View the supporter screen</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
               </PressableScale>
             </View>
           )}
@@ -602,7 +731,7 @@ export default function SettingsScreen() {
             <Text style={styles.sectionTitle}>Account</Text>
 
             <View style={styles.infoRow}>
-              <Ionicons name="mail-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
+              <Ionicons name="mail-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
               <Text style={styles.infoValue} selectable>{user?.email || 'Not available'}</Text>
             </View>
 
@@ -612,7 +741,7 @@ export default function SettingsScreen() {
               haptic="light"
             >
               <View style={styles.importGamesContent}>
-                <Ionicons name="cloud-download-outline" size={24} color={'rgba(240, 228, 208, 0.6)'} />
+                <Ionicons name="cloud-download-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
                 <View style={styles.importGamesText}>
                   <Text style={styles.importGamesTitle}>Import from platforms</Text>
                   <Text style={styles.importGamesSubtitle}>
@@ -620,7 +749,7 @@ export default function SettingsScreen() {
                   </Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={TestBg.textDim} />
+              <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
             </PressableScale>
           </View>
 
@@ -630,6 +759,7 @@ export default function SettingsScreen() {
               <Ionicons name="log-out-outline" size={20} color={Colors.error} />
               <Text style={styles.signOutText}>SIGN OUT</Text>
             </PressableScale>
+          </View>
           </View>
 
           {/* App Version */}
@@ -653,7 +783,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: TestBg.background,
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -661,7 +791,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   backButton: {
     padding: Spacing.sm,
@@ -681,10 +811,10 @@ const styles = StyleSheet.create({
   saveText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: '#F0E4D0',
+    color: Colors.cream,
   },
   saveTextDisabled: {
-    color: TestBg.textDim,
+    color: Colors.textDim,
   },
   keyboardView: {
     flex: 1,
@@ -693,7 +823,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
+  sectionGroup: {
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   avatarSection: {
     alignItems: 'center',
@@ -705,7 +840,7 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   avatarPlaceholder: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -713,19 +848,19 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: TestBg.surfaceBright,
+    backgroundColor: Colors.surfaceBright,
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
-    borderColor: TestBg.background,
+    borderColor: Colors.background,
   },
   changeAvatarText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: 'rgba(240, 228, 208, 0.6)',
+    color: 'rgba(192, 200, 208, 0.6)',
     marginTop: Spacing.sm,
   },
   section: {
@@ -734,12 +869,7 @@ const styles = StyleSheet.create({
   sectionCompact: {
     marginBottom: Spacing.lg,
   },
-  zoneDivider: {
-    height: 1,
-    backgroundColor: TestBg.border,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.xl,
-  },
+  // zoneDivider removed — replaced by alternating section group backgrounds
   sectionTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.sm,
@@ -790,26 +920,26 @@ const styles = StyleSheet.create({
   bannerPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
     borderStyle: 'dashed',
     gap: Spacing.xs,
   },
   bannerPlaceholderText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   bannerLockedContainer: {
     width: '100%',
     height: BANNER_PREVIEW_HEIGHT,
     borderRadius: BorderRadius.md,
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
     overflow: 'hidden',
   },
   bannerLockedContent: {
@@ -824,7 +954,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textDim,
+    color: Colors.textDim,
     textAlign: 'center',
   },
   inputGroup: {
@@ -833,7 +963,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginBottom: Spacing.xs,
   },
   input: {
@@ -845,18 +975,18 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   usernameInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   usernamePrefix: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: TestBg.textDim,
+    color: Colors.textDim,
   },
   usernameInput: {
     fontFamily: Fonts.body,
@@ -876,13 +1006,13 @@ const styles = StyleSheet.create({
     minHeight: 80,
     paddingTop: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
     borderRadius: 0,
   },
   charCount: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: TestBg.textDim,
+    color: Colors.textDim,
     textAlign: 'right',
     marginTop: Spacing.xs,
   },
@@ -894,31 +1024,31 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
   },
   platformButtonSelected: {
-    borderColor: '#F0E4D0',
-    backgroundColor: 'rgba(240, 228, 208, 0.08)',
+    borderColor: Colors.cream,
+    backgroundColor: 'rgba(192, 200, 208, 0.08)',
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
     marginBottom: Spacing.sm,
   },
   infoLabel: {
     fontFamily: Fonts.body,
     fontSize: FontSize.md,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   infoValue: {
     fontFamily: Fonts.body,
@@ -929,11 +1059,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
   },
   devToolContent: {
     flexDirection: 'row',
@@ -951,17 +1081,17 @@ const styles = StyleSheet.create({
   devToolSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   importGamesButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     borderWidth: 1,
-    borderColor: TestBg.border,
+    borderColor: Colors.border,
   },
   importGamesContent: {
     flexDirection: 'row',
@@ -979,7 +1109,7 @@ const styles = StyleSheet.create({
   importGamesSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   signOutButton: {
     flexDirection: 'row',
@@ -995,13 +1125,47 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.error,
   },
+  iconPickerRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  iconOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  iconOptionSelected: {
+    borderColor: Colors.cream,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+  },
+  iconOptionImage: {
+    width: 72,
+    height: 72,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.sm,
+  },
+  iconOptionLabel: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  iconOptionLabelSelected: {
+    color: Colors.text,
+    fontFamily: Fonts.bodySemiBold,
+  },
   notifRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: Spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   notifRowLast: {
     borderBottomWidth: 0,
@@ -1018,7 +1182,7 @@ const styles = StyleSheet.create({
   notifSubtitle: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
     marginTop: 2,
   },
   appInfo: {
@@ -1029,6 +1193,6 @@ const styles = StyleSheet.create({
   appVersion: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
-    color: TestBg.textDim,
+    color: Colors.textDim,
   },
 })

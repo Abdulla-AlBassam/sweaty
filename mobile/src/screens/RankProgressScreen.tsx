@@ -16,16 +16,6 @@ import { calculateXP, getLevel, getBadgeColor } from '../lib/xp'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 
-// ── COLOR SCHEME TEST (mirrors DashboardScreen) ───────────
-const TestBg = {
-  background: '#1A1A1C',
-  surface: '#2A2A2E',
-  surfaceLight: '#333338',
-  border: '#2E2E32',
-  borderSubtle: 'rgba(255, 255, 255, 0.08)',
-  textDim: '#999999',
-  textMuted: '#A3A3A3',
-}
 
 const LEVEL_THRESHOLDS = [0, 50, 150, 400, 800, 1500, 2500, 4000, 6000, 9000, 13000, 18000, 25000, 35000, 50000, 60000]
 
@@ -86,7 +76,7 @@ export default function RankProgressScreen() {
                 cx={ringSize / 2}
                 cy={ringSize / 2}
                 r={ringRadius}
-                stroke={TestBg.surfaceLight}
+                stroke={Colors.surfaceLight}
                 strokeWidth={ringStroke}
                 fill="none"
               />
@@ -160,7 +150,7 @@ export default function RankProgressScreen() {
                     isCurrent && styles.rankRowCurrent,
                   ]}
                 >
-                  <View style={[styles.rankDot, { backgroundColor: isUnlocked ? color : TestBg.surfaceLight }]} />
+                  <View style={[styles.rankDot, { backgroundColor: isUnlocked ? color : Colors.surfaceLight }]} />
                   <View style={styles.rankInfo}>
                     <Text style={[styles.rankName, !isUnlocked && styles.rankLocked]}>
                       {rankName}
@@ -169,7 +159,7 @@ export default function RankProgressScreen() {
                       {threshold === 0 ? 'Starting rank' : `${threshold.toLocaleString()} XP`}
                     </Text>
                   </View>
-                  <Text style={[styles.rankLevel, { color: isUnlocked ? color : TestBg.textDim }]}>
+                  <Text style={[styles.rankLevel, { color: isUnlocked ? color : Colors.textDim }]}>
                     {i}
                   </Text>
                   {isCurrent && (
@@ -192,7 +182,7 @@ export default function RankProgressScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: TestBg.background,
+    backgroundColor: Colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -200,7 +190,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.border,
+    borderBottomColor: Colors.border,
   },
   backButton: {
     padding: Spacing.sm,
@@ -242,7 +232,7 @@ const styles = StyleSheet.create({
   heroRank: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xs,
-    color: TestBg.textDim,
+    color: Colors.textDim,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -252,12 +242,12 @@ const styles = StyleSheet.create({
   xpText: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
   progressTrack: {
     width: '60%',
     height: 4,
-    backgroundColor: TestBg.surfaceLight,
+    backgroundColor: Colors.surfaceLight,
     borderRadius: 2,
     overflow: 'hidden',
     marginTop: Spacing.sm,
@@ -269,7 +259,7 @@ const styles = StyleSheet.create({
   xpRemaining: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xxs,
-    color: TestBg.textDim,
+    color: Colors.textDim,
     marginTop: Spacing.sm,
   },
 
@@ -286,7 +276,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   card: {
-    backgroundColor: TestBg.surface,
+    backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
     overflow: 'hidden',
   },
@@ -301,7 +291,7 @@ const styles = StyleSheet.create({
   },
   sourceRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.borderSubtle,
+    borderBottomColor: Colors.borderSubtle,
   },
   sourceAction: {
     fontFamily: Fonts.body,
@@ -311,7 +301,7 @@ const styles = StyleSheet.create({
   sourceXP: {
     fontFamily: Fonts.mono,
     fontSize: FontSize.xs,
-    color: TestBg.textMuted,
+    color: Colors.textMuted,
   },
 
   // Rank list
@@ -323,7 +313,7 @@ const styles = StyleSheet.create({
   },
   rankRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: TestBg.borderSubtle,
+    borderBottomColor: Colors.borderSubtle,
   },
   rankRowCurrent: {
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
@@ -343,12 +333,12 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   rankLocked: {
-    color: TestBg.textDim,
+    color: Colors.textDim,
   },
   rankThreshold: {
     fontFamily: Fonts.body,
     fontSize: FontSize.xxs,
-    color: TestBg.textDim,
+    color: Colors.textDim,
     marginTop: 2,
   },
   rankLevel: {
