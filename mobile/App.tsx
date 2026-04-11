@@ -8,6 +8,7 @@ import * as Font from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 import * as Notifications from 'expo-notifications'
 import { AuthProvider, useAuth } from './src/contexts/AuthContext'
+import { PurchasesProvider } from './src/contexts/PurchasesContext'
 import { QuickLogProvider, useQuickLog } from './src/contexts/QuickLogContext'
 import { CelebrationProvider } from './src/contexts/CelebrationContext'
 import { useNotifications } from './src/hooks/useNotifications'
@@ -194,11 +195,13 @@ export default function App() {
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
         <AuthProvider>
-          <QuickLogProvider>
-            <CelebrationProvider>
-              <AppContent />
-            </CelebrationProvider>
-          </QuickLogProvider>
+          <PurchasesProvider>
+            <QuickLogProvider>
+              <CelebrationProvider>
+                <AppContent />
+              </CelebrationProvider>
+            </QuickLogProvider>
+          </PurchasesProvider>
         </AuthProvider>
         <Toast config={toastConfig} topOffset={60} />
       </SafeAreaProvider>

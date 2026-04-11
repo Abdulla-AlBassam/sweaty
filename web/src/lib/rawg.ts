@@ -17,7 +17,6 @@ export interface RawgGameDetail {
   released: string | null
   metacritic: number | null
   playtime: number // hours, 0 when RAWG has no Steam data
-  esrb_rating: { id: number; name: string; slug: string } | null
   platforms?: Array<{ platform: { id: number; name: string; slug: string } }>
   stores?: Array<{ store: { id: number; name: string; slug: string } }>
   game_modes?: Array<{ id: number; name: string; slug: string }>
@@ -38,7 +37,6 @@ export interface RawgEnrichment {
   metacritic: number | null
   playtimeHours: number | null
   releasedDate: string | null
-  esrbRating: string | null
   gameModes: string[]
   stores: Array<{
     storeId: number
@@ -218,7 +216,6 @@ export function normaliseEnrichment(
       metacritic: null,
       playtimeHours: null,
       releasedDate: null,
-      esrbRating: null,
       gameModes: [],
       stores: [],
     }
@@ -251,7 +248,6 @@ export function normaliseEnrichment(
     playtimeHours:
       typeof detail.playtime === 'number' && detail.playtime > 0 ? detail.playtime : null,
     releasedDate: detail.released || null,
-    esrbRating: detail.esrb_rating?.name ?? null,
     gameModes: (detail.game_modes ?? []).map((m) => m.name),
     stores,
   }

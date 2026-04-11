@@ -10,7 +10,8 @@ interface SweatDropIconProps {
 
 /**
  * Sweaty CD-stack logo.
- * Three overlapping CDs arranged in a vertical stack (rotated 90deg).
+ * Three overlapping CDs arranged sideways (horizontal stack), with narrow
+ * vertical edge-ellipses behind each disc.
  * Variants:
  * - default / static: static render
  * - loading: gentle pulse animation
@@ -106,13 +107,11 @@ export default function SweatDropIcon({ size = 36, isRefreshing = false, variant
     ]).start()
   }, [isRefreshing, refreshScale])
 
-  const transforms: Array<{ scale: Animated.Value } | { rotate: string }> = []
+  const transforms: { scale: Animated.Value }[] = []
   if (variant === 'loading') {
     transforms.push({ scale: loadingPulse })
   }
   transforms.push({ scale: refreshScale })
-  // Flip the CD stack from horizontal to vertical
-  transforms.push({ rotate: '90deg' })
 
   return (
     <Animated.View

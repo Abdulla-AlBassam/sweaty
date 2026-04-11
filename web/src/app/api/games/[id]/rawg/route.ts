@@ -36,7 +36,6 @@ function emptyEnrichment(): RawgEnrichment {
     metacritic: null,
     playtimeHours: null,
     releasedDate: null,
-    esrbRating: null,
     gameModes: [],
     stores: [],
   }

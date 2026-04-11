@@ -16,7 +16,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
 import PressableScale from '../components/PressableScale'
-import EsrbBadge from '../components/EsrbBadge'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -62,7 +61,6 @@ interface RawgEnrichment {
   metacritic: number | null
   playtimeHours: number | null
   releasedDate: string | null
-  esrbRating: string | null
   gameModes: string[]
   stores: StoreLink[]
 }
@@ -511,17 +509,26 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               )}
               {rawg?.metacritic != null && (
                 <View style={styles.ratingItem}>
-                  <View style={[styles.metacriticBadge, { borderColor: getMetacriticColor(rawg.metacritic) }]}>
-                    <Text style={[styles.metacriticScore, { color: getMetacriticColor(rawg.metacritic) }]}>
-                      {rawg.metacritic}
-                    </Text>
-                  </View>
+                  <Image
+                    source={require('../../assets/images/metacritic-icon.png')}
+                    style={styles.metacriticIcon}
+                    accessible={false}
+                  />
+                  <Text style={[styles.ratingScore, { color: getMetacriticColor(rawg.metacritic) }]}>
+                    {rawg.metacritic}
+                  </Text>
                 </View>
               )}
               {communityStats.averageRating ? (
                 <View style={styles.ratingItem}>
                   <SweatDropIcon size={18} variant="static" />
                   <Text style={styles.ratingText}>{communityStats.averageRating}</Text>
+                </View>
+              ) : null}
+              {rawg?.playtimeHours ? (
+                <View style={styles.ratingItem}>
+                  <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
+                  <Text style={styles.ratingText}>~{rawg.playtimeHours}h</Text>
                 </View>
               ) : null}
             </View>
@@ -536,19 +543,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                 <Text style={styles.gameModeText}>{mode}</Text>
               </View>
             ))}
-          </View>
-        )}
-
-        {/* Playtime + ESRB badge — sit directly above the summary */}
-        {(rawg?.playtimeHours || rawg?.esrbRating) && (
-          <View style={styles.metaIconsRow}>
-            {rawg?.playtimeHours ? (
-              <View style={styles.metaIconItem}>
-                <Ionicons name="time-outline" size={16} color={Colors.textMuted} />
-                <Text style={styles.metaIconText}>~{rawg.playtimeHours}h</Text>
-              </View>
-            ) : null}
-            {rawg?.esrbRating ? <EsrbBadge rating={rawg.esrbRating} size={38} /> : null}
           </View>
         )}
 
@@ -950,37 +944,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
   },
-  // Playtime + ESRB inline icons, sitting above the summary
-  metaIconsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.lg,
-    marginTop: Spacing.sm,
-    marginBottom: Spacing.md,
-  },
-  metaIconItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  metaIconText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
-    color: Colors.textMuted,
-  },
-  // Metacritic score — square badge in the ratings row
-  metacriticBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: BorderRadius.xs,
-    borderWidth: 1,
-    minWidth: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  metacriticScore: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: FontSize.sm,
+  // Metacritic logo image sits in the ratings row next to OpenCritic
+  metacriticIcon: {
+    width: 22,
+    height: 22,
   },
   // Game modes chips (singleplayer / multiplayer / co-op)
   gameModesRow: {

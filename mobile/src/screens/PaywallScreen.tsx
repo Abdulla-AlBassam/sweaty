@@ -1,5 +1,7 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import {
+  Alert,
+  Linking,
   Pressable,
   ScrollView,
   StatusBar,
@@ -8,46 +10,81 @@ import {
   View,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
+import type { PurchasesPackage } from 'react-native-purchases'
+import LoadingSpinner from '../components/LoadingSpinner'
 import PremiumBadge from '../components/PremiumBadge'
+import { usePurchases } from '../contexts/PurchasesContext'
 import { BorderRadius, Colors, FontSize, Spacing } from '../constants/colors'
 import { Fonts, Typography } from '../constants/fonts'
 
 export const PAYWALL_STORAGE_KEY = '@sweaty:hasSeenPaywall'
 
+// TODO(abdulla): replace these with real pages on sweaty-v1.vercel.app.
+// Apple requires a Terms of Use and Privacy Policy URL visible on any screen
+// that offers an auto-renewing subscription.
+const TERMS_URL = 'https://sweaty-v1.vercel.app/terms'
+const PRIVACY_URL = 'https://sweaty-v1.vercel.app/privacy'
+
 type Plan = 'monthly' | 'yearly'
+
+// Fallback prices used when the RevenueCat Offering has not loaded yet — in
+// dev without configured API keys, or on a first paint while getOfferings is
+// in flight. Real prices from the store overwrite these whenever available.
+const FALLBACK_MONTHLY_NUMERIC = 4.99
+const FALLBACK_YEARLY_NUMERIC = 49.99
+const FALLBACK_MONTHLY_LABEL = '$4.99'
+const FALLBACK_YEARLY_LABEL = '$49.99'
 
 interface PaywallScreenProps {
   onFinish: () => void | Promise<void>
 }
 
-// TODO(RevenueCat): replace these hardcoded strings with the localised price
-// strings that StoreKit / Play Billing return via react-native-purchases.
-// useOffering() from @revenuecat/purchases-js-hooks, then read
-// offering.availablePackages[x].product.priceString and .price.
-const MONTHLY = {
-  id: 'monthly' as Plan,
-  label: 'Monthly',
-  priceLabel: '$4.99',
-  priceNumeric: 4.99,
-  cadence: 'per month',
-  helper: 'Cancel any time.',
-}
-const YEARLY_PRICE_NUMERIC = 49.99
-const YEARLY_DISCOUNT_PCT = Math.round(
-  (1 - YEARLY_PRICE_NUMERIC / (MONTHLY.priceNumeric * 12)) * 100,
-)
-const YEARLY = {
-  id: 'yearly' as Plan,
-  label: 'Yearly',
-  priceLabel: '$49.99',
-  priceNumeric: YEARLY_PRICE_NUMERIC,
-  cadence: 'per year',
-  helper: `Save ${YEARLY_DISCOUNT_PCT}% compared to monthly.`,
+interface PlanDisplay {
+  id: Plan
+  label: string
+  priceLabel: string
+  priceNumeric: number
+  cadence: string
+  helper: string
+  pkg: PurchasesPackage | null
 }
 
 export default function PaywallScreen({ onFinish }: PaywallScreenProps) {
+  const { monthlyPackage, yearlyPackage, purchase, restore } = usePurchases()
   const [selected, setSelected] = useState<Plan>('yearly')
   const [isPurchasing, setIsPurchasing] = useState(false)
+  const [isRestoring, setIsRestoring] = useState(false)
+
+  const monthly: PlanDisplay = useMemo(() => {
+    const product = monthlyPackage?.product
+    const priceNumeric = product?.price ?? FALLBACK_MONTHLY_NUMERIC
+    return {
+      id: 'monthly',
+      label: 'Monthly',
+      priceLabel: product?.priceString ?? FALLBACK_MONTHLY_LABEL,
+      priceNumeric,
+      cadence: 'per month',
+      helper: 'Cancel any time.',
+      pkg: monthlyPackage,
+    }
+  }, [monthlyPackage])
+
+  const yearly: PlanDisplay = useMemo(() => {
+    const product = yearlyPackage?.product
+    const priceNumeric = product?.price ?? FALLBACK_YEARLY_NUMERIC
+    const discountPct = Math.round(
+      (1 - priceNumeric / (monthly.priceNumeric * 12)) * 100,
+    )
+    return {
+      id: 'yearly',
+      label: 'Yearly',
+      priceLabel: product?.priceString ?? FALLBACK_YEARLY_LABEL,
+      priceNumeric,
+      cadence: 'per year',
+      helper: discountPct > 0 ? `Save ${discountPct}% compared to monthly.` : 'Best value.',
+      pkg: yearlyPackage,
+    }
+  }, [yearlyPackage, monthly.priceNumeric])
 
   const handleSelect = useCallback((plan: Plan) => {
     Haptics.selectionAsync()
@@ -55,20 +92,65 @@ export default function PaywallScreen({ onFinish }: PaywallScreenProps) {
   }, [])
 
   const handleSubscribe = useCallback(async () => {
-    // TODO(RevenueCat): call Purchases.purchasePackage(selectedPackage),
-    // then on success update profiles.subscription_tier via webhook or
-    // direct update, then call onFinish().
+    const chosen = selected === 'yearly' ? yearly : monthly
+    const pkg = chosen.pkg
+
+    if (!pkg) {
+      Alert.alert(
+        'Store unavailable',
+        'We could not reach the App Store right now. Please try again in a moment.',
+      )
+      return
+    }
+
     setIsPurchasing(true)
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    await new Promise((r) => setTimeout(r, 300))
+
+    const result = await purchase(pkg)
+
     setIsPurchasing(false)
-    await onFinish()
-  }, [onFinish])
+
+    if (result.cancelled) {
+      return
+    }
+
+    if (result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      await onFinish()
+      return
+    }
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
+    Alert.alert('Purchase failed', result.error ?? 'Something went wrong. Please try again.')
+  }, [selected, yearly, monthly, purchase, onFinish])
+
+  const handleRestore = useCallback(async () => {
+    setIsRestoring(true)
+    const result = await restore()
+    setIsRestoring(false)
+
+    if (result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      Alert.alert(
+        'Purchases restored',
+        'Your Supporter badge has been restored. Thank you.',
+        [{ text: 'OK', onPress: () => onFinish() }],
+      )
+    } else if (result.error) {
+      Alert.alert('Nothing to restore', 'We did not find any previous purchases on this account.')
+    } else {
+      Alert.alert('Nothing to restore', 'We did not find any active subscriptions to restore.')
+    }
+  }, [restore, onFinish])
 
   const handleSkip = useCallback(async () => {
     Haptics.selectionAsync()
     await onFinish()
   }, [onFinish])
+
+  const openLink = useCallback((url: string) => {
+    Linking.openURL(url).catch((err) => console.error('Failed to open link:', err))
+  }, [])
 
   return (
     <View style={styles.container}>
@@ -94,23 +176,39 @@ export default function PaywallScreen({ onFinish }: PaywallScreenProps) {
 
         <View style={styles.plans}>
           <PlanCard
-            plan={YEARLY}
+            plan={yearly}
             selected={selected === 'yearly'}
             onSelect={() => handleSelect('yearly')}
             badge="BEST VALUE"
           />
           <PlanCard
-            plan={MONTHLY}
+            plan={monthly}
             selected={selected === 'monthly'}
             onSelect={() => handleSelect('monthly')}
           />
         </View>
 
         <Text style={styles.finePrint}>
-          Prices shown in USD. Your local currency and exact amount will appear
-          at checkout. Subscriptions renew automatically until cancelled. Manage
-          from your App Store or Play Store account.
+          Subscriptions renew automatically until cancelled. Your local currency
+          and exact amount will appear at checkout. Manage from your App Store
+          or Play Store account.
         </Text>
+
+        <View style={styles.legalRow}>
+          <Pressable onPress={() => openLink(TERMS_URL)} hitSlop={8}>
+            <Text style={styles.legalLink}>Terms of Use</Text>
+          </Pressable>
+          <Text style={styles.legalDot}>·</Text>
+          <Pressable onPress={() => openLink(PRIVACY_URL)} hitSlop={8}>
+            <Text style={styles.legalLink}>Privacy Policy</Text>
+          </Pressable>
+          <Text style={styles.legalDot}>·</Text>
+          <Pressable onPress={handleRestore} hitSlop={8} disabled={isRestoring}>
+            <Text style={styles.legalLink}>
+              {isRestoring ? 'Restoring...' : 'Restore'}
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -121,9 +219,11 @@ export default function PaywallScreen({ onFinish }: PaywallScreenProps) {
           accessibilityRole="button"
           accessibilityLabel={`Support Sweaty with the ${selected} plan`}
         >
-          <Text style={styles.ctaText}>
-            {isPurchasing ? 'Processing...' : 'Become a Supporter'}
-          </Text>
+          {isPurchasing ? (
+            <LoadingSpinner size="small" color={Colors.background} />
+          ) : (
+            <Text style={styles.ctaText}>Become a Supporter</Text>
+          )}
         </Pressable>
         <Pressable
           onPress={handleSkip}
@@ -140,7 +240,7 @@ export default function PaywallScreen({ onFinish }: PaywallScreenProps) {
 }
 
 interface PlanCardProps {
-  plan: typeof MONTHLY | typeof YEARLY
+  plan: PlanDisplay
   selected: boolean
   onSelect: () => void
   badge?: string
@@ -165,17 +265,13 @@ function PlanCard({ plan, selected, onSelect, badge }: PlanCardProps) {
         </View>
       )}
       <View style={styles.planTop}>
-        <Text style={[styles.planLabel, selected && styles.planLabelSelected]}>
-          {plan.label}
-        </Text>
+        <Text style={styles.planLabel}>{plan.label}</Text>
         <View style={[styles.radio, selected && styles.radioSelected]}>
           {selected && <View style={styles.radioDot} />}
         </View>
       </View>
       <View style={styles.planPriceRow}>
-        <Text style={[styles.planPrice, selected && styles.planPriceSelected]}>
-          {plan.priceLabel}
-        </Text>
+        <Text style={styles.planPrice}>{plan.priceLabel}</Text>
         <Text style={styles.planCadence}>{plan.cadence}</Text>
       </View>
       <Text style={styles.planHelper}>{plan.helper}</Text>
@@ -262,9 +358,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     color: Colors.text,
   },
-  planLabelSelected: {
-    color: Colors.text,
-  },
   radio: {
     width: 22,
     height: 22,
@@ -295,9 +388,6 @@ const styles = StyleSheet.create({
     color: Colors.text,
     letterSpacing: 0.5,
   },
-  planPriceSelected: {
-    color: Colors.text,
-  },
   planCadence: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
@@ -314,6 +404,24 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     textAlign: 'center',
     lineHeight: 16,
+    marginBottom: Spacing.md,
+  },
+  legalRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  legalLink: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textMuted,
+    textDecorationLine: 'underline',
+  },
+  legalDot: {
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: Colors.textDim,
   },
   footer: {
     paddingHorizontal: Spacing.xl,
