@@ -521,14 +521,18 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               )}
               {communityStats.averageRating ? (
                 <View style={styles.ratingItem}>
-                  <SweatDropIcon size={18} variant="static" />
-                  <Text style={styles.ratingText}>{communityStats.averageRating}</Text>
+                  <View style={styles.sweatyRatingIcon}>
+                    <SweatDropIcon size={18} variant="static" />
+                  </View>
+                  <Text style={[styles.ratingScore, { color: Colors.cream }]}>
+                    {communityStats.averageRating}
+                  </Text>
                 </View>
               ) : null}
               {rawg?.playtimeHours ? (
                 <View style={styles.ratingItem}>
-                  <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
-                  <Text style={styles.ratingText}>~{rawg.playtimeHours}h</Text>
+                  <Ionicons name="time-outline" size={22} color={Colors.textMuted} />
+                  <Text style={styles.ratingScore}>{rawg.playtimeHours}h</Text>
                 </View>
               ) : null}
             </View>
@@ -948,6 +952,15 @@ const styles = StyleSheet.create({
   metacriticIcon: {
     width: 22,
     height: 22,
+  },
+  // Tight 22x22 wrapper clips SweatDropIcon's internal padding so it
+  // reads as the same size as the OpenCritic / Metacritic images.
+  sweatyRatingIcon: {
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
   },
   // Game modes chips (singleplayer / multiplayer / co-op)
   gameModesRow: {
