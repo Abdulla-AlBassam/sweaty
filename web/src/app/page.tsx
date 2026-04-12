@@ -23,15 +23,12 @@ async function getRandomBanner(): Promise<string | null> {
   }
 }
 
-function PhoneMockup({ src, alt }: { src: string; alt: string }) {
+function PhoneMockup({ src, alt, size = 'default' }: { src: string; alt: string; size?: 'default' | 'small' }) {
+  const isSmall = size === 'small'
   return (
-    <div className="relative mx-auto w-[240px] sm:w-[270px]">
-      {/* iPhone 15 Pro Max frame */}
-      <div className="rounded-[3rem] border-[5px] border-[#3A3A3E] bg-[#1A1A1C] p-[3px] shadow-2xl shadow-black/50">
-        {/* Dynamic Island */}
-        <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-[110px] h-[32px] bg-black rounded-full z-10" />
-        {/* Screen */}
-        <div className="relative rounded-[2.6rem] overflow-hidden bg-black">
+    <div className={isSmall ? 'relative w-[155px] sm:w-[210px] lg:w-[240px]' : 'relative mx-auto w-[240px] sm:w-[270px]'}>
+      <div className={`${isSmall ? 'rounded-[2.2rem] sm:rounded-[2.8rem] lg:rounded-[3rem] border-[4px] sm:border-[5px] p-[2px] sm:p-[3px]' : 'rounded-[3rem] border-[5px] p-[3px]'} border-[#3A3A3E] bg-[#1A1A1C] shadow-2xl shadow-black/50`}>
+        <div className={`relative overflow-hidden bg-black ${isSmall ? 'rounded-[2rem] sm:rounded-[2.4rem] lg:rounded-[2.6rem]' : 'rounded-[2.6rem]'}`}>
           <Image
             src={src}
             alt={alt}
@@ -66,7 +63,7 @@ export default async function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1C]/60 via-transparent to-[#1A1A1C]/60" />
 
         <div className="relative z-10 flex flex-col items-center max-w-2xl">
-          <LogoMark size={120} className="mb-8" />
+          <LogoMark size={144} className="mb-8" />
 
           <p className="font-display font-bold text-xs tracking-[0.3em] uppercase text-[var(--foreground-dim)] mb-6">
             Coming Soon
@@ -108,147 +105,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="px-6 py-20 bg-[var(--background)]">
-        <div className="mx-auto max-w-2xl">
-          <ScrollReveal>
-            <h2 className="font-display text-center text-2xl sm:text-3xl font-bold tracking-tight">
-              Everything You Need To Track Your Games
-            </h2>
-          </ScrollReveal>
-
-          <div className="mt-10 space-y-3">
-            <ScrollReveal delay={0}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Game Library</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Log games as playing, completed, want to play, on hold, or dropped. Track hours, dates, and platforms.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={60}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Ratings And Reviews</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Half-star ratings, written reviews up to 2,000 characters, likes, and threaded comments.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={120}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Curated Discovery</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Browse handpicked lists, trending games, and community favourites on a dynamic search feed.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={180}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2a4 4 0 0 0-4 4v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2h-2V6a4 4 0 0 0-4-4z" /><circle cx="12" cy="15" r="2" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">AI Recommendations</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Personalised suggestions based on your taste, friend activity, and favourite studios.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={240}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Custom Lists</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Create ranked or unranked game lists, make them public or private, and share with friends.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={300}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Platform Import</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Connect your Steam or PlayStation account and import your existing library in seconds.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={360}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Ranks And Streaks</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Earn Gamer XP and Social XP across 11 ranks. Keep your daily streak alive.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-
-            <ScrollReveal delay={420}>
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-5 flex items-start gap-4 hover:bg-[var(--background-card)] transition-colors">
-                <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--background-card)]">
-                  <svg className="h-[18px] w-[18px] text-[var(--foreground-dim)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                    <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">News And Streams</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)] leading-relaxed">
-                    Gaming news, YouTube trailers, and live Twitch streams on every game page.
-                  </p>
-                </div>
-              </div>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
-
       {/* Discover Section */}
       <section className="px-6 py-20 bg-[var(--background-lighter)]">
         <div className="mx-auto max-w-5xl">
@@ -268,29 +124,34 @@ export default async function Home() {
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="space-y-3">
               <ScrollReveal delay={100}>
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-card)] p-4">
                   <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Dynamic Search Feed</h3>
                   <p className="mt-1 text-sm text-[var(--foreground-muted)]">Trending, new releases, community favourites, and coming soon rows that refresh on every visit</p>
                 </div>
               </ScrollReveal>
 
               <ScrollReveal delay={160}>
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Personalised Recommendations</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">AI-powered picks based on your library, plus &ldquo;because you loved&rdquo; and friends&apos; favourites rails</p>
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-card)] p-4">
+                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Curated Collections</h3>
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">Handpicked lists like Timeless Classics, 2025 Essentials, and GOATed Remakes</p>
                 </div>
               </ScrollReveal>
 
               <ScrollReveal delay={220}>
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Rich Game Pages</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">OpenCritic scores, screenshots, similar games, live Twitch streams, and YouTube trailers</p>
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-card)] p-4">
+                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Community And Content</h3>
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">Community activity, YouTube videos, and gaming news from major outlets</p>
                 </div>
               </ScrollReveal>
             </div>
 
             <ScrollReveal delay={150} className="flex justify-center lg:justify-end">
-              <PhoneMockup src="/app-discover.png" alt="Sweaty app discover screen showing curated game lists" />
+              <div className="flex items-start gap-3 sm:gap-5">
+                <PhoneMockup src="/app-search.png" alt="Search feed with curated game lists" size="small" />
+                <div className="mt-8 sm:mt-12">
+                  <PhoneMockup src="/app-home.png" alt="Home screen with community activity" size="small" />
+                </div>
+              </div>
             </ScrollReveal>
           </div>
         </div>
@@ -314,7 +175,12 @@ export default async function Home() {
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[auto_1fr] lg:items-center">
             <ScrollReveal delay={150} className="flex justify-center lg:justify-start order-2 lg:order-1">
-              <PhoneMockup src="/app-profile.png" alt="Sweaty app profile showing game library and lists" />
+              <div className="flex items-start gap-3 sm:gap-5">
+                <PhoneMockup src="/app-profile-top.png" alt="Profile with stats and favourite games" size="small" />
+                <div className="mt-8 sm:mt-12">
+                  <PhoneMockup src="/app-profile-bottom.png" alt="Profile lists and library by status" size="small" />
+                </div>
+              </div>
             </ScrollReveal>
 
             <div className="space-y-3 order-1 lg:order-2">
@@ -343,49 +209,107 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Community Section */}
+      {/* Game Details Section */}
       <section className="px-6 py-20 bg-[var(--background-lighter)]">
         <div className="mx-auto max-w-5xl">
           <ScrollReveal>
             <p className="font-display font-bold text-xs tracking-[0.3em] uppercase text-[var(--foreground-dim)] mb-4">
-              Community
+              Game Details
             </p>
             <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight max-w-md">
-              See what your friends are playing
+              Everything about every game
             </h2>
             <p className="mt-4 text-[var(--foreground-muted)] leading-relaxed max-w-lg">
-              Follow friends, read their reviews, catch up on gaming news, and watch
-              trailers. The community without the noise.
+              Critic scores, community reviews, live Twitch streams, YouTube trailers,
+              and similar games on every game page.
             </p>
           </ScrollReveal>
 
           <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
             <div className="space-y-3">
               <ScrollReveal delay={100}>
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Activity Feed</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">See what friends are logging, review comments with likes, and follow other gamers</p>
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-card)] p-4">
+                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Reviews And Scores</h3>
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">OpenCritic scores, community ratings, written reviews with likes, and friends who played</p>
                 </div>
               </ScrollReveal>
 
               <ScrollReveal delay={160}>
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Watch And Read</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">YouTube trailers, gaming news from major outlets, and categorised content pills</p>
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-card)] p-4">
+                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Streams And Trailers</h3>
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">Live Twitch streams, YouTube trailers, and where to buy on every game page</p>
                 </div>
               </ScrollReveal>
 
               <ScrollReveal delay={220}>
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
-                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Friends Who Played</h3>
-                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">See which friends played a game, their ratings, and live Twitch streams on every game page</p>
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-card)] p-4">
+                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Similar Games</h3>
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">Smart recommendations for similar titles powered by IGDB and community data</p>
                 </div>
               </ScrollReveal>
             </div>
 
             <ScrollReveal delay={150} className="flex justify-center lg:justify-end">
-              <PhoneMockup src="/app-community.png" alt="Sweaty app community activity and news feed" />
+              <div className="flex items-start gap-3 sm:gap-5">
+                <PhoneMockup src="/app-game-detail.png" alt="Game page with reviews and OpenCritic scores" size="small" />
+                <div className="mt-8 sm:mt-12">
+                  <PhoneMockup src="/app-game-streams.png" alt="Game streams, trailers, and similar games" size="small" />
+                </div>
+              </div>
             </ScrollReveal>
+          </div>
+        </div>
+      </section>
+
+      {/* Log Section */}
+      <section className="px-6 py-20 bg-[var(--background)]">
+        <div className="mx-auto max-w-5xl">
+          <ScrollReveal>
+            <p className="font-display font-bold text-xs tracking-[0.3em] uppercase text-[var(--foreground-dim)] mb-4">
+              Log & Track
+            </p>
+            <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight max-w-md">
+              Track every game you play
+            </h2>
+            <p className="mt-4 text-[var(--foreground-muted)] leading-relaxed max-w-lg">
+              Log games with status, ratings, platform, and reviews.
+              Your library organises everything automatically.
+            </p>
+          </ScrollReveal>
+
+          <div className="mt-8 grid gap-8 lg:grid-cols-[auto_1fr] lg:items-center">
+            <ScrollReveal delay={150} className="flex justify-center lg:justify-start order-2 lg:order-1">
+              <PhoneMockup src="/app-log-game.png" alt="Log game modal with rating and review" />
+            </ScrollReveal>
+
+            <div className="space-y-3 order-1 lg:order-2">
+              <ScrollReveal delay={80}>
+                <div className="rounded-2xl border border-[var(--border-subtle)] overflow-hidden">
+                  <Image
+                    src="/app-library.png"
+                    alt="Library organised by play status"
+                    width={1200}
+                    height={600}
+                    className="w-full h-auto"
+                    quality={90}
+                  />
+                </div>
+              </ScrollReveal>
+
+              <ScrollReveal delay={140}>
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
+                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Quick Logging</h3>
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">Log as playing, completed, want to play, on hold, or dropped with platform and dates</p>
+                </div>
+              </ScrollReveal>
+
+              <ScrollReveal delay={200}>
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--background-lighter)] p-4">
+                  <h3 className="font-display text-sm font-bold text-[var(--foreground)]">Ratings And Reviews</h3>
+                  <p className="mt-1 text-sm text-[var(--foreground-muted)]">Half-star ratings, written reviews up to 2,000 characters, and add to your lists</p>
+                </div>
+              </ScrollReveal>
+            </div>
           </div>
         </div>
       </section>
