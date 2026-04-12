@@ -19,6 +19,7 @@ import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
 import StarRating from '../components/StarRating'
 import SweatDropIcon from '../components/SweatDropIcon'
+import CommentIcon from '../components/CommentIcon'
 
 type LibraryStatusRouteProp = RouteProp<MainStackParamList, 'LibraryStatus'>
 
@@ -115,12 +116,9 @@ export default function LibraryStatusScreen() {
         <View style={styles.ratingBelow}>
           {item.rating && <StarRating rating={item.rating} size={12} filledOnly />}
           {item.review && item.review.trim().length > 0 && (
-            <Ionicons
-              name="chatbubble-outline"
-              size={11}
-              color={Colors.accent}
-              style={item.rating ? { marginLeft: 3 } : undefined}
-            />
+            <View style={item.rating ? { marginLeft: 3 } : undefined}>
+              <CommentIcon size={11} color={Colors.accent} />
+            </View>
           )}
         </View>
       )}

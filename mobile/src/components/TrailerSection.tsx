@@ -43,7 +43,15 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
 
   return (
     <View style={styles.container}>
-      {/* YouTube Player */}
+      <View style={styles.headerRow}>
+        <Ionicons
+          name="logo-youtube"
+          size={20}
+          color={Colors.youtube}
+          accessibilityLabel="YouTube"
+        />
+        <Text style={styles.sourceLabel}>Trailers</Text>
+      </View>
       <View style={styles.playerContainer}>
         <YoutubePlayer
           height={playerHeight}
@@ -104,6 +112,19 @@ export default function TrailerSection({ videos }: TrailerSectionProps) {
 const styles = StyleSheet.create({
   container: {
     marginTop: Spacing.lg,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  sourceLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   playerContainer: {
     borderRadius: BorderRadius.md,

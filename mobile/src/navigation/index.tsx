@@ -29,6 +29,8 @@ import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
 import LibraryStatusScreen from '../screens/LibraryStatusScreen'
 import RankProgressScreen from '../screens/RankProgressScreen'
+import StreakInfoScreen from '../screens/StreakInfoScreen'
+import CommunitySpotlightScreen from '../screens/CommunitySpotlightScreen'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
@@ -60,6 +62,8 @@ export type MainStackParamList = {
   WebView: { url: string; title: string }
   LibraryStatus: { userId: string; status: string }
   RankProgress: undefined
+  StreakInfo: undefined
+  CommunitySpotlight: undefined
   // Admin / onboarding previews (developer only)
   AdminHeroBanners: undefined
   AdminCuratedLists: undefined
@@ -199,6 +203,20 @@ function MainNavigator() {
       <MainStack.Screen
         name="RankProgress"
         component={RankProgressScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="StreakInfo"
+        component={StreakInfoScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="CommunitySpotlight"
+        component={CommunitySpotlightScreen}
         options={{
           animation: 'slide_from_right',
         }}

@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
+import CommentIcon from '../components/CommentIcon'
 import PressableScale from '../components/PressableScale'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -531,8 +532,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
               ) : null}
               {rawg?.playtimeHours ? (
                 <View style={styles.ratingItem}>
-                  <Ionicons name="time-outline" size={22} color={Colors.textMuted} />
-                  <Text style={styles.ratingScore}>{rawg.playtimeHours}h</Text>
+                  <Ionicons name="hourglass-outline" size={20} color={Colors.textMuted} />
+                  <Text style={[styles.ratingScore, { color: Colors.textMuted }]}>
+                    {rawg.playtimeHours}h
+                  </Text>
                 </View>
               ) : null}
             </View>
@@ -610,7 +613,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                       )}
                       {friendReview && (
                         <View style={styles.reviewBadge}>
-                          <Ionicons name="chatbubble-outline" size={14} color={Colors.text} />
+                          <CommentIcon size={14} color={Colors.text} />
                         </View>
                       )}
                     </View>
@@ -646,7 +649,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                         </View>
                       )}
                       <View style={styles.reviewBadge}>
-                        <Ionicons name="chatbubble-outline" size={14} color={Colors.text} />
+                        <CommentIcon size={14} color={Colors.text} />
                       </View>
                     </View>
                     {reviewer.rating && (

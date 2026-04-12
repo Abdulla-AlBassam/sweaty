@@ -37,6 +37,7 @@ const PAGES: Page[] = [
     eyebrow: '01 / 03',
     headline: 'TRACK',
     body: 'Your library, your ratings, your words.',
+    backdrop: require('../../assets/onboarding/track-backdrop.png'),
   },
   {
     id: 'discover',

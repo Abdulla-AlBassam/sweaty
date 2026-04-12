@@ -10,6 +10,7 @@ import {
   Keyboard,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
+import CommentIcon from './CommentIcon'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -33,6 +34,8 @@ interface ReviewCommentsProps {
   autoExpand?: boolean
   /** When true, hides the toggle button and only renders the expanded content */
   hideToggle?: boolean
+  /** Notifies the parent whenever the comment count changes (add / delete) */
+  onCountChange?: (count: number) => void
 }
 
 // Helper to format relative time
@@ -156,7 +159,7 @@ function CommentItem({ comment, onReply, onDelete, currentUserId, isReply = fals
   )
 }
 
-export default function ReviewComments({ gameLogId, initialCommentCount = 0, previewMode = false, onPreviewPress, hideInput = false, onReplyRequest, autoExpand = false, hideToggle = false }: ReviewCommentsProps) {
+export default function ReviewComments({ gameLogId, initialCommentCount = 0, previewMode = false, onPreviewPress, hideInput = false, onReplyRequest, autoExpand = false, hideToggle = false, onCountChange }: ReviewCommentsProps) {
   const { user, profile } = useAuth()
   const [comments, setComments] = useState<ReviewComment[]>([])
   const [commentCount, setCommentCount] = useState(initialCommentCount)
@@ -253,6 +256,10 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
       fetchComments()
     }
   }, [isExpanded, fetchComments])
+
+  useEffect(() => {
+    onCountChange?.(commentCount)
+  }, [commentCount, onCountChange])
 
   const handleSubmit = async () => {
     if (!user || !inputText.trim() || isSubmitting) return
@@ -364,7 +371,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
   if (previewMode) {
     return (
       <TouchableOpacity style={styles.toggleButton} onPress={onPreviewPress} activeOpacity={0.7}>
-        <Ionicons name="chatbubble-outline" size={22} color={Colors.textMuted} />
+        <CommentIcon size={22} color={Colors.textMuted} />
         {commentCount > 0 && (
           <Text style={styles.countText}>{commentCount}</Text>
         )}
@@ -377,11 +384,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
       {/* Comment toggle button - stays inline with like button */}
       {!hideToggle && (
       <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7} accessibilityLabel={isExpanded ? 'Hide comments' : `Show comments${commentCount > 0 ? `, ${commentCount} comments` : ''}`} accessibilityRole="button">
-        <Ionicons
-          name="chatbubble-outline"
-          size={22}
-          color={Colors.textMuted}
-        />
+        <CommentIcon size={22} color={Colors.textMuted} />
         {commentCount > 0 && (
           <Text style={styles.countText}>{commentCount}</Text>
         )}
@@ -472,12 +475,14 @@ const styles = StyleSheet.create({
   toggleButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    height: 22,
+    gap: Spacing.xs,
   },
   countText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
     color: Colors.textMuted,
+    lineHeight: 22,
   },
   expandedSection: {
     width: '100%',

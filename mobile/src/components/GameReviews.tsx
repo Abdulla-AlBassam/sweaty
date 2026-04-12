@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import FormattedText from './FormattedText'
+import CommentIcon from './CommentIcon'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -46,7 +47,8 @@ const PREVIEW_LIMIT = 8
 const FETCH_POOL = 20 // Fetch more to find the highest-liked
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const CARD_WIDTH = Math.round(SCREEN_WIDTH * 0.82)
+const CARD_MAX_WIDTH = Math.round(SCREEN_WIDTH * 0.82)
+const CARD_MIN_WIDTH = 240
 
 export default function GameReviews({ gameId, gameName, refreshKey }: GameReviewsProps) {
   const { user } = useAuth()
@@ -54,10 +56,17 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
   const [reviews, setReviews] = useState<Review[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  const [snapOffsets, setSnapOffsets] = useState<number[]>([])
+  const cardOffsetsRef = useRef<Record<string, number>>({})
 
   useEffect(() => {
     fetchReviews()
   }, [gameId, refreshKey])
+
+  useEffect(() => {
+    cardOffsetsRef.current = {}
+    setSnapOffsets([])
+  }, [reviews])
 
   const fetchReviews = async () => {
     try {
@@ -207,7 +216,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Reviews</Text>
         <View style={styles.emptyContainer}>
-          <Ionicons name="chatbubble-outline" size={32} color={Colors.textDim} />
+          <CommentIcon size={32} color={Colors.textDim} />
           <Text style={styles.emptyText}>No reviews yet</Text>
           <Text style={styles.emptySubtext}>Be the first to share your thoughts!</Text>
         </View>
@@ -221,6 +230,17 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
       gameName,
       gameId,
     })
+  }
+
+  const handleCardLayout = (reviewId: string, x: number) => {
+    cardOffsetsRef.current[reviewId] = x
+    if (Object.keys(cardOffsetsRef.current).length === reviews.length) {
+      const orderedOffsets = reviews
+        .map(r => cardOffsetsRef.current[r.id])
+        .filter((v): v is number => typeof v === 'number')
+        .sort((a, b) => a - b)
+      setSnapOffsets(orderedOffsets)
+    }
   }
 
   return (
@@ -238,7 +258,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.cardsRow}
         decelerationRate="fast"
-        snapToInterval={CARD_WIDTH + Spacing.md}
+        snapToOffsets={snapOffsets.length > 0 ? snapOffsets : undefined}
         snapToAlignment="start"
         nestedScrollEnabled={true}
       >
@@ -247,6 +267,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
             key={review.id}
             style={styles.reviewCard}
             activeOpacity={0.85}
+            onLayout={(e) => handleCardLayout(review.id, e.nativeEvent.layout.x)}
             onPress={() => handleCardPress(review)}
             accessibilityLabel={'Review by ' + (review.user.display_name || review.user.username)}
             accessibilityRole="button"
@@ -364,16 +385,19 @@ const styles = StyleSheet.create({
   // Edge-lit card: surface fill, rounded corners, subtle top highlight line
   // to mimic `shadow-[inset_0_1px_0_white/15]`
   reviewCard: {
-    width: CARD_WIDTH,
+    minWidth: CARD_MIN_WIDTH,
+    maxWidth: CARD_MAX_WIDTH,
+    alignSelf: 'flex-start',
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.lg,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     padding: Spacing.lg,
   },
   userRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.sm,
     marginBottom: Spacing.md,
   },
   avatar: {
@@ -395,8 +419,7 @@ const styles = StyleSheet.create({
     color: Colors.accent,
   },
   userInfo: {
-    flex: 1,
-    marginLeft: Spacing.sm,
+    flexShrink: 1,
   },
   displayName: {
     fontFamily: Fonts.bodySemiBold,
@@ -409,7 +432,9 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   reviewMeta: {
+    marginLeft: 'auto',
     alignItems: 'flex-end',
+    paddingLeft: Spacing.md,
   },
   ratingBadge: {
     flexDirection: 'row',
@@ -427,9 +452,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: 20,
-    minHeight: 100,
   },
-  // Centred so heart + count and comment + count share a single baseline
   socialSection: {
     marginTop: Spacing.md,
     paddingTop: Spacing.sm,
@@ -437,6 +460,6 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xl,
+    gap: Spacing.md,
   },
 })

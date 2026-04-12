@@ -12,6 +12,7 @@ import { useNavigation, useScrollToTop } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import SweatDropIcon from '../components/SweatDropIcon'
+import CommentIcon from '../components/CommentIcon'
 import { useAuth } from '../contexts/AuthContext'
 import { useActivityFeed, useOwnActivityFeed } from '../hooks/useSupabase'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
@@ -210,7 +211,7 @@ export default function ActivityScreen() {
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
             {activeCategory === 'reviews' ? (
-              <Ionicons name="chatbubble-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
+              <View style={styles.emptyIcon}><CommentIcon size={48} color={Colors.textDim} /></View>
             ) : activeTab === 'friends' && activeCategory === 'all' ? (
               <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
             ) : (

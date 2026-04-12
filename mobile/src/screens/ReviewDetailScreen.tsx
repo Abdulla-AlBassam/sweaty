@@ -24,6 +24,7 @@ import { ReviewComment } from '../types'
 import StarRating from '../components/StarRating'
 import ReviewLikeButton from '../components/ReviewLikeButton'
 import ReviewComments from '../components/ReviewComments'
+import CommentIcon from '../components/CommentIcon'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'ReviewDetail'>
@@ -54,6 +55,8 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
   const [replyingTo, setReplyingTo] = useState<ReviewComment | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [commentRefreshKey, setCommentRefreshKey] = useState(0)
+  const [commentsExpanded, setCommentsExpanded] = useState(false)
+  const [commentCount, setCommentCount] = useState(0)
 
   useEffect(() => {
     fetchReview()
@@ -116,6 +119,7 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
         commentCount,
         isLiked,
       } as ReviewData)
+      setCommentCount(commentCount)
     } catch (error) {
       console.error('Error fetching review:', error)
     } finally {
@@ -163,6 +167,8 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
       setCommentText('')
       setReplyingTo(null)
       Keyboard.dismiss()
+      setCommentCount(c => c + 1)
+      setCommentsExpanded(true)
       setCommentRefreshKey(k => k + 1)
     } catch (err) {
       console.error('Failed to add comment:', err)
@@ -279,62 +285,81 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
               initialIsLiked={review.isLiked}
               size="medium"
             />
-            <ReviewComments
-              key={commentRefreshKey}
-              gameLogId={review.id}
-              initialCommentCount={review.commentCount}
-              hideInput
-              onReplyRequest={setReplyingTo}
-            />
+            <TouchableOpacity
+              style={styles.commentToggle}
+              onPress={() => setCommentsExpanded(prev => !prev)}
+              activeOpacity={0.7}
+              accessibilityLabel={commentsExpanded ? 'Hide comments' : `Show comments${commentCount > 0 ? `, ${commentCount} comments` : ''}`}
+              accessibilityRole="button"
+            >
+              <CommentIcon size={22} color={Colors.textMuted} />
+              {commentCount > 0 && (
+                <Text style={styles.commentToggleCount}>{commentCount}</Text>
+              )}
+            </TouchableOpacity>
           </View>
-        </ScrollView>
 
-        {/* Comment input - pinned at bottom */}
-        {user && (
-          <View style={styles.inputBar}>
-            {replyingTo && (
-              <View style={styles.replyingTo}>
-                <Text style={styles.replyingToText}>
-                  Replying to <Text style={styles.replyingToName}>@{replyingTo.user?.username}</Text>
-                </Text>
-                <TouchableOpacity onPress={() => setReplyingTo(null)} accessibilityLabel="Cancel reply" accessibilityRole="button">
-                  <Ionicons name="close" size={14} color={Colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-            )}
-            <View style={styles.inputRow}>
-              {profile?.avatar_url ? (
-                <Image source={{ uri: profile.avatar_url }} style={styles.inputAvatar} />
-              ) : (
-                <View style={[styles.inputAvatar, styles.inputAvatarPlaceholder]}>
-                  <Ionicons name="person" size={10} color={Colors.textDim} />
+          {commentsExpanded && (
+            <View style={styles.commentsExpanded}>
+              <ReviewComments
+                key={commentRefreshKey}
+                gameLogId={review.id}
+                initialCommentCount={commentCount}
+                hideToggle
+                autoExpand
+                hideInput
+                onReplyRequest={setReplyingTo}
+                onCountChange={setCommentCount}
+              />
+            </View>
+          )}
+
+          {user && (
+            <View style={styles.inputBar}>
+              {replyingTo && (
+                <View style={styles.replyingTo}>
+                  <Text style={styles.replyingToText}>
+                    Replying to <Text style={styles.replyingToName}>@{replyingTo.user?.username}</Text>
+                  </Text>
+                  <TouchableOpacity onPress={() => setReplyingTo(null)} accessibilityLabel="Cancel reply" accessibilityRole="button">
+                    <Ionicons name="close" size={14} color={Colors.textMuted} />
+                  </TouchableOpacity>
                 </View>
               )}
-              <TextInput
-                style={styles.commentInput}
-                placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
-                placeholderTextColor={Colors.textDim}
-                value={commentText}
-                onChangeText={(text) => setCommentText(text.slice(0, 500))}
-                multiline
-                maxLength={500}
-              />
-              <TouchableOpacity
-                style={[styles.sendButton, (!commentText.trim() || isSubmitting) && styles.sendButtonDisabled]}
-                onPress={handleCommentSubmit}
-                disabled={!commentText.trim() || isSubmitting}
-                accessibilityLabel={replyingTo ? 'Send reply' : 'Send comment'}
-                accessibilityRole="button"
-              >
-                {isSubmitting ? (
-                  <LoadingSpinner size="small" color={Colors.text} />
+              <View style={styles.inputRow}>
+                {profile?.avatar_url ? (
+                  <Image source={{ uri: profile.avatar_url }} style={styles.inputAvatar} />
                 ) : (
-                  <Ionicons name="arrow-up" size={16} color={commentText.trim() ? Colors.background : Colors.textDim} />
+                  <View style={[styles.inputAvatar, styles.inputAvatarPlaceholder]}>
+                    <Ionicons name="person" size={12} color={Colors.textDim} />
+                  </View>
                 )}
-              </TouchableOpacity>
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder={replyingTo ? 'Write a reply...' : 'Add a comment...'}
+                  placeholderTextColor={Colors.textDim}
+                  value={commentText}
+                  onChangeText={(text) => setCommentText(text.slice(0, 500))}
+                  multiline
+                  maxLength={500}
+                />
+                <TouchableOpacity
+                  style={[styles.sendButton, (!commentText.trim() || isSubmitting) && styles.sendButtonDisabled]}
+                  onPress={handleCommentSubmit}
+                  disabled={!commentText.trim() || isSubmitting}
+                  accessibilityLabel={replyingTo ? 'Send reply' : 'Send comment'}
+                  accessibilityRole="button"
+                >
+                  {isSubmitting ? (
+                    <LoadingSpinner size="small" color={Colors.text} />
+                  ) : (
+                    <Ionicons name="arrow-up" size={18} color={commentText.trim() ? Colors.background : Colors.textDim} />
+                  )}
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        )}
+          )}
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
@@ -455,8 +480,23 @@ const styles = StyleSheet.create({
   socialRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.lg,
-    marginBottom: Spacing.lg,
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  commentToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 22,
+    gap: Spacing.xs,
+  },
+  commentToggleCount: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.textMuted,
+    lineHeight: 22,
+  },
+  commentsExpanded: {
+    marginBottom: Spacing.md,
   },
   commentsLabel: {
     fontFamily: Fonts.bodySemiBold,
@@ -464,13 +504,9 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginBottom: Spacing.md,
   },
-  // Pinned comment input bar
   inputBar: {
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    backgroundColor: Colors.background,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
   },
   replyingTo: {
     flexDirection: 'row',
@@ -497,13 +533,14 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.full,
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    minHeight: 52,
   },
   inputAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
   inputAvatarPlaceholder: {
     backgroundColor: Colors.surfaceLight,
@@ -513,16 +550,16 @@ const styles = StyleSheet.create({
   commentInput: {
     flex: 1,
     fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     color: Colors.text,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs,
-    maxHeight: 80,
+    maxHeight: 120,
   },
   sendButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: Colors.accent,
     alignItems: 'center',
     justifyContent: 'center',

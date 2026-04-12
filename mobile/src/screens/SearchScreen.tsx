@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useNavigation, CommonActions, useScrollToTop } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
@@ -140,12 +141,39 @@ export default function SearchScreen() {
   const [communityGames, setCommunityGames] = useState<DiscoveryGame[]>([])
   const [isLoadingCommunity, setIsLoadingCommunity] = useState(true)
 
+  // Community Spotlight entry preview - 3 top avatars
+  const [spotlightPreview, setSpotlightPreview] = useState<string[]>([])
+
   // Load discovery sections and recent searches on mount
   useEffect(() => {
     loadRecentSearches()
     loadTrendingGames()
     loadCommunityGames()
+    loadSpotlightPreview()
   }, [])
+
+  // Load a small preview of top users with avatars for the spotlight entry.
+  // Logic: top 5 users by longest_streak who have an avatar set. Streak
+  // leaders are the most consistently active users, so their faces act as a
+  // "who's inside" teaser for the full spotlight grid.
+  const loadSpotlightPreview = async () => {
+    try {
+      const { data, error: previewError } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .not('avatar_url', 'is', null)
+        .order('longest_streak', { ascending: false, nullsFirst: false })
+        .limit(5)
+      if (previewError || !data) return
+      setSpotlightPreview(
+        (data as Array<{ avatar_url: string | null }>)
+          .map((row) => row.avatar_url)
+          .filter((url): url is string => !!url)
+      )
+    } catch {
+      // Silent - the card gracefully hides the preview stack when empty.
+    }
+  }
 
   // Load trending games from IGDB (global trending)
   const loadTrendingGames = async () => {
@@ -915,6 +943,68 @@ export default function SearchScreen() {
             </View>
           )}
 
+          {/* Community Spotlight - edge-lit entry card */}
+          <TouchableOpacity
+            style={styles.spotlightCard}
+            onPress={() =>
+              navigation.dispatch(
+                CommonActions.navigate({ name: 'CommunitySpotlight' })
+              )
+            }
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Community Spotlight"
+            accessibilityHint="Opens the community spotlight leaderboards"
+          >
+            {/* Top-down cream beam — stage light spilling from the edge-lit top */}
+            <LinearGradient
+              colors={['rgba(192, 200, 208, 0.10)', 'rgba(192, 200, 208, 0)']}
+              locations={[0, 0.6]}
+              style={styles.spotlightBeam}
+              pointerEvents="none"
+            />
+            <View style={styles.spotlightCardLeft}>
+              <Text
+                style={styles.spotlightCardTitle}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
+                COMMUNITY SPOTLIGHT
+              </Text>
+            </View>
+            <View style={styles.spotlightCardRight}>
+              {spotlightPreview.length > 0 && (
+                <View style={styles.spotlightPreviewStack}>
+                  {spotlightPreview.map((url, i) => (
+                    <View
+                      key={`${url}-${i}`}
+                      style={[
+                        styles.spotlightPreviewPip,
+                        i > 0 && styles.spotlightPreviewPipOverlap,
+                      ]}
+                    >
+                      <Image
+                        source={{ uri: url }}
+                        style={styles.spotlightPreviewImg}
+                      />
+                    </View>
+                  ))}
+                </View>
+              )}
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={Colors.textMuted}
+              />
+            </View>
+          </TouchableOpacity>
+
+          {/* Discover section header */}
+          <View style={styles.discoverHeader}>
+            <Text style={styles.discoverHeaderText}>DISCOVER</Text>
+          </View>
+
           {/* ═══ Browse Toggle + Trending + Popular ═══ */}
           <View style={[styles.sectionGroup, { backgroundColor: Colors.background, paddingTop: 0, paddingBottom: 0 }]}>
             {/* Browse Mode Toggle */}
@@ -1264,6 +1354,80 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: Spacing.sectionHeaderBelow,
+  },
+  spotlightCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: Spacing.screenPadding,
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg + 2,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(255, 255, 255, 0.22)',
+    gap: Spacing.md,
+    overflow: 'hidden',
+  },
+  spotlightBeam: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '100%',
+  },
+  spotlightCardLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  spotlightCardTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.md,
+    color: Colors.cream,
+    letterSpacing: 0.5,
+    lineHeight: 22,
+  },
+  spotlightCardRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  spotlightPreviewStack: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  spotlightPreviewPip: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.surface,
+    overflow: 'hidden',
+    backgroundColor: Colors.surfaceLight,
+  },
+  spotlightPreviewPipOverlap: {
+    marginLeft: -20,
+  },
+  spotlightPreviewImg: {
+    width: '100%',
+    height: '100%',
+  },
+  discoverHeader: {
+    paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.cream,
+    marginBottom: Spacing.md,
+  },
+  discoverHeaderText: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.lg,
+    color: Colors.cream,
+    lineHeight: 26,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   browseToggle: {
     flexDirection: 'row',

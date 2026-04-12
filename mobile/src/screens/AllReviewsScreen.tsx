@@ -22,6 +22,7 @@ import StarRating from '../components/StarRating'
 import ReviewLikeButton from '../components/ReviewLikeButton'
 import ReviewComments from '../components/ReviewComments'
 import LoadingSpinner from '../components/LoadingSpinner'
+import CommentIcon from '../components/CommentIcon'
 import { MainStackParamList } from '../navigation'
 
 type Props = NativeStackScreenProps<MainStackParamList, 'AllReviews'>
@@ -250,7 +251,7 @@ export default function AllReviewsScreen({ navigation, route }: Props) {
             }
             ListEmptyComponent={
               <View style={styles.centered}>
-                <Ionicons name="chatbubble-outline" size={32} color={Colors.textDim} />
+                <CommentIcon size={32} color={Colors.textDim} />
                 <Text style={styles.emptyText}>No reviews yet</Text>
               </View>
             }

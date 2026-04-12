@@ -108,6 +108,7 @@ export const Colors = {
 
   // External brand
   twitch: '#9146FF',
+  youtube: '#FF0000',
 
 }
 

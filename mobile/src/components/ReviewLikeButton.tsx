@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+import HeartIcon from './HeartIcon'
 
 interface ReviewLikeButtonProps {
   gameLogId: string
@@ -87,10 +87,10 @@ export default function ReviewLikeButton({
       accessibilityLabel={`${isLiked ? 'Unlike' : 'Like'} review${likeCount > 0 ? `, ${likeCount} likes` : ''}`}
       accessibilityRole="button"
     >
-      <Ionicons
-        name={isLiked ? 'heart' : 'heart-outline'}
+      <HeartIcon
         size={ICON_SIZE}
         color={isLiked ? Colors.error : Colors.textMuted}
+        filled={isLiked}
       />
       {likeCount > 0 && (
         <Text style={styles.count}>
@@ -105,11 +105,13 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: ICON_SIZE,
     gap: Spacing.xs,
   },
   count: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
     color: Colors.textMuted,
+    lineHeight: ICON_SIZE,
   },
 })

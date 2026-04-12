@@ -428,7 +428,16 @@ export default function ProfileScreen() {
               <PlatformBadges platforms={profile.gaming_platforms} size="small" />
             )}
             {isPremium && <PremiumBadge size="small" variant={username === 'abdulla' ? 'developer' : 'premium'} />}
-            <StreakBadge streak={profile?.current_streak || 0} size="medium" />
+            {(profile?.current_streak || 0) > 0 && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('StreakInfo' as never)}
+                activeOpacity={0.7}
+                accessibilityLabel="View streak details"
+                accessibilityRole="button"
+              >
+                <StreakBadge streak={profile?.current_streak || 0} size="medium" />
+              </TouchableOpacity>
+            )}
           </View>
           <Text style={styles.username}>@{username}</Text>
 

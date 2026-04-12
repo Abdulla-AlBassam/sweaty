@@ -137,6 +137,7 @@ export default function TwitchStreamsSection({ gameName }: TwitchStreamsSectionP
           style={styles.twitchIcon}
           accessibilityLabel="Twitch icon"
         />
+        <Text style={styles.sourceLabel}>Streaming</Text>
         <Animated.View style={[styles.liveDot, { opacity: pulseAnim }]} />
       </View>
 
@@ -171,6 +172,13 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: Colors.twitch,
+  },
+  sourceLabel: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
   },
   liveDot: {
     width: 8,
