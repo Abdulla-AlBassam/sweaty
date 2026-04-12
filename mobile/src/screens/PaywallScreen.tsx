@@ -19,9 +19,6 @@ import { Fonts, Typography } from '../constants/fonts'
 
 export const PAYWALL_STORAGE_KEY = '@sweaty:hasSeenPaywall'
 
-// TODO(abdulla): replace these with real pages on sweaty-v1.vercel.app.
-// Apple requires a Terms of Use and Privacy Policy URL visible on any screen
-// that offers an auto-renewing subscription.
 const TERMS_URL = 'https://sweaty-v1.vercel.app/terms'
 const PRIVACY_URL = 'https://sweaty-v1.vercel.app/privacy'
 

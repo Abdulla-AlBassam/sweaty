@@ -762,6 +762,25 @@ export default function SettingsScreen() {
           </View>
           </View>
 
+          {/* Legal */}
+          <View style={styles.legalRow}>
+            <PressableScale
+              onPress={() => Linking.openURL('https://sweaty-v1.vercel.app/terms')}
+              hitSlop={8}
+              haptic="light"
+            >
+              <Text style={styles.legalLink}>Terms of Use</Text>
+            </PressableScale>
+            <Text style={styles.legalDot}>&middot;</Text>
+            <PressableScale
+              onPress={() => Linking.openURL('https://sweaty-v1.vercel.app/privacy')}
+              hitSlop={8}
+              haptic="light"
+            >
+              <Text style={styles.legalLink}>Privacy Policy</Text>
+            </PressableScale>
+          </View>
+
           {/* App Version */}
           <View style={styles.appInfo}>
             <Text style={styles.appVersion}>sweaty v1.0.0</Text>
@@ -1185,9 +1204,26 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     marginTop: 2,
   },
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingTop: Spacing.lg,
+  },
+  legalLink: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+  },
+  legalDot: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+  },
   appInfo: {
     alignItems: 'center',
-    paddingTop: Spacing.xxl,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing.xxl,
   },
   appVersion: {
