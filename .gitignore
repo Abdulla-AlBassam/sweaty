@@ -16,6 +16,12 @@ node_modules/
 *.swp
 *.swo
 
+# Claude Code / AI tooling
+.claude/
+
+# Design skill configs
+.impeccable.md
+
 # OS
 .DS_Store
 Thumbs.db
