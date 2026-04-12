@@ -1,11 +1,11 @@
 {
-  "name": "Sweaty - Track Your Games",
+  "name": "Sweaty - Track Your Gaming Journey",
   "short_name": "Sweaty",
-  "description": "Track your gaming journey.",
-  "start_url": "/dashboard",
+  "description": "Keep a diary of every game you play. Rate, review, and share.",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f0f",
-  "theme_color": "#22c55e",
+  "background_color": "#1A1A1C",
+  "theme_color": "#1A1A1C",
   "icons": [
     {
       "src": "/icon.svg",

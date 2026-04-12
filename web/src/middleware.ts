@@ -1,8 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Middleware runs on every request before it reaches your pages
-// It refreshes the user's auth session to keep them logged in
+// Middleware refreshes Supabase auth sessions for API routes
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -31,16 +30,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired - required for Server Components
   await supabase.auth.getUser()
 
   return supabaseResponse
 }
 
-// Only run middleware on routes that need auth
-// Excludes static files, images, and public assets
+// Only run on API routes that need auth session refresh
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/api/((?!waitlist).*)',
   ],
 }
