@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
   },
   headerTitle: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textTransform: 'uppercase',

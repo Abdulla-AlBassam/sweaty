@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xl,
   },
   xpText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
     letterSpacing: 0.5,

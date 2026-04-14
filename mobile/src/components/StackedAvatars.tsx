@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
   },
   containerInline: {
     alignSelf: 'flex-start',
-    marginTop: 2,
+    marginTop: 6,
   },
   avatarRow: {
     flexDirection: 'row',
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   avatar: {
     borderWidth: 0.5,
-    borderColor: Colors.textDim,
+    borderColor: Colors.borderSubtle,
     backgroundColor: Colors.surface,
     overflow: 'hidden',
     alignItems: 'center',

@@ -28,6 +28,7 @@ import ReviewDetailScreen from '../screens/ReviewDetailScreen'
 import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
 import LibraryStatusScreen from '../screens/LibraryStatusScreen'
+import UserReviewsScreen from '../screens/UserReviewsScreen'
 import RankProgressScreen from '../screens/RankProgressScreen'
 import StreakInfoScreen from '../screens/StreakInfoScreen'
 import CommunitySpotlightScreen from '../screens/CommunitySpotlightScreen'
@@ -61,6 +62,7 @@ export type MainStackParamList = {
   Watch: { initialTab?: 'all' | 'videos' | 'news' } | undefined
   WebView: { url: string; title: string }
   LibraryStatus: { userId: string; status: string }
+  UserReviews: { userId: string }
   RankProgress: undefined
   StreakInfo: undefined
   CommunitySpotlight: undefined
@@ -196,6 +198,13 @@ function MainNavigator() {
       <MainStack.Screen
         name="LibraryStatus"
         component={LibraryStatusScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="UserReviews"
+        component={UserReviewsScreen}
         options={{
           animation: 'slide_from_right',
         }}

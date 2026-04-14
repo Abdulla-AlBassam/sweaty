@@ -7,7 +7,7 @@ export const Colors = {
   surface: '#2A2A2E',         // Card/surface background
   surfaceLight: '#333338',    // Elevated elements
   surfaceBright: '#3A3A3E',   // Highlighted elements
-  alternate: '#1E1E21',       // Alternating section background
+  alternate: '#222226',       // Alternating section background
   surfaceTranslucent: 'rgba(26, 26, 28, 0.7)',  // Frosted surface (auth forms)
   surfaceLightTranslucent: 'rgba(51, 51, 56, 0.9)',  // Translucent input fields (auth)
 

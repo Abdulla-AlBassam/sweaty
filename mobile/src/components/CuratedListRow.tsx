@@ -138,11 +138,11 @@ const styles = StyleSheet.create({
     gap: Spacing.cardGap,                 // 12px gap between cards
   },
   gameCard: {
-    width: 88,
+    width: 105,
   },
   cover: {
-    width: 88,
-    height: 117,
+    width: 105,
+    height: 140,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
     borderWidth: 0.5,

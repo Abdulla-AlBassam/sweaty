@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import { MainStackParamList } from '../navigation'
+import LibraryFilterModal, { LibrarySortType } from '../components/LibraryFilterModal'
 
 type CuratedListDetailRouteProp = RouteProp<MainStackParamList, 'CuratedListDetail'>
 
@@ -41,6 +42,8 @@ export default function CuratedListDetailScreen() {
 
   const [games, setGames] = useState<GameItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [sortType, setSortType] = useState<LibrarySortType>('release_newest')
+  const [filterModalVisible, setFilterModalVisible] = useState(false)
 
   useEffect(() => {
     const fetchGames = async () => {
@@ -54,13 +57,6 @@ export default function CuratedListDetailScreen() {
           cover_url: g.coverUrl,
           first_release_date: g.first_release_date || null,
         }))
-        // Sort by release date (newest first)
-        mappedGames.sort((a, b) => {
-          if (!a.first_release_date && !b.first_release_date) return 0
-          if (!a.first_release_date) return 1
-          if (!b.first_release_date) return -1
-          return new Date(b.first_release_date).getTime() - new Date(a.first_release_date).getTime()
-        })
         setGames(mappedGames)
         setIsLoading(false)
         return
@@ -75,21 +71,12 @@ export default function CuratedListDetailScreen() {
 
         if (error) throw error
 
-        // Get all games from cache
         const fetchedGames: GameItem[] = (data || []).map((game: any) => ({
           id: game.id,
           name: game.name,
           cover_url: game.cover_url,
           first_release_date: game.first_release_date,
         }))
-
-        // Sort by release date (newest first)
-        fetchedGames.sort((a, b) => {
-          if (!a.first_release_date && !b.first_release_date) return 0
-          if (!a.first_release_date) return 1
-          if (!b.first_release_date) return -1
-          return new Date(b.first_release_date).getTime() - new Date(a.first_release_date).getTime()
-        })
 
         setGames(fetchedGames)
       } catch (err) {
@@ -101,6 +88,37 @@ export default function CuratedListDetailScreen() {
 
     fetchGames()
   }, [gameIds, passedGames])
+
+  const sortedGames = useMemo(() => {
+    const sorted = [...games]
+    switch (sortType) {
+      case 'release_newest':
+        sorted.sort((a, b) => {
+          if (!a.first_release_date && !b.first_release_date) return 0
+          if (!a.first_release_date) return 1
+          if (!b.first_release_date) return -1
+          return new Date(b.first_release_date).getTime() - new Date(a.first_release_date).getTime()
+        })
+        break
+      case 'release_oldest':
+        sorted.sort((a, b) => {
+          if (!a.first_release_date && !b.first_release_date) return 0
+          if (!a.first_release_date) return 1
+          if (!b.first_release_date) return -1
+          return new Date(a.first_release_date).getTime() - new Date(b.first_release_date).getTime()
+        })
+        break
+      case 'alphabetical_az':
+        sorted.sort((a, b) => a.name.localeCompare(b.name))
+        break
+      case 'alphabetical_za':
+        sorted.sort((a, b) => b.name.localeCompare(a.name))
+        break
+      default:
+        break
+    }
+    return sorted
+  }, [games, sortType])
 
   const handleGamePress = (gameId: number) => {
     navigation.dispatch(
@@ -159,7 +177,14 @@ export default function CuratedListDetailScreen() {
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{listTitle}</Text>
-        <View style={styles.headerSpacer} />
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setFilterModalVisible(true)}
+          accessibilityLabel="Sort games"
+          accessibilityRole="button"
+        >
+          <Ionicons name="funnel-outline" size={20} color={Colors.text} />
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -169,7 +194,7 @@ export default function CuratedListDetailScreen() {
         </View>
       ) : (
         <FlatList
-          data={games}
+          data={sortedGames}
           renderItem={renderGame}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           numColumns={3}
@@ -180,6 +205,18 @@ export default function CuratedListDetailScreen() {
           getItemLayout={getItemLayout}
         />
       )}
+
+      <LibraryFilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        filterType="all"
+        sortType={sortType}
+        onFilterChange={() => {}}
+        onSortChange={setSortType}
+        onReset={() => setSortType('release_newest')}
+        hideFilterSection
+        allowedSortGroups={['RELEASE DATE', 'GAME NAME']}
+      />
     </SafeAreaView>
   )
 }
@@ -209,8 +246,11 @@ const styles = StyleSheet.create({
     fontSize: FontSize.lg,
     color: Colors.text,
   },
-  headerSpacer: {
+  sortButton: {
     width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Dimensions,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -14,94 +13,91 @@ import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-naviga
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
-import { getIGDBImageUrl, STATUS_LABELS } from '../constants'
+import { getIGDBImageUrl } from '../constants'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 import { MainStackParamList } from '../navigation'
+import StarRating from '../components/StarRating'
 import SweatDropIcon from '../components/SweatDropIcon'
-import LibraryFilterModal, {
-  LibrarySortType,
-  LibraryStatusFilterType,
-} from '../components/LibraryFilterModal'
+import LibraryFilterModal, { LibrarySortType } from '../components/LibraryFilterModal'
 
-type LibraryStatusRouteProp = RouteProp<MainStackParamList, 'LibraryStatus'>
+type UserReviewsRouteProp = RouteProp<MainStackParamList, 'UserReviews'>
 
-const SCREEN_WIDTH = Dimensions.get('window').width
-const NUM_COLUMNS = 5
-const GRID_PADDING = Spacing.screenPadding * 2  // 32px total
-const GAP = 6
-const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS
+const COVER_WIDTH = 70
+const COVER_HEIGHT = COVER_WIDTH * (4 / 3)
 
-interface GameLogItem {
+interface ReviewItem {
   id: string
   game_id: number
-  status: string
   rating: number | null
-  review: string | null
+  review: string
+  created_at: string
   updated_at: string | null
   game: {
     id: number
     name: string
     cover_url: string | null
-    first_release_date?: string | null
+    first_release_date: string | null
   }
 }
 
-export default function LibraryStatusScreen() {
+function getYear(dateStr: string | null): string | null {
+  if (!dateStr) return null
+  const d = new Date(dateStr)
+  const y = d.getFullYear()
+  return y > 1970 ? String(y) : null
+}
+
+export default function UserReviewsScreen() {
   const navigation = useNavigation()
-  const route = useRoute<LibraryStatusRouteProp>()
-  const { userId, status } = route.params
+  const route = useRoute<UserReviewsRouteProp>()
+  const { userId } = route.params
+
   const { user } = useAuth()
 
-  const [gameLogs, setGameLogs] = useState<GameLogItem[]>([])
+  const [reviews, setReviews] = useState<ReviewItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [myRatings, setMyRatings] = useState<Record<number, number | null>>({})
 
-  // Filter/sort state
+  // Sort state
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false)
   const [sortType, setSortType] = useState<LibrarySortType>('recent')
-  const [statusFilter, setStatusFilter] = useState<LibraryStatusFilterType>('all_statuses')
 
   const isOtherUser = !!user?.id && user.id !== userId
 
-  const isAllView = status === 'all'
-  const statusLabel = isAllView ? 'All Games' : (STATUS_LABELS[status] || status)
-
   useEffect(() => {
-    const fetchLogs = async () => {
+    const fetchReviews = async () => {
       setIsLoading(true)
       try {
-        let query = supabase
+        const { data, error } = await supabase
           .from('game_logs')
-          .select('id, game_id, status, rating, review, updated_at, game:games_cache(id, name, cover_url, first_release_date)')
+          .select('id, game_id, rating, review, created_at, updated_at, game:games_cache(id, name, cover_url, first_release_date)')
           .eq('user_id', userId)
+          .not('review', 'is', null)
+          .neq('review', '')
           .order('updated_at', { ascending: false })
-
-        if (!isAllView) {
-          query = query.eq('status', status)
-        }
-
-        const { data, error } = await query
 
         if (error) throw error
 
-        const logs = ((data || []) as any[]).filter((log: any) => log.game)
-        setGameLogs(logs)
+        const filtered = ((data || []) as any[]).filter(
+          (r: any) => r.game && r.review && r.review.trim().length > 0
+        )
+        setReviews(filtered)
       } catch (err) {
-        console.error('Failed to fetch library logs:', err)
+        console.error('Failed to fetch user reviews:', err)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchLogs()
-  }, [userId, status, isAllView])
+    fetchReviews()
+  }, [userId])
 
-  // Fetch my ratings for these games when viewing another user
+  // Fetch my ratings when viewing another user's reviews
   useEffect(() => {
-    if (!isOtherUser || !user?.id || gameLogs.length === 0) return
+    if (!isOtherUser || !user?.id || reviews.length === 0) return
     const fetchMyRatings = async () => {
-      const gameIds = gameLogs.map(l => l.game_id)
+      const gameIds = reviews.map(r => r.game_id)
       const { data } = await supabase
         .from('game_logs')
         .select('game_id, rating')
@@ -114,33 +110,28 @@ export default function LibraryStatusScreen() {
       }
     }
     fetchMyRatings()
-  }, [isOtherUser, user?.id, gameLogs])
+  }, [isOtherUser, user?.id, reviews])
 
-  // Apply sorting and filtering
-  const sortedLogs = useMemo(() => {
-    let filtered = [...gameLogs]
-
-    if (isAllView && statusFilter !== 'all_statuses') {
-      filtered = filtered.filter(log => log.status === statusFilter)
-    }
+  const sortedReviews = useMemo(() => {
+    const sorted = [...reviews]
 
     switch (sortType) {
       case 'recent':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           const dateA = a.updated_at ? new Date(a.updated_at).getTime() : 0
           const dateB = b.updated_at ? new Date(b.updated_at).getTime() : 0
           return dateB - dateA
         })
         break
       case 'oldest':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           const dateA = a.updated_at ? new Date(a.updated_at).getTime() : Infinity
           const dateB = b.updated_at ? new Date(b.updated_at).getTime() : Infinity
           return dateA - dateB
         })
         break
       case 'rating_high':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           if (a.rating !== null && b.rating !== null) return b.rating - a.rating
           if (a.rating !== null) return -1
           if (b.rating !== null) return 1
@@ -148,7 +139,7 @@ export default function LibraryStatusScreen() {
         })
         break
       case 'rating_low':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           if (a.rating !== null && b.rating !== null) return a.rating - b.rating
           if (a.rating !== null) return -1
           if (b.rating !== null) return 1
@@ -156,7 +147,7 @@ export default function LibraryStatusScreen() {
         })
         break
       case 'release_newest':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           const dateA = a.game?.first_release_date ? new Date(a.game.first_release_date).getTime() : 0
           const dateB = b.game?.first_release_date ? new Date(b.game.first_release_date).getTime() : 0
           if (dateA === 0 && dateB === 0) return 0
@@ -166,7 +157,7 @@ export default function LibraryStatusScreen() {
         })
         break
       case 'release_oldest':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           const dateA = a.game?.first_release_date ? new Date(a.game.first_release_date).getTime() : Infinity
           const dateB = b.game?.first_release_date ? new Date(b.game.first_release_date).getTime() : Infinity
           if (dateA === Infinity && dateB === Infinity) return 0
@@ -176,7 +167,7 @@ export default function LibraryStatusScreen() {
         })
         break
       case 'my_rating_high':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           const rA = myRatings[a.game_id] ?? null
           const rB = myRatings[b.game_id] ?? null
           if (rA !== null && rB !== null) return rB - rA
@@ -186,7 +177,7 @@ export default function LibraryStatusScreen() {
         })
         break
       case 'my_rating_low':
-        filtered.sort((a, b) => {
+        sorted.sort((a, b) => {
           const rA = myRatings[a.game_id] ?? null
           const rB = myRatings[b.game_id] ?? null
           if (rA !== null && rB !== null) return rA - rB
@@ -196,23 +187,15 @@ export default function LibraryStatusScreen() {
         })
         break
       case 'alphabetical_az':
-        filtered.sort((a, b) => {
-          const nameA = a.game?.name?.toLowerCase() || ''
-          const nameB = b.game?.name?.toLowerCase() || ''
-          return nameA.localeCompare(nameB)
-        })
+        sorted.sort((a, b) => (a.game?.name || '').localeCompare(b.game?.name || ''))
         break
       case 'alphabetical_za':
-        filtered.sort((a, b) => {
-          const nameA = a.game?.name?.toLowerCase() || ''
-          const nameB = b.game?.name?.toLowerCase() || ''
-          return nameB.localeCompare(nameA)
-        })
+        sorted.sort((a, b) => (b.game?.name || '').localeCompare(a.game?.name || ''))
         break
     }
 
-    return filtered
-  }, [gameLogs, sortType, isAllView, statusFilter, myRatings])
+    return sorted
+  }, [reviews, sortType, myRatings])
 
   const handleGamePress = (gameId: number) => {
     navigation.dispatch(
@@ -223,34 +206,51 @@ export default function LibraryStatusScreen() {
     )
   }
 
-  const hasActiveFilters = sortType !== 'recent' || (isAllView && statusFilter !== 'all_statuses')
+  const hasActiveFilters = sortType !== 'recent'
 
-  const handleResetFilters = () => {
-    setSortType('recent')
-    setStatusFilter('all_statuses')
-  }
+  const renderItem = ({ item, index }: { item: ReviewItem; index: number }) => {
+    const year = getYear(item.game.first_release_date)
 
-  const renderItem = ({ item }: { item: GameLogItem }) => (
-    <TouchableOpacity
-      style={styles.gameCard}
-      onPress={() => handleGamePress(item.game_id)}
-      activeOpacity={0.7}
-      accessibilityLabel={item.game?.name || 'Game'}
-      accessibilityRole="button"
-    >
-      {item.game?.cover_url ? (
-        <Image
-          source={{ uri: getIGDBImageUrl(item.game.cover_url, 'coverBig2x') }}
-          style={styles.gameCover}
-          accessibilityLabel={(item.game?.name || 'Game') + ' cover art'}
-        />
-      ) : (
-        <View style={[styles.gameCover, styles.gameCoverPlaceholder]}>
-          <SweatDropIcon size={16} variant="static" />
+    return (
+      <TouchableOpacity
+        style={[styles.reviewCard, index > 0 && styles.reviewCardBorder]}
+        onPress={() => handleGamePress(item.game_id)}
+        activeOpacity={0.7}
+        accessibilityLabel={`Review of ${item.game.name}`}
+        accessibilityRole="button"
+      >
+        {/* Title row: game name + year, stars on right */}
+        <View style={styles.titleRow}>
+          <View style={styles.titleLeft}>
+            <Text style={styles.gameTitle} numberOfLines={1}>
+              {item.game.name}
+            </Text>
+            {year && <Text style={styles.gameYear}>{year}</Text>}
+          </View>
+          {item.rating && (
+            <StarRating rating={item.rating} size={13} filledOnly />
+          )}
         </View>
-      )}
-    </TouchableOpacity>
-  )
+
+        {/* Content row: cover + review text */}
+        <View style={styles.contentRow}>
+          {item.game.cover_url ? (
+            <Image
+              source={{ uri: getIGDBImageUrl(item.game.cover_url, 'coverBig2x') }}
+              style={styles.cover}
+            />
+          ) : (
+            <View style={[styles.cover, styles.coverPlaceholder]}>
+              <SweatDropIcon size={16} variant="static" />
+            </View>
+          )}
+          <Text style={styles.reviewText} numberOfLines={4}>
+            {item.review.trim()}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -264,12 +264,12 @@ export default function LibraryStatusScreen() {
         >
           <Ionicons name="arrow-back" size={22} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{statusLabel}</Text>
-        <Text style={styles.headerCount}>{sortedLogs.length}</Text>
+        <Text style={styles.headerTitle}>Reviews</Text>
+        <Text style={styles.headerCount}>{sortedReviews.length}</Text>
         <TouchableOpacity
           onPress={() => setIsFilterModalVisible(true)}
           style={styles.filterButton}
-          accessibilityLabel="Filter and sort"
+          accessibilityLabel="Sort reviews"
           accessibilityRole="button"
         >
           <Ionicons
@@ -284,20 +284,18 @@ export default function LibraryStatusScreen() {
         <View style={styles.loadingContainer}>
           <LoadingSpinner size="large" />
         </View>
-      ) : sortedLogs.length > 0 ? (
+      ) : sortedReviews.length > 0 ? (
         <FlatList
-          data={sortedLogs}
+          data={sortedReviews}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          numColumns={NUM_COLUMNS}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.gridContent}
+          contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
         />
       ) : (
         <View style={styles.emptyState}>
           <SweatDropIcon size={48} variant="static" />
-          <Text style={styles.emptyText}>No games here yet</Text>
+          <Text style={styles.emptyText}>No reviews yet</Text>
         </View>
       )}
 
@@ -308,11 +306,8 @@ export default function LibraryStatusScreen() {
         sortType={sortType}
         onFilterChange={() => {}}
         onSortChange={setSortType}
-        onReset={handleResetFilters}
+        onReset={() => setSortType('recent')}
         hideFilterSection
-        showStatusFilter={isAllView}
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
         isOtherUser={isOtherUser}
       />
     </SafeAreaView>
@@ -356,30 +351,68 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gridContent: {
+  listContent: {
     paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.md,
     paddingBottom: Spacing.xxl,
   },
-  row: {
-    gap: GAP,
-    marginBottom: GAP,
+
+  // Review card
+  reviewCard: {
+    paddingVertical: Spacing.lg,
   },
-  gameCard: {
-    width: CARD_WIDTH,
+  reviewCardBorder: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
   },
-  gameCover: {
-    width: '100%',
-    aspectRatio: 3 / 4,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  titleLeft: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  gameTitle: {
+    fontFamily: Fonts.bodySemiBold,
+    fontSize: FontSize.md,
+    color: Colors.text,
+    flexShrink: 1,
+  },
+  gameYear: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.xs,
+    color: Colors.textDim,
+  },
+  contentRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  cover: {
+    width: COVER_WIDTH,
+    height: COVER_HEIGHT,
     borderRadius: BorderRadius.sm,
     backgroundColor: Colors.surface,
     borderWidth: 0.5,
     borderColor: Colors.borderSubtle,
   },
-  gameCoverPlaceholder: {
+  coverPlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
   },
+  reviewText: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+
+  // Empty state
   emptyState: {
     flex: 1,
     alignItems: 'center',

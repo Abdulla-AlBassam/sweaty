@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
   },
   screenshotNumberText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.text,
   },

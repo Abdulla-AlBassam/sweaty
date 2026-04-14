@@ -369,13 +369,13 @@ export function useCuratedLists(excludePcOnly: boolean = false) {
       // Batch fetch all games (include platforms for PC-only filtering)
       const { data: gamesData, error: gamesError } = await supabase
         .from('games_cache')
-        .select('id, name, cover_url, platforms')
+        .select('id, name, cover_url, platforms, first_release_date')
         .in('id', Array.from(allGameIds))
 
       if (gamesError) throw gamesError
 
       // Create a map of game ID to game data
-      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null; platforms: string[] | null }>()
+      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null; platforms: string[] | null; first_release_date: string | null }>()
       ;(gamesData || []).forEach((game: any) => {
         gamesMap.set(game.id, game)
       })
@@ -384,16 +384,24 @@ export function useCuratedLists(excludePcOnly: boolean = false) {
       const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => {
         let games = list.game_ids
           .map((id) => gamesMap.get(id))
-          .filter((game): game is { id: number; name: string; cover_url: string | null; platforms: string[] | null } => game !== undefined)
+          .filter((game): game is { id: number; name: string; cover_url: string | null; platforms: string[] | null; first_release_date: string | null } => game !== undefined)
 
         // Filter out PC-only games if excludePcOnly is enabled
         if (excludePcOnly) {
           games = games.filter(game => !isPcOnlyGame(game.platforms))
         }
 
+        // Sort by release date (newest first)
+        games.sort((a, b) => {
+          if (!a.first_release_date && !b.first_release_date) return 0
+          if (!a.first_release_date) return 1
+          if (!b.first_release_date) return -1
+          return new Date(b.first_release_date).getTime() - new Date(a.first_release_date).getTime()
+        })
+
         return {
           ...list,
-          games: shuffleArray(games),
+          games,
         }
       })
 

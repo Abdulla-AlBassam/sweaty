@@ -33,8 +33,19 @@ import StackedAvatars from '../components/StackedAvatars'
 import WatchSection from '../components/WatchSection'
 import SweatDropIcon from '../components/SweatDropIcon'
 import Skeleton from '../components/Skeleton'
+import StarRating from '../components/StarRating'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
+
+// Platform-specific curated lists. Any slug NOT listed here is shown to everyone.
+// Add new platform-specific list slugs here as they're created.
+const PLATFORM_LIST_MAP: Record<string, string> = {
+  'playstation-exclusives': 'playstation',
+  'psplus-essentials': 'playstation',
+  'xbox-exclusives': 'xbox',
+  'nintendo-exclusives': 'nintendo',
+  'pc-exclusives': 'pc',
+}
 
 function formatTimeAgo(dateString: string): string {
   const now = new Date()
@@ -73,6 +84,7 @@ export default function DashboardScreen() {
 
   // Community activity (recent reviews)
   const { reviews: communityReviews, isLoading: communityLoading, refetch: refetchCommunity } = useCommunityReviews()
+
 
   const [refreshing, setRefreshing] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
@@ -120,16 +132,27 @@ export default function DashboardScreen() {
       .slice(0, 10)
   }, [logs])
 
+  // Filter curated lists by user's selected platforms
+  const filteredCuratedLists = useMemo(() => {
+    return curatedLists.filter((list) => {
+      const requiredPlatform = PLATFORM_LIST_MAP[list.slug]
+      // General list (not in the map) → show to everyone
+      if (!requiredPlatform) return true
+      // Platform-specific list → only show if user has that platform
+      return platforms.includes(requiredPlatform)
+    })
+  }, [curatedLists, platforms])
+
   // Pick two different random curated lists on each refresh
   const [forYouCuratedList, featuredCuratedList] = useMemo(() => {
-    if (curatedLists.length === 0) return [null, null]
-    if (curatedLists.length === 1) return [curatedLists[0], null]
-    const i = Math.floor(Math.random() * curatedLists.length)
-    let j = Math.floor(Math.random() * (curatedLists.length - 1))
+    if (filteredCuratedLists.length === 0) return [null, null]
+    if (filteredCuratedLists.length === 1) return [filteredCuratedLists[0], null]
+    const i = Math.floor(Math.random() * filteredCuratedLists.length)
+    let j = Math.floor(Math.random() * (filteredCuratedLists.length - 1))
     if (j >= i) j++ // ensure different index
-    return [curatedLists[i], curatedLists[j]]
+    return [filteredCuratedLists[i], filteredCuratedLists[j]]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [curatedLists, refreshCount])
+  }, [filteredCuratedLists, refreshCount])
 
   const handleGamePress = (gameId: number) => {
     navigation.navigate('GameDetail', { gameId })
@@ -143,7 +166,7 @@ export default function DashboardScreen() {
       contentContainerStyle={styles.horizontalScroll}
     >
       {[1, 2, 3, 4].map((i) => (
-        <Skeleton key={i} width={105} height={140} borderRadius={BorderRadius.md} />
+        <Skeleton key={i} width={88} height={117} borderRadius={BorderRadius.md} />
       ))}
     </ScrollView>
   )
@@ -220,9 +243,9 @@ export default function DashboardScreen() {
                       accessibilityHint="Opens game details"
                     >
                       {coverUrl ? (
-                        <Image source={{ uri: coverUrl }} style={styles.gameCover} accessibilityLabel={game.name + ' cover art'} />
+                        <Image source={{ uri: coverUrl }} style={styles.nowPlayingCover} accessibilityLabel={game.name + ' cover art'} />
                       ) : (
-                        <View style={[styles.gameCover, styles.coverPlaceholder]}>
+                        <View style={[styles.nowPlayingCover, styles.coverPlaceholder]}>
                           <Text style={styles.placeholderText}>?</Text>
                         </View>
                       )}
@@ -273,7 +296,7 @@ export default function DashboardScreen() {
                       style={styles.gameCover}
                       accessibilityLabel={game.name + ' cover art'}
                     />
-                    <StackedAvatars users={game.friends} inline size={24} maxDisplay={4} />
+                    <StackedAvatars users={game.friends} inline size={26} maxDisplay={4} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -337,7 +360,7 @@ export default function DashboardScreen() {
                       style={styles.gameCover}
                       accessibilityLabel={game.name + ' cover art'}
                     />
-                    <StackedAvatars users={game.friends} inline size={24} maxDisplay={4} />
+                    <StackedAvatars users={game.friends} inline size={26} maxDisplay={4} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -436,10 +459,7 @@ export default function DashboardScreen() {
                             {review.user.display_name || review.user.username}
                           </Text>
                           {review.rating && (
-                            <View style={styles.communityRating}>
-                              <Ionicons name="star" size={10} color={Colors.cream} />
-                              <Text style={styles.communityRatingText}>{review.rating}</Text>
-                            </View>
+                            <StarRating rating={review.rating} size={10} filledOnly />
                           )}
                         </View>
                         <Text style={styles.communityReviewText} numberOfLines={3}>
@@ -564,6 +584,21 @@ const styles = StyleSheet.create({
     gap: Spacing.cardGap,
   },
   // Game covers
+  // Now Playing - large covers (personal shelf)
+  nowPlayingCover: {
+    width: 120,
+    height: 160,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+    shadowColor: Colors.background,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  // Friends sections - compact covers
   gameCover: {
     width: 88,
     height: 117,

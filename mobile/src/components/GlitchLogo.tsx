@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   text: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.display,
     fontSize: 26,
     fontWeight: '600',
     letterSpacing: 4,

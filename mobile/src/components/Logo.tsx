@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
 
   // Option 1: Minimal - ultra clean
   minimalText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.display,
     fontSize: 28,
     fontWeight: '200',
     color: '#ffffff',
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
 
   // Option 2: Elegant - with underline
   elegantText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.display,
     fontSize: 26,
     fontWeight: '300',
     color: '#ffffff',
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
 
   // Option 3: Bold - stronger
   boldText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.display,
     fontSize: 30,
     fontWeight: '600',
     color: '#ffffff',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
 
   // Option 4: Accent - green
   accentText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.display,
     fontSize: 28,
     fontWeight: '300',
     color: Colors.accent,

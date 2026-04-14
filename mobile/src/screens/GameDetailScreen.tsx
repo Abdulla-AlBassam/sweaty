@@ -736,10 +736,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           <TouchableOpacity
             style={styles.rawgAttribution}
             onPress={() => Linking.openURL('https://rawg.io').catch(() => {})}
-            accessibilityLabel="Powered by RAWG"
+            accessibilityLabel="Powered by RAWG and IGDB"
             accessibilityRole="link"
           >
-            <Text style={styles.rawgAttributionText}>Powered by RAWG</Text>
+            <Text style={styles.rawgAttributionText}>Powered by RAWG & IGDB</Text>
           </TouchableOpacity>
         )}
 
@@ -992,6 +992,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   storeTile: {
+    flex: 1,
     minWidth: 60,
     height: 52,
     alignItems: 'center',

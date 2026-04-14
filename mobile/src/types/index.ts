@@ -142,6 +142,7 @@ export interface CuratedListWithGames extends CuratedList {
     id: number
     name: string
     cover_url: string | null
+    first_release_date?: string | null
   }>
 }
 

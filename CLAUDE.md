@@ -324,21 +324,22 @@ npm run dev
 ## Conventions & Notes
 
 - **British English** in copy and documentation. No em dashes.
-- **Cream brand colour `#F0E4D0`** is reserved for uppercase letter-spaced headers; not used on the SearchScreen.
-- **Theme:** dark only. Deep blacks (`#0A0A0A` / `#0f0f0f`), forest green accent (`#22c55e` / `#16a34a`), gold reserved for ratings and achievements.
-- **Typography:** BBH Bogle for display, Geist for body, Space Mono for terminal accents.
-- **IGDB image URLs** must be built with `getIGDBImageUrl(idOrUrl, size)` from `mobile/src/constants` — it normalises any input to the desired size.
+- **Brand accent `Colors.cream` (`#C0C8D0`)** is cool silver, reserved for uppercase letter-spaced section headers and active/emphasis states. Not used on the SearchScreen for content labels.
+- **Theme:** dark only. Warm dark greys (`#1A1A1C` / `#2A2A2E`), off-white accent (`#E0E0E0`), cool silver brand (`#C0C8D0`), gold reserved for ratings and achievements.
+- **Typography:** Montserrat for display/headlines and glitch logo, Geist for body (all weights).
+- **IGDB image URLs** must be built with `getIGDBImageUrl(idOrUrl, size)` from `mobile/src/constants` -- it normalises any input to the desired size.
 - **Curated lists** require their games to be present in `games_cache` first. Use the admin endpoint or `scripts/populate-curated-lists.js` to backfill.
 - **Streak logic** lives in `useStreak.recordActivity()` and is called from `LogGameModal` after a successful save.
 - **Notifications** require an EAS dev build (push tokens are unavailable in Expo Go).
+- **Design system details** are in `.impeccable.md` at the project root. That file is the source of truth for colours, typography, spacing, and visual patterns.
 
 ## Design Context
 
 ### Users
-Gamers who want to track, rate, review, and share their gaming journey. They range from casual players to dedicated collectors who take pride in their library. They use Sweaty on mobile (primary) and web to log games, discover new titles through curated lists and friend activity, and express their gaming identity. The core job is to organise a personal gaming history and connect with others who share their taste.
+Gamers who want to track, rate, review, and share their gaming journey. They range from casual players to dedicated collectors who take pride in their library. They use Sweaty on mobile (primary) and web (landing page + API) to log games, discover new titles through curated lists and friend activity, and express their gaming identity. The core job: organise a personal gaming history and connect with others who share their taste.
 
 ### Brand Personality
-**Warm, Inviting, Chill.** Sweaty should feel like a relaxed living room where gamers hang out, not a competitive leaderboard or a sterile database. The tone is friendly and low-pressure, encouraging exploration over obligation. Despite the name's playful edge, the experience is calm and confident.
+**Cool, Refined, Chill.** Sweaty should feel like a sleek, premium space for gamers who care about their collection, not a competitive leaderboard or a sterile database. The tone is confident and understated, encouraging exploration over obligation. Despite the name's playful edge, the experience is calm, sophisticated, and intentionally restrained.
 
 ### Emotional Goals
 - **Belonging and connection.** Being part of a community, seeing what friends play, shared discovery.
@@ -346,17 +347,18 @@ Gamers who want to track, rate, review, and share their gaming journey. They ran
 - **Excitement and discovery.** Finding new games through curated lists, recommendations, and friend activity.
 
 ### Aesthetic Direction
-- **Visual tone:** dark, minimal, and warm. Letterboxd is the north star — social, review-focused, strong personal identity, dark palette with purposeful colour accents.
-- **Theme:** dark mode only. Deep blacks with forest green accents. Gold reserved for ratings and achievements.
-- **Typography:** BBH Bogle for display / headlines (distinctive personality), Geist for body (clean readability), Space Mono for terminal accents.
-- **Colour usage:** restrained. Forest green for primary actions and success states, grays for secondary interactive elements. Colour should feel earned, not everywhere.
+- **Visual tone:** dark, minimal, and refined. Letterboxd is the north star -- social, review-focused, strong personal identity, dark palette with purposeful accents.
+- **Theme:** dark mode only. Warm dark backgrounds (#1A1A1C / #2A2A2E) with off-white text (#E0E0E0) and cool silver brand accent (#C0C8D0). Gold (#FFD700) reserved for ratings and achievements. A single intentional forest green (#2D6B4A) for the "Currently Playing" pulsing indicator only.
+- **Typography:** Montserrat for display/headlines and glitch logo (bold personality), Geist for body in all weights (clean readability).
+- **Colour usage:** restrained and monochromatic. Off-white for primary text and actions. Cool silver for branded headers, active states, and stat emphasis. Grays for secondary interactive elements. Colour should feel earned, not everywhere.
 
 ### Anti-References
 - **No generic app store UI.** Sweaty must have distinct personality and feel handcrafted, never template-like.
 - **No overly gamified or neon aesthetic.** Avoid badge overload, garish colours, XP bars dominating the UI, or Twitch-chat energy. Gamification (XP, streaks, ranks) should be subtle and feel like quiet rewards, not the main event.
 
 ### Design Principles
-1. **Quiet confidence over loud decoration.** Let game artwork and user content be the visual centrepiece. UI elements should recede, not compete. Green accents are purposeful signals, not decoration.
+1. **Quiet confidence over loud decoration.** Let game artwork and user content be the visual centrepiece. UI elements should recede, not compete. Accents are purposeful signals, not decoration.
 2. **Warmth through restraint.** A chill atmosphere comes from breathing room, not from adding cosy elements. Generous spacing, muted secondary text, and unhurried layouts create comfort.
 3. **Community without clutter.** Social features (activity feeds, friend activity, follows) should feel like gentle ambient awareness, not a noisy feed. Show connections, do not shout them.
 4. **Collection as identity.** A user's library, ratings, and reviews are self-expression. Treat them with the same care a gallery gives artwork: clean presentation, consistent sizing, intentional hierarchy.
+5. **Earn every pixel.** Every element must justify its presence. If removing something doesn't hurt the experience, remove it. Prefer fewer, better-crafted screens over feature-packed ones.

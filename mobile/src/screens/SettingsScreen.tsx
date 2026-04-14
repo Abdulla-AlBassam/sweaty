@@ -1227,7 +1227,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxl,
   },
   appVersion: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },

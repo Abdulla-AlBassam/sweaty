@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   retryText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     color: Colors.accent,
     textTransform: 'uppercase',
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   sourceName: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textTransform: 'uppercase',
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     height: Spacing.md,
   },
   timeAgo: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },

@@ -662,35 +662,59 @@ export default function UserProfileScreen({ navigation, route }: Props) {
         <View style={[styles.section, { backgroundColor: Colors.background, paddingBottom: Spacing.xl }]}>
           <Text style={styles.sectionTitle}>Library</Text>
 
-          {groupedLogs.length > 0 ? (
+          {gameLogs.length > 0 ? (
             <View style={styles.libraryRows}>
-              {groupedLogs.map((group, index) => (
-                <TouchableOpacity
-                  key={group.status}
-                  style={[
-                    styles.libraryRow,
-                    index < groupedLogs.length - 1 && styles.libraryRowBorder,
-                  ]}
-                  onPress={() => {
-                    if (profile?.id) {
-                      navigation.dispatch(
-                        CommonActions.navigate({
-                          name: 'LibraryStatus',
-                          params: { userId: profile.id, status: group.status },
-                        })
-                      )
-                    }
-                  }}
-                  accessibilityLabel={group.label + ', ' + group.logs.length + ' games'}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.libraryRowLabel}>{group.label}</Text>
-                  <View style={styles.libraryRowRight}>
-                    <Text style={styles.libraryRowCount}>{group.logs.length}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {/* All Games */}
+              <TouchableOpacity
+                style={[styles.libraryRow, styles.libraryRowBorder]}
+                onPress={() => {
+                  if (profile?.id) {
+                    navigation.dispatch(
+                      CommonActions.navigate({
+                        name: 'LibraryStatus',
+                        params: { userId: profile.id, status: 'all' },
+                      })
+                    )
+                  }
+                }}
+                accessibilityLabel={'All Games, ' + gameLogs.length + ' games'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.libraryRowLabel}>All Games</Text>
+                <View style={styles.libraryRowRight}>
+                  <Text style={styles.libraryRowCount}>{gameLogs.length}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Reviews */}
+              {(() => {
+                const reviewCount = gameLogs.filter((l: any) => l.review && l.review.trim().length > 0).length
+                if (reviewCount === 0) return null
+                return (
+                  <TouchableOpacity
+                    style={styles.libraryRow}
+                    onPress={() => {
+                      if (profile?.id) {
+                        navigation.dispatch(
+                          CommonActions.navigate({
+                            name: 'UserReviews',
+                            params: { userId: profile.id },
+                          })
+                        )
+                      }
+                    }}
+                    accessibilityLabel={'Reviews, ' + reviewCount}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.libraryRowLabel}>Reviews</Text>
+                    <View style={styles.libraryRowRight}>
+                      <Text style={styles.libraryRowCount}>{reviewCount}</Text>
+                      <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                    </View>
+                  </TouchableOpacity>
+                )
+              })()}
             </View>
           ) : (
             <View style={styles.emptyState}>

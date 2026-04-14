@@ -312,13 +312,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xs,
   },
   newsTagText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: 9,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
   },
   cardTime: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xxs,
     color: Colors.textMuted,
   },
@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textTransform: 'uppercase',

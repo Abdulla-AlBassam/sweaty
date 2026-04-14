@@ -100,7 +100,7 @@ export default function ProfileScreen() {
   // Advanced filter state
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false)
   const [advancedFilter, setAdvancedFilter] = useState<LibraryFilterType>('all')
-  const [sortType, setSortType] = useState<LibrarySortType>('rating')
+  const [sortType, setSortType] = useState<LibrarySortType>('recent')
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
 
@@ -156,7 +156,13 @@ export default function ProfileScreen() {
 
     // Apply sort
     switch (sortType) {
-      case 'rating':
+      case 'recent':
+        // Already sorted by updated_at from fetch
+        break
+      case 'oldest':
+        filtered.reverse()
+        break
+      case 'rating_high':
         filtered.sort((a, b) => {
           if (a.rating !== null && b.rating !== null) return b.rating - a.rating
           if (a.rating !== null) return -1
@@ -164,25 +170,46 @@ export default function ProfileScreen() {
           return 0
         })
         break
-      case 'recent':
-        // Already sorted by updated_at from fetch, no need to re-sort
+      case 'rating_low':
+        filtered.sort((a, b) => {
+          if (a.rating !== null && b.rating !== null) return a.rating - b.rating
+          if (a.rating !== null) return -1
+          if (b.rating !== null) return 1
+          return 0
+        })
         break
-      case 'alphabetical':
+      case 'release_newest':
+        filtered.sort((a, b) => {
+          const dateA = a.game?.first_release_date ? new Date(a.game.first_release_date).getTime() : 0
+          const dateB = b.game?.first_release_date ? new Date(b.game.first_release_date).getTime() : 0
+          if (dateA === 0 && dateB === 0) return 0
+          if (dateA === 0) return 1
+          if (dateB === 0) return -1
+          return dateB - dateA
+        })
+        break
+      case 'release_oldest':
+        filtered.sort((a, b) => {
+          const dateA = a.game?.first_release_date ? new Date(a.game.first_release_date).getTime() : Infinity
+          const dateB = b.game?.first_release_date ? new Date(b.game.first_release_date).getTime() : Infinity
+          if (dateA === Infinity && dateB === Infinity) return 0
+          if (dateA === Infinity) return 1
+          if (dateB === Infinity) return -1
+          return dateA - dateB
+        })
+        break
+      case 'alphabetical_az':
         filtered.sort((a, b) => {
           const nameA = a.game?.name?.toLowerCase() || ''
           const nameB = b.game?.name?.toLowerCase() || ''
           return nameA.localeCompare(nameB)
         })
         break
-      case 'release_date':
+      case 'alphabetical_za':
         filtered.sort((a, b) => {
-          const dateA = a.game?.first_release_date ? new Date(a.game.first_release_date).getTime() : 0
-          const dateB = b.game?.first_release_date ? new Date(b.game.first_release_date).getTime() : 0
-          // Newest first, games without dates go to the end
-          if (dateA === 0 && dateB === 0) return 0
-          if (dateA === 0) return 1
-          if (dateB === 0) return -1
-          return dateB - dateA
+          const nameA = a.game?.name?.toLowerCase() || ''
+          const nameB = b.game?.name?.toLowerCase() || ''
+          return nameB.localeCompare(nameA)
         })
         break
     }
@@ -309,12 +336,12 @@ export default function ProfileScreen() {
   // Filter modal handlers
   const handleResetFilters = () => {
     setAdvancedFilter('all')
-    setSortType('rating')
+    setSortType('recent')
     setSelectedFilter('all')
   }
 
   // Check if any advanced filters are active (for showing indicator)
-  const hasActiveAdvancedFilters = advancedFilter !== 'all' || sortType !== 'rating'
+  const hasActiveAdvancedFilters = advancedFilter !== 'all' || sortType !== 'recent'
 
   const handleFavoritesSaveSuccess = () => {
     refreshProfile()
@@ -507,7 +534,7 @@ export default function ProfileScreen() {
               accessibilityRole="button"
               accessibilityHint="Opens favourite games editor"
             >
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Ionicons name="pencil" size={16} color={Colors.textDim} />
             </TouchableOpacity>
           </View>
           <View style={styles.favoritesRow}>
@@ -607,8 +634,7 @@ export default function ProfileScreen() {
                   accessibilityRole="button"
                   accessibilityHint="Opens list creation form"
                 >
-                  <Ionicons name="add" size={18} color={'rgba(192, 200, 208, 0.6)'} />
-                  <Text style={styles.newListButtonText}>New</Text>
+                  <Ionicons name="add" size={20} color={Colors.textDim} />
                 </TouchableOpacity>
               </View>
 
@@ -635,35 +661,59 @@ export default function ProfileScreen() {
         <View style={[styles.librarySection, { backgroundColor: Colors.background }]}>
           <Text style={styles.sectionTitle}>Library</Text>
 
-          {groupedLogs.length > 0 ? (
+          {gameLogs.length > 0 ? (
             <View style={styles.libraryRows}>
-              {groupedLogs.map((group, index) => (
-                <TouchableOpacity
-                  key={group.status}
-                  style={[
-                    styles.libraryRow,
-                    index < groupedLogs.length - 1 && styles.libraryRowBorder,
-                  ]}
-                  onPress={() => {
-                    if (user?.id) {
-                      navigation.dispatch(
-                        CommonActions.navigate({
-                          name: 'LibraryStatus',
-                          params: { userId: user.id, status: group.status },
-                        })
-                      )
-                    }
-                  }}
-                  accessibilityLabel={group.label + ', ' + group.logs.length + ' games'}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.libraryRowLabel}>{group.label}</Text>
-                  <View style={styles.libraryRowRight}>
-                    <Text style={styles.libraryRowCount}>{group.logs.length}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {/* All Games */}
+              <TouchableOpacity
+                style={[styles.libraryRow, styles.libraryRowBorder]}
+                onPress={() => {
+                  if (user?.id) {
+                    navigation.dispatch(
+                      CommonActions.navigate({
+                        name: 'LibraryStatus',
+                        params: { userId: user.id, status: 'all' },
+                      })
+                    )
+                  }
+                }}
+                accessibilityLabel={'All Games, ' + gameLogs.length + ' games'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.libraryRowLabel}>All Games</Text>
+                <View style={styles.libraryRowRight}>
+                  <Text style={styles.libraryRowCount}>{gameLogs.length}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                </View>
+              </TouchableOpacity>
+
+              {/* Reviews */}
+              {(() => {
+                const reviewCount = gameLogs.filter(l => l.review && l.review.trim().length > 0).length
+                if (reviewCount === 0) return null
+                return (
+                  <TouchableOpacity
+                    style={styles.libraryRow}
+                    onPress={() => {
+                      if (user?.id) {
+                        navigation.dispatch(
+                          CommonActions.navigate({
+                            name: 'UserReviews',
+                            params: { userId: user.id },
+                          })
+                        )
+                      }
+                    }}
+                    accessibilityLabel={'Reviews, ' + reviewCount}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.libraryRowLabel}>Reviews</Text>
+                    <View style={styles.libraryRowRight}>
+                      <Text style={styles.libraryRowCount}>{reviewCount}</Text>
+                      <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                    </View>
+                  </TouchableOpacity>
+                )
+              })()}
             </View>
           ) : (
             <View style={styles.emptyState}>
@@ -954,11 +1004,6 @@ const styles = StyleSheet.create({
   editButton: {
     padding: Spacing.sm,
   },
-  editButtonText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: 'rgba(192, 200, 208, 0.6)',
-  },
   favoritesRow: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
@@ -1120,15 +1165,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   newListButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: Spacing.sm,
-  },
-  newListButtonText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: 'rgba(192, 200, 208, 0.6)',
-    marginLeft: 4,
   },
   listsScroll: {
     marginHorizontal: -Spacing.screenPadding,

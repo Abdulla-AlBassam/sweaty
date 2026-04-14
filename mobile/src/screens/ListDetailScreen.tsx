@@ -10,6 +10,7 @@ import {
   Alert,
   TextInput,
   Keyboard,
+  Dimensions,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -26,6 +27,12 @@ import { supabase } from '../lib/supabase'
 import { Game } from '../types'
 
 type ListDetailRouteProp = RouteProp<MainStackParamList, 'ListDetail'>
+
+const SCREEN_WIDTH = Dimensions.get('window').width
+const LIST_NUM_COLUMNS = 3
+const LIST_GRID_PADDING = Spacing.lg * 2   // listSection padding on both sides
+const LIST_GAP = Spacing.md                // 12px gap
+const LIST_CARD_WIDTH = (SCREEN_WIDTH - LIST_GRID_PADDING - LIST_GAP * (LIST_NUM_COLUMNS - 1)) / LIST_NUM_COLUMNS
 
 interface LibraryGame {
   id: number
@@ -776,7 +783,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   gameCard: {
-    width: '30%',
+    width: LIST_CARD_WIDTH,
   },
   gameCover: {
     width: '100%',

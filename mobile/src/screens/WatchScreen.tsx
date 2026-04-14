@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.cream,
   },
   tabText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textTransform: 'uppercase',
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
   },
   retryText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.sm,
     color: Colors.accent,
     textTransform: 'uppercase',
@@ -448,18 +448,18 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceLight,
   },
   metaSource: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textTransform: 'uppercase',
   },
   metaSeparator: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },
   metaTime: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
   },
@@ -491,7 +491,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xs,
   },
   newsTagText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: 9,
     color: Colors.textSecondary,
     letterSpacing: 0.5,

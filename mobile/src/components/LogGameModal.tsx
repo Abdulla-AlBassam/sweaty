@@ -527,7 +527,7 @@ export default function LogGameModal({
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.headerTitle}>
-              {existingLog ? 'edit log' : 'log game'}
+              {existingLog ? 'Edit Log' : 'Log Game'}
             </Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close game log" accessibilityRole="button">
               <Ionicons name="close" size={24} color={Colors.text} />
@@ -862,15 +862,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.lg,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   headerTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.lg,
     color: Colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
   },
   closeButton: {
     padding: Spacing.xs,
@@ -927,7 +925,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dropdownLabel: {
-    fontFamily: Fonts.body,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginBottom: 2,
@@ -949,7 +947,7 @@ const styles = StyleSheet.create({
   },
   // Rating label (standalone, no box)
   ratingLabel: {
-    fontFamily: Fonts.body,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginBottom: Spacing.sm,
@@ -957,7 +955,7 @@ const styles = StyleSheet.create({
   },
   // Shared field box (review)
   fieldBoxLabel: {
-    fontFamily: Fonts.body,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     marginBottom: Spacing.sm,
@@ -979,15 +977,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: Spacing.lg,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   pickerTitle: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.text,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
   },
   pickerCloseButton: {
     padding: Spacing.xs,
@@ -997,7 +993,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.lg,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   pickerItemSelected: {
@@ -1087,7 +1083,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.lg,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
     gap: Spacing.md,
   },

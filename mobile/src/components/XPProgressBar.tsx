@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   detailedXP: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xxs,
     color: Colors.textDim,
   },

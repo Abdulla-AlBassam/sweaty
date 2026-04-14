@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     marginRight: Spacing.sm,
   },
   seeAll: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,                // 12px
     color: Colors.textSecondary,          // Gray instead of cyan
     textTransform: 'uppercase',
@@ -297,13 +297,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardSource: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xxs,
     color: Colors.cyan,
     textTransform: 'uppercase',
   },
   cardTime: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xxs,
     color: Colors.textMuted,
   },
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textDim,
     textTransform: 'uppercase',

@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.lg,
   },
   xpText: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
   },
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   sourceXP: {
-    fontFamily: Fonts.mono,
+    fontFamily: Fonts.bodyMedium,
     fontSize: FontSize.xs,
     color: Colors.textMuted,
   },
