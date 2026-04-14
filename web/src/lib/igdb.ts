@@ -992,23 +992,20 @@ export async function getSmartSimilarGames(gameId: number, limit: number = 15, p
 }
 
 // Get new releases: games released in the last N months on major platforms
-// Filters out DLCs, editions, and low-quality entries
-export async function getNewReleases(limit: number = 50, monthsBack: number = 4): Promise<Game[]> {
+// Uses total_rating_count to filter out shovelware (category field is often unpopulated)
+export async function getNewReleases(limit: number = 50, monthsBack: number = 6): Promise<Game[]> {
   const now = Math.floor(Date.now() / 1000)
   const pastDate = Math.floor(new Date(Date.now() - monthsBack * 30 * 24 * 60 * 60 * 1000).getTime() / 1000)
 
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, total_rating_count, category;
+           genres.name, platforms.name, total_rating, total_rating_count;
     where first_release_date >= ${pastDate}
       & first_release_date <= ${now}
-      & category = (${VALID_CATEGORIES.join(',')})
       & cover != null
-      & parent_game = null
-      & version_parent = null
-      & ${MAJOR_PLATFORMS_FILTER};
+      & total_rating_count > 5;
     sort first_release_date desc;
-    limit ${limit};
+    limit ${Math.min(limit * 2, 200)};
   `
 
   console.log('[getNewReleases] Query:', body)
@@ -1018,39 +1015,34 @@ export async function getNewReleases(limit: number = 50, monthsBack: number = 4)
   const filtered = games.filter(g => !isSpecialEdition(g.name))
   console.log(`[getNewReleases] Fetched ${games.length}, after edition filter: ${filtered.length}`)
 
-  return filtered.map(game => transformGame(game))
+  return filtered.slice(0, limit).map(game => transformGame(game))
 }
 
 // Get upcoming games: unreleased games with future release dates
-// Uses hypes/follows to filter out low-interest entries
+// Uses hypes to filter out low-interest entries (follows is deprecated and often 0)
 export async function getUpcomingGames(limit: number = 50): Promise<Game[]> {
   const now = Math.floor(Date.now() / 1000)
-  // End of 2028
   const futureMax = Math.floor(new Date('2029-01-01').getTime() / 1000)
 
   const body = `
     fields name, slug, summary, cover.image_id, first_release_date,
-           genres.name, platforms.name, total_rating, total_rating_count, category,
-           hypes, follows;
+           genres.name, platforms.name, total_rating, total_rating_count,
+           hypes;
     where first_release_date > ${now}
       & first_release_date < ${futureMax}
-      & category = (${VALID_CATEGORIES.join(',')})
       & cover != null
-      & parent_game = null
-      & version_parent = null
-      & ${MAJOR_PLATFORMS_FILTER}
-      & (hypes > 3 | follows > 5);
-    sort first_release_date asc;
-    limit ${limit};
+      & hypes > 3;
+    sort hypes desc;
+    limit ${Math.min(limit * 2, 200)};
   `
 
   console.log('[getUpcomingGames] Query:', body)
-  const games = await igdbFetch('games', body) as (IGDBGame & { hypes?: number; follows?: number })[]
+  const games = await igdbFetch('games', body) as (IGDBGame & { hypes?: number })[]
 
   const filtered = games.filter(g => !isSpecialEdition(g.name))
   console.log(`[getUpcomingGames] Fetched ${games.length}, after edition filter: ${filtered.length}`)
 
-  return filtered.map(game => transformGame(game))
+  return filtered.slice(0, limit).map(game => transformGame(game))
 }
 
 // Get game with company info (for identifying user's most-played studio)
