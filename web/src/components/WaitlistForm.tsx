@@ -68,7 +68,7 @@ export default function WaitlistForm() {
                      text-[var(--background)] hover:bg-[var(--foreground-bright)] transition-colors
                      disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
         >
-          {status === 'loading' ? 'Joining...' : 'Get notified'}
+          {status === 'loading' ? 'Submitting...' : 'Submit'}
         </button>
       </div>
       {status === 'error' && (

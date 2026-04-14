@@ -57,6 +57,18 @@ body {
 
 html {
   scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+@media (min-width: 1024px) {
+  html {
+    scroll-snap-type: y mandatory;
+  }
+}
+
+/* Hide layout footer on snap-scrolling pages (footer is inline in CTA section) */
+main:has(.snap-start) ~ footer {
+  display: none;
 }
 
 /* Scroll reveal animations */
