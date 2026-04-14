@@ -253,6 +253,74 @@ export function normaliseEnrichment(
   }
 }
 
+// ============================================
+// DISCOVERY (date-range feeds)
+// ============================================
+
+// A lightweight game summary returned by RAWG listing endpoints.
+export interface RawgGameSummary {
+  id: number
+  slug: string
+  name: string
+  released: string | null  // "YYYY-MM-DD"
+  tba: boolean
+  background_image: string | null
+  rating: number           // 1-5 community rating
+  ratings_count: number
+  added: number            // total users who added this game
+  metacritic: number | null
+}
+
+// Discover games from RAWG within a date range.
+// RAWG page_size caps at 40, so we paginate up to maxPages.
+export async function discoverGamesByDate(opts: {
+  dateFrom: string          // "YYYY-MM-DD"
+  dateTo: string            // "YYYY-MM-DD"
+  ordering?: string         // e.g. "-released", "-added", "-rating"
+  minAdded?: number         // filter out low-interest games
+  limit?: number            // max games to return
+  maxPages?: number         // max pages to fetch (default 3)
+}): Promise<RawgGameSummary[]> {
+  const {
+    dateFrom,
+    dateTo,
+    ordering = '-released',
+    minAdded = 0,
+    limit = 50,
+    maxPages = 3,
+  } = opts
+
+  const games: RawgGameSummary[] = []
+
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await rawgGet<{ results: RawgGameSummary[]; next: string | null }>('/games', {
+      dates: `${dateFrom},${dateTo}`,
+      ordering,
+      exclude_additions: 'true',
+      // Parent platforms: PC, PlayStation, Xbox, Nintendo
+      parent_platforms: '1,2,3,7',
+      page_size: 40,
+      page,
+    })
+
+    for (const game of res.results || []) {
+      if (game.added >= minAdded) {
+        games.push(game)
+      }
+    }
+
+    // Stop if we have enough or no more pages
+    if (games.length >= limit || !res.next) break
+
+    // Small delay between pages to be respectful
+    if (page < maxPages) {
+      await new Promise(r => setTimeout(r, 250))
+    }
+  }
+
+  return games.slice(0, limit)
+}
+
 // One-shot enrichment: reconcile + fetch detail + fetch store links + normalise.
 export async function enrichFromRawg(args: {
   name: string
