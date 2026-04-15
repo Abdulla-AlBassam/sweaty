@@ -18,14 +18,38 @@ function fmt(d: Date): string {
   return d.toISOString().split('T')[0]
 }
 
+// Clean a RAWG game name for search and comparison:
+// - Strip "(YYYY)" year suffixes: "Cairn (2025)" → "Cairn"
+// - Normalise unicode: Cyrillic О → Latin O, etc.
+function cleanName(name: string): string {
+  return name
+    .replace(/\s*\(\d{4}\)\s*$/g, '')  // strip trailing (2025)
+    .replace(/\u041E/g, 'O')           // Cyrillic О → O
+    .replace(/\u0430/g, 'a')           // Cyrillic а → a
+    .trim()
+}
+
+// Normalise a name for comparison: lowercase, strip non-alphanumeric,
+// convert Roman numerals and number words to digits.
+function normForCompare(name: string): string {
+  return cleanName(name)
+    .toLowerCase()
+    .replace(/\biii\b/g, '3')
+    .replace(/\bii\b/g, '2')
+    .replace(/\biv\b/g, '4')
+    .replace(/\bzero\b/g, '0')
+    .replace(/[^a-z0-9]/g, '')
+}
+
 // Match a RAWG game to an IGDB ID by searching IGDB by name.
 // Returns the IGDB game ID or null if no confident match.
 async function matchToIgdb(rawgGame: RawgGameSummary): Promise<number | null> {
   try {
-    const results = await searchGames(rawgGame.name, 5)
+    const cleaned = cleanName(rawgGame.name)
+    const results = await searchGames(cleaned, 10)
     if (results.length === 0) return null
 
-    const normTarget = rawgGame.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+    const normTarget = normForCompare(rawgGame.name)
     const rawgYear = rawgGame.released
       ? new Date(rawgGame.released).getUTCFullYear()
       : null
@@ -34,7 +58,7 @@ async function matchToIgdb(rawgGame: RawgGameSummary): Promise<number | null> {
     let best: { id: number; score: number } | null = null
     for (const game of results) {
       let score = 0
-      const normName = game.name.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const normName = normForCompare(game.name)
 
       // Name matching
       if (normName === normTarget) score += 4
@@ -218,8 +242,8 @@ export async function POST() {
     const nrResult = await discoverAndMatch({
       dateFrom: fmt(sixMonthsAgo),
       dateTo: fmt(now),
-      ordering: '-released',
-      minAdded: 10,
+      ordering: '-added',  // most popular first (not just most recent)
+      minAdded: 0,
       limit: 100,
       label: 'New Releases',
     })
@@ -227,8 +251,8 @@ export async function POST() {
     const csResult = await discoverAndMatch({
       dateFrom: fmt(now),
       dateTo: futureEnd,
-      ordering: '-added',
-      minAdded: 5,
+      ordering: '-added',  // most anticipated first
+      minAdded: 0,
       limit: 100,
       label: 'Coming Soon',
     })
