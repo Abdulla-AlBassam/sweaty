@@ -38,74 +38,141 @@ function norm(name: string): string {
     .replace(/[^a-z0-9]/g, '')
 }
 
-// Build a name→ID lookup from games_cache for fast local matching
-async function buildCacheLookup(): Promise<Map<string, number>> {
+// Cache entry with year for disambiguation
+interface CacheEntry {
+  id: number
+  year: number | null
+}
+
+// Build a name→entries lookup from games_cache for fast local matching
+// Multiple games can share a normalised name (e.g. Marathon 1994 vs Marathon 2026)
+async function buildCacheLookup(): Promise<Map<string, CacheEntry[]>> {
   const { data, error } = await supabaseAdmin
     .from('games_cache')
-    .select('id, name')
+    .select('id, name, first_release_date')
 
   if (error || !data) {
     console.error(TAG, 'Failed to load games_cache:', error)
     return new Map()
   }
 
-  const lookup = new Map<string, number>()
+  const lookup = new Map<string, CacheEntry[]>()
   for (const game of data) {
-    lookup.set(norm(game.name), game.id)
+    const key = norm(game.name)
+    const year = game.first_release_date
+      ? new Date(game.first_release_date).getUTCFullYear()
+      : null
+    const entries = lookup.get(key) || []
+    entries.push({ id: game.id, year })
+    lookup.set(key, entries)
   }
-  console.log(TAG, `Cache lookup built: ${lookup.size} games`)
+  console.log(TAG, `Cache lookup built: ${lookup.size} unique names`)
   return lookup
 }
 
-// Try to match a RAWG game name against the local cache first,
-// then fall back to IGDB search.
-function matchFromCache(rawgName: string, lookup: Map<string, number>): number | null {
-  const n = norm(rawgName)
-  const direct = lookup.get(n)
-  if (direct) return direct
+// Pick the best cache entry by year. If RAWG gives a year, prefer the entry
+// whose year matches. Falls back to most recent if no year match.
+function pickBestEntry(entries: CacheEntry[], rawgYear: number | null): number | null {
+  if (entries.length === 1) return entries[0].id
 
-  // Try without trailing numbers (e.g. "Resident Evil 9 Requiem" → "Resident Evil Requiem")
-  // Some RAWG names include a sequel number that IGDB omits
-  const withoutTrailingNum = n.replace(/(\d+)([a-z])/, '$2')
-  if (withoutTrailingNum !== n) {
-    const match = lookup.get(withoutTrailingNum)
-    if (match) return match
+  if (rawgYear) {
+    // Exact year match
+    const exact = entries.find(e => e.year === rawgYear)
+    if (exact) return exact.id
+    // Off by 1
+    const close = entries.find(e => e.year && Math.abs(e.year - rawgYear) === 1)
+    if (close) return close.id
+  }
+
+  // Fallback: most recent
+  const sorted = [...entries].sort((a, b) => (b.year || 0) - (a.year || 0))
+  return sorted[0].id
+}
+
+// Try to match a RAWG game name against the local cache first.
+function matchFromCache(
+  rawgName: string,
+  rawgYear: number | null,
+  lookup: Map<string, CacheEntry[]>,
+): number | null {
+  const n = norm(rawgName)
+
+  // Direct name match
+  const direct = lookup.get(n)
+  if (direct) return pickBestEntry(direct, rawgYear)
+
+  // Try stripping mid-name numbers (e.g. "Resident Evil 9 Requiem" → "residentevilrequiem")
+  const withoutMidNums = n.replace(/(\D)\d+(\D)/g, '$1$2')
+  if (withoutMidNums !== n) {
+    const match = lookup.get(withoutMidNums)
+    if (match) return pickBestEntry(match, rawgYear)
   }
 
   return null
 }
 
+// Score IGDB results against a RAWG game. Returns the best match or null.
+function scoreCandidates(
+  results: Game[],
+  normTarget: string,
+  rawgYear: number | null,
+): number | null {
+  let best: { id: number; score: number } | null = null
+
+  for (const game of results) {
+    let score = 0
+    const normName = norm(game.name)
+
+    // Name matching
+    if (normName === normTarget) score += 4
+    else if (normName.startsWith(normTarget) || normTarget.startsWith(normName)) score += 2
+
+    // Also try with mid-name numbers stripped (handles "RE 9 Requiem" vs "RE Requiem")
+    if (score < 4) {
+      const strippedTarget = normTarget.replace(/(\D)\d+(\D)/g, '$1$2')
+      const strippedName = normName.replace(/(\D)\d+(\D)/g, '$1$2')
+      if (strippedName === strippedTarget && strippedName !== '') score = Math.max(score, 3)
+    }
+
+    // Year matching — weighted heavily to avoid matching wrong game versions
+    if (rawgYear && game.firstReleaseDate) {
+      const igdbYear = new Date(game.firstReleaseDate).getUTCFullYear()
+      if (igdbYear === rawgYear) score += 3
+      else if (Math.abs(igdbYear - rawgYear) === 1) score += 2
+      else if (Math.abs(igdbYear - rawgYear) > 5) score -= 2  // penalise old versions
+    }
+
+    if (!best || score > best.score) {
+      best = { id: game.id, score }
+    }
+  }
+
+  return best && best.score >= 3 ? best.id : null
+}
+
 async function matchToIgdb(rawgGame: RawgGameSummary): Promise<number | null> {
   try {
     const cleaned = cleanName(rawgGame.name)
-    const results = await searchGames(cleaned, 5)
-    if (results.length === 0) return null
-
     const normTarget = norm(rawgGame.name)
     const rawgYear = rawgGame.released
       ? new Date(rawgGame.released).getUTCFullYear()
       : null
 
-    let best: { id: number; score: number } | null = null
-    for (const game of results) {
-      let score = 0
-      const normName = norm(game.name)
+    // First search with the cleaned name
+    const results = await searchGames(cleaned, 10)
+    const match = scoreCandidates(results, normTarget, rawgYear)
+    if (match) return match
 
-      if (normName === normTarget) score += 4
-      else if (normName.startsWith(normTarget) || normTarget.startsWith(normName)) score += 2
-
-      if (rawgYear && game.firstReleaseDate) {
-        const igdbYear = new Date(game.firstReleaseDate).getUTCFullYear()
-        if (igdbYear === rawgYear) score += 2
-        else if (Math.abs(igdbYear - rawgYear) === 1) score += 1
-      }
-
-      if (!best || score > best.score) {
-        best = { id: game.id, score }
-      }
+    // Retry with numbers stripped if first search failed
+    // e.g. "Resident Evil 9: Requiem" → "Resident Evil Requiem"
+    const noNums = cleaned.replace(/\s*\d+\s*/g, ' ').replace(/\s+/g, ' ').trim()
+    if (noNums !== cleaned && noNums.length > 3) {
+      await new Promise(r => setTimeout(r, 260))
+      const retryResults = await searchGames(noNums, 10)
+      return scoreCandidates(retryResults, normTarget, rawgYear)
     }
 
-    return best && best.score >= 3 ? best.id : null
+    return null
   } catch {
     return null
   }
@@ -202,7 +269,7 @@ async function discoverAndMatch(opts: {
   ordering: string
   limit: number
   label: string
-  cacheLookup: Map<string, number>
+  cacheLookup: Map<string, CacheEntry[]>
 }): Promise<MatchResult> {
   const { dateFrom, dateTo, ordering, limit, label, cacheLookup } = opts
 
@@ -228,7 +295,8 @@ async function discoverAndMatch(opts: {
   for (const game of rawgGames) {
     if (matchedIds.length >= limit) break
 
-    const cachedId = matchFromCache(game.name, cacheLookup)
+    const rawgYear = game.released ? new Date(game.released).getUTCFullYear() : null
+    const cachedId = matchFromCache(game.name, rawgYear, cacheLookup)
     if (cachedId) {
       matchedIds.push(cachedId)
       cacheHits++
@@ -274,15 +342,14 @@ export async function POST() {
     console.log(TAG, 'Starting daily refresh...')
 
     const now = new Date()
-    const sixMonthsAgo = new Date(now)
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+    const yearStart = `${now.getUTCFullYear()}-01-01`
     const futureEnd = '2028-12-31'
 
     // Build cache lookup once (single DB query)
     const cacheLookup = await buildCacheLookup()
 
     const nrResult = await discoverAndMatch({
-      dateFrom: fmt(sixMonthsAgo),
+      dateFrom: yearStart,
       dateTo: fmt(now),
       ordering: '-added',
       limit: 100,
