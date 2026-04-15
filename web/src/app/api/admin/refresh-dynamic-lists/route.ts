@@ -8,6 +8,9 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Allow up to 5 minutes for this function (matching ~200 games against IGDB)
+export const maxDuration = 300
+
 const TAG = '[refresh-dynamic-lists]'
 
 // Format a Date as "YYYY-MM-DD"
@@ -49,8 +52,8 @@ async function matchToIgdb(rawgGame: RawgGameSummary): Promise<number | null> {
       }
     }
 
-    // Require a minimum confidence score
-    return best && best.score >= 4 ? best.id : null
+    // Require a minimum confidence score (3 = name prefix + year match)
+    return best && best.score >= 3 ? best.id : null
   } catch (err) {
     console.error(TAG, `IGDB search failed for "${rawgGame.name}":`, err)
     return null
@@ -152,8 +155,8 @@ async function discoverAndMatch(opts: {
     dateTo,
     ordering,
     minAdded,
-    limit: limit * 2, // fetch extra since some won't match
-    maxPages: 4,
+    limit: Math.round(limit * 2.5), // fetch extra since some won't match IGDB
+    maxPages: 8,
   })
 
   console.log(TAG, `[${label}] RAWG returned ${rawgGames.length} games`)
@@ -173,8 +176,8 @@ async function discoverAndMatch(opts: {
       console.log(TAG, `[${label}] No IGDB match for: ${game.name}`)
     }
 
-    // Rate limit: IGDB allows 4 req/s, space them out
-    await new Promise(r => setTimeout(r, 300))
+    // Rate limit: IGDB allows 4 req/s
+    await new Promise(r => setTimeout(r, 260))
   }
 
   console.log(TAG, `[${label}] Matched ${matchedIds.length} games, ${matchFailed} unmatched`)
@@ -199,8 +202,8 @@ export async function POST() {
       dateFrom: fmt(sixMonthsAgo),
       dateTo: fmt(now),
       ordering: '-released',
-      minAdded: 50,   // filter out obscure titles
-      limit: 50,
+      minAdded: 10,    // low threshold to catch more titles
+      limit: 100,
       label: 'New Releases',
     })
 
@@ -208,8 +211,8 @@ export async function POST() {
       dateFrom: fmt(now),
       dateTo: futureEnd,
       ordering: '-added',  // most anticipated first
-      minAdded: 20,   // lower threshold for upcoming (less data available)
-      limit: 50,
+      minAdded: 5,     // lower threshold for upcoming (less data available)
+      limit: 100,
       label: 'Coming Soon',
     })
 
