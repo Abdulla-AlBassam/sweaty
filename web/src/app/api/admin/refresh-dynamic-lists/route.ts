@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export const maxDuration = 60
+export const maxDuration = 300
 
 const TAG = '[refresh-dynamic-lists]'
 
@@ -239,11 +239,10 @@ async function discoverAndMatch(opts: {
 
   console.log(TAG, `[${label}] Cache matched ${cacheHits}, need IGDB search for ${needIgdbSearch.length}`)
 
-  // Phase 2: Search IGDB for remaining (cap at 30 to stay within timeout)
-  const igdbCap = Math.min(needIgdbSearch.length, 30)
+  // Phase 2: Search IGDB for remaining (Pro plan: 300s timeout)
   let igdbHits = 0
 
-  for (let i = 0; i < igdbCap && matchedIds.length < limit; i++) {
+  for (let i = 0; i < needIgdbSearch.length && matchedIds.length < limit; i++) {
     const game = needIgdbSearch[i]
     const igdbId = await matchToIgdb(game)
     if (igdbId) {
@@ -254,11 +253,6 @@ async function discoverAndMatch(opts: {
     }
     // IGDB rate limit: 4 req/s
     await new Promise(r => setTimeout(r, 260))
-  }
-
-  // Log any skipped games (beyond igdbCap)
-  for (let i = igdbCap; i < needIgdbSearch.length && matchedIds.length < limit; i++) {
-    unmatchedGames.push(`${needIgdbSearch[i].name} (skipped, not in cache)`)
   }
 
   console.log(TAG, `[${label}] Total: ${matchedIds.length} (${cacheHits} cache + ${igdbHits} IGDB), ${unmatchedGames.length} unmatched`)
