@@ -138,6 +138,16 @@ async function updateList(slug: string, gameIds: number[]): Promise<boolean> {
 
 // Discover games from RAWG, match each to IGDB, return matched IGDB IDs.
 // Processes matches sequentially to respect IGDB's 4 req/s limit.
+interface DiscoverResult {
+  matchedIds: number[]
+  diagnostics: {
+    rawgReturned: number
+    igdbMatched: number
+    igdbFailed: number
+    unmatchedGames: string[]
+  }
+}
+
 async function discoverAndMatch(opts: {
   dateFrom: string
   dateTo: string
@@ -145,7 +155,7 @@ async function discoverAndMatch(opts: {
   minAdded: number
   limit: number
   label: string
-}): Promise<number[]> {
+}): Promise<DiscoverResult> {
   const { dateFrom, dateTo, ordering, minAdded, limit, label } = opts
 
   console.log(TAG, `[${label}] Discovering from RAWG: ${dateFrom} to ${dateTo}`)
@@ -161,9 +171,8 @@ async function discoverAndMatch(opts: {
 
   console.log(TAG, `[${label}] RAWG returned ${rawgGames.length} games`)
 
-  // Match each to IGDB (sequentially, 250ms between to respect rate limits)
   const matchedIds: number[] = []
-  let matchFailed = 0
+  const unmatchedGames: string[] = []
 
   for (const game of rawgGames) {
     if (matchedIds.length >= limit) break
@@ -172,16 +181,24 @@ async function discoverAndMatch(opts: {
     if (igdbId) {
       matchedIds.push(igdbId)
     } else {
-      matchFailed++
-      console.log(TAG, `[${label}] No IGDB match for: ${game.name}`)
+      unmatchedGames.push(`${game.name} (${game.released || 'TBD'}, added: ${game.added})`)
     }
 
     // Rate limit: IGDB allows 4 req/s
     await new Promise(r => setTimeout(r, 260))
   }
 
-  console.log(TAG, `[${label}] Matched ${matchedIds.length} games, ${matchFailed} unmatched`)
-  return matchedIds
+  console.log(TAG, `[${label}] Matched ${matchedIds.length}/${rawgGames.length}, ${unmatchedGames.length} unmatched`)
+
+  return {
+    matchedIds,
+    diagnostics: {
+      rawgReturned: rawgGames.length,
+      igdbMatched: matchedIds.length,
+      igdbFailed: unmatchedGames.length,
+      unmatchedGames,
+    },
+  }
 }
 
 export async function POST() {
@@ -198,33 +215,33 @@ export async function POST() {
     const futureEnd = '2028-12-31'
 
     // Run both discoveries (sequentially to avoid IGDB rate limit issues)
-    const newReleaseIds = await discoverAndMatch({
+    const nrResult = await discoverAndMatch({
       dateFrom: fmt(sixMonthsAgo),
       dateTo: fmt(now),
       ordering: '-released',
-      minAdded: 10,    // low threshold to catch more titles
+      minAdded: 10,
       limit: 100,
       label: 'New Releases',
     })
 
-    const upcomingIds = await discoverAndMatch({
+    const csResult = await discoverAndMatch({
       dateFrom: fmt(now),
       dateTo: futureEnd,
-      ordering: '-added',  // most anticipated first
-      minAdded: 5,     // lower threshold for upcoming (less data available)
+      ordering: '-added',
+      minAdded: 5,
       limit: 100,
       label: 'Coming Soon',
     })
 
     // Cache any new IGDB games
-    const allIds = [...new Set([...newReleaseIds, ...upcomingIds])]
+    const allIds = [...new Set([...nrResult.matchedIds, ...csResult.matchedIds])]
     const cachedCount = await cacheGames(allIds)
     console.log(TAG, `Cached ${cachedCount} new games into games_cache`)
 
     // Update curated lists
     const [nrOk, csOk] = await Promise.all([
-      updateList('new-releases', newReleaseIds),
-      updateList('coming-soon', upcomingIds),
+      updateList('new-releases', nrResult.matchedIds),
+      updateList('coming-soon', csResult.matchedIds),
     ])
 
     const result = {
@@ -232,15 +249,15 @@ export async function POST() {
       timestamp: new Date().toISOString(),
       newReleases: {
         slug: 'new-releases',
-        gameCount: newReleaseIds.length,
+        gameCount: nrResult.matchedIds.length,
         updated: nrOk,
-        sample: newReleaseIds.slice(0, 5),
+        ...nrResult.diagnostics,
       },
       comingSoon: {
         slug: 'coming-soon',
-        gameCount: upcomingIds.length,
+        gameCount: csResult.matchedIds.length,
         updated: csOk,
-        sample: upcomingIds.slice(0, 5),
+        ...csResult.diagnostics,
       },
       newGamesCached: cachedCount,
     }
