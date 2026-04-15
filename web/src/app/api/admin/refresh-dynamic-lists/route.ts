@@ -8,30 +8,27 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Allow up to 5 minutes for this function (matching ~200 games against IGDB)
-export const maxDuration = 300
+export const maxDuration = 60
 
 const TAG = '[refresh-dynamic-lists]'
 
-// Format a Date as "YYYY-MM-DD"
 function fmt(d: Date): string {
   return d.toISOString().split('T')[0]
 }
 
-// Clean a RAWG game name for search and comparison:
-// - Strip "(YYYY)" year suffixes: "Cairn (2025)" → "Cairn"
-// - Normalise unicode: Cyrillic О → Latin O, etc.
+// Clean a RAWG game name for comparison:
+// - Strip "(YYYY)" year suffixes
+// - Normalise unicode (Cyrillic → Latin)
 function cleanName(name: string): string {
   return name
-    .replace(/\s*\(\d{4}\)\s*$/g, '')  // strip trailing (2025)
-    .replace(/\u041E/g, 'O')           // Cyrillic О → O
-    .replace(/\u0430/g, 'a')           // Cyrillic а → a
+    .replace(/\s*\(\d{4}\)\s*$/g, '')
+    .replace(/\u041E/g, 'O')
+    .replace(/\u0430/g, 'a')
     .trim()
 }
 
-// Normalise a name for comparison: lowercase, strip non-alphanumeric,
-// convert Roman numerals and number words to digits.
-function normForCompare(name: string): string {
+// Normalise for fuzzy comparison: lowercase, digits for numerals, strip punctuation
+function norm(name: string): string {
   return cleanName(name)
     .toLowerCase()
     .replace(/\biii\b/g, '3')
@@ -41,30 +38,62 @@ function normForCompare(name: string): string {
     .replace(/[^a-z0-9]/g, '')
 }
 
-// Match a RAWG game to an IGDB ID by searching IGDB by name.
-// Returns the IGDB game ID or null if no confident match.
+// Build a name→ID lookup from games_cache for fast local matching
+async function buildCacheLookup(): Promise<Map<string, number>> {
+  const { data, error } = await supabaseAdmin
+    .from('games_cache')
+    .select('id, name')
+
+  if (error || !data) {
+    console.error(TAG, 'Failed to load games_cache:', error)
+    return new Map()
+  }
+
+  const lookup = new Map<string, number>()
+  for (const game of data) {
+    lookup.set(norm(game.name), game.id)
+  }
+  console.log(TAG, `Cache lookup built: ${lookup.size} games`)
+  return lookup
+}
+
+// Try to match a RAWG game name against the local cache first,
+// then fall back to IGDB search.
+function matchFromCache(rawgName: string, lookup: Map<string, number>): number | null {
+  const n = norm(rawgName)
+  const direct = lookup.get(n)
+  if (direct) return direct
+
+  // Try without trailing numbers (e.g. "Resident Evil 9 Requiem" → "Resident Evil Requiem")
+  // Some RAWG names include a sequel number that IGDB omits
+  const withoutTrailingNum = n.replace(/(\d+)([a-z])/, '$2')
+  if (withoutTrailingNum !== n) {
+    const match = lookup.get(withoutTrailingNum)
+    if (match) return match
+  }
+
+  return null
+}
+
 async function matchToIgdb(rawgGame: RawgGameSummary): Promise<number | null> {
   try {
     const cleaned = cleanName(rawgGame.name)
-    const results = await searchGames(cleaned, 10)
+    const results = await searchGames(cleaned, 5)
     if (results.length === 0) return null
 
-    const normTarget = normForCompare(rawgGame.name)
+    const normTarget = norm(rawgGame.name)
     const rawgYear = rawgGame.released
       ? new Date(rawgGame.released).getUTCFullYear()
       : null
 
-    // Score candidates
     let best: { id: number; score: number } | null = null
     for (const game of results) {
       let score = 0
-      const normName = normForCompare(game.name)
+      const normName = norm(game.name)
 
-      // Name matching
       if (normName === normTarget) score += 4
       else if (normName.startsWith(normTarget) || normTarget.startsWith(normName)) score += 2
 
-      // Release year matching
       if (rawgYear && game.firstReleaseDate) {
         const igdbYear = new Date(game.firstReleaseDate).getUTCFullYear()
         if (igdbYear === rawgYear) score += 2
@@ -76,10 +105,8 @@ async function matchToIgdb(rawgGame: RawgGameSummary): Promise<number | null> {
       }
     }
 
-    // Require a minimum confidence score (3 = name prefix + year match)
     return best && best.score >= 3 ? best.id : null
-  } catch (err) {
-    console.error(TAG, `IGDB search failed for "${rawgGame.name}":`, err)
+  } catch {
     return null
   }
 }
@@ -88,7 +115,6 @@ async function matchToIgdb(rawgGame: RawgGameSummary): Promise<number | null> {
 async function cacheGames(igdbIds: number[]): Promise<number> {
   if (igdbIds.length === 0) return 0
 
-  // Check which are already cached
   const { data: existing } = await supabaseAdmin
     .from('games_cache')
     .select('id')
@@ -143,7 +169,6 @@ async function cacheGames(igdbIds: number[]): Promise<number> {
   return rows.length
 }
 
-// Update a curated list's game_ids
 async function updateList(slug: string, gameIds: number[]): Promise<boolean> {
   const { error } = await supabaseAdmin
     .from('curated_lists')
@@ -160,12 +185,11 @@ async function updateList(slug: string, gameIds: number[]): Promise<boolean> {
   return true
 }
 
-// Discover games from RAWG, match each to IGDB, return matched IGDB IDs.
-// Processes matches sequentially to respect IGDB's 4 req/s limit.
-interface DiscoverResult {
+interface MatchResult {
   matchedIds: number[]
   diagnostics: {
     rawgReturned: number
+    cacheMatched: number
     igdbMatched: number
     igdbFailed: number
     unmatchedGames: string[]
@@ -176,49 +200,75 @@ async function discoverAndMatch(opts: {
   dateFrom: string
   dateTo: string
   ordering: string
-  minAdded: number
   limit: number
   label: string
-}): Promise<DiscoverResult> {
-  const { dateFrom, dateTo, ordering, minAdded, limit, label } = opts
+  cacheLookup: Map<string, number>
+}): Promise<MatchResult> {
+  const { dateFrom, dateTo, ordering, limit, label, cacheLookup } = opts
 
-  console.log(TAG, `[${label}] Discovering from RAWG: ${dateFrom} to ${dateTo}`)
+  console.log(TAG, `[${label}] RAWG: ${dateFrom} to ${dateTo}`)
 
   const rawgGames = await discoverGamesByDate({
     dateFrom,
     dateTo,
     ordering,
-    minAdded,
-    limit: Math.round(limit * 2.5), // fetch extra since some won't match IGDB
-    maxPages: 8,
+    minAdded: 0,
+    limit: Math.round(limit * 2),
+    maxPages: 6,
   })
 
   console.log(TAG, `[${label}] RAWG returned ${rawgGames.length} games`)
 
   const matchedIds: number[] = []
   const unmatchedGames: string[] = []
+  const needIgdbSearch: RawgGameSummary[] = []
+  let cacheHits = 0
 
+  // Phase 1: Match against local cache (instant, no API calls)
   for (const game of rawgGames) {
     if (matchedIds.length >= limit) break
 
+    const cachedId = matchFromCache(game.name, cacheLookup)
+    if (cachedId) {
+      matchedIds.push(cachedId)
+      cacheHits++
+    } else {
+      needIgdbSearch.push(game)
+    }
+  }
+
+  console.log(TAG, `[${label}] Cache matched ${cacheHits}, need IGDB search for ${needIgdbSearch.length}`)
+
+  // Phase 2: Search IGDB for remaining (cap at 30 to stay within timeout)
+  const igdbCap = Math.min(needIgdbSearch.length, 30)
+  let igdbHits = 0
+
+  for (let i = 0; i < igdbCap && matchedIds.length < limit; i++) {
+    const game = needIgdbSearch[i]
     const igdbId = await matchToIgdb(game)
     if (igdbId) {
       matchedIds.push(igdbId)
+      igdbHits++
     } else {
       unmatchedGames.push(`${game.name} (${game.released || 'TBD'}, added: ${game.added})`)
     }
-
-    // Rate limit: IGDB allows 4 req/s
+    // IGDB rate limit: 4 req/s
     await new Promise(r => setTimeout(r, 260))
   }
 
-  console.log(TAG, `[${label}] Matched ${matchedIds.length}/${rawgGames.length}, ${unmatchedGames.length} unmatched`)
+  // Log any skipped games (beyond igdbCap)
+  for (let i = igdbCap; i < needIgdbSearch.length && matchedIds.length < limit; i++) {
+    unmatchedGames.push(`${needIgdbSearch[i].name} (skipped, not in cache)`)
+  }
+
+  console.log(TAG, `[${label}] Total: ${matchedIds.length} (${cacheHits} cache + ${igdbHits} IGDB), ${unmatchedGames.length} unmatched`)
 
   return {
     matchedIds,
     diagnostics: {
       rawgReturned: rawgGames.length,
-      igdbMatched: matchedIds.length,
+      cacheMatched: cacheHits,
+      igdbMatched: igdbHits,
       igdbFailed: unmatchedGames.length,
       unmatchedGames,
     },
@@ -230,39 +280,35 @@ export async function POST() {
     console.log(TAG, 'Starting daily refresh...')
 
     const now = new Date()
-
-    // New Releases: last 6 months to today, sorted by most recently released
     const sixMonthsAgo = new Date(now)
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
-
-    // Coming Soon: today to end of 2028, sorted by most anticipated (most added)
     const futureEnd = '2028-12-31'
 
-    // Run both discoveries (sequentially to avoid IGDB rate limit issues)
+    // Build cache lookup once (single DB query)
+    const cacheLookup = await buildCacheLookup()
+
     const nrResult = await discoverAndMatch({
       dateFrom: fmt(sixMonthsAgo),
       dateTo: fmt(now),
-      ordering: '-added',  // most popular first (not just most recent)
-      minAdded: 0,
+      ordering: '-added',
       limit: 100,
       label: 'New Releases',
+      cacheLookup,
     })
 
     const csResult = await discoverAndMatch({
       dateFrom: fmt(now),
       dateTo: futureEnd,
-      ordering: '-added',  // most anticipated first
-      minAdded: 0,
+      ordering: '-added',
       limit: 100,
       label: 'Coming Soon',
+      cacheLookup,
     })
 
     // Cache any new IGDB games
     const allIds = [...new Set([...nrResult.matchedIds, ...csResult.matchedIds])]
     const cachedCount = await cacheGames(allIds)
-    console.log(TAG, `Cached ${cachedCount} new games into games_cache`)
 
-    // Update curated lists
     const [nrOk, csOk] = await Promise.all([
       updateList('new-releases', nrResult.matchedIds),
       updateList('coming-soon', csResult.matchedIds),
@@ -297,7 +343,6 @@ export async function POST() {
   }
 }
 
-// GET for easy browser/cron testing
 export async function GET() {
   return POST()
 }
