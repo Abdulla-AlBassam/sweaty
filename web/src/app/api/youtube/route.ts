@@ -19,11 +19,6 @@ const YOUTUBE_CHANNELS = [
     avatar: 'https://yt3.googleusercontent.com/bCNQM3uoDIugjbIo5lUzihSg0ySIOomOEqpyLiZBow6NAJPBUdyTS_77bRthjqW0zW4nKfZg4w=s88-c-k-c0x00ffffff-no-rj',
   },
   {
-    name: 'penguinz0',
-    channelId: 'UCq6VFHwMzcMXbuKyG7SQYIg',
-    avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_kOWn68FmChjExAEGw0vjLBpiP907ccNT5wASHcBjZeEuA=s88-c-k-c0x00ffffff-no-rj',
-  },
-  {
     name: 'mugthief',
     channelId: 'UC3TC163wX81ZzdE_D9oGtGg',
     avatar: 'https://yt3.googleusercontent.com/5I8V89z3iysyW4e0Qm2U8vUhiQ3fjJ3gW0yaOst_GNV60_UrTUvKi-8cepS3Hu5OHROxnTk=s88-c-k-c0x00ffffff-no-rj',
@@ -37,6 +32,51 @@ const YOUTUBE_CHANNELS = [
     name: 'MrMattyPlays',
     channelId: 'UCmXH6CX_juGwNFTj3PESdoA',
     avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m3UHNKz6Ij09MCgy199Ytx2jiagJrvccvisMznocKfdmM=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'SkillUp',
+    channelId: 'UCZ7AeeVbyslLM_8-nVy2B8Q',
+    avatar: 'https://yt3.googleusercontent.com/CcyQzLCpV1rVfUWeaEgRut_FZGTkOfM7VFc0dG80dm6UraKtid4Tbetka8elQPn-4AABg3k-8A=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'ACG',
+    channelId: 'UCK9_x1DImhU-eolIay5rb2Q',
+    avatar: 'https://yt3.googleusercontent.com/XzHYAV8TQJrS9_WrRNWkIOYkkO9dQEfpwoqq3SkRALzuuBKLI9mKTIfHhuWypyI9fqPVR7Wm=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'Noclip',
+    channelId: 'UCVHRrouTVuLLtDZbt0-z36w',
+    avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_mEl80mAKPu2ruVe7SzEqia7Pc17UnOD37fS3aavrQ=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: "Game Maker's Toolkit",
+    channelId: 'UCqJ-Xo29CKyLTjn6z2XwYAw',
+    avatar: 'https://yt3.googleusercontent.com/XS_gpXd-f-bUwW5dr0kyw8btfpj6DZLPaXAUIi9ukwHMJJPwBloGjF-AWZ4QAcIv572FEHGG=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'Jacob Geller',
+    channelId: 'UCeTfBygNb1TahcNpZyELO8g',
+    avatar: 'https://yt3.googleusercontent.com/oEvJp21jyoK8viSJQZsoIB4TpDmXsRBjOfMybj8azcfgCQ6dkQ8uP6Fg4nyYUCosnYhYzTlc=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'VaatiVidya',
+    channelId: 'UCe0DNp0mKMqrYVaTundyr9w',
+    avatar: 'https://yt3.googleusercontent.com/b7qVCasKUx-jmNipWOcHz6kJK5L9iPEfhYK2IHOKCjDM46Z3bNUXn3DSWiNNpt8Sx130dyDISko=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'Digital Foundry',
+    channelId: 'UC9PBzalIcEQCsiIkq36PyUA',
+    avatar: 'https://yt3.googleusercontent.com/PBh4giP5yBGdq6OxwdAW32ZvLI-uy_kzMAlV7sQ-jTaWK3q4f3euUJL8lFX3onIkHlc6OBCTpQ=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'Razbuten',
+    channelId: 'UCivETRAS-l1zO3RaR9f8PjA',
+    avatar: 'https://yt3.googleusercontent.com/vlIKlkuq8eGJIxgpFH3f8iS6DVpS5ECtLgC-owFJf0y1lfen4Q7WuoXfBykFOktuMzLxPaZK=s88-c-k-c0x00ffffff-no-rj',
+  },
+  {
+    name: 'ManlyBadassHero',
+    channelId: 'UCKv8Rrrdc9oxLJmdHItafLA',
+    avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_m863X1MJJ651tqVOUEOuX_zE1blwWOLdJtliSCEdIc3Vo=s88-c-k-c0x00ffffff-no-rj',
   },
 ]
 

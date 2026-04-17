@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
+  Animated,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -18,6 +19,38 @@ import { useYouTube } from '../hooks/useYouTube'
 import { useNews } from '../hooks/useNews'
 import { YouTubeVideo, NewsArticle } from '../types'
 import PressableScale from '../components/PressableScale'
+
+const FRESH_THRESHOLD_MS = 2 * 60 * 60 * 1000 // 2 hours
+
+function isFresh(dateString: string): boolean {
+  return Date.now() - new Date(dateString).getTime() < FRESH_THRESHOLD_MS
+}
+
+// Lightweight client-side categorisation from title keywords
+function categoriseArticle(title: string): string {
+  const t = title.toLowerCase()
+  if (/\breview(ed|ing|s)?\b|\bverdict\b|\brating\b/.test(t)) return 'REVIEW'
+  if (/\btrailer\b|\bteaser\b|\breveal\b|\bshowcase\b/.test(t)) return 'TRAILER'
+  if (/\bguide\b|\bhow to\b|\bwalkthrough\b|\btips\b|\btutorial\b/.test(t)) return 'GUIDE'
+  if (/\bwhy\b|\bopinion\b|\beditorial\b|\bessay\b|\bi think\b/.test(t)) return 'OPINION'
+  if (/\bbest\b|\btop \d+\b|\branking\b|\branked\b|\bevery\b/.test(t)) return 'LIST'
+  return 'NEWS'
+}
+
+function FreshDot() {
+  const pulse = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.35, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+      ])
+    )
+    loop.start()
+    return () => loop.stop()
+  }, [pulse])
+  return <Animated.View style={[styles.freshDot, { opacity: pulse }]} />
+}
 
 
 type WatchTab = 'all' | 'videos' | 'news'
@@ -58,6 +91,7 @@ function decodeHtmlEntities(text: string): string {
 }
 
 function VideoCard({ video, onPress }: { video: YouTubeVideo; onPress: () => void }) {
+  const fresh = isFresh(video.publishedAt)
   return (
     <PressableScale
       onPress={onPress}
@@ -67,11 +101,21 @@ function VideoCard({ video, onPress }: { video: YouTubeVideo; onPress: () => voi
       accessibilityRole="button"
     >
       <View style={styles.videoCard}>
-        <Image
-          source={{ uri: video.thumbnail }}
-          style={styles.videoThumbnail}
-          resizeMode="cover"
-        />
+        <View style={styles.thumbnailWrap}>
+          <Image
+            source={{ uri: video.thumbnail }}
+            style={styles.videoThumbnail}
+            resizeMode="cover"
+          />
+          <View style={styles.typeChip}>
+            <Ionicons name="play" size={12} color={Colors.text} style={{ marginLeft: 1 }} />
+          </View>
+          {fresh && (
+            <View style={styles.freshWrap}>
+              <FreshDot />
+            </View>
+          )}
+        </View>
         <View style={styles.cardBody}>
           <Text style={styles.cardTitle} numberOfLines={2}>
             {decodeHtmlEntities(video.title)}
@@ -89,6 +133,8 @@ function VideoCard({ video, onPress }: { video: YouTubeVideo; onPress: () => voi
 }
 
 function ArticleCard({ article, onPress }: { article: NewsArticle; onPress: () => void }) {
+  const fresh = isFresh(article.publishedAt)
+  const category = categoriseArticle(article.title)
   return (
     <PressableScale
       onPress={onPress}
@@ -98,24 +144,31 @@ function ArticleCard({ article, onPress }: { article: NewsArticle; onPress: () =
       accessibilityRole="button"
     >
       <View style={styles.articleCard}>
-        {article.thumbnail ? (
-          <Image
-            source={{ uri: article.thumbnail }}
-            style={styles.articleThumbnail}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.articleThumbnail, styles.articlePlaceholder]}>
-            <Ionicons name="newspaper-outline" size={24} color={Colors.textDim} />
-          </View>
-        )}
+        <View style={styles.articleThumbWrap}>
+          {article.thumbnail ? (
+            <Image
+              source={{ uri: article.thumbnail }}
+              style={styles.articleThumbnail}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.articleThumbnail, styles.articlePlaceholder]}>
+              <Ionicons name="newspaper-outline" size={24} color={Colors.textDim} />
+            </View>
+          )}
+          {fresh && (
+            <View style={styles.freshWrap}>
+              <FreshDot />
+            </View>
+          )}
+        </View>
         <View style={styles.articleBody}>
           <Text style={styles.cardTitle} numberOfLines={3}>
             {decodeHtmlEntities(article.title)}
           </Text>
           <View style={styles.cardMeta}>
-            <View style={styles.newsTag}>
-              <Text style={styles.newsTagText}>NEWS</Text>
+            <View style={styles.categoryPill}>
+              <Text style={styles.categoryPillText}>{category}</Text>
             </View>
             <Text style={styles.metaSource}>{article.source}</Text>
             <Text style={styles.metaSeparator}>|</Text>
@@ -420,14 +473,51 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+  },
+  thumbnailWrap: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: 16 / 9,
   },
   videoThumbnail: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    height: '100%',
     backgroundColor: Colors.surfaceLight,
   },
   cardBody: {
     padding: Spacing.md,
+  },
+  // Type chip — play triangle in frosted bubble, top-left of thumbnail
+  typeChip: {
+    position: 'absolute',
+    top: Spacing.sm,
+    left: Spacing.sm,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Fresh dot — top-right, mirrors Now Playing pulse
+  freshWrap: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+  },
+  freshDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.cream,
+    shadowColor: Colors.cream,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
   },
   cardTitle: {
     fontFamily: Fonts.bodySemiBold,
@@ -469,6 +559,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     overflow: 'hidden',
     flexDirection: 'row',
+    borderWidth: 0.5,
+    borderColor: Colors.borderSubtle,
+  },
+  articleThumbWrap: {
+    position: 'relative',
+    width: 120,
+    height: 100,
   },
   articleThumbnail: {
     width: 120,
@@ -484,16 +581,17 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     justifyContent: 'center',
   },
-  newsTag: {
-    backgroundColor: Colors.surfaceBright,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+  // Category pill — small cream label on dark bubble, no border (matches WatchSection)
+  categoryPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2.5,
     borderRadius: BorderRadius.xs,
+    backgroundColor: Colors.surfaceLight,
   },
-  newsTagText: {
-    fontFamily: Fonts.bodyMedium,
+  categoryPillText: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: 9,
-    color: Colors.textSecondary,
-    letterSpacing: 0.5,
+    color: Colors.cream,
+    letterSpacing: 1,
   },
 })
