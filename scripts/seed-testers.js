@@ -16,7 +16,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// Resolve supabase-js from web/node_modules since scripts/ has no own node_modules
+require('./_env');
+
 const { createClient } = require(path.join(__dirname, '..', 'web', 'node_modules', '@supabase', 'supabase-js'));
 
 // ─── Config ────────────────────────────────────────────────────────────────

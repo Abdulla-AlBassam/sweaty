@@ -20,6 +20,8 @@
 const fs = require('fs');
 const path = require('path');
 
+require('./_env');
+
 const { createClient } = require(path.join(__dirname, '..', 'web', 'node_modules', '@supabase', 'supabase-js'));
 
 // ─── Config ────────────────────────────────────────────────────────────────
