@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useScrollToTop } from '@react-navigation/native'
@@ -27,15 +26,19 @@ import { usePlatformFilter } from '../hooks/usePlatformFilter'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
+import { supabase } from '../lib/supabase'
 import CuratedListRow from '../components/CuratedListRow'
 import PressableScale from '../components/PressableScale'
 import StackedAvatars from '../components/StackedAvatars'
 import WatchSection from '../components/WatchSection'
 import SweatDropIcon from '../components/SweatDropIcon'
 import Skeleton from '../components/Skeleton'
-import StarRating from '../components/StarRating'
+import CommunityReviewCard, { COMMUNITY_CARD_WIDTH, COMMUNITY_CARD_HEIGHT } from '../components/CommunityReviewCard'
+import SpotlightPodium, { PodiumData } from '../components/SpotlightPodium'
+import type { SpotlightUser } from '../hooks/useCommunitySpotlight'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
+
 
 // Platform-specific curated lists. Any slug NOT listed here is shown to everyone.
 // Add new platform-specific list slugs here as they're created.
@@ -47,21 +50,6 @@ const PLATFORM_LIST_MAP: Record<string, string> = {
   'pc-exclusives': 'pc',
 }
 
-function formatTimeAgo(dateString: string): string {
-  const now = new Date()
-  const date = new Date(dateString)
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffMs / 86400000)
-
-  if (diffMins < 1) return 'now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
 export default function DashboardScreen() {
   const navigation = useNavigation<NavigationProp>()
   const insets = useSafeAreaInsets()
@@ -70,26 +58,66 @@ export default function DashboardScreen() {
   const { user, profile } = useAuth()
   const { logs, refetch: refetchLogs } = useGameLogs(user?.id)
 
-  // Platform filter for content filtering
   const { platforms, excludePcOnly } = usePlatformFilter()
-
-  // Curated lists with PC-only filter
-  const { lists: curatedLists, isLoading: listsLoading, refetch: refetchLists } = useCuratedLists(excludePcOnly)
-
-  // Friends playing
+  const { lists: curatedLists, refetch: refetchLists } = useCuratedLists(excludePcOnly)
   const { games: friendsPlaying, isLoading: friendsLoading, refetch: refetchFriends } = useFriendsPlaying(user?.id)
-
-  // Personalized recommendations
   const { games: friendsFavorites, isLoading: favoritesLoading, refetch: refetchFavorites } = useFriendsFavorites(user?.id)
-
-  // Community activity (recent reviews)
   const { reviews: communityReviews, isLoading: communityLoading, refetch: refetchCommunity } = useCommunityReviews()
 
 
   const [refreshing, setRefreshing] = useState(false)
   const [refreshCount, setRefreshCount] = useState(0)
 
-  // Pulsing animation for "Currently Playing" indicator
+  // Spotlight podium — top 5 from each of Supporters / Streak / Rank leaderboards.
+  const [podiumData, setPodiumData] = useState<PodiumData>({
+    supporters: [],
+    streak: [],
+    rank: [],
+  })
+  const [podiumLoading, setPodiumLoading] = useState(true)
+
+  useEffect(() => {
+    loadPodium()
+  }, [])
+
+  const loadPodium = async () => {
+    setPodiumLoading(true)
+    const columns = 'id, username, display_name, avatar_url'
+    const nowIso = new Date().toISOString()
+    try {
+      const [supportersRes, streakRes, rankRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select(columns)
+          .neq('subscription_tier', 'free')
+          .or(`subscription_tier.eq.lifetime,subscription_expires_at.gt.${nowIso}`)
+          .order('created_at', { ascending: true })
+          .limit(5),
+        supabase
+          .from('profiles')
+          .select(columns)
+          .gt('longest_streak', 0)
+          .order('longest_streak', { ascending: false })
+          .limit(5),
+        supabase
+          .from('profiles')
+          .select(columns)
+          .gt('total_xp', 0)
+          .order('total_xp', { ascending: false })
+          .limit(5),
+      ])
+      setPodiumData({
+        supporters: (supportersRes.data || []) as SpotlightUser[],
+        streak: (streakRes.data || []) as SpotlightUser[],
+        rank: (rankRes.data || []) as SpotlightUser[],
+      })
+    } catch {
+      // Silent — section self-hides when every category is empty.
+    } finally {
+      setPodiumLoading(false)
+    }
+  }
+
   const pulseAnim = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
@@ -120,12 +148,12 @@ export default function DashboardScreen() {
       refetchFriends(),
       refetchFavorites(),
       refetchCommunity(),
+      loadPodium(),
     ])
     setRefreshing(false)
   }, [refetchLogs, refetchLists, refetchFriends, refetchFavorites, refetchCommunity])
 
 
-  // Currently playing games
   const currentlyPlaying = useMemo(() => {
     return logs
       .filter((l) => l.status === 'playing')
@@ -143,14 +171,11 @@ export default function DashboardScreen() {
     })
   }, [curatedLists, platforms])
 
-  // Pick two different random curated lists on each refresh
-  const [forYouCuratedList, featuredCuratedList] = useMemo(() => {
-    if (filteredCuratedLists.length === 0) return [null, null]
-    if (filteredCuratedLists.length === 1) return [filteredCuratedLists[0], null]
+  // Pick a random curated list for the "For You" section on each refresh
+  const forYouCuratedList = useMemo(() => {
+    if (filteredCuratedLists.length === 0) return null
     const i = Math.floor(Math.random() * filteredCuratedLists.length)
-    let j = Math.floor(Math.random() * (filteredCuratedLists.length - 1))
-    if (j >= i) j++ // ensure different index
-    return [filteredCuratedLists[i], filteredCuratedLists[j]]
+    return filteredCuratedLists[i]
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredCuratedLists, refreshCount])
 
@@ -158,7 +183,6 @@ export default function DashboardScreen() {
     navigation.navigate('GameDetail', { gameId })
   }
 
-  // Skeleton for horizontal game rows
   const HorizontalSkeleton = () => (
     <ScrollView
       horizontal
@@ -171,7 +195,25 @@ export default function DashboardScreen() {
     </ScrollView>
   )
 
-  // Section Group Header
+  // Skeleton for the Community Activity row — single pulse matching the new
+  // full-bleed card footprint. No inner structure needed; the card IS the media.
+  const CommunitySkeleton = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.communityScroll}
+    >
+      {[1, 2].map((i) => (
+        <Skeleton
+          key={i}
+          width={COMMUNITY_CARD_WIDTH}
+          height={COMMUNITY_CARD_HEIGHT}
+          borderRadius={BorderRadius.xl}
+        />
+      ))}
+    </ScrollView>
+  )
+
   const SectionGroupHeader = ({ title, onSeeAll }: { title: string; onSeeAll?: () => void }) => (
     <View style={styles.groupHeader}>
       <Text style={styles.groupHeaderText}>{title}</Text>
@@ -184,12 +226,13 @@ export default function DashboardScreen() {
   )
 
   return (
-    <View style={styles.container}>
-      <ScrollView
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <Animated.ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.md }]}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Spacing.md }]}
         showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1, 3, 5, 7]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -199,19 +242,20 @@ export default function DashboardScreen() {
           />
         }
       >
-        {/* Pull-to-refresh logo */}
-        {refreshing && (
-          <View style={styles.refreshLogo}>
-            <LoadingSpinner size={48} />
-          </View>
-        )}
+        {/* Pull-to-refresh spinner slot — always mounted so stickyHeaderIndices
+            stay aligned with group headers below; collapses to zero height when
+            idle so it doesn't reserve visible space. */}
+        <View style={[styles.refreshLogo, !refreshing && styles.refreshLogoIdle]}>
+          {refreshing && <LoadingSpinner size={48} />}
+        </View>
 
         {/* ═══════════════════════════════════════════════ */}
         {/* FOR YOU Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: Colors.background }]}>
+        <View style={styles.groupHeaderBar}>
           <SectionGroupHeader title="For You" />
-
+        </View>
+        <View style={styles.groupContent}>
           {/* NOW PLAYING */}
           {currentlyPlaying.length > 0 && (
             <View style={styles.section}>
@@ -265,9 +309,10 @@ export default function DashboardScreen() {
         {/* ═══════════════════════════════════════════════ */}
         {/* FRIENDS Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: Colors.alternate }]}>
+        <View style={styles.groupHeaderBar}>
           <SectionGroupHeader title="Friends" />
-
+        </View>
+        <View style={styles.groupContent}>
           {/* FRIENDS ARE PLAYING */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -322,6 +367,8 @@ export default function DashboardScreen() {
                     listSlug: 'friends-favorites',
                     listTitle: "Friends' Favorites",
                     gameIds: friendsFavorites.map(g => g.id),
+                    listDescription: "Games loved by people you follow",
+                    bannerCoverUrl: friendsFavorites[0]?.coverUrl ?? null,
                     games: friendsFavorites.map(g => ({
                       id: g.id,
                       name: g.name,
@@ -378,116 +425,62 @@ export default function DashboardScreen() {
         </View>
 
         {/* ═══════════════════════════════════════════════ */}
-        {/* DISCOVER Section Group */}
+        {/* COMMUNITY Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: Colors.background }]}>
-          <SectionGroupHeader title="Discover" />
-
-          {/* RANDOM CURATED LIST (shuffles on refresh) */}
-          {listsLoading ? (
-            <View style={styles.listsLoading}>
-              <LoadingSpinner size="large" />
-            </View>
-          ) : featuredCuratedList ? (
-            <CuratedListRow list={featuredCuratedList} />
-          ) : null}
-
-          {/* COMMUNITY ACTIVITY */}
-          {(communityLoading || communityReviews.length > 0) && (
-            <View style={styles.section}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Community Activity</Text>
+        <View style={styles.groupHeaderBar}>
+          <SectionGroupHeader title="Community" />
+        </View>
+        <View style={styles.groupContent}>
+          {/* RECENT REVIEWS */}
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={styles.sectionHeader}
+              onPress={() => navigation.navigate('CommunityReviews' as never)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="See all recent reviews"
+            >
+              <Text style={styles.sectionTitle}>Recent Reviews</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.cream} />
+            </TouchableOpacity>
+            {communityLoading ? (
+              <CommunitySkeleton />
+            ) : communityReviews.length === 0 ? (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>
+                  No reviews yet. Log a game you played and be the first to share.
+                </Text>
               </View>
-              {communityLoading ? (
-                <HorizontalSkeleton />
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.horizontalScroll}
-                >
-                  {communityReviews.slice(0, 10).map((review, index) => {
-                    // Pick a screenshot with variety — different index for same game
-                    const screenshots = review.game.screenshot_urls
-                    const screenshotUrl = screenshots && screenshots.length > 0
-                      ? screenshots[index % screenshots.length]
-                      : null
-                    const imageUrl = screenshotUrl || getIGDBImageUrl(review.game.cover_url)
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.communityScroll}
+                decelerationRate="fast"
+                snapToInterval={COMMUNITY_CARD_WIDTH + Spacing.md}
+                snapToAlignment="start"
+              >
+                {communityReviews.slice(0, 10).map((review) => (
+                  <CommunityReviewCard key={review.id} review={review} />
+                ))}
+              </ScrollView>
+            )}
+          </View>
 
-                    return (
-                    <PressableScale
-                      key={review.id}
-                      onPress={() => handleGamePress(review.game.id)}
-                      haptic="light"
-                      scale={0.95}
-                      style={styles.communityCard}
-                      accessibilityLabel={(review.user.display_name || review.user.username) + ' review of ' + review.game.name}
-                      accessibilityRole="button"
-                      accessibilityHint="Opens game details"
-                    >
-                      <View style={styles.communityCoverWrap}>
-                        <Image
-                          source={{ uri: imageUrl }}
-                          style={styles.communityCover}
-                          resizeMode="cover"
-                          accessibilityLabel={review.game.name + ' screenshot'}
-                        />
-                        <LinearGradient
-                          colors={['transparent', 'rgba(42, 42, 46, 0.9)']}
-                          style={styles.communityCoverGradient}
-                        />
-                        <View style={styles.communityGameBadge}>
-                          <Text style={styles.communityGameName} numberOfLines={1}>
-                            {review.game.name}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.communityContent}>
-                        <View style={styles.communityHeader}>
-                          {review.user.avatar_url ? (
-                            <Image
-                              source={{ uri: review.user.avatar_url }}
-                              style={styles.communityAvatar}
-                              accessibilityLabel={(review.user.display_name || review.user.username) + ' avatar'}
-                            />
-                          ) : (
-                            <View style={[styles.communityAvatar, styles.avatarPlaceholder]}>
-                              <Ionicons name="person" size={10} color={Colors.textDim} />
-                            </View>
-                          )}
-                          <Text style={styles.communityUsername} numberOfLines={1}>
-                            {review.user.display_name || review.user.username}
-                          </Text>
-                          {review.rating && (
-                            <StarRating rating={review.rating} size={10} filledOnly />
-                          )}
-                        </View>
-                        <Text style={styles.communityReviewText} numberOfLines={3}>
-                          {review.review}
-                        </Text>
-                        <Text style={styles.communityTimestamp}>
-                          {formatTimeAgo(review.created_at)}
-                        </Text>
-                      </View>
-                    </PressableScale>
-                    )
-                  })}
-                </ScrollView>
-              )}
-            </View>
-          )}
+          <SpotlightPodium data={podiumData} loading={podiumLoading} />
         </View>
 
         {/* ═══════════════════════════════════════════════ */}
         {/* WATCH Section Group */}
         {/* ═══════════════════════════════════════════════ */}
-        <View style={[styles.sectionGroup, { backgroundColor: Colors.alternate }]}>
+        <View style={styles.groupHeaderBar}>
           <SectionGroupHeader title="Videos & News" onSeeAll={() => navigation.navigate('Watch' as never)} />
-
+        </View>
+        <View style={styles.groupContent}>
           {/* YouTube Videos (header hidden - parent group says "Watch") */}
           <WatchSection refreshKey={refreshCount} showHeader={false} />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   )
 }
@@ -502,6 +495,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: Spacing.md,
   },
+  refreshLogoIdle: {
+    paddingVertical: 0,
+    height: 0,
+  },
   scrollView: {
     flex: 1,
   },
@@ -509,7 +506,12 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.xxxl, // 48px bottom padding (above tab bar)
   },
   // Section Groups
-  sectionGroup: {
+  groupHeaderBar: {
+    backgroundColor: Colors.background,
+    paddingTop: Spacing.md,
+  },
+  groupContent: {
+    backgroundColor: Colors.alternate,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
   },
@@ -521,7 +523,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     borderBottomWidth: 0.5,
     borderBottomColor: Colors.cream,
-    marginBottom: Spacing.md,
   },
   groupHeaderText: {
     fontFamily: Fonts.display,
@@ -566,12 +567,6 @@ const styles = StyleSheet.create({
   accentText: {
     color: Colors.cyanSoft,
   },
-  seeAllText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
-    color: Colors.cream,
-    lineHeight: 17,
-  },
   pulsingDot: {
     width: 6,
     height: 6,
@@ -584,10 +579,10 @@ const styles = StyleSheet.create({
     gap: Spacing.cardGap,
   },
   // Game covers
-  // Now Playing - large covers (personal shelf)
+  // Now Playing — matches curated list cover size (105x140) for consistency
   nowPlayingCover: {
-    width: 120,
-    height: 160,
+    width: 105,
+    height: 140,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
     borderWidth: 0.5,
@@ -646,107 +641,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xxxl,
     alignItems: 'center',
   },
-  // Community Activity Cards
-  communityCard: {
-    width: 240,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: Colors.borderSubtle,
-  },
-  communityCoverWrap: {
-    position: 'relative',
-    width: '100%',
-    height: 120,
-    backgroundColor: Colors.surfaceLight,
-  },
-  communityCover: {
-    width: '100%',
-    height: '100%',
-  },
-  communityCoverGradientTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 36,
-    zIndex: 1,
-  },
-  communityCoverGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-  },
-  communityContent: {
-    paddingHorizontal: Spacing.sm + 2,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.sm + 2,
-  },
-  communityHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
-  communityAvatar: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    marginRight: 6,
-  },
-  avatarPlaceholder: {
-    backgroundColor: Colors.surfaceLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  communityUsername: {
-    flex: 1,
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xxs,
-    color: Colors.textSecondary,
-    lineHeight: 15,
-  },
-  communityRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    marginLeft: Spacing.xs,
-  },
-  communityRatingText: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xxs,
-    color: Colors.cream,
-    lineHeight: 15,
-  },
-  communityReviewText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xs,
-    color: Colors.text,
-    lineHeight: 16,
-  },
-  communityTimestamp: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.xxs,
-    color: Colors.textDim,
-    marginTop: 4,
-  },
-  communityGameBadge: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    zIndex: 2,
-    maxWidth: '80%',
-    backgroundColor: 'rgba(26, 26, 28, 0.7)',
-    borderTopRightRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-  },
-  communityGameName: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xxs,
-    color: Colors.textMuted,
-    lineHeight: 14,
+  // Community Activity scroll row
+  communityScroll: {
+    paddingHorizontal: Spacing.screenPadding,
+    gap: Spacing.md,
   },
 })

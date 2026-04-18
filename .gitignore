@@ -26,6 +26,10 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# Local-only assets / reference material
+launch-video/
+ship-ready-screenshots/
+
 # Logs
 *.log
 npm-debug.log*

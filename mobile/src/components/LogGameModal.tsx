@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -11,7 +11,12 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  PanResponder,
+  Dimensions,
 } from 'react-native'
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
 import { useNavigation } from '@react-navigation/native'
@@ -48,7 +53,6 @@ const SOCIAL_XP_VALUES = {
   rating: 5,
 }
 
-// Helper component to render a star with half-star support
 interface StarIconProps {
   starNumber: number
   rating: number | null
@@ -62,13 +66,10 @@ function StarIcon({ starNumber, rating, size = 32, color = Colors.cream }: StarI
   }
 
   if (rating >= starNumber) {
-    // Full star
     return <Ionicons name="star" size={size} color={color} />
   } else if (rating >= starNumber - 0.5) {
-    // Half star
     return <Ionicons name="star-half" size={size} color={color} />
   } else {
-    // Empty star
     return <Ionicons name="star-outline" size={size} color={Colors.textDim} />
   }
 }
@@ -136,20 +137,144 @@ export default function LogGameModal({
   const [showCreateListModal, setShowCreateListModal] = useState(false)
   const [reviewEditorVisible, setReviewEditorVisible] = useState(false)
 
+  // Drag-to-dismiss gesture + custom open/close animations
+  const [shouldRender, setShouldRender] = useState(visible)
+  const translateY = useRef(new Animated.Value(visible ? 0 : SCREEN_HEIGHT)).current
+  const backdropOpacity = useRef(new Animated.Value(visible ? 1 : 0)).current
+  const translateYValue = useRef(visible ? 0 : SCREEN_HEIGHT)
+  const scrollOffsetRef = useRef(0)
+  const onCloseRef = useRef(onClose)
+  const visibleRef = useRef(visible)
+  const shouldRenderRef = useRef(shouldRender)
+  const openAnimRef = useRef<Animated.CompositeAnimation | null>(null)
+  const closeAnimRef = useRef<Animated.CompositeAnimation | null>(null)
 
-  // Lists functionality
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+  useEffect(() => {
+    visibleRef.current = visible
+  }, [visible])
+  useEffect(() => {
+    shouldRenderRef.current = shouldRender
+  }, [shouldRender])
+  useEffect(() => {
+    const id = translateY.addListener(({ value }) => {
+      translateYValue.current = value
+    })
+    return () => translateY.removeListener(id)
+  }, [translateY])
+
+  // Coordinated open/close animations (sheet slide + backdrop fade)
+  useEffect(() => {
+    openAnimRef.current?.stop()
+    closeAnimRef.current?.stop()
+
+    if (visible) {
+      setShouldRender(true)
+      scrollOffsetRef.current = 0
+      const anim = Animated.parallel([
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          bounciness: 2,
+          speed: 14,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 240,
+          useNativeDriver: true,
+        }),
+      ])
+      openAnimRef.current = anim
+      anim.start()
+    } else if (shouldRenderRef.current) {
+      const anim = Animated.parallel([
+        Animated.timing(translateY, {
+          toValue: SCREEN_HEIGHT,
+          duration: 260,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ])
+      closeAnimRef.current = anim
+      anim.start(({ finished }) => {
+        if (finished && !visibleRef.current) {
+          setShouldRender(false)
+        }
+      })
+    }
+  }, [visible, translateY, backdropOpacity])
+
+  const panResponder = useRef(
+    PanResponder.create({
+      // Claim any unhandled tap so it doesn't bubble to the overlay's onPress
+      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponderCapture: () => false,
+      // Steal drag from ScrollView only when it makes sense
+      onMoveShouldSetPanResponderCapture: (_, g) => {
+        const isVertical =
+          Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx)
+        if (!isVertical) return false
+        // Dragging down while scroll is at the top → pull the sheet
+        if (g.dy > 0 && scrollOffsetRef.current <= 0) return true
+        // Sheet is already partially closed → stay in control (lets user pull back up)
+        if (translateYValue.current > 0) return true
+        return false
+      },
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dy) > 4 && Math.abs(g.dy) > Math.abs(g.dx),
+      onPanResponderGrant: () => {
+        translateY.stopAnimation()
+      },
+      onPanResponderMove: (_, g) => {
+        // Follow finger 1:1 downward; past the top, apply resistance
+        translateY.setValue(g.dy > 0 ? g.dy : g.dy * 0.2)
+      },
+      onPanResponderRelease: (_, g) => {
+        const shouldClose = g.dy > 120 || g.vy > 0.9
+        if (shouldClose) {
+          // Hand off to Modal's native slide-out from the finger's last position.
+          // useLayoutEffect resets translateY before the next paint on reopen.
+          onCloseRef.current()
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 4,
+            speed: 14,
+          }).start()
+        }
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          bounciness: 4,
+          speed: 14,
+        }).start()
+      },
+    })
+  ).current
+
+  const handleScroll = (e: any) => {
+    scrollOffsetRef.current = e.nativeEvent.contentOffset.y
+  }
+
   const { lists, isLoading: listsLoading, refetch: refetchLists } = useUserLists(user?.id)
   const [gameInLists, setGameInLists] = useState<Set<string>>(new Set())
   const [loadingLists, setLoadingLists] = useState<Set<string>>(new Set())
 
-  // Check which lists contain this game
   useEffect(() => {
     const checkGameInLists = async () => {
       if (!lists.length || !visible) return
 
       const inLists = new Set<string>()
 
-      // Check each list's preview games for this game
       lists.forEach((list) => {
         const hasGame = list.preview_games?.some((g) => g.id === game.id)
         if (hasGame) {
@@ -157,7 +282,6 @@ export default function LogGameModal({
         }
       })
 
-      // For more accurate results, check the database
       const { data } = await supabase
         .from('list_items')
         .select('list_id')
@@ -212,7 +336,6 @@ export default function LogGameModal({
     setShowCreateListModal(false)
     refetchLists()
 
-    // Auto-add game to the newly created list
     setLoadingLists((prev) => new Set(prev).add(newList.id))
     const { error } = await addGameToList(newList.id, game.id)
     if (!error) {
@@ -226,7 +349,6 @@ export default function LogGameModal({
     refetchLists()
   }
 
-  // Initialize with existing log data
   useEffect(() => {
     if (existingLog) {
       setStatus(existingLog.status)
@@ -244,13 +366,11 @@ export default function LogGameModal({
   const coverUrl = game.coverUrl || game.cover_url
   const imageUrl = coverUrl ? getIGDBImageUrl(coverUrl, 'coverBig2x') : null
 
-  // Get the current status option
   const currentStatusOption = STATUS_OPTIONS.find(opt => opt.value === status)
 
-  // Handle half-star rating: left side = X.5, right side = X.0
+  // Half-star rating: left side = X.5, right side = X.0. Tapping the current value clears it.
   const handleHalfStarPress = (starNumber: number, isLeftHalf: boolean) => {
     const newRating = isLeftHalf ? starNumber - 0.5 : starNumber
-    // Toggle off if same rating
     setRating(rating === newRating ? null : newRating)
   }
 
@@ -261,7 +381,6 @@ export default function LogGameModal({
     setError(null)
 
     try {
-      // Calculate XP before save (for comparison)
       const { data: existingLogs } = await supabase
         .from('game_logs')
         .select('status, rating, review')
@@ -272,7 +391,6 @@ export default function LogGameModal({
         .select('*', { count: 'exact', head: true })
         .eq('following_id', user.id)
 
-      // Calculate current XP totals
       const logsForXP = existingLogs || []
       let currentGamerXP = logsForXP.reduce((total, log) => {
         return total + (GAMER_XP_VALUES[log.status || 'want_to_play'] || 0)
@@ -289,7 +407,6 @@ export default function LogGameModal({
       const currentGamerLevel = getGamerLevel(currentGamerXP)
       const currentSocialLevel = getSocialLevel(currentSocialXP)
 
-      // First, ensure game is in games_cache
       const { error: cacheError } = await supabase
         .from('games_cache')
         .upsert({
@@ -307,11 +424,10 @@ export default function LogGameModal({
         })
 
       if (cacheError) {
+        // Non-fatal: the log can still be saved even if the cache upsert fails.
         console.error('Cache error:', cacheError)
-        // Don't fail on cache error, continue with log
       }
 
-      // Now save the game log
       const logData = {
         user_id: user.id,
         game_id: game.id,
@@ -323,7 +439,6 @@ export default function LogGameModal({
       }
 
       if (existingLog?.id) {
-        // Update existing log
         const { error: updateError } = await supabase
           .from('game_logs')
           .update(logData)
@@ -331,7 +446,6 @@ export default function LogGameModal({
 
         if (updateError) throw updateError
       } else {
-        // Insert new log
         const { error: insertError } = await supabase
           .from('game_logs')
           .insert({
@@ -342,10 +456,8 @@ export default function LogGameModal({
         if (insertError) throw insertError
       }
 
-      // Record activity for streak tracking
       await recordActivity()
 
-      // Calculate XP earned from this action
       const oldGamerXP = existingLog ? GAMER_XP_VALUES[existingLog.status] || 0 : 0
       const newGamerXP = GAMER_XP_VALUES[status] || 0
       const gamerXPDiff = newGamerXP - oldGamerXP
@@ -367,31 +479,25 @@ export default function LogGameModal({
       }
       const socialXPDiff = newSocialXP - oldSocialXP
 
-      // Calculate new totals
       const finalGamerXP = currentGamerXP + gamerXPDiff
       const finalSocialXP = currentSocialXP + socialXPDiff
       const newGamerLevel = getGamerLevel(finalGamerXP)
       const newSocialLevel = getSocialLevel(finalSocialXP)
 
-      // Build XP notification message
       const xpParts: string[] = []
       if (gamerXPDiff > 0) xpParts.push(`+${gamerXPDiff} Gamer XP`)
       if (socialXPDiff > 0) xpParts.push(`+${socialXPDiff} Social XP`)
 
-      // Check for level ups
       const gamerLeveledUp = newGamerLevel.level > currentGamerLevel.level
       const socialLeveledUp = newSocialLevel.level > currentSocialLevel.level
 
-      // Haptic feedback on successful save
       haptics.success()
 
-      // Close modal first
       onSaveSuccess?.()
       onClose()
 
-      // Trigger celebration for level ups (after modal closes for better UX)
       if (gamerLeveledUp || socialLeveledUp) {
-        // Small delay so modal closes first
+        // Delay so modal close animation completes before the celebration overlay mounts.
         setTimeout(() => {
           if (gamerLeveledUp) {
             celebrateLevelUp(newGamerLevel.rank, newGamerLevel.level)
@@ -433,7 +539,6 @@ export default function LogGameModal({
     }
   }
 
-  // Picker Modal Component
   const PickerModal = ({
     visible,
     onClose,
@@ -512,8 +617,8 @@ export default function LogGameModal({
 
   return (
     <Modal
-      visible={visible}
-      animationType="slide"
+      visible={shouldRender}
+      animationType="none"
       transparent={true}
       onRequestClose={onClose}
       accessibilityViewIsModal={true}
@@ -522,19 +627,28 @@ export default function LogGameModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoid}
       >
+        <Animated.View
+          style={[styles.backdrop, { opacity: backdropOpacity }]}
+          pointerEvents="none"
+        />
         <Pressable style={styles.overlay} onPress={onClose}>
-          <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>
-              {existingLog ? 'Edit Log' : 'Log Game'}
-            </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close game log" accessibilityRole="button">
-              <Ionicons name="close" size={24} color={Colors.text} />
-            </TouchableOpacity>
-          </View>
+          <Animated.View
+            style={[styles.modalContainer, { transform: [{ translateY }] }]}
+            {...panResponder.panHandlers}
+          >
+            {/* Drag handle */}
+            <View style={styles.dragHandleWrap}>
+              <View style={styles.dragHandle} />
+            </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>
+                {existingLog ? 'Edit Log' : 'Log Game'}
+              </Text>
+            </View>
+
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" onScroll={handleScroll} scrollEventThrottle={16}>
             {/* Game Info - Tappable to view game details */}
             <TouchableOpacity style={styles.gameInfo} onPress={handleGamePress} activeOpacity={0.7} accessibilityLabel={`View ${game.name} details`} accessibilityRole="button">
               {imageUrl ? (
@@ -549,16 +663,16 @@ export default function LogGameModal({
             </TouchableOpacity>
 
             {/* Status Dropdown */}
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setStatusPickerVisible(true)}
-              accessibilityLabel={currentStatusOption ? `Status: ${currentStatusOption.label}` : 'Select status'}
-              accessibilityRole="button"
-            >
-              <View style={styles.dropdownInner}>
-                {currentStatusOption ? (
-                  <>
-                    <Text style={styles.dropdownLabel}>Log Game As...</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Log Game As</Text>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setStatusPickerVisible(true)}
+                accessibilityLabel={currentStatusOption ? `Status: ${currentStatusOption.label}` : 'Select status'}
+                accessibilityRole="button"
+              >
+                <View style={styles.dropdownInner}>
+                  {currentStatusOption ? (
                     <View style={styles.dropdownContent}>
                       <Ionicons
                         name={currentStatusOption.icon as any}
@@ -567,37 +681,38 @@ export default function LogGameModal({
                       />
                       <Text style={styles.dropdownText}>{currentStatusOption.label}</Text>
                     </View>
-                  </>
-                ) : (
-                  <Text style={styles.dropdownPlaceholder}>Log Game As...</Text>
-                )}
-              </View>
-              <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
-            </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.dropdownPlaceholder}>Select status</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
 
             {/* Platform Dropdown */}
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setPlatformPickerVisible(true)}
-              accessibilityLabel={platform ? `Platform: ${platform}` : 'Select platform'}
-              accessibilityRole="button"
-            >
-              <View style={styles.dropdownInner}>
-                {platform ? (
-                  <>
-                    <Text style={styles.dropdownLabel}>Platform</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Platform</Text>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setPlatformPickerVisible(true)}
+                accessibilityLabel={platform ? `Platform: ${platform}` : 'Select platform'}
+                accessibilityRole="button"
+              >
+                <View style={styles.dropdownInner}>
+                  {platform ? (
                     <Text style={styles.dropdownText}>{platform}</Text>
-                  </>
-                ) : (
-                  <Text style={styles.dropdownPlaceholder}>Platform</Text>
-                )}
-              </View>
-              <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
-            </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.dropdownPlaceholder}>Select platform</Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+              </TouchableOpacity>
+            </View>
 
             {/* Rating */}
-            <Text style={styles.ratingLabel}>Rating{rating ? ` (${rating})` : ''}</Text>
-            <View style={styles.ratingRow}>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Rating{rating ? ` · ${rating}` : ''}</Text>
+              <View style={styles.ratingRow}>
                 {[1, 2, 3, 4, 5].map((starNumber) => (
                   <View key={starNumber} style={styles.starWrapper}>
                     <TouchableOpacity
@@ -625,48 +740,51 @@ export default function LogGameModal({
                   </TouchableOpacity>
                 )}
               </View>
+            </View>
 
             {/* Review */}
-            <TouchableOpacity
-              style={styles.reviewContainer}
-              onPress={() => setReviewEditorVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.fieldBoxLabel}>Review</Text>
-              {review ? (
-                <FormattedText style={styles.reviewPreviewText} numberOfLines={3}>
-                  {review}
-                </FormattedText>
-              ) : (
-                <Text style={styles.reviewPlaceholder}>Add a review...</Text>
-              )}
-            </TouchableOpacity>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Review</Text>
+              <TouchableOpacity
+                style={styles.reviewContainer}
+                onPress={() => setReviewEditorVisible(true)}
+                activeOpacity={0.7}
+              >
+                {review ? (
+                  <FormattedText style={styles.reviewPreviewText} numberOfLines={3}>
+                    {review}
+                  </FormattedText>
+                ) : (
+                  <Text style={styles.reviewPlaceholder}>Add a review…</Text>
+                )}
+              </TouchableOpacity>
+            </View>
 
             {/* Add to Lists */}
             {user && (
-              <TouchableOpacity
-                style={styles.dropdown}
-                onPress={() => setListsPickerVisible(true)}
-                disabled={listsLoading}
-                accessibilityLabel={gameInLists.size > 0 ? `${gameInLists.size} lists selected` : 'Select lists'}
-                accessibilityRole="button"
-              >
-                <View style={styles.dropdownInner}>
-                  {listsLoading ? (
-                    <Text style={styles.dropdownPlaceholder}>Loading lists...</Text>
-                  ) : gameInLists.size > 0 ? (
-                    <>
-                      <Text style={styles.dropdownLabel}>Add to Lists</Text>
+              <View style={styles.fieldGroup}>
+                <Text style={styles.fieldLabel}>Add to Lists</Text>
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setListsPickerVisible(true)}
+                  disabled={listsLoading}
+                  accessibilityLabel={gameInLists.size > 0 ? `${gameInLists.size} lists selected` : 'Select lists'}
+                  accessibilityRole="button"
+                >
+                  <View style={styles.dropdownInner}>
+                    {listsLoading ? (
+                      <Text style={styles.dropdownPlaceholder}>Loading lists…</Text>
+                    ) : gameInLists.size > 0 ? (
                       <Text style={styles.dropdownText} numberOfLines={1}>
                         {gameInLists.size} {gameInLists.size === 1 ? 'list' : 'lists'} selected
                       </Text>
-                    </>
-                  ) : (
-                    <Text style={styles.dropdownPlaceholder}>Add to Lists</Text>
-                  )}
-                </View>
-                <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
-              </TouchableOpacity>
+                    ) : (
+                      <Text style={styles.dropdownPlaceholder}>None selected</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-down" size={20} color={Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
             )}
 
             {/* Error */}
@@ -713,7 +831,7 @@ export default function LogGameModal({
               )}
             </PressableScale>
           </View>
-          </Pressable>
+          </Animated.View>
         </Pressable>
       </KeyboardAvoidingView>
 
@@ -848,8 +966,11 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: Colors.overlay,
     justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.overlay,
   },
   modalContainer: {
     backgroundColor: Colors.surface,
@@ -857,21 +978,29 @@ const styles = StyleSheet.create({
     borderTopRightRadius: BorderRadius.xl,
     maxHeight: '85%',
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  dragHandleWrap: {
     alignItems: 'center',
-    padding: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xs,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+  },
+  header: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.border,
   },
   headerTitle: {
-    fontFamily: Fonts.bodySemiBold,
+    fontFamily: Fonts.displaySemiBold,
     fontSize: FontSize.lg,
     color: Colors.text,
-  },
-  closeButton: {
-    padding: Spacing.xs,
+    letterSpacing: 0.3,
   },
   content: {
     padding: Spacing.lg,
@@ -880,9 +1009,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.xl,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.surfaceLight,
     padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   gameCover: {
     width: 50,
@@ -908,27 +1044,38 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.text,
   },
-  // Dropdown styles
+  // Unified field group: label above card
+  fieldGroup: {
+    marginBottom: Spacing.lg,
+  },
+  fieldLabel: {
+    fontFamily: Fonts.bodyMedium,
+    fontSize: 10,
+    color: Colors.cream,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: Spacing.sm,
+    marginLeft: 2,
+  },
+  // Dropdown styles — elevated card
   dropdown: {
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.surfaceLight,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   dropdownInner: {
     flex: 1,
-  },
-  dropdownLabel: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    marginBottom: 2,
   },
   dropdownContent: {
     flexDirection: 'row',
@@ -936,7 +1083,7 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   dropdownText: {
-    fontFamily: Fonts.body,
+    fontFamily: Fonts.bodyMedium,
     color: Colors.text,
     fontSize: FontSize.md,
   },
@@ -944,21 +1091,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body,
     color: Colors.textDim,
     fontSize: FontSize.md,
-  },
-  // Rating label (standalone, no box)
-  ratingLabel: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  // Shared field box (review)
-  fieldBoxLabel: {
-    fontFamily: Fonts.bodyMedium,
-    fontSize: FontSize.xs,
-    color: Colors.textDim,
-    marginBottom: Spacing.sm,
   },
   // Picker Modal styles
   pickerOverlay: {
@@ -1016,7 +1148,6 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
   },
   starWrapper: {
     width: 44,
@@ -1044,28 +1175,31 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },
-  // Review styles
+  // Review styles — elevated card
   reviewContainer: {
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.surfaceLight,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     padding: Spacing.lg,
-    marginBottom: Spacing.lg,
     minHeight: 64,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   reviewPreviewText: {
     fontFamily: Fonts.body,
     fontSize: FontSize.sm,
     color: Colors.text,
     lineHeight: FontSize.sm * 1.5,
-    marginTop: Spacing.xs,
   },
   reviewPlaceholder: {
     fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.md,
     color: Colors.textDim,
-    marginTop: Spacing.xs,
   },
   errorContainer: {
     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -1082,40 +1216,54 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.lg,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
-    gap: Spacing.md,
+    gap: Spacing.sm,
   },
   deleteButton: {
     width: 52,
     height: 52,
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.5)',
-    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+    borderColor: 'rgba(239, 68, 68, 0.28)',
+    backgroundColor: Colors.surfaceLight,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   saveButton: {
     height: 52,
-    backgroundColor: 'rgba(192, 200, 208, 0.18)',
+    backgroundColor: Colors.surfaceLight,
     borderWidth: 1,
-    borderColor: Colors.cream,
-    borderRadius: BorderRadius.md,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
   saveButtonDisabled: {
     backgroundColor: 'transparent',
     borderColor: Colors.border,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   saveButtonText: {
     fontFamily: Fonts.bodySemiBold,
-    color: Colors.cream,
-    fontSize: FontSize.md,
+    color: Colors.text,
+    fontSize: FontSize.sm,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
+    letterSpacing: 1.2,
   },
   // Lists styles
   listsContainer: {

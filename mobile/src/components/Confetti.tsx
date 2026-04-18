@@ -3,13 +3,7 @@ import { View, StyleSheet, Animated } from 'react-native'
 import { Colors, Spacing, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 
-/**
- * Celebration overlay — subtle text + fade animation.
- * Previously included a 60-piece confetti particle system;
- * replaced with a quiet, confident overlay that lets the
- * haptic feedback (in CelebrationContext) do the heavy lifting.
- */
-
+/** Celebration overlay — a quiet fade-in title/subtitle. Haptics (via CelebrationContext) carry most of the feedback. */
 interface CelebrationProps {
   visible: boolean
   onHide: () => void
@@ -42,7 +36,6 @@ export function Celebration({
         }),
       ]).start()
 
-      // Auto-hide after a moment
       const timer = setTimeout(() => {
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -82,7 +75,7 @@ export function Celebration({
   )
 }
 
-// Keep default export for backwards compatibility (unused but safe)
+// Default export kept for import-compatibility with older call sites.
 export default function Confetti() {
   return null
 }

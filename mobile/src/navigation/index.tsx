@@ -32,6 +32,8 @@ import UserReviewsScreen from '../screens/UserReviewsScreen'
 import RankProgressScreen from '../screens/RankProgressScreen'
 import StreakInfoScreen from '../screens/StreakInfoScreen'
 import CommunitySpotlightScreen from '../screens/CommunitySpotlightScreen'
+import CommunityReviewsScreen from '../screens/CommunityReviewsScreen'
+import UserListsScreen from '../screens/UserListsScreen'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
@@ -50,6 +52,8 @@ export type MainStackParamList = {
     listSlug: string
     listTitle: string
     gameIds: number[]
+    listDescription?: string | null
+    bannerCoverUrl?: string | null
     // Optional: pass full game data to skip games_cache fetch (for recommendations)
     games?: Array<{ id: number; name: string; coverUrl: string | null }>
   }
@@ -63,9 +67,11 @@ export type MainStackParamList = {
   WebView: { url: string; title: string }
   LibraryStatus: { userId: string; status: string }
   UserReviews: { userId: string }
+  UserLists: { userId: string }
   RankProgress: undefined
   StreakInfo: undefined
   CommunitySpotlight: undefined
+  CommunityReviews: undefined
   // Admin / onboarding previews (developer only)
   AdminHeroBanners: undefined
   AdminCuratedLists: undefined
@@ -210,6 +216,13 @@ function MainNavigator() {
         }}
       />
       <MainStack.Screen
+        name="UserLists"
+        component={UserListsScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
         name="RankProgress"
         component={RankProgressScreen}
         options={{
@@ -226,6 +239,13 @@ function MainNavigator() {
       <MainStack.Screen
         name="CommunitySpotlight"
         component={CommunitySpotlightScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <MainStack.Screen
+        name="CommunityReviews"
+        component={CommunityReviewsScreen}
         options={{
           animation: 'slide_from_right',
         }}

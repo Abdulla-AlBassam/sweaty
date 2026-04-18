@@ -17,10 +17,7 @@ interface PressableScaleProps extends Omit<PressableProps, 'style'> {
   disabled?: boolean
 }
 
-/**
- * A pressable component with built-in scale animation and haptic feedback
- * Use this for all interactive elements to create premium feel
- */
+/** Pressable with scale-on-press and optional haptic feedback. */
 export default function PressableScale({
   children,
   style,
@@ -37,12 +34,10 @@ export default function PressableScale({
 
   const handlePressIn = useCallback(
     (e: any) => {
-      // Haptic feedback
       if (haptic !== 'none' && !disabled) {
         haptics[haptic]()
       }
 
-      // Scale down animation - more noticeable
       Animated.spring(scaleAnim, {
         toValue: scale,
         useNativeDriver: true,
@@ -57,7 +52,6 @@ export default function PressableScale({
 
   const handlePressOut = useCallback(
     (e: any) => {
-      // Scale back up — gentle, not bouncy
       Animated.spring(scaleAnim, {
         toValue: 1,
         useNativeDriver: true,
@@ -94,9 +88,6 @@ export default function PressableScale({
   )
 }
 
-/**
- * Pre-configured button variants
- */
 export function PressableScaleLight(props: Omit<PressableScaleProps, 'haptic'>) {
   return <PressableScale {...props} haptic="light" scale={0.98} />
 }

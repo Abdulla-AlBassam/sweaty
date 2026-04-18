@@ -38,7 +38,6 @@ interface ReviewCommentsProps {
   onCountChange?: (count: number) => void
 }
 
-// Helper to format relative time
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString)
   const now = new Date()
@@ -54,7 +53,6 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-// Single comment item component
 interface CommentItemProps {
   comment: ReviewComment
   onReply: (comment: ReviewComment) => void
@@ -169,7 +167,6 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
   const [inputText, setInputText] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Fetch comments when expanded
   const fetchComments = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -195,7 +192,6 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
 
       if (error) throw error
 
-      // Organize into threaded structure
       const topLevelComments: ReviewComment[] = []
       const repliesMap: Record<string, ReviewComment[]> = {}
 
@@ -231,7 +227,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
         }
       })
 
-      // Recursively attach replies to comments at any depth
+      // Recursively attach replies to comments at any depth so deep threads render correctly.
       const attachReplies = (comments: ReviewComment[]) => {
         comments.forEach((comment) => {
           comment.replies = repliesMap[comment.id] || []
@@ -371,7 +367,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
   if (previewMode) {
     return (
       <TouchableOpacity style={styles.toggleButton} onPress={onPreviewPress} activeOpacity={0.7}>
-        <CommentIcon size={22} color={Colors.textMuted} />
+        <CommentIcon size={22} color={Colors.textBright} />
         {commentCount > 0 && (
           <Text style={styles.countText}>{commentCount}</Text>
         )}
@@ -384,7 +380,7 @@ export default function ReviewComments({ gameLogId, initialCommentCount = 0, pre
       {/* Comment toggle button - stays inline with like button */}
       {!hideToggle && (
       <TouchableOpacity style={styles.toggleButton} onPress={toggleExpanded} activeOpacity={0.7} accessibilityLabel={isExpanded ? 'Hide comments' : `Show comments${commentCount > 0 ? `, ${commentCount} comments` : ''}`} accessibilityRole="button">
-        <CommentIcon size={22} color={Colors.textMuted} />
+        <CommentIcon size={22} color={Colors.textBright} />
         {commentCount > 0 && (
           <Text style={styles.countText}>{commentCount}</Text>
         )}
@@ -481,7 +477,7 @@ const styles = StyleSheet.create({
   countText: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: Colors.textMuted,
+    color: Colors.textBright,
     lineHeight: 22,
   },
   expandedSection: {

@@ -251,7 +251,7 @@ export default function AllReviewsScreen({ navigation, route }: Props) {
             }
             ListEmptyComponent={
               <View style={styles.centered}>
-                <CommentIcon size={32} color={Colors.textDim} />
+                <CommentIcon size={32} color={Colors.textBright} />
                 <Text style={styles.emptyText}>No reviews yet</Text>
               </View>
             }

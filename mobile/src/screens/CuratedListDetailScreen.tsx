@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   Image,
   StyleSheet,
   Dimensions,
+  Animated,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl } from '../constants'
@@ -21,35 +23,38 @@ import LibraryFilterModal, { LibrarySortType } from '../components/LibraryFilter
 
 type CuratedListDetailRouteProp = RouteProp<MainStackParamList, 'CuratedListDetail'>
 
-// Calculate card width: (screen width - padding - gaps) / 3 columns
-const SCREEN_WIDTH = Dimensions.get('window').width
-const GRID_PADDING = Spacing.lg * 2 // padding on both sides
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
+const GRID_PADDING = Spacing.lg * 2
 const GAP = Spacing.md
-const NUM_COLUMNS = 3
+const NUM_COLUMNS = 4
 const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS
+const BANNER_HEIGHT_BASE = SCREEN_HEIGHT * 0.30
 
 interface GameItem {
   id: number
   name: string
   cover_url: string | null
+  screenshot_urls?: string[] | null
   first_release_date?: string | null
 }
 
 export default function CuratedListDetailScreen() {
   const navigation = useNavigation()
   const route = useRoute<CuratedListDetailRouteProp>()
-  const { listTitle, gameIds, games: passedGames } = route.params
+  const { listTitle, gameIds, games: passedGames, listDescription, bannerCoverUrl } = route.params
+  const insets = useSafeAreaInsets()
+  const scrollY = useRef(new Animated.Value(0)).current
 
   const [games, setGames] = useState<GameItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [sortType, setSortType] = useState<LibrarySortType>('release_newest')
   const [filterModalVisible, setFilterModalVisible] = useState(false)
+  const [topGameScreenshot, setTopGameScreenshot] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchGames = async () => {
       setIsLoading(true)
 
-      // If games were passed directly (e.g., from recommendations), use them
       if (passedGames && passedGames.length > 0) {
         const mappedGames = passedGames.map(g => ({
           id: g.id,
@@ -59,14 +64,25 @@ export default function CuratedListDetailScreen() {
         }))
         setGames(mappedGames)
         setIsLoading(false)
+
+        // Fetch the top game's screenshot separately so the banner shows gameplay
+        // rather than cover art when the list was passed in without screenshots.
+        const topId = passedGames[0]?.id
+        if (topId && !bannerCoverUrl) {
+          const { data: topGame } = await supabase
+            .from('games_cache')
+            .select('screenshot_urls')
+            .eq('id', topId)
+            .maybeSingle()
+          setTopGameScreenshot(topGame?.screenshot_urls?.[0] ?? null)
+        }
         return
       }
 
-      // Otherwise, fetch from games_cache
       try {
         const { data, error } = await supabase
           .from('games_cache')
-          .select('id, name, cover_url, first_release_date')
+          .select('id, name, cover_url, screenshot_urls, first_release_date')
           .in('id', gameIds)
 
         if (error) throw error
@@ -75,8 +91,13 @@ export default function CuratedListDetailScreen() {
           id: game.id,
           name: game.name,
           cover_url: game.cover_url,
+          screenshot_urls: game.screenshot_urls,
           first_release_date: game.first_release_date,
         }))
+
+        // Preserve the original gameIds order so the "top" game stays first
+        const idOrder = new Map(gameIds.map((id, idx) => [id, idx]))
+        fetchedGames.sort((a, b) => (idOrder.get(a.id) ?? 0) - (idOrder.get(b.id) ?? 0))
 
         setGames(fetchedGames)
       } catch (err) {
@@ -120,6 +141,15 @@ export default function CuratedListDetailScreen() {
     return sorted
   }, [games, sortType])
 
+  // Banner uses explicit prop, else top game's screenshot (from state or game object),
+  // else falls back to cover art.
+  const bannerImage =
+    bannerCoverUrl ??
+    topGameScreenshot ??
+    games[0]?.screenshot_urls?.[0] ??
+    games[0]?.cover_url ??
+    null
+
   const handleGamePress = (gameId: number) => {
     navigation.dispatch(
       CommonActions.navigate({
@@ -129,16 +159,9 @@ export default function CuratedListDetailScreen() {
     )
   }
 
-  // Each row height: card height (CARD_WIDTH * 4/3) + marginBottom (GAP)
   const ITEM_HEIGHT = CARD_WIDTH * (4 / 3) + GAP
 
-  const getItemLayout = (_data: ArrayLike<GameItem> | null | undefined, index: number) => ({
-    length: ITEM_HEIGHT,
-    offset: ITEM_HEIGHT * Math.floor(index / NUM_COLUMNS),
-    index,
-  })
-
-  const renderGame = ({ item, index }: { item: GameItem; index: number }) => (
+  const renderGame = ({ item }: { item: GameItem }) => (
     <TouchableOpacity
       style={styles.gameCard}
       onPress={() => handleGamePress(item.id)}
@@ -163,10 +186,55 @@ export default function CuratedListDetailScreen() {
     </TouchableOpacity>
   )
 
+  const bannerHeight = BANNER_HEIGHT_BASE + insets.top
+
+  const ListHeader = (
+    <View>
+      {bannerImage ? (
+        <Animated.View
+          style={[
+            styles.bannerContainer,
+            { height: bannerHeight },
+            {
+              transform: [
+                { translateY: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [-100, 0], extrapolateRight: 'clamp' }) },
+                { scale: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [1.5, 1], extrapolateRight: 'clamp' }) },
+              ],
+            },
+          ]}
+        >
+          <Image
+            source={{ uri: getIGDBImageUrl(bannerImage, 'fullHd') }}
+            style={styles.banner}
+            resizeMode="cover"
+            accessibilityLabel={`${listTitle} banner`}
+          />
+          <LinearGradient
+            colors={[Colors.gradientMedium, 'transparent']}
+            style={styles.bannerGradientTop}
+          />
+          <LinearGradient
+            colors={['transparent', Colors.gradientMedium, Colors.background]}
+            locations={[0, 0.6, 1]}
+            style={styles.bannerGradient}
+          />
+        </Animated.View>
+      ) : (
+        <View style={{ height: insets.top + 44 }} />
+      )}
+
+      <View style={[styles.listInfo, bannerImage && styles.listInfoWithBanner]}>
+        <Text style={styles.heroTitle}>{listTitle}</Text>
+        {listDescription ? (
+          <Text style={styles.heroDescription}>{listDescription}</Text>
+        ) : null}
+      </View>
+    </View>
+  )
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
+    <View style={styles.container}>
+      <View style={[styles.header, { paddingTop: insets.top }]} pointerEvents="box-none">
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -176,7 +244,6 @@ export default function CuratedListDetailScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{listTitle}</Text>
         <TouchableOpacity
           style={styles.sortButton}
           onPress={() => setFilterModalVisible(true)}
@@ -187,22 +254,28 @@ export default function CuratedListDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
       {isLoading ? (
         <View style={styles.loadingContainer}>
           <LoadingSpinner size="large" color={Colors.accent} />
         </View>
       ) : (
-        <FlatList
+        <Animated.FlatList
           data={sortedGames}
           renderItem={renderGame}
           keyExtractor={(item, index) => `${item.id}-${index}`}
-          numColumns={3}
+          numColumns={NUM_COLUMNS}
           contentContainerStyle={styles.gridContent}
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={true}
-          getItemLayout={getItemLayout}
+          ListHeaderComponent={ListHeader}
+          bounces={true}
+          overScrollMode="never"
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
         />
       )}
 
@@ -217,7 +290,7 @@ export default function CuratedListDetailScreen() {
         hideFilterSection
         allowedSortGroups={['RELEASE DATE', 'GAME NAME']}
       />
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -227,13 +300,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingBottom: Spacing.sm,
   },
   backButton: {
     width: 44,
@@ -241,16 +317,55 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  headerTitle: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.lg,
-    color: Colors.text,
-  },
   sortButton: {
     width: 44,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  bannerContainer: {
+    width: SCREEN_WIDTH,
+    position: 'relative',
+  },
+  banner: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerGradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+  },
+  bannerGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
+  listInfo: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.md,
+    marginBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  listInfoWithBanner: {
+    marginTop: -40,
+  },
+  heroTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
+    color: Colors.text,
+  },
+  heroDescription: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+    marginTop: Spacing.xs,
+    lineHeight: 19,
   },
   loadingContainer: {
     flex: 1,
@@ -258,19 +373,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   gridContent: {
-    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl,
   },
   row: {
     justifyContent: 'flex-start',
     gap: Spacing.md,
     marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.lg,
   },
   gameCard: {
     width: CARD_WIDTH,
   },
   cover: {
     width: CARD_WIDTH,
-    height: CARD_WIDTH * (4 / 3), // 3:4 aspect ratio
+    height: CARD_WIDTH * (4 / 3),
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.surface,
     borderWidth: 0.5,

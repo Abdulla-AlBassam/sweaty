@@ -24,8 +24,8 @@ interface HorizontalGameListProps {
   isLoading?: boolean
 }
 
-const COVER_WIDTH = 88
-const COVER_HEIGHT = 117
+const COVER_WIDTH = 105
+const COVER_HEIGHT = 140
 
 export default function HorizontalGameList({
   games,

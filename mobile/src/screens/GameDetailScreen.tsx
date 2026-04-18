@@ -109,14 +109,10 @@ export default function GameDetailScreen({ navigation, route }: Props) {
   const coverModalScale = useRef(new Animated.Value(0.3)).current
   const scrollY = useRef(new Animated.Value(0)).current
 
-  // Fetch ratings data
   const { data: openCriticData } = useOpenCritic(gameId, game?.name || '')
   const { stats: communityStats, refetch: refetchCommunityStats } = useCommunityStats(gameId)
-
-  // Fetch friends who played this game
   const { friends: friendsWhoPlayed } = useFriendsWhoPlayed(gameId, user?.id)
 
-  // Fetch reviewers for avatar row
   const [reviewers, setReviewers] = useState<Array<{
     id: string
     rating: number | null
@@ -180,7 +176,8 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     console.log('API URL:', `${API_CONFIG.baseUrl}/api/games/${gameId}/details`)
 
     try {
-      // First try to get from cache for quick display
+      // Read from cache first so the screen renders immediately; the API call below fills in
+      // videos + similar games which are not persisted.
       const { data: cached } = await supabase
         .from('games_cache')
         .select('*')
@@ -203,15 +200,12 @@ export default function GameDetailScreen({ navigation, route }: Props) {
         setIsLoading(false)
       }
 
-      // Always fetch from API to get videos and similar games (cache doesn't store them)
       try {
         let detailsUrl = `${API_CONFIG.baseUrl}/api/games/${gameId}/details`
         const params: string[] = []
-        // Add platform filter for similar games
         if (platformsParam) {
           params.push(`platforms=${encodeURIComponent(platformsParam)}`)
         }
-        // Add exclude PC-only filter
         if (excludePcOnly) {
           params.push('exclude_pc_only=true')
         }
@@ -236,7 +230,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           console.log('API returned non-OK status, continuing without videos')
         }
       } catch (apiError) {
-        // API fetch failed - continue without videos, game still works from cache
+        // Non-fatal: the cached game above is enough to render; we just lose videos + similar.
         console.log('Could not fetch from API (videos unavailable):', apiError)
       }
     } catch (error) {
@@ -258,13 +252,12 @@ export default function GameDetailScreen({ navigation, route }: Props) {
 
       setUserLog(data || null)
     } catch (error) {
-      // Game not logged yet, that's fine
+      // No log row yet for this (user, game) — expected.
       setUserLog(null)
     }
   }, [user, gameId])
 
   const handleLogSaveSuccess = useCallback(() => {
-    // Refresh the user's log, reviews, and community stats after saving
     fetchUserLog()
     fetchReviewers()
     refetchCommunityStats()
@@ -306,7 +299,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     ]).start(() => setCoverOverlayVisible(false))
   }, [coverOverlayOpacity, coverModalScale])
 
-  // Pull-to-refresh handler
   const getCoverUrl = () => {
     const url = game?.coverUrl || game?.cover_url
     return url ? getIGDBImageUrl(url, 'coverBig2x') : null
@@ -372,7 +364,6 @@ export default function GameDetailScreen({ navigation, route }: Props) {
     }
   }
 
-  // Get color based on OpenCritic tier
   const getOpenCriticColor = (tier: string | null) => {
     switch (tier) {
       case 'Mighty': return Colors.openCriticMighty
@@ -613,7 +604,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                       )}
                       {friendReview && (
                         <View style={styles.reviewBadge}>
-                          <CommentIcon size={14} color={Colors.text} />
+                          <CommentIcon size={14} color={Colors.textBright} />
                         </View>
                       )}
                     </View>
@@ -649,7 +640,7 @@ export default function GameDetailScreen({ navigation, route }: Props) {
                         </View>
                       )}
                       <View style={styles.reviewBadge}>
-                        <CommentIcon size={14} color={Colors.text} />
+                        <CommentIcon size={14} color={Colors.textBright} />
                       </View>
                     </View>
                     {reviewer.rating && (
@@ -731,16 +722,30 @@ export default function GameDetailScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* RAWG attribution (required by their ToS when displaying RAWG data) */}
+        {/* RAWG + IGDB attribution (required by their ToS when displaying their data) */}
         {rawg?.rawgId && (
-          <TouchableOpacity
-            style={styles.rawgAttribution}
-            onPress={() => Linking.openURL('https://rawg.io').catch(() => {})}
-            accessibilityLabel="Powered by RAWG and IGDB"
-            accessibilityRole="link"
-          >
-            <Text style={styles.rawgAttributionText}>Powered by RAWG & IGDB</Text>
-          </TouchableOpacity>
+          <View style={styles.rawgAttribution}>
+            <Text style={styles.rawgAttributionText}>
+              Powered by{' '}
+              <Text
+                style={styles.rawgAttributionLink}
+                onPress={() => Linking.openURL('https://rawg.io').catch(() => {})}
+                accessibilityRole="link"
+                accessibilityLabel="RAWG website"
+              >
+                RAWG
+              </Text>
+              {' & '}
+              <Text
+                style={styles.rawgAttributionLink}
+                onPress={() => Linking.openURL('https://www.igdb.com').catch(() => {})}
+                accessibilityRole="link"
+                accessibilityLabel="IGDB website"
+              >
+                IGDB
+              </Text>
+            </Text>
+          </View>
         )}
 
         </View>
@@ -1015,6 +1020,9 @@ const styles = StyleSheet.create({
     color: Colors.textDim,
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  rawgAttributionLink: {
+    color: Colors.text,
   },
   section: {
     marginTop: Spacing.lg,

@@ -12,6 +12,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from 'react-native'
 import LoadingSpinner from './LoadingSpinner'
 import { Ionicons } from '@expo/vector-icons'
@@ -41,7 +42,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
   const titleInputRef = useRef<TextInput>(null)
   const focusTimeoutRef = useRef<NodeJS.Timeout>(undefined)
 
-  // Auto-focus title input when modal opens
+  // Auto-focus title once the modal's slide-in animation has settled.
   useEffect(() => {
     if (visible) {
       focusTimeoutRef.current = setTimeout(() => {
@@ -53,7 +54,6 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     }
   }, [visible])
 
-  // Form state
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [isPublic, setIsPublic] = useState(true)
@@ -61,20 +61,16 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Search state
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Game[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
 
-  // Library state
   const [libraryGames, setLibraryGames] = useState<LibraryGame[]>([])
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false)
 
-  // Selected games
   const [selectedGames, setSelectedGames] = useState<LibraryGame[]>([])
 
-  // Reset form when modal opens
   useEffect(() => {
     if (visible) {
       setTitle('')
@@ -89,7 +85,6 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     }
   }, [visible])
 
-  // Fetch user's library
   const fetchLibrary = async () => {
     if (!user) return
     setIsLoadingLibrary(true)
@@ -120,7 +115,6 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     }
   }
 
-  // Search games from IGDB
   const searchGames = useCallback(async (query: string) => {
     if (!query.trim() || query.length < 2) {
       setSearchResults([])
@@ -134,7 +128,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     try {
       const response = await fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
-      // Handle both array response and object with games property
+      // Endpoint has shipped both shapes over time; tolerate array or `{ games | results }`.
       const games = Array.isArray(data) ? data : (data?.games || data?.results || [])
       setSearchResults(games.slice(0, 8))
     } catch (err) {
@@ -145,7 +139,6 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     }
   }, [])
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       searchGames(searchQuery)
@@ -168,7 +161,7 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
   }
 
   const handleSearchResultPress = (game: Game) => {
-    // API returns coverUrl (camelCase), database has cover_url (snake_case)
+    // The search API returns camelCase (`coverUrl`) while the DB uses snake_case (`cover_url`).
     const coverUrl = game.cover_url || (game as any).coverUrl || (game as any).cover?.url || (game as any).cover || null
     const libraryGame: LibraryGame = {
       id: game.id,
@@ -191,7 +184,6 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
     setIsCreating(true)
     setError(null)
 
-    // Create the list
     const { data: newList, error: createError } = await createList(
       user.id,
       title.trim(),
@@ -206,7 +198,6 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
       return
     }
 
-    // Add selected games to the list
     if (selectedGames.length > 0) {
       for (let i = 0; i < selectedGames.length; i++) {
         const game = selectedGames[i]
@@ -224,7 +215,6 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
 
   const canCreate = title.trim().length > 0
 
-  // Filter library games that aren't already selected (for display purposes)
   const availableLibraryGames = libraryGames.filter(g => !isGameSelected(g.id))
 
   return (
@@ -526,6 +516,11 @@ export default function CreateListModal({ visible, onClose, onCreated }: CreateL
   )
 }
 
+const SCREEN_WIDTH = Dimensions.get('window').width
+const NUM_COLUMNS = 4
+const LIBRARY_COVER_WIDTH = Math.floor((SCREEN_WIDTH - 2 * Spacing.lg - (NUM_COLUMNS - 1) * Spacing.sm) / NUM_COLUMNS)
+const LIBRARY_COVER_HEIGHT = Math.round(LIBRARY_COVER_WIDTH * 4 / 3)
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -771,10 +766,11 @@ const styles = StyleSheet.create({
   },
   libraryGame: {
     position: 'relative',
+    width: LIBRARY_COVER_WIDTH,
   },
   libraryCover: {
-    width: 70,
-    height: 93,
+    width: LIBRARY_COVER_WIDTH,
+    height: LIBRARY_COVER_HEIGHT,
     borderRadius: BorderRadius.sm,
   },
   libraryCoverSelected: {

@@ -32,6 +32,8 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
   }
 
   const handleSeeAll = () => {
+    const topGame = list.games[0]
+    const bannerImage = topGame?.screenshot_urls?.[0] ?? topGame?.cover_url ?? null
     navigation.dispatch(
       CommonActions.navigate({
         name: 'CuratedListDetail',
@@ -39,6 +41,8 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
           listSlug: list.slug,
           listTitle: list.title,
           gameIds: list.game_ids,
+          listDescription: list.description,
+          bannerCoverUrl: bannerImage,
         },
       })
     )
@@ -101,7 +105,7 @@ export default function CuratedListRow({ list }: CuratedListRowProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: Spacing.lg,             // 16px between sections
+    marginBottom: Spacing.xl,             // 24px between sections — more breathing room
   },
   header: {
     flexDirection: 'row',
@@ -119,13 +123,13 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textMuted,
     marginTop: Spacing.xs,
-    lineHeight: 17,
+    lineHeight: 16,
   },
   title: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
     color: Colors.text,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   seeAll: {
     fontFamily: Fonts.bodyMedium,

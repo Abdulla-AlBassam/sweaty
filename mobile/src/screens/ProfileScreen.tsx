@@ -28,8 +28,6 @@ import XPProgressBar from '../components/XPProgressBar'
 import LogGameModal from '../components/LogGameModal'
 import EditFavoritesModal from '../components/EditFavoritesModal'
 import FollowersModal from '../components/FollowersModal'
-import CreateListModal from '../components/CreateListModal'
-import ListCard from '../components/ListCard'
 import StarRating from '../components/StarRating'
 import PremiumBadge from '../components/PremiumBadge'
 import StreakBadge from '../components/StreakBadge'
@@ -90,21 +88,18 @@ export default function ProfileScreen() {
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [favorites, setFavorites] = useState<FavoriteGame[]>([])
   const [isFavoritesModalVisible, setIsFavoritesModalVisible] = useState(false)
-  const [isCreateListModalVisible, setIsCreateListModalVisible] = useState(false)
   const [followersModalVisible, setFollowersModalVisible] = useState(false)
   const [followersModalType, setFollowersModalType] = useState<'followers' | 'following'>('followers')
   const [selectedFilter, setSelectedFilter] = useState<string>('all')
   const [refreshing, setRefreshing] = useState(false)
   const [avatarExpanded, setAvatarExpanded] = useState(false)
 
-  // Advanced filter state
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false)
   const [advancedFilter, setAdvancedFilter] = useState<LibraryFilterType>('all')
   const [sortType, setSortType] = useState<LibrarySortType>('recent')
 
   const displayName = profile?.display_name || profile?.username || 'Gamer'
 
-  // Premium status
   const { isPremium } = usePremium(
     profile?.subscription_tier,
     profile?.subscription_expires_at
@@ -120,22 +115,18 @@ export default function ProfileScreen() {
     { key: 'dropped', label: 'Dropped' },
   ]
 
-  // Get count for each status
   const getStatusCount = (status: string) => {
     if (status === 'all') return gameLogs.length
     return gameLogs.filter(log => log.status === status).length
   }
 
-  // Filter and sort game logs
   const filteredGameLogs = useMemo(() => {
     let filtered = [...gameLogs]
 
-    // Apply status filter (from pills)
     if (selectedFilter !== 'all') {
       filtered = filtered.filter(log => log.status === selectedFilter)
     }
 
-    // Apply advanced filter
     const playedStatuses = ['playing', 'played', 'completed', 'dropped']
     const backlogStatuses = ['want_to_play', 'on_hold']
 
@@ -154,10 +145,9 @@ export default function ProfileScreen() {
         break
     }
 
-    // Apply sort
     switch (sortType) {
       case 'recent':
-        // Already sorted by updated_at from fetch
+        // Already sorted by updated_at from fetch.
         break
       case 'oldest':
         filtered.reverse()
@@ -238,7 +228,6 @@ export default function ProfileScreen() {
 
   const username = profile?.username || ''
 
-  // Calculate stats
   const totalGames = logs.length
   const completed = logs.filter((l) => l.status === 'completed').length
   const playing = logs.filter((l) => l.status === 'playing').length
@@ -251,11 +240,9 @@ export default function ProfileScreen() {
     ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(1)
     : '—'
 
-  // Calculate XP
   const totalXP = calculateXP(logs, followers)
   const levelInfo = getLevel(totalXP)
 
-  // Fetch game logs with game details
   const fetchGameLogs = useCallback(async () => {
     if (!user) return
 
@@ -291,7 +278,6 @@ export default function ProfileScreen() {
     fetchGameLogs()
   }, [fetchGameLogs])
 
-  // Fetch favorite games
   const fetchFavorites = useCallback(async () => {
     if (!profile?.favorite_games || profile.favorite_games.length === 0) {
       setFavorites([])
@@ -305,7 +291,7 @@ export default function ProfileScreen() {
         .in('id', profile.favorite_games)
 
       if (data) {
-        // Sort by the order in favorite_games array
+        // Preserve the order stored in favorite_games — `.in()` does not guarantee it.
         const sorted = profile.favorite_games
           .map(id => data.find(g => g.id === id))
           .filter(Boolean) as FavoriteGame[]
@@ -320,7 +306,6 @@ export default function ProfileScreen() {
     fetchFavorites()
   }, [fetchFavorites])
 
-  // Pull-to-refresh handler
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     await Promise.all([
@@ -333,14 +318,12 @@ export default function ProfileScreen() {
     setRefreshing(false)
   }, [refreshProfile, fetchGameLogs, fetchFavorites, refreshLogs, refetchLists])
 
-  // Filter modal handlers
   const handleResetFilters = () => {
     setAdvancedFilter('all')
     setSortType('recent')
     setSelectedFilter('all')
   }
 
-  // Check if any advanced filters are active (for showing indicator)
   const hasActiveAdvancedFilters = advancedFilter !== 'all' || sortType !== 'recent'
 
   const handleFavoritesSaveSuccess = () => {
@@ -355,19 +338,6 @@ export default function ProfileScreen() {
   const handleLogSaveSuccess = () => {
     fetchGameLogs()
     refreshLogs()
-  }
-
-  const handleListPress = (listId: string) => {
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'ListDetail',
-        params: { listId },
-      })
-    )
-  }
-
-  const handleListCreated = () => {
-    refetchLists()
   }
 
   const hasBanner = !!profile?.banner_url
@@ -616,112 +586,117 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Lists - only show if user has lists with games */}
-        {(() => {
-          // Filter out empty lists (no games)
-          const listsWithGames = userLists.filter(
-            (list) => list.preview_games && list.preview_games.length > 0
-          )
-
-          return listsWithGames.length > 0 ? (
-            <View style={[styles.listsSection, { backgroundColor: Colors.alternate }]}>
-              <View style={styles.listsTitleRow}>
-                <Text style={styles.sectionTitle}>Lists</Text>
-                <TouchableOpacity
-                  onPress={() => setIsCreateListModalVisible(true)}
-                  style={styles.newListButton}
-                  accessibilityLabel="Create new list"
-                  accessibilityRole="button"
-                  accessibilityHint="Opens list creation form"
-                >
-                  <Ionicons name="add" size={20} color={Colors.textDim} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.listsScroll}
-                contentContainerStyle={styles.listsContent}
-              >
-                {listsWithGames.map((list) => (
-                  <ListCard
-                    key={list.id}
-                    list={list}
-                    onPress={() => handleListPress(list.id)}
-                    showUser={false}
-                  />
-                ))}
-              </ScrollView>
-            </View>
-          ) : null
-        })()}
-
         {/* Library */}
         <View style={[styles.librarySection, { backgroundColor: Colors.background }]}>
           <Text style={styles.sectionTitle}>Library</Text>
 
-          {gameLogs.length > 0 ? (
-            <View style={styles.libraryRows}>
-              {/* All Games */}
-              <TouchableOpacity
-                style={[styles.libraryRow, styles.libraryRowBorder]}
-                onPress={() => {
-                  if (user?.id) {
-                    navigation.dispatch(
-                      CommonActions.navigate({
-                        name: 'LibraryStatus',
-                        params: { userId: user.id, status: 'all' },
-                      })
+          {(() => {
+            const listsWithGames = userLists.filter(
+              (list) => list.preview_games && list.preview_games.length > 0
+            )
+            const listsCount = listsWithGames.length
+            const reviewCount = gameLogs.filter(l => l.review && l.review.trim().length > 0).length
+
+            if (gameLogs.length === 0 && listsCount === 0) {
+              return (
+                <View style={styles.emptyState}>
+                  <SweatDropIcon size={48} variant="static" />
+                  <Text style={styles.emptyText}>No games logged yet</Text>
+                  <Text style={styles.emptySubtext}>Search for games to start tracking!</Text>
+                </View>
+              )
+            }
+
+            const rows: Array<'all' | 'reviews' | 'lists'> = []
+            if (gameLogs.length > 0) rows.push('all')
+            if (reviewCount > 0) rows.push('reviews')
+            if (listsCount > 0) rows.push('lists')
+
+            return (
+              <View style={styles.libraryRows}>
+                {rows.map((row, index) => {
+                  const isLast = index === rows.length - 1
+                  const rowStyle = isLast ? styles.libraryRow : [styles.libraryRow, styles.libraryRowBorder]
+                  if (row === 'all') {
+                    return (
+                      <TouchableOpacity
+                        key="all"
+                        style={rowStyle}
+                        onPress={() => {
+                          if (user?.id) {
+                            navigation.dispatch(
+                              CommonActions.navigate({
+                                name: 'LibraryStatus',
+                                params: { userId: user.id, status: 'all' },
+                              })
+                            )
+                          }
+                        }}
+                        accessibilityLabel={'All Games, ' + gameLogs.length + ' games'}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.libraryRowLabel}>All Games</Text>
+                        <View style={styles.libraryRowRight}>
+                          <Text style={styles.libraryRowCount}>{gameLogs.length}</Text>
+                          <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                        </View>
+                      </TouchableOpacity>
                     )
                   }
-                }}
-                accessibilityLabel={'All Games, ' + gameLogs.length + ' games'}
-                accessibilityRole="button"
-              >
-                <Text style={styles.libraryRowLabel}>All Games</Text>
-                <View style={styles.libraryRowRight}>
-                  <Text style={styles.libraryRowCount}>{gameLogs.length}</Text>
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
-                </View>
-              </TouchableOpacity>
-
-              {/* Reviews */}
-              {(() => {
-                const reviewCount = gameLogs.filter(l => l.review && l.review.trim().length > 0).length
-                if (reviewCount === 0) return null
-                return (
-                  <TouchableOpacity
-                    style={styles.libraryRow}
-                    onPress={() => {
-                      if (user?.id) {
-                        navigation.dispatch(
-                          CommonActions.navigate({
-                            name: 'UserReviews',
-                            params: { userId: user.id },
-                          })
-                        )
-                      }
-                    }}
-                    accessibilityLabel={'Reviews, ' + reviewCount}
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.libraryRowLabel}>Reviews</Text>
-                    <View style={styles.libraryRowRight}>
-                      <Text style={styles.libraryRowCount}>{reviewCount}</Text>
-                      <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
-                    </View>
-                  </TouchableOpacity>
-                )
-              })()}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <SweatDropIcon size={48} variant="static" />
-              <Text style={styles.emptyText}>No games logged yet</Text>
-              <Text style={styles.emptySubtext}>Search for games to start tracking!</Text>
-            </View>
-          )}
+                  if (row === 'reviews') {
+                    return (
+                      <TouchableOpacity
+                        key="reviews"
+                        style={rowStyle}
+                        onPress={() => {
+                          if (user?.id) {
+                            navigation.dispatch(
+                              CommonActions.navigate({
+                                name: 'UserReviews',
+                                params: { userId: user.id },
+                              })
+                            )
+                          }
+                        }}
+                        accessibilityLabel={'Reviews, ' + reviewCount}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.libraryRowLabel}>Reviews</Text>
+                        <View style={styles.libraryRowRight}>
+                          <Text style={styles.libraryRowCount}>{reviewCount}</Text>
+                          <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                        </View>
+                      </TouchableOpacity>
+                    )
+                  }
+                  return (
+                    <TouchableOpacity
+                      key="lists"
+                      style={rowStyle}
+                      onPress={() => {
+                        if (user?.id) {
+                          navigation.dispatch(
+                            CommonActions.navigate({
+                              name: 'UserLists',
+                              params: { userId: user.id },
+                            })
+                          )
+                        }
+                      }}
+                      accessibilityLabel={'Lists, ' + listsCount}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.libraryRowLabel}>Lists</Text>
+                      <View style={styles.libraryRowRight}>
+                        <Text style={styles.libraryRowCount}>{listsCount}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={Colors.textDim} />
+                      </View>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+            )
+          })()}
         </View>
       </Animated.ScrollView>
 
@@ -777,13 +752,6 @@ export default function ProfileScreen() {
           <Image source={{ uri: profile?.avatar_url || '' }} style={styles.avatarModalImage} />
         </Pressable>
       </Modal>
-
-      {/* Create List Modal */}
-      <CreateListModal
-        visible={isCreateListModalVisible}
-        onClose={() => setIsCreateListModalVisible(false)}
-        onCreated={handleListCreated}
-      />
 
       {/* Library Filter Modal */}
       <LibraryFilterModal
@@ -953,7 +921,6 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
     paddingHorizontal: Spacing.sm,
     borderTopWidth: 1,
-    borderBottomWidth: 1,
     borderColor: Colors.border,
     marginHorizontal: Spacing.lg,
   },
@@ -1151,70 +1118,5 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.textDim,
     marginTop: Spacing.xs,
-  },
-  // Lists section styles
-  listsSection: {
-    paddingHorizontal: Spacing.screenPadding,
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.xl,
-  },
-  listsTitleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  newListButton: {
-    padding: Spacing.sm,
-  },
-  listsScroll: {
-    marginHorizontal: -Spacing.screenPadding,
-  },
-  listsContent: {
-    paddingHorizontal: Spacing.screenPadding,
-    gap: Spacing.cardGap,                   // 12px gap between cards
-  },
-  listCardWrapper: {
-    width: 280,
-  },
-  seeAllLists: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.screenPadding,
-  },
-  seeAllListsText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: 'rgba(192, 200, 208, 0.6)',
-  },
-  emptyListsState: {
-    alignItems: 'center',
-    paddingVertical: Spacing.xl,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-  },
-  emptyListsText: {
-    fontFamily: Fonts.body,
-    fontSize: FontSize.sm,
-    color: Colors.textMuted,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  createListButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(192, 200, 208, 0.18)',
-    borderWidth: 1,
-    borderColor: Colors.cream,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.md,
-  },
-  createListButtonText: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.sm,
-    color: Colors.cream,
-    marginLeft: Spacing.xs,
   },
 })

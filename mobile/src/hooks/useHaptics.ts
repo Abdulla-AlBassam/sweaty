@@ -1,16 +1,10 @@
 import * as Haptics from 'expo-haptics'
 import { Platform } from 'react-native'
 
-// Haptic feedback types for different interactions
 export type HapticType = 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection'
 
-/**
- * Custom hook for haptic feedback throughout the app
- * Creates premium, tactile feel on interactions
- */
 export function useHaptics() {
   const trigger = async (type: HapticType = 'light') => {
-    // Haptics only work on physical devices
     if (Platform.OS === 'web') return
 
     try {
@@ -38,11 +32,10 @@ export function useHaptics() {
           break
       }
     } catch (e) {
-      // Silently fail - haptics not available
+      // Haptics are unsupported on some devices; silently no-op.
     }
   }
 
-  // Convenience methods
   const light = () => trigger('light')
   const medium = () => trigger('medium')
   const heavy = () => trigger('heavy')
@@ -51,7 +44,7 @@ export function useHaptics() {
   const error = () => trigger('error')
   const selection = () => trigger('selection')
 
-  // Special celebration pattern for level ups
+  // Success → Heavy → Medium → Light staircase used only for level-up celebrations.
   const celebrate = async () => {
     if (Platform.OS === 'web') return
     try {
@@ -59,9 +52,7 @@ export function useHaptics() {
       setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy), 100)
       setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), 200)
       setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 300)
-    } catch (e) {
-      // Silently fail
-    }
+    } catch (e) {}
   }
 
   return {
@@ -77,7 +68,7 @@ export function useHaptics() {
   }
 }
 
-// Standalone functions for use outside of React components
+// For callers that aren't React components (event handlers, utilities, etc.).
 export const haptics = {
   light: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}),
   medium: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}),

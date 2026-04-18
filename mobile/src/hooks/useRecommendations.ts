@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_CONFIG } from '../constants'
 
-// ============================================
-// TYPES
-// ============================================
-
 interface Game {
   id: number
   name: string
@@ -25,10 +21,6 @@ interface GameWithFriends extends Game {
 interface FriendsFavoritesData {
   games: GameWithFriends[]
 }
-
-// ============================================
-// FRIENDS FAVORITES HOOK
-// ============================================
 
 export function useFriendsFavorites(userId: string | undefined) {
   const [games, setGames] = useState<GameWithFriends[]>([])

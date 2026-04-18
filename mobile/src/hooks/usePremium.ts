@@ -11,9 +11,6 @@ interface PremiumStatus {
   daysRemaining: number | null
 }
 
-/**
- * Check if a user has active premium status
- */
 export function usePremium(
   subscriptionTier?: string | null,
   subscriptionExpiresAt?: string | null
@@ -22,7 +19,6 @@ export function usePremium(
     const tier = (subscriptionTier as SubscriptionTier) || 'free'
     const expiresAt = subscriptionExpiresAt ? new Date(subscriptionExpiresAt) : null
 
-    // Lifetime is always premium
     if (tier === 'lifetime') {
       return {
         isPremium: true,
@@ -34,7 +30,6 @@ export function usePremium(
       }
     }
 
-    // Check if subscription is active (not expired)
     if (tier === 'monthly' || tier === 'yearly' || tier === 'trial') {
       const now = new Date()
       const isActive = !expiresAt || expiresAt > now
@@ -55,7 +50,6 @@ export function usePremium(
       }
     }
 
-    // Free tier
     return {
       isPremium: false,
       tier: 'free',
@@ -67,9 +61,7 @@ export function usePremium(
   }, [subscriptionTier, subscriptionExpiresAt])
 }
 
-/**
- * Simple helper to check premium status without hook
- */
+/** Non-hook equivalent of `usePremium().isPremium` for use outside React components. */
 export function checkIsPremium(
   subscriptionTier?: string | null,
   subscriptionExpiresAt?: string | null

@@ -83,7 +83,6 @@ export default function ActivityScreen() {
   const rawActivities = activeTab === 'friends' ? friendsActivities : ownActivities
   const isLoading = activeTab === 'friends' ? friendsLoading : ownLoading
 
-  // Filter activities by category
   const activities = useMemo(() => {
     if (activeCategory === 'all') return rawActivities
     if (activeCategory === 'reviews') {
@@ -95,7 +94,6 @@ export default function ActivityScreen() {
     return rawActivities
   }, [rawActivities, activeCategory])
 
-  // Group activities by date for visual rhythm
   const groupedActivities = useMemo(() => {
     return groupActivitiesByDate(activities)
   }, [activities])
@@ -211,7 +209,7 @@ export default function ActivityScreen() {
         ) : activities.length === 0 ? (
           <View style={styles.emptyState}>
             {activeCategory === 'reviews' ? (
-              <View style={styles.emptyIcon}><CommentIcon size={48} color={Colors.textDim} /></View>
+              <View style={styles.emptyIcon}><CommentIcon size={48} color={Colors.textBright} /></View>
             ) : activeTab === 'friends' && activeCategory === 'all' ? (
               <Ionicons name="people-outline" size={48} color={Colors.textDim} style={styles.emptyIcon} />
             ) : (

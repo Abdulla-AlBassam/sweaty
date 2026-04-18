@@ -22,9 +22,14 @@ const { createClient } = require(path.join(__dirname, '..', 'web', 'node_modules
 // ─── Config ────────────────────────────────────────────────────────────────
 
 const SUPABASE_URL = 'https://onsmlscqlhpvltuwedzi.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc21sc2NxbGhwdmx0dXdlZHppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTgyODA0NSwiZXhwIjoyMDgxNDA0MDQ1fQ.fKD3SOtaJEDh93e8m_fdowKPboQBa3S7phpSjfqByFw';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const PASSWORD = process.env.SEED_PASSWORD;
 
-const PASSWORD = 'Abdulla12';
+if (!SERVICE_ROLE_KEY || !PASSWORD) {
+  console.error('Missing env vars. Run with:');
+  console.error('  SUPABASE_SERVICE_ROLE_KEY=... SEED_PASSWORD=... node scripts/seed-testers.js');
+  process.exit(1);
+}
 const TESTER_COUNT = 20;
 const EMAIL_DOMAIN = 'sweaty.test';
 const CREDENTIALS_FILE = path.join(__dirname, 'tester-credentials.json');

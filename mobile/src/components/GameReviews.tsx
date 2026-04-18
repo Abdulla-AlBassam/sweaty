@@ -70,7 +70,6 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
 
   const fetchReviews = async () => {
     try {
-      // First get total count
       const { count } = await supabase
         .from('game_logs')
         .select('id', { count: 'exact', head: true })
@@ -79,7 +78,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
 
       setTotalCount(count || 0)
 
-      // Fetch a pool of reviews so we can sort by likes and pick the best
+      // Fetch a pool of candidates so we can sort by likes client-side and slice to PREVIEW_LIMIT.
       const { data, error } = await supabase
         .from('game_logs')
         .select(`
@@ -101,18 +100,17 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
         user: Array.isArray(item.user) ? item.user[0] : item.user,
       })).filter((item: any) => item.user && item.review) as Review[]
 
-      // Fetch like counts and user's likes for all reviews (wrapped in try-catch in case tables don't exist yet)
+      // Social-feature queries are wrapped in try/catch because the review_likes /
+      // review_comments tables may not exist in older environments.
       const reviewIds = formattedReviews.map(r => r.id)
 
       if (reviewIds.length > 0) {
         try {
-          // Get like counts for each review
           const { data: likeCounts, error: likesError } = await supabase
             .from('review_likes')
             .select('game_log_id')
             .in('game_log_id', reviewIds)
 
-          // Get user's likes if logged in
           let userLikes: string[] = []
           if (user && !likesError) {
             const { data: userLikesData } = await supabase
@@ -124,13 +122,11 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
             userLikes = (userLikesData || []).map((l: any) => l.game_log_id)
           }
 
-          // Get comment counts for each review
           const { data: commentCounts, error: commentsError } = await supabase
             .from('review_comments')
             .select('game_log_id')
             .in('game_log_id', reviewIds)
 
-          // Create count maps (only if no errors)
           const likeCountMap: Record<string, number> = {}
           const commentCountMap: Record<string, number> = {}
 
@@ -146,19 +142,17 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
             })
           }
 
-          // Attach counts to reviews
           formattedReviews.forEach(review => {
             review.likeCount = likeCountMap[review.id] || 0
             review.commentCount = commentCountMap[review.id] || 0
             review.isLiked = userLikes.includes(review.id)
           })
         } catch (socialError) {
-          // Tables might not exist yet - that's ok, just show reviews without likes/comments
           console.log('Social features not available yet:', socialError)
         }
       }
 
-      // Sort by most liked first, then by newest as tiebreaker
+      // Most-liked first, newest wins ties.
       formattedReviews.sort((a, b) => {
         const likeDiff = (b.likeCount || 0) - (a.likeCount || 0)
         if (likeDiff !== 0) return likeDiff
@@ -216,7 +210,7 @@ export default function GameReviews({ gameId, gameName, refreshKey }: GameReview
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Reviews</Text>
         <View style={styles.emptyContainer}>
-          <CommentIcon size={32} color={Colors.textDim} />
+          <CommentIcon size={32} color={Colors.textBright} />
           <Text style={styles.emptyText}>No reviews yet</Text>
           <Text style={styles.emptySubtext}>Be the first to share your thoughts!</Text>
         </View>
@@ -382,16 +376,17 @@ const styles = StyleSheet.create({
     gap: Spacing.md,
     paddingRight: Spacing.lg,
   },
-  // Edge-lit card: surface fill, rounded corners, subtle top highlight line
-  // to mimic `shadow-[inset_0_1px_0_white/15]`
+  // Edge-lit card: near-background fill with soft border, top edge lit slightly
+  // brighter to suggest depth without making the card feel like a separate plate.
   reviewCard: {
     minWidth: CARD_MIN_WIDTH,
     maxWidth: CARD_MAX_WIDTH,
     alignSelf: 'flex-start',
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.alternate,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderTopColor: 'rgba(255, 255, 255, 0.09)',
     padding: Spacing.lg,
   },
   userRow: {

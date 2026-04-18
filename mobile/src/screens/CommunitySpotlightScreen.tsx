@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
     marginHorizontal: Spacing.screenPadding,
-    marginTop: Spacing.md,
+    marginTop: Spacing.lg,
     marginBottom: Spacing.xl,
     backgroundColor: Colors.surface,
     borderRadius: BorderRadius.md,

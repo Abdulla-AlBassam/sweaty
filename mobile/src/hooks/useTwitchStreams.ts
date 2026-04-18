@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { API_CONFIG } from '../constants'
 
-// ============================================
-// TYPES
-// ============================================
-
 export interface TwitchStream {
   streamer_name: string
   streamer_login: string
@@ -26,12 +22,8 @@ interface CacheEntry {
   timestamp: number
 }
 
-// ============================================
-// CACHE
-// ============================================
-
 // In-memory cache with 5-minute TTL
-const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+const CACHE_TTL = 5 * 60 * 1000
 const streamsCache: Map<string, CacheEntry> = new Map()
 
 function getCachedData(gameName: string): StreamsResponse | null {
@@ -42,7 +34,6 @@ function getCachedData(gameName: string): StreamsResponse | null {
     return entry.data
   }
 
-  // Remove expired entry
   if (entry) {
     streamsCache.delete(cacheKey)
   }
@@ -57,10 +48,6 @@ function setCachedData(gameName: string, data: StreamsResponse): void {
     timestamp: Date.now(),
   })
 }
-
-// ============================================
-// HOOK
-// ============================================
 
 interface UseTwitchStreamsResult {
   streams: TwitchStream[]
@@ -83,7 +70,6 @@ export function useTwitchStreams(gameName: string | null): UseTwitchStreamsResul
       return
     }
 
-    // Check cache first
     const cachedData = getCachedData(gameName)
     if (cachedData) {
       setStreams(cachedData.streams)
@@ -105,7 +91,6 @@ export function useTwitchStreams(gameName: string | null): UseTwitchStreamsResul
         body: JSON.stringify({ game_name: gameName }),
       })
 
-      // Check if response is OK before parsing
       if (!response.ok) {
         console.log('Twitch streams API returned status:', response.status)
         setStreams([])
@@ -113,7 +98,6 @@ export function useTwitchStreams(gameName: string | null): UseTwitchStreamsResul
         return
       }
 
-      // Get response text first to validate
       const text = await response.text()
       if (!text) {
         console.log('Twitch streams API returned empty response')
@@ -122,7 +106,6 @@ export function useTwitchStreams(gameName: string | null): UseTwitchStreamsResul
         return
       }
 
-      // Parse JSON
       const data = JSON.parse(text)
 
       if (data.success) {
@@ -159,10 +142,6 @@ export function useTwitchStreams(gameName: string | null): UseTwitchStreamsResul
     refetch: fetchStreams,
   }
 }
-
-// ============================================
-// UTILITY
-// ============================================
 
 // Format viewer count (e.g., 12453 -> "12.4K")
 export function formatViewerCount(count: number): string {

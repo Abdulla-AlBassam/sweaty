@@ -81,7 +81,6 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
 
       const userData = Array.isArray(data.user) ? data.user[0] : data.user
 
-      // Fetch social data
       let likeCount = 0
       let commentCount = 0
       let isLiked = false
@@ -292,7 +291,7 @@ export default function ReviewDetailScreen({ navigation, route }: Props) {
               accessibilityLabel={commentsExpanded ? 'Hide comments' : `Show comments${commentCount > 0 ? `, ${commentCount} comments` : ''}`}
               accessibilityRole="button"
             >
-              <CommentIcon size={22} color={Colors.textMuted} />
+              <CommentIcon size={22} color={Colors.textBright} />
               {commentCount > 0 && (
                 <Text style={styles.commentToggleCount}>{commentCount}</Text>
               )}

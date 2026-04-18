@@ -2,15 +2,15 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { Game, GameLog, Profile, ActivityItem, CuratedList, CuratedListWithGames } from '../types'
 import { API_CONFIG } from '../constants'
+import { useAuth } from '../contexts/AuthContext'
+import { checkIsPremium } from './usePremium'
 
-// OpenCritic data type
 export interface OpenCriticData {
   score: number | null
   tier: string | null
   numReviews: number | null
 }
 
-// Community stats type
 export interface CommunityStats {
   averageRating: number | null
   totalLogs: number
@@ -124,7 +124,6 @@ export function useActivityFeed(userId: string | undefined) {
     setError(null)
 
     try {
-      // Get users the current user follows
       const { data: following } = await supabase
         .from('follows')
         .select('following_id')
@@ -138,7 +137,6 @@ export function useActivityFeed(userId: string | undefined) {
 
       const followingIds = following.map((f) => f.following_id)
 
-      // Get recent game logs from followed users
       const { data: logs, error: logsError } = await supabase
         .from('game_logs')
         .select(`
@@ -208,7 +206,6 @@ export function useOwnActivityFeed(userId: string | undefined) {
     setError(null)
 
     try {
-      // Get user's own recent game logs
       const { data: logs, error: logsError } = await supabase
         .from('game_logs')
         .select(`
@@ -262,8 +259,10 @@ export function useOwnActivityFeed(userId: string | undefined) {
   return { activities, isLoading, error, refetch: fetchActivities }
 }
 
-// Search games with optional platform filter
-// platforms: array of platform names like ['playstation', 'pc']
+/**
+ * Debounced game search against the web API.
+ * platforms: optional array of platform slugs like ['playstation', 'pc'].
+ */
 export function useGameSearch(query: string, platforms?: string[] | null) {
   const [games, setGames] = useState<Game[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -284,7 +283,6 @@ export function useGameSearch(query: string, platforms?: string[] | null) {
         const encodedQuery = encodeURIComponent(query)
         let url = apiUrl + '/api/games/search?q=' + encodedQuery
 
-        // Add platform filter if provided
         if (platforms && platforms.length > 0) {
           url += '&platforms=' + encodeURIComponent(platforms.join(','))
         }
@@ -309,7 +307,7 @@ export function useGameSearch(query: string, platforms?: string[] | null) {
   return { games, isLoading, error }
 }
 
-// Fisher-Yates shuffle algorithm
+// Fisher-Yates shuffle.
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array]
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -319,7 +317,7 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled
 }
 
-// PC platform names that indicate a game is on PC
+// IGDB platform names normalised to lowercase that we treat as "PC" for PC-only filtering.
 const PC_PLATFORM_NAMES = [
   'pc',
   'windows',
@@ -332,7 +330,6 @@ const PC_PLATFORM_NAMES = [
   'dos',
 ]
 
-// Check if a game is PC-only based on its platforms array
 function isPcOnlyGame(platforms: string[] | null | undefined): boolean {
   if (!platforms || platforms.length === 0) return false
   const normalizedPlatforms = platforms.map(p => p.toLowerCase().trim())
@@ -351,7 +348,6 @@ export function useCuratedLists(excludePcOnly: boolean = false) {
     setError(null)
 
     try {
-      // Fetch curated lists
       const { data: listsData, error: listsError } = await supabase
         .from('curated_lists')
         .select('*')
@@ -360,38 +356,33 @@ export function useCuratedLists(excludePcOnly: boolean = false) {
 
       if (listsError) throw listsError
 
-      // Collect all game IDs from all lists
       const allGameIds = new Set<number>()
       ;(listsData as CuratedList[]).forEach((list) => {
         list.game_ids.forEach((id) => allGameIds.add(id))
       })
 
-      // Batch fetch all games (include platforms for PC-only filtering)
+      // Batch-fetch every game referenced across every list in one query.
       const { data: gamesData, error: gamesError } = await supabase
         .from('games_cache')
-        .select('id, name, cover_url, platforms, first_release_date')
+        .select('id, name, cover_url, screenshot_urls, platforms, first_release_date')
         .in('id', Array.from(allGameIds))
 
       if (gamesError) throw gamesError
 
-      // Create a map of game ID to game data
-      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null; platforms: string[] | null; first_release_date: string | null }>()
+      const gamesMap = new Map<number, { id: number; name: string; cover_url: string | null; screenshot_urls: string[] | null; platforms: string[] | null; first_release_date: string | null }>()
       ;(gamesData || []).forEach((game: any) => {
         gamesMap.set(game.id, game)
       })
 
-      // Build the lists with games, shuffling games within each list
       const listsWithGames: CuratedListWithGames[] = (listsData as CuratedList[]).map((list) => {
         let games = list.game_ids
           .map((id) => gamesMap.get(id))
-          .filter((game): game is { id: number; name: string; cover_url: string | null; platforms: string[] | null; first_release_date: string | null } => game !== undefined)
+          .filter((game): game is { id: number; name: string; cover_url: string | null; screenshot_urls: string[] | null; platforms: string[] | null; first_release_date: string | null } => game !== undefined)
 
-        // Filter out PC-only games if excludePcOnly is enabled
         if (excludePcOnly) {
           games = games.filter(game => !isPcOnlyGame(game.platforms))
         }
 
-        // Sort by release date (newest first)
         games.sort((a, b) => {
           if (!a.first_release_date && !b.first_release_date) return 0
           if (!a.first_release_date) return 1
@@ -405,7 +396,6 @@ export function useCuratedLists(excludePcOnly: boolean = false) {
         }
       })
 
-      // Use display_order (no shuffling - developer controls order)
       setLists(listsWithGames)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch curated lists')
@@ -421,7 +411,6 @@ export function useCuratedLists(excludePcOnly: boolean = false) {
   return { lists, isLoading, error, refetch: fetchLists }
 }
 
-// Hook to fetch OpenCritic score for a game
 export function useOpenCritic(gameId: number, gameName: string) {
   const [data, setData] = useState<OpenCriticData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -464,7 +453,6 @@ export function useOpenCritic(gameId: number, gameName: string) {
   return { data, isLoading }
 }
 
-// Type for friend who played a game
 export interface FriendWhoPlayed {
   id: string
   username: string
@@ -474,7 +462,6 @@ export interface FriendWhoPlayed {
   status: string
 }
 
-// Hook to fetch friends who played a specific game
 export function useFriendsWhoPlayed(gameId: number, userId: string | undefined) {
   const [friends, setFriends] = useState<FriendWhoPlayed[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -489,7 +476,6 @@ export function useFriendsWhoPlayed(gameId: number, userId: string | undefined) 
     const fetchFriendsWhoPlayed = async () => {
       setIsLoading(true)
       try {
-        // Get users the current user follows
         const { data: following, error: followError } = await supabase
           .from('follows')
           .select('following_id')
@@ -505,7 +491,6 @@ export function useFriendsWhoPlayed(gameId: number, userId: string | undefined) 
 
         const followingIds = following.map((f) => f.following_id)
 
-        // Get game logs from followed users for this specific game
         const { data: logs, error: logsError } = await supabase
           .from('game_logs')
           .select(`
@@ -544,6 +529,11 @@ export function useFriendsWhoPlayed(gameId: number, userId: string | undefined) 
 }
 
 // Type for community activity item (recent reviews)
+// viewerStatus reflects whether the currently signed-in user already has this
+// game in their library. Pre-computed in the hook so every card doesn't need
+// its own Supabase round-trip to render the Save button correctly.
+export type ViewerLibraryStatus = 'want_to_play' | 'other' | null
+
 export interface CommunityReview {
   id: string
   user: {
@@ -551,6 +541,7 @@ export interface CommunityReview {
     username: string
     display_name: string | null
     avatar_url: string | null
+    isPremium: boolean
   }
   game: {
     id: number
@@ -561,10 +552,14 @@ export interface CommunityReview {
   rating: number | null
   review: string
   created_at: string
+  likeCount: number
+  commentCount: number
+  isLiked: boolean
+  viewerStatus: ViewerLibraryStatus
 }
 
-// Hook to fetch recent community reviews (global activity with reviews)
 export function useCommunityReviews() {
+  const { user } = useAuth()
   const [reviews, setReviews] = useState<CommunityReview[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -574,7 +569,29 @@ export function useCommunityReviews() {
     setError(null)
 
     try {
-      // Get recent game logs that have reviews
+      // Pool > output so guards below never starve the feed. 200 reviewed logs
+      // is plenty of headroom for de-dup and per-user caps while still giving a
+      // "latest" feel.
+      const POOL_SIZE = 200
+      // Drops "cool" / "nice" / single-emoji spam. Tune up if you want a
+      // stricter quality floor.
+      const MIN_REVIEW_LENGTH = 25
+      // Cap per user to prevent one enthusiastic reviewer from flooding the
+      // horizontal scroll with 20 entries in a single burst.
+      const MAX_PER_USER = 2
+      const OUTPUT_LIMIT = 20
+
+      // TODO (moderation / hygiene — not implemented yet):
+      //   - Admin-hide flag on game_logs for all-caps, slurs, or otherwise
+      //     problematic text. Check it in the guards loop below.
+      //   - Filter out reviews from users the viewer has blocked, once a
+      //     blocks/mutes relationship exists.
+      //   - Filter NSFW games via IGDB age_ratings when a content policy lands.
+      //   - Skip games where cover_url AND screenshot_urls are both null —
+      //     the card renders with a blank hero otherwise.
+      //   - Reject rows where created_at > now() (bad-clock protection).
+      //   - Decide whether to keep reviews of unreleased games
+      //     (games_cache.first_release_date > now). Currently shown.
       const { data: logs, error: logsError } = await supabase
         .from('game_logs')
         .select(`
@@ -584,36 +601,144 @@ export function useCommunityReviews() {
           created_at,
           user_id,
           game_id,
-          profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url),
+          profiles!game_logs_user_id_fkey (id, username, display_name, avatar_url, subscription_tier, subscription_expires_at),
           games_cache!game_logs_game_id_fkey (id, name, cover_url, screenshot_urls)
         `)
         .not('review', 'is', null)
         .neq('review', '')
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(POOL_SIZE)
 
       if (logsError) throw logsError
 
-      const formattedReviews: CommunityReview[] = (logs || [])
-        .filter((log: any) => log.profiles && log.games_cache && log.review && log.review.trim().length > 0)
-        .map((log: any) => ({
-          id: log.id,
-          user: {
-            id: log.profiles.id,
-            username: log.profiles.username,
-            display_name: log.profiles.display_name,
-            avatar_url: log.profiles.avatar_url,
-          },
-          game: {
-            id: log.games_cache.id,
-            name: log.games_cache.name,
-            cover_url: log.games_cache.cover_url,
-            screenshot_urls: log.games_cache.screenshot_urls || null,
-          },
-          rating: log.rating,
-          review: log.review,
-          created_at: log.created_at,
-        }))
+      // Single pass so we preserve the recency order the query returned.
+      const seenGames = new Set<number>()
+      const perUserCount = new Map<string, number>()
+      const picked: any[] = []
+
+      for (const log of logs || []) {
+        if (!log.profiles || !log.games_cache) continue
+        if (!log.review || log.review.trim().length < MIN_REVIEW_LENGTH) continue
+        // Hide the viewer's own reviews — they already know what they wrote.
+        if (user && log.user_id === user.id) continue
+        // One review per game, most recent wins (first seen at this sort order).
+        if (seenGames.has(log.game_id)) continue
+        const userCount = perUserCount.get(log.user_id) || 0
+        if (userCount >= MAX_PER_USER) continue
+
+        picked.push(log)
+        seenGames.add(log.game_id)
+        perUserCount.set(log.user_id, userCount + 1)
+
+        if (picked.length >= OUTPUT_LIMIT) break
+      }
+
+      const formattedReviews: CommunityReview[] = picked.map((log: any) => ({
+        id: log.id,
+        user: {
+          id: log.profiles.id,
+          username: log.profiles.username,
+          display_name: log.profiles.display_name,
+          avatar_url: log.profiles.avatar_url,
+          isPremium: checkIsPremium(log.profiles.subscription_tier, log.profiles.subscription_expires_at),
+        },
+        game: {
+          id: log.games_cache.id,
+          name: log.games_cache.name,
+          cover_url: log.games_cache.cover_url,
+          screenshot_urls: log.games_cache.screenshot_urls || null,
+        },
+        rating: log.rating,
+        review: log.review,
+        created_at: log.created_at,
+        likeCount: 0,
+        commentCount: 0,
+        isLiked: false,
+        viewerStatus: null,
+      }))
+
+      // Backfill social counts so cards render correct initial state without
+      // each card hitting the database on mount. Wrapped in try/catch in case
+      // the social tables don't exist yet (matches GameReviews.tsx pattern).
+      const reviewIds = formattedReviews.map(r => r.id)
+      if (reviewIds.length > 0) {
+        try {
+          const { data: likeRows, error: likesError } = await supabase
+            .from('review_likes')
+            .select('game_log_id')
+            .in('game_log_id', reviewIds)
+
+          let likedByMe = new Set<string>()
+          if (user && !likesError) {
+            const { data: myLikes } = await supabase
+              .from('review_likes')
+              .select('game_log_id')
+              .eq('user_id', user.id)
+              .in('game_log_id', reviewIds)
+            likedByMe = new Set((myLikes || []).map((l: any) => l.game_log_id))
+          }
+
+          const { data: commentRows, error: commentsError } = await supabase
+            .from('review_comments')
+            .select('game_log_id')
+            .in('game_log_id', reviewIds)
+
+          const likeCounts: Record<string, number> = {}
+          const commentCounts: Record<string, number> = {}
+          if (!likesError && likeRows) {
+            likeRows.forEach((row: any) => {
+              likeCounts[row.game_log_id] = (likeCounts[row.game_log_id] || 0) + 1
+            })
+          }
+          if (!commentsError && commentRows) {
+            commentRows.forEach((row: any) => {
+              commentCounts[row.game_log_id] = (commentCounts[row.game_log_id] || 0) + 1
+            })
+          }
+
+          formattedReviews.forEach(r => {
+            r.likeCount = likeCounts[r.id] || 0
+            r.commentCount = commentCounts[r.id] || 0
+            r.isLiked = likedByMe.has(r.id)
+          })
+        } catch (socialError) {
+          console.log('Community review social counts unavailable:', socialError)
+        }
+
+        // Batched viewer-library lookup — avoids each card making its own round
+        // trip to decide whether to show Save / "already in library". Only needed
+        // when a viewer is signed in; own-reviews are filtered out client-side.
+        if (user) {
+          try {
+            const gameIds = Array.from(new Set(
+              formattedReviews
+                .filter(r => r.user.id !== user.id)
+                .map(r => r.game.id)
+            ))
+            if (gameIds.length > 0) {
+              const { data: viewerLogs } = await supabase
+                .from('game_logs')
+                .select('game_id, status')
+                .eq('user_id', user.id)
+                .in('game_id', gameIds)
+
+              const statusByGame = new Map<number, ViewerLibraryStatus>()
+              ;(viewerLogs || []).forEach((row: any) => {
+                statusByGame.set(
+                  row.game_id,
+                  row.status === 'want_to_play' ? 'want_to_play' : 'other'
+                )
+              })
+              formattedReviews.forEach(r => {
+                if (r.user.id === user.id) return
+                r.viewerStatus = statusByGame.get(r.game.id) ?? null
+              })
+            }
+          } catch (statusError) {
+            console.log('Viewer library status lookup failed:', statusError)
+          }
+        }
+      }
 
       setReviews(formattedReviews)
     } catch (err) {
@@ -621,7 +746,7 @@ export function useCommunityReviews() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [user])
 
   useEffect(() => {
     fetchReviews()
@@ -630,7 +755,6 @@ export function useCommunityReviews() {
   return { reviews, isLoading, error, refetch: fetchReviews }
 }
 
-// Hook to fetch community rating stats for a game
 export function useCommunityStats(gameId: number) {
   const [stats, setStats] = useState<CommunityStats>({ averageRating: null, totalLogs: 0 })
   const [isLoading, setIsLoading] = useState(true)
@@ -644,7 +768,6 @@ export function useCommunityStats(gameId: number) {
 
     setIsLoading(true)
     try {
-      // Get all ratings for this game
       const { data, error } = await supabase
         .from('game_logs')
         .select('rating')

@@ -63,7 +63,6 @@ export default function AIRecommendScreen() {
   const [error, setError] = useState<string | null>(null)
   const [isFirstVisit, setIsFirstVisit] = useState(false)
 
-  // Check if this is the user's first visit
   useEffect(() => {
     AsyncStorage.getItem(AI_USED_KEY).then((value) => {
       if (!value) {
@@ -72,7 +71,6 @@ export default function AIRecommendScreen() {
     })
   }, [])
 
-  // Pulse animation for loading state
   useEffect(() => {
     if (isLoading) {
       const pulse = Animated.loop(
@@ -98,7 +96,6 @@ export default function AIRecommendScreen() {
     }
   }, [isLoading])
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (messages.length > 0) {
       setTimeout(() => {
@@ -110,7 +107,6 @@ export default function AIRecommendScreen() {
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return
 
-    // Mark AI as used after first message
     if (isFirstVisit) {
       AsyncStorage.setItem(AI_USED_KEY, 'true')
       setIsFirstVisit(false)

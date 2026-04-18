@@ -12,8 +12,8 @@ export interface HeroBanner {
 }
 
 /**
- * Hook to fetch hero banners for the homepage
- * Returns a random active banner on each fetch
+ * Fetches active hero banners for the dashboard. `currentBanner` is seeded to a random
+ * pick; callers can call `shuffleBanner()` (e.g. on pull-to-refresh) to swap it.
  */
 export function useHeroBanners() {
   const [banners, setBanners] = useState<HeroBanner[]>([])
@@ -37,7 +37,6 @@ export function useHeroBanners() {
       const activeBanners = (data || []) as HeroBanner[]
       setBanners(activeBanners)
 
-      // Pick a random banner for display
       if (activeBanners.length > 0) {
         const randomIndex = Math.floor(Math.random() * activeBanners.length)
         setCurrentBanner(activeBanners[randomIndex])
@@ -52,10 +51,9 @@ export function useHeroBanners() {
     }
   }, [])
 
-  // Shuffle to a new random banner (for pull-to-refresh)
+  // Pick a banner different from the currently displayed one.
   const shuffleBanner = useCallback(() => {
     if (banners.length > 1) {
-      // Pick a different banner than current
       let newIndex: number
       do {
         newIndex = Math.floor(Math.random() * banners.length)
@@ -78,9 +76,7 @@ export function useHeroBanners() {
   }
 }
 
-/**
- * Hook to fetch ALL banners (including inactive) for admin management
- */
+/** Fetches all hero banners (active and inactive) for the admin edit screen. */
 export function useAdminHeroBanners() {
   const [banners, setBanners] = useState<HeroBanner[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -109,7 +105,6 @@ export function useAdminHeroBanners() {
 
   const addBanner = useCallback(async (gameId: number, gameName: string, screenshotUrl: string) => {
     try {
-      // Get max display_order
       const maxOrder = banners.length > 0
         ? Math.max(...banners.map(b => b.display_order))
         : -1
@@ -174,7 +169,6 @@ export function useAdminHeroBanners() {
 
   const reorderBanners = useCallback(async (reorderedBanners: HeroBanner[]) => {
     try {
-      // Update display_order for each banner
       const updates = reorderedBanners.map((banner, index) => ({
         id: banner.id,
         display_order: index,

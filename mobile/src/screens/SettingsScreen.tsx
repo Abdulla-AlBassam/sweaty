@@ -204,13 +204,11 @@ export default function SettingsScreen() {
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0]
 
-      // Validate file size (5MB limit)
       if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
         Alert.alert('File too large', 'Please select an image under 5MB.')
         return
       }
 
-      // Validate file type
       const ext = asset.uri.split('.').pop()?.toLowerCase()
       const allowedTypes = ['jpg', 'jpeg', 'png', 'webp', 'heic']
       if (ext && !allowedTypes.includes(ext)) {
@@ -227,16 +225,13 @@ export default function SettingsScreen() {
 
     setIsUploadingAvatar(true)
     try {
-      // Get the file extension
       const ext = uri.split('.').pop()?.toLowerCase() || 'jpg'
       const fileName = `${user.id}-${Date.now()}.${ext}`
       const filePath = `avatars/${fileName}`
 
-      // Read the file
       const response = await fetch(uri)
       const arrayBuffer = await response.arrayBuffer()
 
-      // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, arrayBuffer, {
@@ -246,7 +241,6 @@ export default function SettingsScreen() {
 
       if (uploadError) throw uploadError
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath)
@@ -263,12 +257,10 @@ export default function SettingsScreen() {
   const handleSave = async () => {
     if (!user || !hasChanges || isSaving) return
 
-    // Validate username
     if (!validateUsername(username)) {
       return
     }
 
-    // Check if username is taken (if changed)
     if (username !== profile?.username) {
       const { data: existing, error: checkError } = await supabase
         .from('profiles')
@@ -888,7 +880,6 @@ const styles = StyleSheet.create({
   sectionCompact: {
     marginBottom: Spacing.lg,
   },
-  // zoneDivider removed — replaced by alternating section group backgrounds
   sectionTitle: {
     fontFamily: Fonts.display,
     fontSize: FontSize.sm,

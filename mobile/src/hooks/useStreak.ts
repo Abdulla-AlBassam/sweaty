@@ -20,7 +20,6 @@ export function useStreak() {
     if (!user) return
 
     try {
-      // Fetch current streak data
       const { data: currentData, error: fetchError } = await supabase
         .from('profiles')
         .select('current_streak, longest_streak, last_activity_at')
@@ -43,7 +42,6 @@ export function useStreak() {
       let toastMessage = ''
 
       if (!lastActivity) {
-        // First ever activity
         newStreak = 1
         showToast = true
         toastMessage = 'Streak started! 🔥'
@@ -52,25 +50,22 @@ export function useStreak() {
         const isSameDay = now.toDateString() === lastActivity.toDateString()
 
         if (isSameDay) {
-          // Already recorded activity today, just update timestamp
-          // No streak change, no toast
+          // Same-day re-trigger: keep the streak value, just refresh last_activity_at.
         } else if (hoursSinceLastActivity < 24) {
-          // Within 24 hours but different day - increment streak
+          // Different calendar day within 24h of last activity — the streak continues.
           newStreak = (streakData.current_streak || 0) + 1
           showToast = true
           toastMessage = `${newStreak} day streak! 🔥`
         } else {
-          // More than 24 hours - reset streak
+          // Gap > 24h breaks the streak; start a fresh one at 1.
           newStreak = 1
           showToast = true
           toastMessage = 'New streak started! 🔥'
         }
       }
 
-      // Update longest streak if needed
       const newLongestStreak = Math.max(newStreak, streakData.longest_streak || 0)
 
-      // Update database
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
@@ -85,10 +80,8 @@ export function useStreak() {
         return
       }
 
-      // Refresh profile to get updated data
       await refreshProfile()
 
-      // Show toast notification
       if (showToast) {
         Toast.show({
           type: 'streak',

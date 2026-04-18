@@ -73,15 +73,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     )
 
-    // Handle deep link for OAuth callback
+    // OAuth callback: accept either the explicit `auth/callback` path OR any URL carrying an
+    // `access_token` in the hash — the path is sometimes dropped by the OS but the fragment
+    // tokens remain.
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url
       console.log('Deep link received:', url)
 
-      // Check if this is an auth callback - look for auth/callback path OR access_token in URL
-      // (sometimes the path gets stripped but tokens are still in the hash)
       if (url.includes('auth/callback') || url.includes('access_token')) {
-        // Extract tokens from URL hash
         const hashIndex = url.indexOf('#')
         if (hashIndex !== -1) {
           const params = new URLSearchParams(url.substring(hashIndex + 1))
@@ -99,12 +98,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Check if app was opened via deep link
     Linking.getInitialURL().then((url) => {
       if (url) handleDeepLink({ url })
     })
 
-    // Listen for deep links while app is open
     const linkingSubscription = Linking.addEventListener('url', handleDeepLink)
 
     return () => {
@@ -132,17 +129,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) return { error: error as Error }
 
     if (data.user) {
-      // Check if email confirmation is required (no session means confirmation needed)
+      // Supabase returns no session when email confirmation is required; the profile row
+      // is created by the `handle_new_user` DB trigger and username is applied after verification.
       const needsEmailVerification = !data.session
 
       if (needsEmailVerification) {
-        // User needs to verify email before they can sign in
-        // Profile will be created by trigger, we'll update username after they verify
         return { error: null, needsEmailVerification: true }
       }
 
-      // Email confirmation disabled - user is auto-logged in
-      // Profile is auto-created by database trigger, update username/display_name
+      // Brief delay so the DB trigger has time to create the profile row before we update it.
       await new Promise(resolve => setTimeout(resolve, 500))
 
       const { error: profileError } = await supabase
@@ -167,21 +162,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (): Promise<{ error: Error | null; needsUsername?: boolean }> => {
     try {
-      // Check if running in Expo Go (development)
+      // Google Sign-In is unreliable in Expo Go; it works in dev/prod builds with the
+      // custom URL scheme configured.
       const isExpoGo = Constants.appOwnership === 'expo'
 
       if (isExpoGo) {
-        // Google Sign-In doesn't work reliably in Expo Go
-        // It will work in production/dev builds
         return { error: new Error('Google Sign-In is only available in production builds. Please use email/password for testing.') }
       }
 
-      // Production/dev build - use custom scheme
       const redirectUrl = 'sweaty://auth/callback'
 
       console.log('OAuth redirect URL:', redirectUrl)
 
-      // Start OAuth flow
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -198,8 +190,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: new Error('No OAuth URL returned') }
       }
 
-      // Open the OAuth URL in the device browser
-      // The deep link handler will catch the callback
+      // Opens the system browser; the deep-link handler above catches the callback.
       await Linking.openURL(data.url)
 
       return { error: null }

@@ -7,11 +7,7 @@ interface GlitchTextProps {
   intensity?: 'subtle' | 'medium' | 'heavy'
 }
 
-/**
- * Simple text component. Previously rendered RGB glitch effects;
- * now just renders clean text, matching the "quiet confidence" brand.
- * Props kept for API compatibility with callers.
- */
+/** Plain text; the `intensity` prop is accepted but ignored for API compatibility. */
 export default function GlitchText({
   text,
   style,

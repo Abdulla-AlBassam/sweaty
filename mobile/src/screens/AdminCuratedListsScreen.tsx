@@ -52,13 +52,11 @@ export default function AdminCuratedListsScreen() {
   const [listGames, setListGames] = useState<SearchGame[]>([])
   const [isLoadingGames, setIsLoadingGames] = useState(false)
 
-  // Search state
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchGame[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
 
-  // Create/Edit list modal state
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingListMeta, setEditingListMeta] = useState(false)
   const [newListTitle, setNewListTitle] = useState('')
@@ -66,7 +64,6 @@ export default function AdminCuratedListsScreen() {
   const [newListDescription, setNewListDescription] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
-  // Fetch all curated lists
   const fetchLists = useCallback(async () => {
     setIsLoading(true)
     try {
@@ -85,7 +82,6 @@ export default function AdminCuratedListsScreen() {
     }
   }, [])
 
-  // Fetch games for a specific list
   const fetchListGames = useCallback(async (list: CuratedList) => {
     setIsLoadingGames(true)
     try {
@@ -102,7 +98,7 @@ export default function AdminCuratedListsScreen() {
 
       if (error) throw error
 
-      // Map to correct format and preserve order
+      // Preserve game_ids order — `.in()` returns rows in arbitrary order.
       const gamesMap = new Map(
         (data || []).map((g: any) => [g.id, { id: g.id, name: g.name, coverUrl: g.cover_url }])
       )
@@ -118,14 +114,12 @@ export default function AdminCuratedListsScreen() {
     }
   }, [])
 
-  // Select a list to edit
   const handleSelectList = useCallback((list: CuratedList) => {
     setSelectedList(list)
     setMode('edit')
     fetchListGames(list)
   }, [fetchListGames])
 
-  // Search for games
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim() || searchQuery.length < 2) return
 
@@ -145,11 +139,9 @@ export default function AdminCuratedListsScreen() {
     }
   }, [searchQuery])
 
-  // Add game to list
   const handleAddGame = useCallback(async (game: SearchGame) => {
     if (!selectedList) return
 
-    // Check if already in list
     if (selectedList.game_ids.includes(game.id)) {
       Alert.alert('Already Added', 'This game is already in the list')
       return
@@ -157,7 +149,6 @@ export default function AdminCuratedListsScreen() {
 
     setIsAdding(true)
     try {
-      // First, ensure the game is cached in games_cache
       const { error: cacheError } = await supabase
         .from('games_cache')
         .upsert({
@@ -168,8 +159,8 @@ export default function AdminCuratedListsScreen() {
         }, { onConflict: 'id' })
 
       if (cacheError) {
+        // Non-fatal: the game may already be cached; proceed with the list update.
         console.error('[AddGame] Cache error:', cacheError)
-        // Continue anyway - game might already be cached
       }
 
       const newGameIds = [...selectedList.game_ids, game.id]
@@ -181,7 +172,6 @@ export default function AdminCuratedListsScreen() {
 
       if (error) throw error
 
-      // Update local state
       setSelectedList({ ...selectedList, game_ids: newGameIds })
       setListGames([...listGames, game])
       setMode('edit')
@@ -197,7 +187,6 @@ export default function AdminCuratedListsScreen() {
     }
   }, [selectedList, listGames])
 
-  // Remove game from list
   const handleRemoveGame = useCallback(async (game: SearchGame) => {
     if (!selectedList) return
 
@@ -232,7 +221,6 @@ export default function AdminCuratedListsScreen() {
     )
   }, [selectedList, listGames])
 
-  // Toggle list active state
   const handleToggleList = useCallback(async (list: CuratedList) => {
     try {
       const { error } = await supabase
@@ -251,7 +239,6 @@ export default function AdminCuratedListsScreen() {
     }
   }, [])
 
-  // Move list up/down in order
   const handleMoveList = useCallback(async (list: CuratedList, direction: 'up' | 'down') => {
     const currentIndex = lists.findIndex(l => l.id === list.id)
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
@@ -261,7 +248,6 @@ export default function AdminCuratedListsScreen() {
     const targetList = lists[targetIndex]
 
     try {
-      // Swap display_order values
       const [{ error: error1 }, { error: error2 }] = await Promise.all([
         supabase
           .from('curated_lists')
@@ -275,7 +261,6 @@ export default function AdminCuratedListsScreen() {
 
       if (error1 || error2) throw error1 || error2
 
-      // Update local state
       const newLists = [...lists]
       newLists[currentIndex] = { ...targetList, display_order: list.display_order }
       newLists[targetIndex] = { ...list, display_order: targetList.display_order }
@@ -287,14 +272,12 @@ export default function AdminCuratedListsScreen() {
     }
   }, [lists])
 
-  // Create new list
   const handleCreateList = useCallback(async () => {
     if (!newListTitle.trim() || !newListSlug.trim()) {
       Alert.alert('Error', 'Title and slug are required')
       return
     }
 
-    // Validate slug format
     const slugRegex = /^[a-z0-9-]+$/
     if (!slugRegex.test(newListSlug)) {
       Alert.alert('Error', 'Slug must be lowercase letters, numbers, and hyphens only')
@@ -303,7 +286,6 @@ export default function AdminCuratedListsScreen() {
 
     setIsSaving(true)
     try {
-      // Get max display_order
       const maxOrder = lists.reduce((max, l) => Math.max(max, l.display_order), 0)
 
       const { data, error } = await supabase
@@ -339,7 +321,6 @@ export default function AdminCuratedListsScreen() {
     }
   }, [newListTitle, newListSlug, newListDescription, lists])
 
-  // Update list metadata (title, description)
   const handleUpdateListMeta = useCallback(async () => {
     if (!selectedList || !newListTitle.trim()) {
       Alert.alert('Error', 'Title is required')
@@ -379,7 +360,6 @@ export default function AdminCuratedListsScreen() {
     }
   }, [selectedList, newListTitle, newListDescription])
 
-  // Delete list
   const handleDeleteList = useCallback(async (list: CuratedList) => {
     Alert.alert(
       'Delete List',

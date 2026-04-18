@@ -9,7 +9,13 @@ const path = require('path');
 const { createClient } = require(path.join(__dirname, '..', 'web', 'node_modules', '@supabase', 'supabase-js'));
 
 const SUPABASE_URL = 'https://onsmlscqlhpvltuwedzi.supabase.co';
-const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc21sc2NxbGhwdmx0dXdlZHppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTgyODA0NSwiZXhwIjoyMDgxNDA0MDQ1fQ.fKD3SOtaJEDh93e8m_fdowKPboQBa3S7phpSjfqByFw';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SERVICE_ROLE_KEY) {
+  console.error('Missing SUPABASE_SERVICE_ROLE_KEY env var. Run with:');
+  console.error('  SUPABASE_SERVICE_ROLE_KEY=... node scripts/seed-lists.js');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }

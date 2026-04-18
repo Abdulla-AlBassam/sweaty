@@ -89,7 +89,7 @@ export default function ReviewLikeButton({
     >
       <HeartIcon
         size={ICON_SIZE}
-        color={isLiked ? Colors.error : Colors.textMuted}
+        color={Colors.textBright}
         filled={isLiked}
       />
       {likeCount > 0 && (
@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
   count: {
     fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.md,
-    color: Colors.textMuted,
+    color: Colors.textBright,
     lineHeight: ICON_SIZE,
   },
 })

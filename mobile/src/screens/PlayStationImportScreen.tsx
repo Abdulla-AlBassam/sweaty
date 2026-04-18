@@ -36,7 +36,6 @@ export default function PlayStationImportScreen() {
   const { user } = useAuth()
   const { importPlayStationCSV, isLoading } = usePlatformImport(user?.id)
 
-  // Check if we're continuing logging from previous import
   const continueLogging = route.params?.continueLogging
   const initialUnloggedGames = route.params?.unloggedGames || []
 
@@ -55,12 +54,11 @@ export default function PlayStationImportScreen() {
   const [processingStage, setProcessingStage] = useState<'reading' | 'uploading' | 'matching'>('reading')
   const [rowCount, setRowCount] = useState(0)
 
-  // Animated progress bar
   const progressAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
     if (importState === 'importing') {
-      // Animate progress bar back and forth (indeterminate)
+      // Indeterminate: animate 0→1→0 in a loop until importing finishes.
       const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(progressAnim, {
@@ -82,7 +80,6 @@ export default function PlayStationImportScreen() {
     }
   }, [importState, progressAnim])
 
-  // Review & Log state
   const [loggedGames, setLoggedGames] = useState<Set<number>>(new Set())
   const [selectedGameForLog, setSelectedGameForLog] = useState<{
     id: number
@@ -105,13 +102,11 @@ export default function PlayStationImportScreen() {
 
       const file = result.assets[0]
 
-      // Check file extension
       if (!file.name.toLowerCase().endsWith('.csv') && !file.name.toLowerCase().endsWith('.txt')) {
         Alert.alert('Invalid File', 'Please select a CSV file.')
         return
       }
 
-      // Check file size (5MB max)
       if (file.size && file.size > 5 * 1024 * 1024) {
         Alert.alert('File Too Large', 'Please select a file smaller than 5MB.')
         return
@@ -138,22 +133,20 @@ export default function PlayStationImportScreen() {
     setRowCount(0)
 
     try {
-      // Read file content
       const fileContent = await FileSystem.readAsStringAsync(selectedFile.uri)
 
-      // Count rows (excluding header)
       const lines = fileContent.split(/\r?\n/).filter(line => line.trim())
-      const dataRows = Math.max(0, lines.length - 1) // Subtract header row
+      const dataRows = Math.max(0, lines.length - 1) // excludes header row
       setRowCount(dataRows)
       setProcessingStatus(`Found ${dataRows} items in your library`)
 
-      // Small delay to show the count
+      // Brief pauses so the user registers the stage transitions — otherwise it feels like
+      // the screen froze then jumped to a result.
       await new Promise(resolve => setTimeout(resolve, 800))
 
       setProcessingStage('uploading')
       setProcessingStatus('Uploading to server...')
 
-      // Another small delay for visual feedback
       await new Promise(resolve => setTimeout(resolve, 500))
 
       setProcessingStage('matching')
@@ -213,7 +206,6 @@ export default function PlayStationImportScreen() {
   const handleLogSaved = () => {
     if (selectedGameForLog) {
       setLoggedGames(prev => new Set(prev).add(selectedGameForLog.id))
-      // If in continue mode, remove from continueGames for real-time update
       if (importState === 'continue') {
         setContinueGames(prev => prev.filter(g => g.igdb_id !== selectedGameForLog.id))
       }
@@ -229,10 +221,8 @@ export default function PlayStationImportScreen() {
 
   const renderGameItem = ({ item }: { item: MatchedGame }) => {
     const isLogged = loggedGames.has(item.igdb_id)
-    // cover_url from API is already a full URL
     const coverUrl = item.cover_url
 
-    // Debug: Log cover URL for first few items
     if (item.igdb_id && !coverUrl) {
       console.log(`No cover for: ${item.name} (ID: ${item.igdb_id})`)
     }
@@ -284,7 +274,6 @@ export default function PlayStationImportScreen() {
     )
   }
 
-  // Importing state
   if (importState === 'importing') {
     const progressWidth = progressAnim.interpolate({
       inputRange: [0, 1],
@@ -370,7 +359,6 @@ export default function PlayStationImportScreen() {
     )
   }
 
-  // Success state - Review & Log UI
   if (importState === 'success' && importResult) {
     const matchedGames = importResult.matched_games || []
     const loggedCount = loggedGames.size
@@ -474,7 +462,6 @@ export default function PlayStationImportScreen() {
     )
   }
 
-  // Continue logging state - for returning to log previously imported games
   if (importState === 'continue') {
     const remainingGames = continueGames
     const loggedCount = loggedGames.size
@@ -550,7 +537,6 @@ export default function PlayStationImportScreen() {
     )
   }
 
-  // Error state
   if (importState === 'error' && importResult) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -575,7 +561,6 @@ export default function PlayStationImportScreen() {
     )
   }
 
-  // Default/idle state - CSV import
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -11,11 +11,13 @@ import {
   TextInput,
   Keyboard,
   Dimensions,
+  Animated,
 } from 'react-native'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, CommonActions, useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
+import { LinearGradient } from 'expo-linear-gradient'
 import SweatDropIcon from '../components/SweatDropIcon'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
@@ -29,7 +31,9 @@ import { Game } from '../types'
 type ListDetailRouteProp = RouteProp<MainStackParamList, 'ListDetail'>
 
 const SCREEN_WIDTH = Dimensions.get('window').width
-const LIST_NUM_COLUMNS = 3
+const SCREEN_HEIGHT = Dimensions.get('window').height
+const BANNER_HEIGHT_BASE = SCREEN_HEIGHT * 0.30
+const LIST_NUM_COLUMNS = 4
 const LIST_GRID_PADDING = Spacing.lg * 2   // listSection padding on both sides
 const LIST_GAP = Spacing.md                // 12px gap
 const LIST_CARD_WIDTH = (SCREEN_WIDTH - LIST_GRID_PADDING - LIST_GAP * (LIST_NUM_COLUMNS - 1)) / LIST_NUM_COLUMNS
@@ -45,22 +49,21 @@ export default function ListDetailScreen() {
   const route = useRoute<ListDetailRouteProp>()
   const { listId } = route.params
   const { user } = useAuth()
+  const insets = useSafeAreaInsets()
+  const scrollY = useRef(new Animated.Value(0)).current
 
   const { list, isLoading, error, refetch } = useListDetail(listId)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
 
-  // Search state
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Game[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showSearchDropdown, setShowSearchDropdown] = useState(false)
 
-  // Library state
   const [libraryGames, setLibraryGames] = useState<LibraryGame[]>([])
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false)
 
-  // Refetch when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refetch()
@@ -69,10 +72,8 @@ export default function ListDetailScreen() {
 
   const isOwner = user && list && user.id === list.user_id
 
-  // Get IDs of games already in the list
   const gamesInList = list?.items?.map(item => item.game.id) || []
 
-  // Fetch user's library
   const fetchLibrary = useCallback(async () => {
     if (!user) return
     setIsLoadingLibrary(true)
@@ -109,7 +110,6 @@ export default function ListDetailScreen() {
     }
   }, [isOwner, fetchLibrary])
 
-  // Search games from IGDB
   const searchGames = useCallback(async (query: string) => {
     if (!query.trim() || query.length < 2) {
       setSearchResults([])
@@ -123,7 +123,7 @@ export default function ListDetailScreen() {
     try {
       const response = await fetch(`${API_CONFIG.baseUrl}/api/games/search?q=${encodeURIComponent(query)}`)
       const data = await response.json()
-      // Handle both array response and object with games property
+      // Endpoint has shipped both shapes; tolerate array or `{ games | results }`.
       const games = Array.isArray(data) ? data : (data?.games || data?.results || [])
       setSearchResults(games.slice(0, 8))
     } catch (err) {
@@ -134,7 +134,6 @@ export default function ListDetailScreen() {
     }
   }, [])
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       searchGames(searchQuery)
@@ -153,7 +152,6 @@ export default function ListDetailScreen() {
 
   const handleAddGame = async (game: LibraryGame | Game) => {
     if (gamesInList.includes(game.id)) {
-      // Remove from list
       const { error } = await removeGameFromList(listId, game.id)
       if (error) {
         Alert.alert('Error', error)
@@ -161,8 +159,7 @@ export default function ListDetailScreen() {
         refetch()
       }
     } else {
-      // Add to list - pass game info for caching
-      // API returns coverUrl (camelCase), database has cover_url (snake_case)
+      // The search API returns camelCase (`coverUrl`) while the DB uses snake_case (`cover_url`).
       const coverUrl = game.cover_url || (game as any).coverUrl || (game as any).cover?.url || (game as any).cover
       const { error } = await addGameToList(listId, game.id, {
         name: game.name,
@@ -233,13 +230,12 @@ export default function ListDetailScreen() {
 
   const isGameInList = (gameId: number) => gamesInList.includes(gameId)
 
-  // Filter library to games not already in list
   const availableLibraryGames = libraryGames.filter(g => !isGameInList(g.id))
 
   if (error) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+        <View style={styles.errorHeader}>
           <View style={{ flex: 1, alignItems: 'flex-start' }}>
             <TouchableOpacity
               style={styles.backButton}
@@ -264,64 +260,56 @@ export default function ListDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={{ flex: 1, alignItems: 'flex-start' }}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-            accessibilityLabel="Go back"
-            accessibilityRole="button"
-          >
-            <Ionicons name="chevron-back" size={24} color={Colors.text} />
-          </TouchableOpacity>
-        </View>
+    <View style={styles.container}>
+      {/* Floating header — matches CuratedListDetail layout (no centered title) */}
+      <View style={[styles.header, { paddingTop: insets.top }]} pointerEvents="box-none">
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
+        >
+          <Ionicons name="chevron-back" size={24} color={Colors.text} />
+        </TouchableOpacity>
 
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {list?.title || 'List'}
-        </Text>
-
-        <View style={{ flex: 1, alignItems: 'flex-end' }}>
-          {isOwner ? (
-            <View style={styles.headerActions}>
-              {isEditMode ? (
+        {isOwner ? (
+          <View style={styles.headerActions}>
+            {isEditMode ? (
+              <TouchableOpacity
+                style={styles.doneButton}
+                onPress={() => setIsEditMode(false)}
+                accessibilityLabel="Done editing"
+                accessibilityRole="button"
+              >
+                <Text style={styles.doneButtonText}>Done</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
                 <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={() => setIsEditMode(false)}
-                  accessibilityLabel="Done editing"
+                  style={styles.headerButton}
+                  onPress={() => setIsEditMode(true)}
+                  accessibilityLabel="Edit list"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.doneButtonText}>Done</Text>
+                  <Ionicons name="pencil" size={20} color={Colors.text} />
                 </TouchableOpacity>
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={styles.headerButton}
-                    onPress={() => setIsEditMode(true)}
-                    accessibilityLabel="Edit list"
-                    accessibilityRole="button"
-                  >
-                    <Ionicons name="pencil" size={20} color={Colors.text} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.headerButton}
-                    onPress={handleDeleteList}
-                    disabled={isDeleting}
-                    accessibilityLabel="Delete list"
-                    accessibilityRole="button"
-                  >
-                    {isDeleting ? (
-                      <LoadingSpinner size="small" color={Colors.error} />
-                    ) : (
-                      <Ionicons name="trash-outline" size={20} color={Colors.error} />
-                    )}
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          ) : null}
-        </View>
+                <TouchableOpacity
+                  style={styles.headerButton}
+                  onPress={handleDeleteList}
+                  disabled={isDeleting}
+                  accessibilityLabel="Delete list"
+                  accessibilityRole="button"
+                >
+                  {isDeleting ? (
+                    <LoadingSpinner size="small" color={Colors.error} />
+                  ) : (
+                    <Ionicons name="trash-outline" size={20} color={Colors.error} />
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        ) : null}
       </View>
 
       {isLoading ? (
@@ -329,19 +317,85 @@ export default function ListDetailScreen() {
           <LoadingSpinner size="large" color={Colors.accent} />
         </View>
       ) : (
-        <ScrollView
+        <Animated.ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          bounces={true}
+          overScrollMode="never"
+          scrollEventThrottle={16}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: true }
+          )}
         >
-          {/* List Info */}
-          <View style={styles.listInfo}>
+          {/* Banner from first game's screenshot (fallback: cover).
+              When no banner, render a spacer so the floating header doesn't overlap content. */}
+          {(() => {
+            const topGame: any = list?.items?.[0]?.game
+            const bannerImage = topGame?.screenshot_urls?.[0] ?? topGame?.cover_url ?? null
+            if (!bannerImage) return <View style={{ height: insets.top + 44 }} />
+            return (
+              <Animated.View
+                style={[
+                  styles.bannerContainer,
+                  { height: BANNER_HEIGHT_BASE + insets.top },
+                  {
+                    transform: [
+                      { translateY: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [-100, 0], extrapolateRight: 'clamp' }) },
+                      { scale: scrollY.interpolate({ inputRange: [-200, 0], outputRange: [1.5, 1], extrapolateRight: 'clamp' }) },
+                    ],
+                  },
+                ]}
+              >
+                <Image
+                  source={{ uri: getIGDBImageUrl(bannerImage, 'fullHd') }}
+                  style={styles.banner}
+                  resizeMode="cover"
+                  accessibilityLabel={`${list?.title ?? 'List'} banner`}
+                />
+                <LinearGradient
+                  colors={[Colors.gradientMedium, 'transparent']}
+                  style={styles.bannerGradientTop}
+                />
+                <LinearGradient
+                  colors={['transparent', Colors.gradientMedium, Colors.background]}
+                  locations={[0, 0.6, 1]}
+                  style={styles.bannerGradient}
+                />
+              </Animated.View>
+            )
+          })()}
+
+          {/* List Info — title, description, owner attribution */}
+          <View style={[styles.listInfo, (list?.items?.[0]?.game as any)?.screenshot_urls?.[0] || list?.items?.[0]?.game?.cover_url ? styles.listInfoWithBanner : null]}>
+            <Text style={styles.heroTitle}>{list?.title}</Text>
             {list?.description && (
               <Text style={styles.description}>{list.description}</Text>
             )}
-            <Text style={styles.gameCount}>
-              {list?.item_count || 0} {(list?.item_count || 0) === 1 ? 'game' : 'games'}
-            </Text>
+            {list?.user && (
+              <TouchableOpacity
+                style={styles.ownerRow}
+                onPress={() => navigation.dispatch(
+                  CommonActions.navigate({
+                    name: 'UserProfile',
+                    params: { username: list.user!.username, userId: list.user!.id },
+                  })
+                )}
+                activeOpacity={0.7}
+                accessibilityLabel={`View @${list.user.username}'s profile`}
+                accessibilityRole="button"
+              >
+                {list.user.avatar_url ? (
+                  <Image source={{ uri: list.user.avatar_url }} style={styles.ownerAvatar} />
+                ) : (
+                  <View style={[styles.ownerAvatar, styles.ownerAvatarPlaceholder]}>
+                    <Ionicons name="person" size={14} color={Colors.textDim} />
+                  </View>
+                )}
+                <Text style={styles.ownerUsername}>@{list.user.username}</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Add Games Section - Only in edit mode */}
@@ -486,7 +540,7 @@ export default function ListDetailScreen() {
               <FlatList
                 data={list?.items || []}
                 keyExtractor={(item) => item.id.toString()}
-                numColumns={3}
+                numColumns={LIST_NUM_COLUMNS}
                 scrollEnabled={false}
                 columnWrapperStyle={styles.gamesRow}
                 renderItem={({ item }) => (
@@ -529,9 +583,9 @@ export default function ListDetailScreen() {
               <Text style={styles.hint}>Long press a game to remove it</Text>
             )}
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -541,6 +595,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  errorHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
@@ -564,6 +629,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 'auto',
   },
   headerButton: {
     width: 40,
@@ -615,20 +681,73 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.accent,
   },
+  bannerContainer: {
+    width: SCREEN_WIDTH,
+    position: 'relative',
+  },
+  banner: {
+    width: '100%',
+    height: '100%',
+  },
+  bannerGradientTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+  },
+  bannerGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+  },
   listInfo: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  description: {
-    fontFamily: Fonts.bodySemiBold,
-    fontSize: FontSize.md,
+  listInfoWithBanner: {
+    marginTop: -40,
+  },
+  heroTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSize.xl,
     color: Colors.text,
+    marginBottom: Spacing.xs,
+  },
+  description: {
+    fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
     marginBottom: Spacing.sm,
+    lineHeight: 19,
   },
   gameCount: {
     fontFamily: Fonts.body,
+    fontSize: FontSize.sm,
+    color: Colors.textMuted,
+  },
+  ownerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    gap: Spacing.sm,
+  },
+  ownerAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+  },
+  ownerAvatarPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ownerUsername: {
+    fontFamily: Fonts.bodySemiBold,
     fontSize: FontSize.sm,
     color: Colors.textMuted,
   },

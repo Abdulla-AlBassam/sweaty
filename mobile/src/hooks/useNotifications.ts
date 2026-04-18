@@ -29,16 +29,14 @@ async function getProjectId(): Promise<string | undefined> {
 }
 
 async function registerForPushNotifications(): Promise<string | null> {
-  // Push notifications only work on physical devices
+  // Expo push tokens are only available on physical devices.
   if (!Device.isDevice) {
     return null
   }
 
-  // Check existing permissions
   const { status: existingStatus } = await Notifications.getPermissionsAsync()
   let finalStatus = existingStatus
 
-  // Request if not already granted
   if (existingStatus !== 'granted') {
     const { status } = await Notifications.requestPermissionsAsync()
     finalStatus = status
@@ -48,7 +46,6 @@ async function registerForPushNotifications(): Promise<string | null> {
     return null
   }
 
-  // Android notification channel
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
       name: 'Default',
@@ -57,7 +54,6 @@ async function registerForPushNotifications(): Promise<string | null> {
     })
   }
 
-  // Get Expo push token
   const projectId = await getProjectId()
   if (!projectId) {
     console.warn('No EAS project ID found - push token unavailable')
@@ -76,14 +72,12 @@ export function useNotifications(userId: string | undefined) {
   const notificationListener = useRef<EventSubscription | null>(null)
   const responseListener = useRef<EventSubscription | null>(null)
 
-  // Check current permission status
   useEffect(() => {
     Notifications.getPermissionsAsync().then(({ status }) => {
       setPermissionStatus(status)
     })
   }, [])
 
-  // Load preferences from profile
   useEffect(() => {
     if (!userId) {
       setIsLoading(false)
@@ -106,7 +100,6 @@ export function useNotifications(userId: string | undefined) {
     loadPreferences()
   }, [userId])
 
-  // Register push token when user is available and permissions granted
   useEffect(() => {
     if (!userId || permissionStatus !== 'granted') return
 
@@ -116,7 +109,6 @@ export function useNotifications(userId: string | undefined) {
 
       setPushToken(token)
 
-      // Upsert token in database
       await supabase
         .from('push_tokens')
         .upsert({
@@ -132,18 +124,14 @@ export function useNotifications(userId: string | undefined) {
     register()
   }, [userId, permissionStatus])
 
-  // Set up notification listeners
   useEffect(() => {
-    // Notification received while app is foregrounded
-    notificationListener.current = Notifications.addNotificationReceivedListener((_notification) => {
-      // Handled by setNotificationHandler above
-    })
+    // Foreground receipt is handled by setNotificationHandler above.
+    notificationListener.current = Notifications.addNotificationReceivedListener(() => {})
 
-    // User tapped on a notification
+    // Data shape: { type: 'new_follower' | 'friend_activity' | 'streak_reminder', ... }.
+    // Consumers route based on `type`; this hook just logs the tap.
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data
-      // Navigation will be handled by the component consuming this hook
-      // Data shape: { type: 'new_follower' | 'friend_activity' | 'streak_reminder', ... }
       console.log('Notification tapped:', data)
     })
 
@@ -153,7 +141,6 @@ export function useNotifications(userId: string | undefined) {
     }
   }, [])
 
-  // Request permissions (called from settings when user enables notifications)
   const requestPermissions = useCallback(async (): Promise<boolean> => {
     const { status } = await Notifications.requestPermissionsAsync()
     setPermissionStatus(status)
@@ -178,7 +165,6 @@ export function useNotifications(userId: string | undefined) {
     return status === 'granted'
   }, [userId])
 
-  // Update a single preference
   const updatePreference = useCallback(async (
     key: keyof NotificationPreferences,
     value: boolean,
@@ -197,7 +183,6 @@ export function useNotifications(userId: string | undefined) {
       .eq('id', userId)
   }, [userId, preferences])
 
-  // Remove push token (when user disables all notifications)
   const removePushToken = useCallback(async () => {
     if (!userId || !pushToken) return
 

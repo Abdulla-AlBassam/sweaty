@@ -142,6 +142,7 @@ export interface CuratedListWithGames extends CuratedList {
     id: number
     name: string
     cover_url: string | null
+    screenshot_urls?: string[] | null
     first_release_date?: string | null
   }>
 }
@@ -172,9 +173,16 @@ export interface GameListWithItems extends GameList {
       id: number
       name: string
       cover_url: string | null
+      screenshot_urls?: string[] | null
     }
   }>
   item_count?: number
+  user?: {
+    id: string
+    username: string
+    display_name: string | null
+    avatar_url: string | null
+  }
 }
 
 export interface GameListWithUser extends GameList {

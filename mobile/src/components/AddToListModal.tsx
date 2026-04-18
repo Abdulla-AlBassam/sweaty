@@ -32,15 +32,14 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
   const [showCreateModal, setShowCreateModal] = useState(false)
   const initialGameInListsRef = useRef<Set<string>>(new Set())
 
-  // Check which lists contain this game
   useEffect(() => {
     const checkGameInLists = async () => {
       if (!lists.length) return
 
       const inLists = new Set<string>()
 
-      // Check each list's preview games for this game
-      // For a more accurate check, we'd need to query list_items
+      // Preview games only cover the first N items per list; fall back to list_items below
+      // for the authoritative answer.
       lists.forEach((list) => {
         const hasGame = list.preview_games?.some((g) => g.id === gameId)
         if (hasGame) {
@@ -48,7 +47,6 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
         }
       })
 
-      // For more accurate results, let's also check the database
       const { supabase } = await import('../lib/supabase')
       const { data } = await supabase
         .from('list_items')
@@ -74,11 +72,9 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
   const handleToggleList = async (listId: string) => {
     const isInList = gameInLists.has(listId)
 
-    // Add to loading state
     setLoadingLists((prev) => new Set(prev).add(listId))
 
     if (isInList) {
-      // Remove from list
       const { error } = await removeGameFromList(listId, gameId)
       if (!error) {
         setGameInLists((prev) => {
@@ -88,21 +84,18 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
         })
       }
     } else {
-      // Add to list
       const { error } = await addGameToList(listId, gameId)
       if (!error) {
         setGameInLists((prev) => new Set(prev).add(listId))
       }
     }
 
-    // Remove from loading state
     setLoadingLists((prev) => {
       const next = new Set(prev)
       next.delete(listId)
       return next
     })
 
-    // Refetch to update counts
     refetch()
   }
 
@@ -110,7 +103,6 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
     const initial = initialGameInListsRef.current
     const current = gameInLists
 
-    // Check if selections have changed
     const hasChanges =
       initial.size !== current.size ||
       [...initial].some((id) => !current.has(id)) ||
@@ -134,7 +126,6 @@ export default function AddToListModal({ visible, onClose, gameId, gameName }: A
     setShowCreateModal(false)
     refetch()
 
-    // Auto-add game to the newly created list
     setLoadingLists((prev) => new Set(prev).add(newList.id))
     const { error } = await addGameToList(newList.id, gameId)
     if (!error) {

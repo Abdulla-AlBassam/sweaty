@@ -2,8 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { GameList, GameListWithItems, GameListWithUser } from '../types'
 
-// Fetch all lists for a user (with item counts and preview games)
-export function useUserLists(userId: string | undefined) {
+/**
+ * Fetch a user's custom lists, each augmented with its item count and a preview of the first
+ * few games (in list order).
+ */
+export function useUserLists(userId: string | undefined, previewLimit: number = 3) {
   const [lists, setLists] = useState<GameListWithUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +22,6 @@ export function useUserLists(userId: string | undefined) {
     setError(null)
 
     try {
-      // Fetch lists with user info
       const { data: listsData, error: listsError } = await supabase
         .from('lists')
         .select(`
@@ -31,22 +33,19 @@ export function useUserLists(userId: string | undefined) {
 
       if (listsError) throw listsError
 
-      // For each list, get item count and first 3 game covers
       const listsWithDetails: GameListWithUser[] = await Promise.all(
         (listsData || []).map(async (list: any) => {
-          // Get item count
           const { count } = await supabase
             .from('list_items')
             .select('id', { count: 'exact', head: true })
             .eq('list_id', list.id)
 
-          // Get first 3 games for preview
           const { data: previewItems } = await supabase
             .from('list_items')
             .select('game_id, games_cache!list_items_game_id_fkey (id, name, cover_url)')
             .eq('list_id', list.id)
             .order('position', { ascending: true })
-            .limit(3)
+            .limit(previewLimit)
 
           const preview_games = (previewItems || [])
             .map((item: any) => item.games_cache)
@@ -78,7 +77,7 @@ export function useUserLists(userId: string | undefined) {
     } finally {
       setIsLoading(false)
     }
-  }, [userId])
+  }, [userId, previewLimit])
 
   useEffect(() => {
     fetchLists()
@@ -87,7 +86,7 @@ export function useUserLists(userId: string | undefined) {
   return { lists, isLoading, error, refetch: fetchLists }
 }
 
-// Fetch all public user lists (community lists)
+/** Fetch the most recently updated public lists across all users. */
 export function usePublicLists() {
   const [lists, setLists] = useState<GameListWithUser[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -149,7 +148,6 @@ export function usePublicLists() {
         })
       ) as unknown as GameListWithUser[]
 
-      // Only show lists that have games
       setLists(listsWithDetails.filter(l => (l.item_count || 0) > 0))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch lists')
@@ -165,7 +163,6 @@ export function usePublicLists() {
   return { lists, isLoading, error, refetch: fetchLists }
 }
 
-// Fetch a single list with all its games
 export function useListDetail(listId: string | undefined) {
   const [list, setList] = useState<GameListWithItems | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -182,16 +179,17 @@ export function useListDetail(listId: string | undefined) {
     setError(null)
 
     try {
-      // Fetch list info
       const { data: listData, error: listError } = await supabase
         .from('lists')
-        .select('*')
+        .select(`
+          *,
+          profiles!lists_user_id_fkey (id, username, display_name, avatar_url)
+        `)
         .eq('id', listId)
         .single()
 
       if (listError) throw listError
 
-      // Fetch all items with game data
       const { data: itemsData, error: itemsError } = await supabase
         .from('list_items')
         .select(`
@@ -200,7 +198,7 @@ export function useListDetail(listId: string | undefined) {
           game_id,
           position,
           added_at,
-          games_cache!list_items_game_id_fkey (id, name, cover_url)
+          games_cache!list_items_game_id_fkey (id, name, cover_url, screenshot_urls)
         `)
         .eq('list_id', listId)
         .order('position', { ascending: true })
@@ -216,8 +214,17 @@ export function useListDetail(listId: string | undefined) {
         game: item.games_cache,
       }))
 
+      const { profiles: ownerProfile, ...rest } = listData as any
       setList({
-        ...listData,
+        ...rest,
+        user: ownerProfile
+          ? {
+              id: ownerProfile.id,
+              username: ownerProfile.username,
+              display_name: ownerProfile.display_name,
+              avatar_url: ownerProfile.avatar_url,
+            }
+          : undefined,
         items,
         item_count: items.length,
       })
@@ -235,7 +242,6 @@ export function useListDetail(listId: string | undefined) {
   return { list, isLoading, error, refetch: fetchList }
 }
 
-// Helper function to create a new list
 export async function createList(
   userId: string,
   title: string,
@@ -265,23 +271,23 @@ export async function createList(
   }
 }
 
-// Helper function to add a game to a list
+/**
+ * Append a game to the end of a list. If `gameInfo` is provided, the game is
+ * ensured in `games_cache` first so joins downstream succeed.
+ */
 export async function addGameToList(
   listId: string,
   gameId: number,
   gameInfo?: { name: string; cover_url?: string | null }
 ): Promise<{ success: boolean; error: string | null }> {
   try {
-    // If game info is provided, ensure the game exists in games_cache
     if (gameInfo) {
-      // Check if game exists in cache
       const { data: existingGame } = await supabase
         .from('games_cache')
         .select('id')
         .eq('id', gameId)
         .single()
 
-      // If game doesn't exist, insert it
       if (!existingGame) {
         const { error: cacheError } = await supabase
           .from('games_cache')
@@ -292,14 +298,13 @@ export async function addGameToList(
             cached_at: new Date().toISOString(),
           })
 
-        // Ignore duplicate key errors (game was added by another process)
+        // 23505 = concurrent insert by another caller; benign.
         if (cacheError && cacheError.code !== '23505') {
           console.error('Error caching game:', cacheError)
         }
       }
     }
 
-    // Get current max position
     const { data: maxPosData } = await supabase
       .from('list_items')
       .select('position')
@@ -319,14 +324,12 @@ export async function addGameToList(
       })
 
     if (error) {
-      // Handle duplicate error
       if (error.code === '23505') {
         return { success: false, error: 'Game is already in this list' }
       }
       throw error
     }
 
-    // Update list's updated_at timestamp
     await supabase
       .from('lists')
       .update({ updated_at: new Date().toISOString() })
@@ -338,7 +341,6 @@ export async function addGameToList(
   }
 }
 
-// Helper function to remove a game from a list
 export async function removeGameFromList(
   listId: string,
   gameId: number
@@ -352,7 +354,6 @@ export async function removeGameFromList(
 
     if (error) throw error
 
-    // Update list's updated_at timestamp
     await supabase
       .from('lists')
       .update({ updated_at: new Date().toISOString() })
@@ -364,7 +365,6 @@ export async function removeGameFromList(
   }
 }
 
-// Helper function to delete a list
 export async function deleteList(
   listId: string
 ): Promise<{ success: boolean; error: string | null }> {
@@ -381,7 +381,6 @@ export async function deleteList(
   }
 }
 
-// Helper function to update a list
 export async function updateList(
   listId: string,
   updates: { title?: string; description?: string; is_public?: boolean }
