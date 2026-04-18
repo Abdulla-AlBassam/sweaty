@@ -1,12 +1,20 @@
 -- Notification triggers
--- These use Supabase's pg_net extension to call the Vercel API when events happen.
--- Run this in Supabase SQL Editor AFTER running push_notifications.sql
---
--- IMPORTANT: Replace YOUR_SERVICE_ROLE_KEY below (3 occurrences) with your
--- actual Supabase service role key before running.
+-- Use pg_net to call the Vercel API when events happen.
+-- Run AFTER push_notifications.sql, and AFTER storing the service role key
+-- in Supabase Vault as 'service_role_key' (see README / setup docs).
 
--- Enable pg_net if not already enabled
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+-- Reads the service role key from Supabase Vault.
+-- Returns NULL if the secret is missing, so callers can short-circuit.
+CREATE OR REPLACE FUNCTION get_service_role_key()
+RETURNS text AS $$
+  SELECT decrypted_secret
+    FROM vault.decrypted_secrets
+    WHERE name = 'service_role_key'
+    LIMIT 1;
+$$ LANGUAGE sql SECURITY DEFINER STABLE;
+
 
 -- ============================================================
 -- 1. NEW FOLLOWER NOTIFICATION
@@ -17,21 +25,16 @@ DECLARE
   follower_name text;
   follower_username text;
   api_url text := 'https://sweaty-v1.vercel.app/api/notifications/send';
-  service_key text;
+  service_key text := get_service_role_key();
 BEGIN
-  -- Get the follower's display info
-  SELECT COALESCE(display_name, username), username
-    INTO follower_name, follower_username
-    FROM profiles WHERE id = NEW.follower_id;
-
-  -- Service role key (hardcoded; safe because function is SECURITY DEFINER)
-  service_key := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc21sc2NxbGhwdmx0dXdlZHppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTgyODA0NSwiZXhwIjoyMDgxNDA0MDQ1fQ.fKD3SOtaJEDh93e8m_fdowKPboQBa3S7phpSjfqByFw';
-
   IF service_key IS NULL THEN
     RETURN NEW;
   END IF;
 
-  -- Send notification via pg_net
+  SELECT COALESCE(display_name, username), username
+    INTO follower_name, follower_username
+    FROM profiles WHERE id = NEW.follower_id;
+
   PERFORM net.http_post(
     url := api_url,
     body := jsonb_build_object(
@@ -71,24 +74,24 @@ DECLARE
   status_label text;
   follower record;
   api_url text := 'https://sweaty-v1.vercel.app/api/notifications/send';
-  service_key text;
+  service_key text := get_service_role_key();
 BEGIN
-  -- Only notify on meaningful status changes (not want_to_play)
   IF NEW.status = 'want_to_play' THEN
     RETURN NEW;
   END IF;
 
-  -- On UPDATE, only notify if status actually changed
   IF TG_OP = 'UPDATE' AND OLD.status = NEW.status THEN
     RETURN NEW;
   END IF;
 
-  -- Get actor's display name
+  IF service_key IS NULL THEN
+    RETURN NEW;
+  END IF;
+
   SELECT COALESCE(display_name, username)
     INTO actor_name
     FROM profiles WHERE id = NEW.user_id;
 
-  -- Get game name from cache
   SELECT name INTO game_name
     FROM games_cache WHERE id = NEW.game_id;
 
@@ -98,7 +101,6 @@ BEGIN
 
   game_id_str := NEW.game_id::text;
 
-  -- Human-readable status
   status_label := CASE NEW.status
     WHEN 'playing' THEN 'is playing'
     WHEN 'completed' THEN 'completed'
@@ -108,13 +110,6 @@ BEGIN
     ELSE 'logged'
   END;
 
-  service_key := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc21sc2NxbGhwdmx0dXdlZHppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTgyODA0NSwiZXhwIjoyMDgxNDA0MDQ1fQ.fKD3SOtaJEDh93e8m_fdowKPboQBa3S7phpSjfqByFw';
-
-  IF service_key IS NULL THEN
-    RETURN NEW;
-  END IF;
-
-  -- Notify each follower (people who follow this user)
   FOR follower IN
     SELECT follower_id FROM follows WHERE following_id = NEW.user_id
   LOOP
@@ -148,22 +143,18 @@ CREATE TRIGGER on_game_log_activity
 -- ============================================================
 -- 3. STREAK REMINDER (for scheduled invocation)
 -- Call from Supabase pg_cron or Vercel cron daily
--- Finds users with active streaks who haven't logged today
 -- ============================================================
 CREATE OR REPLACE FUNCTION send_streak_reminders()
 RETURNS void AS $$
 DECLARE
   user_record record;
   api_url text := 'https://sweaty-v1.vercel.app/api/notifications/send';
-  service_key text;
+  service_key text := get_service_role_key();
 BEGIN
-  service_key := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9uc21sc2NxbGhwdmx0dXdlZHppIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTgyODA0NSwiZXhwIjoyMDgxNDA0MDQ1fQ.fKD3SOtaJEDh93e8m_fdowKPboQBa3S7phpSjfqByFw';
-
   IF service_key IS NULL THEN
     RETURN;
   END IF;
 
-  -- Users with streaks >= 2 who haven't been active in 20-48 hours
   FOR user_record IN
     SELECT id, current_streak
     FROM profiles
