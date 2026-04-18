@@ -12,6 +12,34 @@ A video game tracking app, like Letterboxd but for games. Track what you're play
 >
 > All new product features ship in the mobile app first.
 
+## Pending work (pick up here tomorrow)
+
+**Supabase API key migration** — partially done 2026-04-18. Context: the legacy `service_role` JWT was hardcoded in seed scripts and `database/notification_triggers.sql` and had been pushed to GitHub, so it was leaked. We migrated to the new Supabase API key system (`sb_secret_...` / `sb_publishable_...`).
+
+Completed:
+- Rotated service role: new `sb_secret_...` created in Supabase (named `api-and-scripts`)
+- All 5 seed scripts read from `scripts/.env` via `scripts/_env.js` loader; `scripts/.env` is gitignored
+- `database/notification_triggers.sql` now reads from `vault.decrypted_secrets` where name = `service_role_key` (stored via `vault.create_secret` in Supabase Vault) — zero secrets in the file
+- Vercel `SUPABASE_SERVICE_ROLE_KEY` env var updated to the new `sb_secret_...`
+
+Still to do:
+1. **Smoke-test notifications end-to-end** — follow another account on mobile, confirm the new-follower push arrives. Proves the Vault → trigger → pg_net → Vercel → Expo push chain works with the new key. If it fails, check Vercel redeploy status and logs at `/api/notifications/send`.
+2. **Swap the `anon` JWT for the `sb_publishable_...` key** when preparing the next EAS build:
+   - Update `mobile/.env` → `EXPO_PUBLIC_SUPABASE_ANON_KEY` = `sb_publishable_...`
+   - Update Vercel → `NEXT_PUBLIC_SUPABASE_ANON_KEY` = same
+   - Rebuild mobile via EAS, test, then ship
+3. **Disable legacy JWT keys** after step 2 is fully in everyone's hands (Supabase dashboard → API Keys → "Disable JWT-based API keys"). This permanently neutralizes the leaked old JWT in git history.
+4. **Optional git history rewrite** (cosmetic only once step 3 is done) — use BFG Repo-Cleaner to purge the old JWT from commits in `scripts/seed-*.js` and `database/notification_triggers.sql`. Requires force-push; safe since Abdulla is sole collaborator.
+
+**Codebase cleanup sequence** (paused after step 1) — we ran the first of an 8-agent cleanup pass:
+- ✅ Agent #8 (AI-slop comments) — removed ~180 lines across 26 files, committed in `12b8f89`
+- ⏭️ Agent #3 next: dead-code removal with `knip`
+- Then in order: #2 type consolidation, #5 weak types, #1 deduplication, #4 circular deps, #7 legacy code, #6 defensive try/catch
+
+**Local-only reference folders** (gitignored, don't commit):
+- `launch-video/` — 378MB Next.js sub-project for marketing video
+- `ship-ready-screenshots/` — pre-launch screenshots for reference
+
 ## Tech Stack
 
 **Mobile (`/mobile`) — primary product:**
