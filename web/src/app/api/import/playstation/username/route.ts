@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import * as cheerio from 'cheerio'
 import { searchGames, Game } from '@/lib/igdb'
+import { requireSession } from '@/lib/auth/require-session'
 
-// Create a Supabase client with service role for bypassing RLS
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 const PSNPROFILES_BASE_URL = 'https://psnprofiles.com'
@@ -253,18 +253,16 @@ async function cacheGame(game: Game): Promise<void> {
 }
 
 // POST /api/import/playstation/username
-// Import PlayStation games by PSN username via PSNProfiles
+// Import PlayStation games by PSN username via PSNProfiles.
+// Auth: Authorization: Bearer <session.access_token>.
 export async function POST(request: NextRequest) {
+  const session = await requireSession(request)
+  if ('error' in session) return session.error
+  const user_id = session.user.id
+
   try {
     const body = await request.json()
-    const { user_id, psn_username } = body
-
-    if (!user_id) {
-      return NextResponse.json(
-        { error: 'Missing required field: user_id' },
-        { status: 400 }
-      )
-    }
+    const { psn_username } = body
 
     if (!psn_username || typeof psn_username !== 'string') {
       return NextResponse.json(
@@ -287,9 +285,12 @@ export async function POST(request: NextRequest) {
     const { games: psnGames, error: fetchError, errorType } = await fetchPSNProfileGames(cleanUsername)
 
     if (fetchError) {
+      // Collapse all upstream failures (not-found / private / unavailable) to a
+      // single generic error so this route can't be used as an oracle to
+      // enumerate PSN usernames or probe profile privacy.
       return NextResponse.json(
-        { error: fetchError, error_type: errorType },
-        { status: errorType === 'psn_not_found' ? 404 : errorType === 'profile_private' ? 403 : 503 }
+        { error: 'Could not import games from this PSN account.' },
+        { status: 400 }
       )
     }
 

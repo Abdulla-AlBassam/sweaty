@@ -3,6 +3,15 @@ import { API_CONFIG } from '../constants'
 import { Platform, PlatformConnection, PlatformGame } from '../types'
 import { supabase } from '../lib/supabase'
 
+// Resolve the current Supabase access token. The web import endpoints now
+// require `Authorization: Bearer <token>` and validate it server-side; they
+// no longer accept a client-supplied user_id.
+async function authHeader(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 interface MatchedGame {
   igdb_id: number
   name: string
@@ -52,7 +61,8 @@ export function usePlatformImport(userId: string | undefined) {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.baseUrl}/api/import/playstation/status?user_id=${userId}`
+        `${API_CONFIG.baseUrl}/api/import/playstation/status`,
+        { headers: await authHeader() }
       )
       const data = await response.json()
       return data
@@ -68,7 +78,8 @@ export function usePlatformImport(userId: string | undefined) {
 
     try {
       const response = await fetch(
-        `${API_CONFIG.baseUrl}/api/import/steam/status?user_id=${userId}`
+        `${API_CONFIG.baseUrl}/api/import/steam/status`,
+        { headers: await authHeader() }
       )
       const data = await response.json()
       return data
@@ -103,7 +114,6 @@ export function usePlatformImport(userId: string | undefined) {
       } as any
 
       formData.append('file', file)
-      formData.append('user_id', userId)
 
       const response = await fetch(
         `${API_CONFIG.baseUrl}/api/import/playstation/csv`,
@@ -112,6 +122,7 @@ export function usePlatformImport(userId: string | undefined) {
           body: formData,
           headers: {
             'Accept': 'application/json',
+            ...(await authHeader()),
           },
         }
       )
@@ -156,9 +167,9 @@ export function usePlatformImport(userId: string | undefined) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(await authHeader()),
           },
           body: JSON.stringify({
-            user_id: userId,
             psn_username: cleanUsername,
           }),
         }
@@ -220,19 +231,22 @@ export function usePlatformImport(userId: string | undefined) {
     }
   }, [userId])
 
-  // Get Steam auth URL
+  // Get Steam auth URL. The server derives the user from the bearer token
+  // and HMAC-signs it into the OpenID state, so the callback can trust it.
   const getSteamAuthUrl = useCallback(async (redirectUri?: string): Promise<string | null> => {
     if (!userId) return null
 
     try {
-      const params = new URLSearchParams({ user_id: userId })
+      const params = new URLSearchParams()
       if (redirectUri) {
         params.append('redirect_uri', redirectUri)
       }
 
-      const response = await fetch(
-        `${API_CONFIG.baseUrl}/api/import/steam/auth?${params.toString()}`
-      )
+      const url = params.toString()
+        ? `${API_CONFIG.baseUrl}/api/import/steam/auth?${params.toString()}`
+        : `${API_CONFIG.baseUrl}/api/import/steam/auth`
+
+      const response = await fetch(url, { headers: await authHeader() })
       const data = await response.json()
       return data.auth_url || null
     } catch (err) {
@@ -257,8 +271,8 @@ export function usePlatformImport(userId: string | undefined) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(await authHeader()),
           },
-          body: JSON.stringify({ user_id: userId }),
         }
       )
 

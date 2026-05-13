@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { searchGames, Game } from '@/lib/igdb'
+import { requireSession } from '@/lib/auth/require-session'
 
-// Create a Supabase client with service role for bypassing RLS
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 // Maximum file size: 5MB
@@ -289,10 +289,14 @@ async function cacheGame(game: Game): Promise<void> {
 }
 
 // POST /api/import/playstation/csv
-// Import PlayStation games from CSV file
+// Import PlayStation games from a CSV uploaded by the authenticated user.
+// Auth: Authorization: Bearer <session.access_token>.
 export async function POST(request: NextRequest) {
+  const session = await requireSession(request)
+  if ('error' in session) return session.error
+  const userId = session.user.id
+
   try {
-    // Check content type
     const contentType = request.headers.get('content-type') || ''
     if (!contentType.includes('multipart/form-data')) {
       return NextResponse.json(
@@ -301,21 +305,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse form data
     const formData = await request.formData()
     const file = formData.get('file') as File | null
-    const userId = formData.get('user_id') as string | null
 
     if (!file) {
       return NextResponse.json(
         { error: 'Missing required field: file' },
-        { status: 400 }
-      )
-    }
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Missing required field: user_id' },
         { status: 400 }
       )
     }

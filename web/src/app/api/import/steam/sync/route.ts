@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { searchGames, Game } from '@/lib/igdb'
+import { requireSession } from '@/lib/auth/require-session'
 
-// Create a Supabase client with service role for bypassing RLS
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 // Steam Web API
@@ -125,20 +125,14 @@ async function cacheGame(game: Game): Promise<void> {
 }
 
 // POST /api/import/steam/sync
-// Syncs user's Steam library to platform_games table
+// Syncs the authenticated user's Steam library to platform_games.
+// Auth: Authorization: Bearer <session.access_token>.
 export async function POST(request: NextRequest) {
+  const session = await requireSession(request)
+  if ('error' in session) return session.error
+  const user_id = session.user.id
+
   try {
-    // Get user_id from request body
-    const body = await request.json()
-    const { user_id } = body
-
-    if (!user_id) {
-      return NextResponse.json(
-        { error: 'Missing required field: user_id' },
-        { status: 400 }
-      )
-    }
-
     // Get user's Steam connection
     const { data: connection, error: connectionError } = await supabaseAdmin
       .from('platform_connections')
