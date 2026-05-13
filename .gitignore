@@ -21,21 +21,15 @@ node_modules/
 .claude/
 CLAUDE.md
 
-# Design skill configs
-.impeccable.md
-
-# Internal planning / dev notes (kept local)
-SHIP-READY.md
-UI-ENHANCEMENT.md
+# Local-only planning, drafts, design notes, reference material.
+# All private docs (SHIP-READY, UI-ENHANCEMENT, .impeccable, security plans,
+# launch-video, ship-ready-screenshots, etc.) live inside planning/.
+planning/
 UI_CHANGES.md
 
 # OS
 .DS_Store
 Thumbs.db
-
-# Local-only assets / reference material
-launch-video/
-ship-ready-screenshots/
 
 # Logs and script output dumps
 *.log
