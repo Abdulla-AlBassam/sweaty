@@ -5,13 +5,24 @@ import { createClient } from '@/lib/supabase/server'
 // Searches profiles by username and display_name (case-insensitive, partial match)
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const query = searchParams.get('q')
+  const rawQuery = searchParams.get('q')
 
-  if (!query || query.trim().length === 0) {
+  if (!rawQuery || rawQuery.trim().length === 0) {
     return NextResponse.json(
       { error: 'Missing required parameter: q' },
       { status: 400 }
     )
+  }
+
+  // Sanitise: PostgREST's `.or()` filter parser treats commas, parens, and
+  // dots as control characters. Interpolating raw user input lets an
+  // attacker reshape the OR clause and probe filters against any column.
+  // Restrict to alphanumerics, underscore, hyphen and space, capped at 32
+  // characters — covers every real username/display-name search.
+  const safeQuery = rawQuery.trim().slice(0, 32).replace(/[^A-Za-z0-9_ -]/g, '')
+
+  if (!safeQuery) {
+    return NextResponse.json({ users: [] })
   }
 
   try {
@@ -24,7 +35,7 @@ export async function GET(request: NextRequest) {
     let queryBuilder = supabase
       .from('profiles')
       .select('id, username, display_name, avatar_url')
-      .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
+      .or(`username.ilike.%${safeQuery}%,display_name.ilike.%${safeQuery}%`)
       .limit(10)
 
     // Exclude current user if logged in
