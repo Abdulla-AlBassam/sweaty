@@ -24,6 +24,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import LogGameModal from './LogGameModal'
+import { GlassSurface, GlassTokens } from '../ui/glass'
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.85
@@ -394,6 +395,12 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
         ]}
         accessibilityViewIsModal={true}
       >
+        <GlassSurface
+          intensity="heavy"
+          role="sheet"
+          radius={GlassTokens.radius.sheet}
+          style={styles.glassSheet}
+        >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}
@@ -560,6 +567,7 @@ export default function QuickLogModal({ visible, onClose }: QuickLogModalProps) 
             )}
           </View>
         </KeyboardAvoidingView>
+        </GlassSurface>
       </Animated.View>
 
       {/* Log Game Modal */}
@@ -589,9 +597,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: MODAL_HEIGHT,
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+  },
+  glassSheet: {
+    flex: 1,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   keyboardView: {
     flex: 1,

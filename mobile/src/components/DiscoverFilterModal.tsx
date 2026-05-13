@@ -13,6 +13,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { DISCOVER_FILTERS, DiscoverFacet } from '../constants/discoverFilters'
 import type { DiscoverFilterState } from '../hooks/useDiscoverFilters'
+import { GlassSurface, GlassTokens } from '../ui/glass'
 
 interface DiscoverFilterModalProps {
   visible: boolean
@@ -72,6 +73,12 @@ export default function DiscoverFilterModal({
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.container} onPress={(e) => e.stopPropagation()}>
+        <GlassSurface
+          intensity="heavy"
+          role="sheet"
+          radius={GlassTokens.radius.sheet}
+          style={styles.glassSheet}
+        >
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft} />
@@ -159,6 +166,7 @@ export default function DiscoverFilterModal({
               <Text style={styles.applyButtonText}>Apply</Text>
             </TouchableOpacity>
           </View>
+        </GlassSurface>
         </Pressable>
       </Pressable>
     </Modal>
@@ -172,10 +180,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
     maxHeight: '80%',
+  },
+  glassSheet: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   header: {
     flexDirection: 'row',

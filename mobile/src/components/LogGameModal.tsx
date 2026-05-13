@@ -24,6 +24,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { MainStackParamList } from '../navigation'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
+import { GlassSurface, GlassTokens } from '../ui/glass'
 import { getIGDBImageUrl, PLATFORMS } from '../constants'
 import { useAuth } from '../contexts/AuthContext'
 import { useCelebration } from '../contexts/CelebrationContext'
@@ -565,6 +566,12 @@ export default function LogGameModal({
     >
       <Pressable style={styles.pickerOverlay} onPress={onClose}>
         <Pressable style={styles.pickerContainer} onPress={(e) => e.stopPropagation()}>
+        <GlassSurface
+          intensity="heavy"
+          role="sheet"
+          radius={GlassTokens.radius.sheet}
+          style={styles.glassSheet}
+        >
           <View style={styles.pickerHeader}>
             <Text style={styles.pickerTitle}>{title}</Text>
             <TouchableOpacity onPress={onClose} style={styles.pickerCloseButton} accessibilityLabel="Close" accessibilityRole="button">
@@ -610,6 +617,7 @@ export default function LogGameModal({
               </TouchableOpacity>
             )}
           />
+        </GlassSurface>
         </Pressable>
       </Pressable>
     </Modal>
@@ -635,6 +643,12 @@ export default function LogGameModal({
           <Animated.View
             style={[styles.modalContainer, { transform: [{ translateY }] }]}
             {...panResponder.panHandlers}
+          >
+          <GlassSurface
+            intensity="heavy"
+            role="sheet"
+            radius={GlassTokens.radius.sheet}
+            style={styles.glassSheet}
           >
             {/* Drag handle */}
             <View style={styles.dragHandleWrap}>
@@ -831,6 +845,7 @@ export default function LogGameModal({
               )}
             </PressableScale>
           </View>
+          </GlassSurface>
           </Animated.View>
         </Pressable>
       </KeyboardAvoidingView>
@@ -867,6 +882,12 @@ export default function LogGameModal({
       >
         <Pressable style={styles.pickerOverlay} onPress={() => setListsPickerVisible(false)}>
           <Pressable style={styles.pickerContainer} onPress={(e) => e.stopPropagation()}>
+          <GlassSurface
+            intensity="heavy"
+            role="sheet"
+            radius={GlassTokens.radius.sheet}
+            style={styles.glassSheet}
+          >
             <View style={styles.pickerHeader}>
               <Text style={styles.pickerTitle}>Add to Lists</Text>
               <TouchableOpacity onPress={() => setListsPickerVisible(false)} style={styles.pickerCloseButton} accessibilityLabel="Close" accessibilityRole="button">
@@ -936,6 +957,7 @@ export default function LogGameModal({
                 )
               }}
             />
+          </GlassSurface>
           </Pressable>
         </Pressable>
       </Modal>
@@ -973,10 +995,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.overlay,
   },
   modalContainer: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
     maxHeight: '85%',
+  },
+  glassSheet: {
+    flex: 1,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   dragHandleWrap: {
     alignItems: 'center',
@@ -1099,9 +1123,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   pickerContainer: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
     maxHeight: '50%',
   },
   pickerHeader: {

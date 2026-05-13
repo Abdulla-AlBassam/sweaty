@@ -12,12 +12,16 @@ import { Colors } from '../constants/colors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuickLog } from '../contexts/QuickLogContext'
 import GlitchAddButton from './GlitchAddButton'
+import { GlassSurface, GlassTokens } from '../ui/glass'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
+const SIDE_MARGIN = 16
+const PILL_WIDTH = SCREEN_WIDTH - SIDE_MARGIN * 2
 const TAB_COUNT = 5
-const TAB_WIDTH = SCREEN_WIDTH / TAB_COUNT
+const TAB_WIDTH = PILL_WIDTH / TAB_COUNT
+const PILL_HEIGHT = 64
+const PILL_TOP_GAP = 10
 
-// Icon configuration for each tab
 type IconConfig = {
   library: 'Feather' | 'FontAwesome5' | 'Ionicons'
   name: string
@@ -31,7 +35,6 @@ const iconMap: Record<string, IconConfig> = {
   Profile: { library: 'Ionicons', name: 'person' },
 }
 
-// Render icon based on library
 const renderIcon = (config: IconConfig, size: number, color: string) => {
   switch (config.library) {
     case 'Feather':
@@ -49,14 +52,9 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
   const { openQuickLog } = useQuickLog()
   const translateX = useRef(new Animated.Value(0)).current
 
-  // Calculate initial position on mount and when state changes
   useEffect(() => {
-    // Find the actual visual index (excluding Add tab from bubble animation)
-    const currentIndex = state.index
-
-    // Animate to new position
     Animated.spring(translateX, {
-      toValue: currentIndex * TAB_WIDTH,
+      toValue: state.index * TAB_WIDTH,
       useNativeDriver: true,
       tension: 68,
       friction: 10,
@@ -64,18 +62,15 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
   }, [state.index])
 
   const handleTabPress = (route: { name: string; key: string }, index: number) => {
-    // Handle Add button specially - open QuickLog modal
     if (route.name === 'Add') {
       openQuickLog()
       return
     }
-
     const event = navigation.emit({
       type: 'tabPress',
       target: route.key,
       canPreventDefault: true,
     })
-
     if (!event.defaultPrevented) {
       navigation.navigate(route.name)
     }
@@ -88,71 +83,100 @@ export default function AnimatedTabBar({ state, descriptors, navigation }: Botto
     })
   }
 
+  const bottomInset = insets.bottom > 0 ? insets.bottom : 12
+  const reservedHeight = PILL_HEIGHT + bottomInset + PILL_TOP_GAP
+
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom > 0 ? insets.bottom - 10 : 4 }]}>
-      {/* Animated bubble indicator - hidden for Add tab */}
-      {state.index !== 2 && (
-        <Animated.View
-          style={[
-            styles.bubble,
-            {
-              transform: [{ translateX }],
-              width: TAB_WIDTH,
-            },
-          ]}
+    <View style={[styles.outer, { height: reservedHeight }]}>
+      <View
+        style={[
+          styles.floater,
+          {
+            bottom: bottomInset,
+            paddingHorizontal: SIDE_MARGIN,
+          },
+        ]}
+        pointerEvents="box-none"
+      >
+        <GlassSurface
+          intensity="heavy"
+          role="chrome"
+          radius={PILL_HEIGHT / 2}
+          style={styles.pill}
         >
-          <View style={styles.bubbleInner} />
-        </Animated.View>
-      )}
-
-      {/* Tab buttons */}
-      <View style={styles.tabsContainer}>
-        {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key]
-          const isFocused = state.index === index
-          const isAddTab = route.name === 'Add'
-
-          const iconConfig = iconMap[route.name]
-
-          return (
-            <TouchableOpacity
-              key={route.key}
-              accessibilityRole="button"
-              accessibilityState={isFocused ? { selected: true } : {}}
-              accessibilityLabel={options.tabBarAccessibilityLabel}
-              accessibilityHint={route.name === 'Add' ? 'Opens quick game log' : 'Navigates to ' + route.name + ' tab'}
-              onPress={() => handleTabPress(route, index)}
-              onLongPress={() => handleTabLongPress(route)}
-              style={styles.tab}
-              activeOpacity={0.7}
+          {state.index !== 2 && (
+            <Animated.View
+              style={[
+                styles.bubble,
+                {
+                  transform: [{ translateX }],
+                  width: TAB_WIDTH,
+                },
+              ]}
             >
-              {isAddTab ? (
-                // Special Add button with RGB glitch effect
-                <GlitchAddButton onPress={() => handleTabPress(route, index)} />
-              ) : (
-                // Regular tab icon
-                <Animated.View style={styles.iconContainer}>
-                  {iconConfig && renderIcon(iconConfig, 22, isFocused ? Colors.cream : Colors.textDim)}
-                </Animated.View>
-              )}
-            </TouchableOpacity>
-          )
-        })}
+              <View style={styles.bubbleInner} />
+            </Animated.View>
+          )}
+
+          <View style={styles.tabsContainer}>
+            {state.routes.map((route, index) => {
+              const { options } = descriptors[route.key]
+              const isFocused = state.index === index
+              const isAddTab = route.name === 'Add'
+              const iconConfig = iconMap[route.name]
+
+              return (
+                <TouchableOpacity
+                  key={route.key}
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  accessibilityLabel={options.tabBarAccessibilityLabel}
+                  accessibilityHint={
+                    route.name === 'Add'
+                      ? 'Opens quick game log'
+                      : 'Navigates to ' + route.name + ' tab'
+                  }
+                  onPress={() => handleTabPress(route, index)}
+                  onLongPress={() => handleTabLongPress(route)}
+                  style={styles.tab}
+                  activeOpacity={0.7}
+                >
+                  {isAddTab ? (
+                    <GlitchAddButton onPress={() => handleTabPress(route, index)} />
+                  ) : (
+                    <View style={styles.iconContainer}>
+                      {iconConfig &&
+                        renderIcon(iconConfig, 22, isFocused ? Colors.cream : Colors.textDim)}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </GlassSurface>
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outer: {
     backgroundColor: Colors.background,
-    borderTopColor: Colors.border,
-    borderTopWidth: 1,
-    position: 'relative',
+  },
+  floater: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  pill: {
+    width: PILL_WIDTH,
+    height: PILL_HEIGHT,
+    justifyContent: 'center',
   },
   bubble: {
     position: 'absolute',
-    top: 8,
+    top: (PILL_HEIGHT - 44) / 2,
     height: 44,
     alignItems: 'center',
     justifyContent: 'center',
@@ -161,11 +185,11 @@ const styles = StyleSheet.create({
     width: 52,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(192, 200, 208, 0.08)',
+    backgroundColor: GlassTokens.stroke.active,
   },
   tabsContainer: {
     flexDirection: 'row',
-    height: 60,
+    height: PILL_HEIGHT,
   },
   tab: {
     flex: 1,

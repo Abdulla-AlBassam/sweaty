@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
+import { GlassSurface, GlassTokens } from '../ui/glass'
 
 export type LibraryFilterType = 'all' | 'played' | 'backlog' | 'reviewed' | 'unrated'
 export type LibrarySortType =
@@ -207,6 +208,12 @@ export default function LibraryFilterModal({
     >
       <Pressable style={styles.overlay} onPress={onClose}>
         <Pressable style={styles.container} onPress={(e) => e.stopPropagation()}>
+        <GlassSurface
+          intensity="heavy"
+          role="sheet"
+          radius={GlassTokens.radius.sheet}
+          style={styles.glassSheet}
+        >
           {/* Header */}
           <View style={styles.header}>
             {page !== 'main' ? (
@@ -421,6 +428,7 @@ export default function LibraryFilterModal({
               <Text style={styles.applyButtonText}>Apply</Text>
             </TouchableOpacity>
           </View>
+        </GlassSurface>
         </Pressable>
       </Pressable>
     </Modal>
@@ -434,10 +442,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
     maxHeight: '80%',
+  },
+  glassSheet: {
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
   },
   header: {
     flexDirection: 'row',
