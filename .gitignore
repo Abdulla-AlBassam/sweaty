@@ -60,3 +60,7 @@ mobile/android/
 
 # Vercel
 .vercel
+
+# Supabase CLI cache (we use database/migrations/ for SQL files,
+# not the supabase/ migrations workflow)
+supabase/

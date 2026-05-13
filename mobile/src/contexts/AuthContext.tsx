@@ -78,7 +78,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // tokens remain.
     const handleDeepLink = async (event: { url: string }) => {
       const url = event.url
-      console.log('Deep link received:', url)
+      // Strip the fragment before logging — it carries the access token
+      // and would leak into Xcode/adb logs and any crash reporter.
+      if (__DEV__) {
+        const safeUrl = url.split('#')[0]
+        console.log('Deep link received:', safeUrl)
+      }
 
       if (url.includes('auth/callback') || url.includes('access_token')) {
         const hashIndex = url.indexOf('#')
@@ -88,7 +93,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const refreshToken = params.get('refresh_token')
 
           if (accessToken) {
-            console.log('Setting session from deep link')
             await supabase.auth.setSession({
               access_token: accessToken,
               refresh_token: refreshToken || '',

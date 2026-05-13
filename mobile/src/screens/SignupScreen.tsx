@@ -65,8 +65,8 @@ export default function SignupScreen({ navigation }: SignupScreenProps) {
       return
     }
 
-    if (password.length < 6) {
-      setError('password must be at least 6 characters')
+    if (password.length < 8) {
+      setError('password must be at least 8 characters')
       return
     }
 

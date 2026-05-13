@@ -1,7 +1,14 @@
 // Script to fetch hero/banner images from SteamGridDB
 // Run with: node scripts/fetch-steamgrid-banners.js
+// Requires STEAMGRIDDB_API_KEY in scripts/.env (loaded via _env.js).
 
-const API_KEY = '215b9c0447f3847d9ed51073b3a0598c'
+require('./_env.js')
+
+const API_KEY = process.env.STEAMGRIDDB_API_KEY
+if (!API_KEY) {
+  console.error('Missing STEAMGRIDDB_API_KEY in scripts/.env')
+  process.exit(1)
+}
 
 // Games to fetch banners for
 const GAMES = [
