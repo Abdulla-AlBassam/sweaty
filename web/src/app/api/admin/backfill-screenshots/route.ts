@@ -1,15 +1,20 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getGamesByIds } from '@/lib/igdb'
+import { requireAdmin } from '@/lib/auth/admin-guard'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 // POST /api/admin/backfill-screenshots
-// Fetches screenshots from IGDB for games that don't have them yet
-export async function POST() {
+// Fetches screenshots from IGDB for games that don't have them yet.
+// Admin-only — burns IGDB quota.
+export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   try {
     // Get games missing screenshot_urls
     const { data: games, error } = await supabaseAdmin
@@ -68,6 +73,3 @@ export async function POST() {
   }
 }
 
-export async function GET() {
-  return POST()
-}

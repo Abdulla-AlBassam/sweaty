@@ -1,16 +1,21 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { getGamesByIds, Game } from '@/lib/igdb'
+import { requireAdmin } from '@/lib/auth/admin-guard'
 
 // Create a Supabase client with service role for admin operations
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 // POST /api/admin/cache-curated-games
-// Fetches all games from curated lists and caches them to games_cache
-export async function POST() {
+// Fetches all games from curated lists and caches them to games_cache.
+// Admin-only — call with `Authorization: Bearer ${ADMIN_API_KEY}`.
+export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   try {
     console.log('Starting curated games cache...')
 
@@ -126,7 +131,3 @@ export async function POST() {
   }
 }
 
-// Also support GET for easy browser testing
-export async function GET() {
-  return POST()
-}

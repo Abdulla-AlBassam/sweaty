@@ -28,9 +28,14 @@ ALTER TABLE ai_recommendations_cache ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can read own recommendations" ON ai_recommendations_cache
   FOR SELECT USING (auth.uid() = user_id);
 
--- Service role can insert/update (API uses service role)
+-- Service role can insert/update (API uses service role).
+-- Scoped to the service_role grantee so authenticated users CANNOT match this
+-- policy and trash other users' rows. Without `TO service_role`, the
+-- permissive `USING (true)` would apply to every role including
+-- `authenticated`, allowing any logged-in user to DELETE or INSERT arbitrary
+-- rows for any user_id via the anon key.
 CREATE POLICY "Service role can manage recommendations" ON ai_recommendations_cache
-  FOR ALL USING (true) WITH CHECK (true);
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
 
 -- ================================================
 -- Rate Limiting: Add columns to profiles table

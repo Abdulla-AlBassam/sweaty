@@ -23,6 +23,7 @@ import { Colors, Spacing, BorderRadius, FontSize } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { API_CONFIG } from '../constants'
 import { AuthStackParamList } from '../navigation'
+import { supabase } from '../lib/supabase'
 
 // Hero background image - Metal Gear Solid 3 artwork
 const heroBackground = require('../../assets/images/login-hero.png')
@@ -58,34 +59,44 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     setError(null)
 
     try {
-      let loginEmail = input
-
-      // If input doesn't contain @, treat it as a username and look up the email
-      if (!input.includes('@')) {
+      // If input contains @ treat it as an email and use the standard flow.
+      // Otherwise hand username + password to the server, which performs the
+      // username -> email -> sign-in lookup atomically and never exposes the
+      // email back to the client (preventing username -> email enumeration).
+      if (input.includes('@')) {
+        const { error: signInError } = await signIn(input, password)
+        if (signInError) {
+          setError('invalid email/username or password')
+        }
+      } else {
         const response = await fetch(`${API_CONFIG.baseUrl}/api/auth/lookup-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: input }),
+          body: JSON.stringify({ username: input, password }),
         })
 
         if (!response.ok) {
-          const data = await response.json()
-          if (response.status === 404) {
-            setError('username not found')
-            setIsLoading(false)
-            return
-          }
-          throw new Error(data.error || 'Failed to look up username')
+          // Generic failure — server intentionally collapses "no such user"
+          // and "wrong password" into one response.
+          setError('invalid email/username or password')
+          setIsLoading(false)
+          return
         }
 
-        const data = await response.json()
-        loginEmail = data.email
-      }
+        const { session } = await response.json()
+        if (!session?.access_token || !session?.refresh_token) {
+          setError('invalid email/username or password')
+          setIsLoading(false)
+          return
+        }
 
-      const { error: signInError } = await signIn(loginEmail, password)
-
-      if (signInError) {
-        setError('invalid email/username or password')
+        const { error: setSessionError } = await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        })
+        if (setSessionError) {
+          setError('invalid email/username or password')
+        }
       }
     } catch (err) {
       setError('an error occurred. please try again.')
