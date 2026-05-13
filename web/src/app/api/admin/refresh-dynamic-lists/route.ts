@@ -1,11 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { searchGames, getGamesByIds, Game } from '@/lib/igdb'
 import { discoverGamesByDate, RawgGameSummary } from '@/lib/rawg'
+import { requireAdmin } from '@/lib/auth/admin-guard'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export const maxDuration = 300
@@ -337,7 +338,13 @@ async function discoverAndMatch(opts: {
   }
 }
 
-export async function POST() {
+// Admin-only. Triggered nightly by Vercel Cron, which sends
+// `Authorization: Bearer ${CRON_SECRET}` automatically. Manual invocations
+// must send `Authorization: Bearer ${ADMIN_API_KEY}`.
+export async function POST(request: NextRequest) {
+  const denied = requireAdmin(request)
+  if (denied) return denied
+
   try {
     console.log(TAG, 'Starting daily refresh...')
 
@@ -404,6 +411,7 @@ export async function POST() {
   }
 }
 
-export async function GET() {
-  return POST()
+// Vercel Cron invokes the cron path with GET by default.
+export async function GET(request: NextRequest) {
+  return POST(request)
 }
