@@ -10,17 +10,24 @@ node_modules/
 *-credentials.json
 *_credentials.json
 
-# IDE
+# IDE / editor
 .idea/
 .vscode/
 *.swp
 *.swo
+*.code-workspace
 
 # Claude Code / AI tooling
 .claude/
+CLAUDE.md
 
 # Design skill configs
 .impeccable.md
+
+# Internal planning / dev notes (kept local)
+SHIP-READY.md
+UI-ENHANCEMENT.md
+UI_CHANGES.md
 
 # OS
 .DS_Store
@@ -30,10 +37,15 @@ Thumbs.db
 launch-video/
 ship-ready-screenshots/
 
-# Logs
+# Logs and script output dumps
 *.log
 npm-debug.log*
 *_output.txt
+
+# Local test fixtures
+*.test.csv
+*.numbers
+scripts/test-*.sql
 
 # Build outputs (web)
 web/.next/
@@ -45,5 +57,6 @@ mobile/.expo/
 mobile/dist/
 mobile/ios/
 mobile/android/
+
+# Vercel
 .vercel
-.env*.local

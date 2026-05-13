@@ -10,8 +10,8 @@ This is a monorepo containing:
 sweaty/
 ├── web/          # Next.js web application
 ├── mobile/       # React Native/Expo mobile app
-├── CLAUDE.md     # Project documentation
-└── vercel.json   # Vercel deployment config
+├── database/     # Supabase SQL migrations and seed data
+└── scripts/      # Local utility scripts
 ```
 
 ## Tech Stack
