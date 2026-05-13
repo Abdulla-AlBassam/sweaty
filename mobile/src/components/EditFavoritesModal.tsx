@@ -20,6 +20,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../constants/colors'
 import { Fonts } from '../constants/fonts'
 import { getIGDBImageUrl, API_CONFIG } from '../constants'
 import { supabase } from '../lib/supabase'
+import { GlassSurface, GlassTokens } from '../ui/glass'
 
 interface Game {
   id: number
@@ -222,6 +223,12 @@ export default function EditFavoritesModal({
       >
         <Pressable style={styles.overlay} onPress={onClose}>
           <Pressable style={styles.modalContainer} onPress={(e) => e.stopPropagation()}>
+          <GlassSurface
+            intensity="heavy"
+            role="sheet"
+            radius={GlassTokens.radius.sheet}
+            style={styles.glassSheet}
+          >
           {/* Header */}
           <View style={styles.header}>
             {isSearchMode ? (
@@ -367,6 +374,7 @@ export default function EditFavoritesModal({
               </View>
             </>
           )}
+          </GlassSurface>
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>
@@ -383,10 +391,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.overlay,
     justifyContent: 'flex-end',
   },
+  glassSheet: {
+    flex: 1,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
   modalContainer: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: BorderRadius.xl,
-    borderTopRightRadius: BorderRadius.xl,
     maxHeight: '90%',
     minHeight: '50%',
     flex: 1,

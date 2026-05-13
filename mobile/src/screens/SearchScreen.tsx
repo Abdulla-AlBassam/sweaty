@@ -37,6 +37,7 @@ import { GameCardSkeletonGrid } from '../components/skeletons'
 import { useHeroBanners, HeroBanner } from '../hooks/useHeroBanners'
 import DiscoverFilterModal from '../components/DiscoverFilterModal'
 import { useDiscoverFilters } from '../hooks/useDiscoverFilters'
+import { GlassSurface } from '../ui/glass'
 
 // Calculate card width to match CuratedListDetailScreen grid
 const SCREEN_WIDTH = Dimensions.get('window').width
@@ -653,7 +654,12 @@ export default function SearchScreen() {
 
         {/* Search bar — inline in scroll flow, below banner */}
         <View style={styles.inlineSearchBar}>
-          <View style={styles.searchBar}>
+          <GlassSurface
+            intensity="medium"
+            role="capsule"
+            radius={BorderRadius.lg}
+            style={styles.searchBar}
+          >
             <Ionicons name="search" size={18} color={Colors.textDim} style={styles.searchIcon} />
             <TextInput
               ref={inputRef}
@@ -673,7 +679,7 @@ export default function SearchScreen() {
                 <Ionicons name="close-circle" size={18} color={Colors.textDim} />
               </TouchableOpacity>
             )}
-          </View>
+          </GlassSurface>
           {query.length >= 2 && (
             <View style={styles.filterPills}>
               <TouchableOpacity
@@ -749,7 +755,12 @@ export default function SearchScreen() {
                 </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.browseToggle}>
+            <GlassSurface
+              intensity="medium"
+              role="capsule"
+              radius={BorderRadius.md}
+              style={styles.browseToggle}
+            >
               <TouchableOpacity
                 style={[styles.browseTab, browseMode === 'curated' && styles.browseTabActive]}
                 onPress={() => setBrowseMode('curated')}
@@ -772,7 +783,7 @@ export default function SearchScreen() {
                   Community
                 </Text>
               </TouchableOpacity>
-            </View>
+            </GlassSurface>
           </View>
         )}
 
@@ -1224,10 +1235,6 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
   },
@@ -1504,8 +1511,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginHorizontal: Spacing.screenPadding,
     marginBottom: Spacing.lg,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
     padding: 3,
   },
   browseTab: {

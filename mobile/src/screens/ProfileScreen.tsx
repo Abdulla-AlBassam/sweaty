@@ -37,6 +37,7 @@ import LibraryFilterModal, {
   LibraryFilterType,
   LibrarySortType,
 } from '../components/LibraryFilterModal'
+import { GlassSurface } from '../ui/glass'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
@@ -362,7 +363,14 @@ export default function ProfileScreen() {
             accessibilityRole="button"
             accessibilityHint="Opens profile settings"
           >
-            <View style={styles.iconBackdrop}><Ionicons name="settings-outline" size={20} color={Colors.text} /></View>
+            <GlassSurface
+              intensity="medium"
+              role="overContent"
+              radius={18}
+              style={styles.iconBackdrop}
+            >
+              <Ionicons name="settings-outline" size={20} color={Colors.text} />
+            </GlassSurface>
           </TouchableOpacity>
         </View>
       </Animated.View>
