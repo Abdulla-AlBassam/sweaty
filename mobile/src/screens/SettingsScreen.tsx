@@ -715,6 +715,21 @@ export default function SettingsScreen() {
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
               </PressableScale>
+
+              <PressableScale
+                style={[styles.devToolButton, { marginTop: Spacing.sm }]}
+                onPress={() => navigation.navigate('GlassPlayground')}
+                haptic="light"
+              >
+                <View style={styles.devToolContent}>
+                  <Ionicons name="cube-outline" size={24} color={'rgba(192, 200, 208, 0.6)'} />
+                  <View style={styles.devToolText}>
+                    <Text style={styles.devToolTitle}>Glass Playground</Text>
+                    <Text style={styles.devToolSubtitle}>Iterate on liquid glass primitives</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.textDim} />
+              </PressableScale>
             </View>
           )}
 

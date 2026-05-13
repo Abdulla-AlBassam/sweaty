@@ -22,6 +22,14 @@ export default {
     },
     plugins: [
       [
+        'expo-build-properties',
+        {
+          ios: {
+            deploymentTarget: '26.0',
+          },
+        },
+      ],
+      [
         'expo-notifications',
         {
           icon: './assets/notification-icon.png',

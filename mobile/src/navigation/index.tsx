@@ -27,6 +27,7 @@ import AllReviewsScreen from '../screens/AllReviewsScreen'
 import ReviewDetailScreen from '../screens/ReviewDetailScreen'
 import AdminHeroBannersScreen from '../screens/AdminHeroBannersScreen'
 import AdminCuratedListsScreen from '../screens/AdminCuratedListsScreen'
+import { GlassPlaygroundScreen } from '../screens/GlassPlaygroundScreen'
 import LibraryStatusScreen from '../screens/LibraryStatusScreen'
 import UserReviewsScreen from '../screens/UserReviewsScreen'
 import RankProgressScreen from '../screens/RankProgressScreen'
@@ -77,6 +78,7 @@ export type MainStackParamList = {
   AdminCuratedLists: undefined
   PersonalisationPreview: undefined
   PaywallPreview: undefined
+  GlassPlayground: undefined
 }
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -280,6 +282,13 @@ function MainNavigator() {
         options={{
           animation: 'slide_from_bottom',
           presentation: 'modal',
+        }}
+      />
+      <MainStack.Screen
+        name="GlassPlayground"
+        component={GlassPlaygroundScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
     </MainStack.Navigator>
