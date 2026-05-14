@@ -507,12 +507,19 @@ export default function ProfileScreen() {
             <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Favorites</Text>
             <TouchableOpacity
               onPress={() => setIsFavoritesModalVisible(true)}
-              style={styles.editButton}
               accessibilityLabel="Edit favorites"
               accessibilityRole="button"
               accessibilityHint="Opens favourite games editor"
+              activeOpacity={0.8}
             >
-              <Ionicons name="pencil" size={16} color={Colors.textDim} />
+              <GlassSurface
+                intensity="medium"
+                role="overContent"
+                radius={16}
+                style={styles.editButton}
+              >
+                <Ionicons name="pencil" size={14} color={Colors.text} />
+              </GlassSurface>
             </TouchableOpacity>
           </View>
           <View style={styles.favoritesRow}>
@@ -977,7 +984,10 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   editButton: {
-    padding: Spacing.sm,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   favoritesRow: {
     flexDirection: 'row',
