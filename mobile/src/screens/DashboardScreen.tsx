@@ -36,6 +36,7 @@ import Skeleton from '../components/Skeleton'
 import CommunityReviewCard, { COMMUNITY_CARD_WIDTH, COMMUNITY_CARD_HEIGHT } from '../components/CommunityReviewCard'
 import SpotlightPodium, { PodiumData } from '../components/SpotlightPodium'
 import type { SpotlightUser } from '../hooks/useCommunitySpotlight'
+import { GlassCapsule } from '../ui/glass'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
@@ -316,7 +317,7 @@ export default function DashboardScreen() {
           {/* FRIENDS ARE PLAYING */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, color: Colors.text }]}>Playing Now</Text>
+              <Text style={styles.sectionTitle}>Playing Now</Text>
             </View>
             {friendsLoading ? (
               <HorizontalSkeleton />
@@ -348,11 +349,18 @@ export default function DashboardScreen() {
             ) : (
               <View style={styles.emptyStateContainer}>
                 <Text style={styles.emptyStateText}>
-                  None of your friends are playing right now.{'\n'}
-                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')} accessibilityRole="link">
-                    Find people to follow
-                  </Text>
+                  None of your friends are playing right now.
                 </Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Search')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Find people to follow"
+                  style={styles.emptyStateCtaWrap}
+                >
+                  <GlassCapsule height={36} style={styles.emptyStateCta}>
+                    <Text style={styles.emptyStateCtaText}>Find people to follow</Text>
+                  </GlassCapsule>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -360,7 +368,7 @@ export default function DashboardScreen() {
           {/* FRIENDS' FAVORITES */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, color: Colors.text }]}>Their Favorites</Text>
+              <Text style={styles.sectionTitle}>Their Favorites</Text>
               {friendsFavorites.length > 10 && (
                 <PressableScale
                   onPress={() => navigation.navigate('CuratedListDetail', {
@@ -414,11 +422,18 @@ export default function DashboardScreen() {
             ) : (
               <View style={styles.emptyStateContainer}>
                 <Text style={styles.emptyStateText}>
-                  Follow people to see their favorite games here.{'\n'}
-                  <Text style={styles.emptyStateLink} onPress={() => navigation.navigate('Search')} accessibilityRole="link">
-                    Find people to follow
-                  </Text>
+                  Follow people to see their favorite games here.
                 </Text>
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('Search')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Find people to follow"
+                  style={styles.emptyStateCtaWrap}
+                >
+                  <GlassCapsule height={36} style={styles.emptyStateCta}>
+                    <Text style={styles.emptyStateCtaText}>Find people to follow</Text>
+                  </GlassCapsule>
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -441,7 +456,7 @@ export default function DashboardScreen() {
               accessibilityLabel="See all recent reviews"
             >
               <Text style={styles.sectionTitle}>Recent Reviews</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.cream} />
+              <Ionicons name="chevron-forward" size={20} color={Colors.cream} />
             </TouchableOpacity>
             {communityLoading ? (
               <CommunitySkeleton />
@@ -568,10 +583,14 @@ const styles = StyleSheet.create({
     color: Colors.cyanSoft,
   },
   pulsingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#2D6B4A',
+    shadowColor: '#2D6B4A',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 4,
   },
   // Horizontal scroll
   horizontalScroll: {
@@ -631,10 +650,19 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: Spacing.md,
   },
-  emptyStateLink: {
-    color: Colors.accent,
+  emptyStateCtaWrap: {
+    alignItems: 'center',
+  },
+  emptyStateCta: {
+    paddingHorizontal: 18,
+  },
+  emptyStateCtaText: {
     fontFamily: Fonts.bodyMedium,
+    fontSize: FontSize.sm,
+    color: Colors.text,
+    letterSpacing: 0.3,
   },
   // Loading
   listsLoading: {
