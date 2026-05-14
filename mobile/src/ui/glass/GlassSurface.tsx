@@ -1,5 +1,5 @@
-import { BlurView } from 'expo-blur'
 import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native'
+import { GlassSurfaceNativeView } from '../../../modules/glass-surface-native/src'
 import { GlassTokens, GlassIntensity, GlassRole } from './tokens'
 
 type Props = {
@@ -12,7 +12,6 @@ type Props = {
 }
 
 export function GlassSurface({
-  intensity = 'medium',
   role = 'chrome',
   radius = GlassTokens.radius.card,
   bordered = true,
@@ -21,18 +20,10 @@ export function GlassSurface({
 }: Props) {
   return (
     <View style={[styles.wrapper, { borderRadius: radius }, style]}>
-      <BlurView
-        intensity={GlassTokens.blur[intensity]}
-        tint="dark"
-        experimentalBlurMethod="dimezisBlurView"
+      <GlassSurfaceNativeView
         style={StyleSheet.absoluteFill}
-      />
-      <View
-        pointerEvents="none"
-        style={[
-          StyleSheet.absoluteFill,
-          { backgroundColor: GlassTokens.tint[role], borderRadius: radius },
-        ]}
+        cornerRadius={radius}
+        tintColor={GlassTokens.tint[role]}
       />
       {bordered && (
         <View
