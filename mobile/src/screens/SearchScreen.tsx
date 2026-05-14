@@ -37,7 +37,7 @@ import { GameCardSkeletonGrid } from '../components/skeletons'
 import { useHeroBanners, HeroBanner } from '../hooks/useHeroBanners'
 import DiscoverFilterModal from '../components/DiscoverFilterModal'
 import { useDiscoverFilters } from '../hooks/useDiscoverFilters'
-import { GlassSurface } from '../ui/glass'
+import { GlassSurface, GlassCapsule } from '../ui/glass'
 
 // Calculate card width to match CuratedListDetailScreen grid
 const SCREEN_WIDTH = Dimensions.get('window').width
@@ -682,42 +682,30 @@ export default function SearchScreen() {
           </GlassSurface>
           {query.length >= 2 && (
             <View style={styles.filterPills}>
-              <TouchableOpacity
-                style={[styles.filterPill, searchFilter === 'games' && styles.filterPillActive]}
-                onPress={() => setSearchFilter('games')}
-                accessibilityLabel="Games"
-                accessibilityRole="button"
-                accessibilityState={{ selected: searchFilter === 'games' }}
-                accessibilityHint="Filters results to show games"
-              >
-                <Text style={[styles.filterPillText, searchFilter === 'games' && styles.filterPillTextActive]}>
-                  Games
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterPill, searchFilter === 'users' && styles.filterPillActive]}
-                onPress={() => setSearchFilter('users')}
-                accessibilityLabel="Users"
-                accessibilityRole="button"
-                accessibilityState={{ selected: searchFilter === 'users' }}
-                accessibilityHint="Filters results to show users"
-              >
-                <Text style={[styles.filterPillText, searchFilter === 'users' && styles.filterPillTextActive]}>
-                  Users
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.filterPill, searchFilter === 'lists' && styles.filterPillActive]}
-                onPress={() => setSearchFilter('lists')}
-                accessibilityLabel="Lists"
-                accessibilityRole="button"
-                accessibilityState={{ selected: searchFilter === 'lists' }}
-                accessibilityHint="Filters results to show lists"
-              >
-                <Text style={[styles.filterPillText, searchFilter === 'lists' && styles.filterPillTextActive]}>
-                  Lists
-                </Text>
-              </TouchableOpacity>
+              {(['games', 'users', 'lists'] as const).map((kind) => {
+                const isActive = searchFilter === kind
+                const label = kind.charAt(0).toUpperCase() + kind.slice(1)
+                return (
+                  <TouchableOpacity
+                    key={kind}
+                    onPress={() => setSearchFilter(kind)}
+                    accessibilityLabel={label}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isActive }}
+                    accessibilityHint={`Filters results to show ${kind}`}
+                    activeOpacity={0.8}
+                  >
+                    <GlassCapsule
+                      height={36}
+                      style={[styles.filterPill, isActive && styles.filterPillActive]}
+                    >
+                      <Text style={[styles.filterPillText, isActive && styles.filterPillTextActive]}>
+                        {label}
+                      </Text>
+                    </GlassCapsule>
+                  </TouchableOpacity>
+                )
+              })}
             </View>
           )}
         </View>
@@ -732,26 +720,33 @@ export default function SearchScreen() {
               <View style={styles.discoverHeaderRow}>
                 <Text style={styles.discoverHeaderText}>DISCOVER</Text>
                 <TouchableOpacity
-                  style={styles.discoverFilterButton}
                   onPress={() => setFilterModalVisible(true)}
                   disabled={curatedLists.length === 0}
                   accessibilityLabel="Filter discover"
                   accessibilityRole="button"
                   accessibilityState={{ disabled: curatedLists.length === 0 }}
                   accessibilityHint="Opens filter sheet for platform, genre, and release era"
+                  activeOpacity={0.8}
                 >
-                  <Ionicons
-                    name="funnel-outline"
-                    size={20}
-                    color={curatedLists.length === 0 ? Colors.textDim : Colors.text}
-                  />
-                  {discoverHasAny && (
-                    <View style={styles.discoverFilterBadge}>
-                      <Text style={styles.discoverFilterBadgeText}>
-                        {discoverSelectionCount > 9 ? '9+' : String(discoverSelectionCount)}
-                      </Text>
-                    </View>
-                  )}
+                  <GlassSurface
+                    intensity="medium"
+                    role="overContent"
+                    radius={22}
+                    style={styles.discoverFilterButton}
+                  >
+                    <Ionicons
+                      name="funnel-outline"
+                      size={20}
+                      color={curatedLists.length === 0 ? Colors.textDim : Colors.text}
+                    />
+                    {discoverHasAny && (
+                      <View style={styles.discoverFilterBadge}>
+                        <Text style={styles.discoverFilterBadgeText}>
+                          {discoverSelectionCount > 9 ? '9+' : String(discoverSelectionCount)}
+                        </Text>
+                      </View>
+                    )}
+                  </GlassSurface>
                 </TouchableOpacity>
               </View>
             </View>
@@ -1602,14 +1597,9 @@ const styles = StyleSheet.create({
   },
   filterPill: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   filterPillActive: {
-    backgroundColor: 'rgba(192, 200, 208, 0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: Colors.cream,
   },
   filterPillText: {
