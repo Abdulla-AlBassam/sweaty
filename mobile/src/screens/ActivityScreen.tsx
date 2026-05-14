@@ -22,6 +22,7 @@ import { MainStackParamList } from '../navigation'
 import ActivityItemComponent from '../components/ActivityItem'
 import { ActivitySkeletonList } from '../components/skeletons'
 import { ActivityItem as ActivityItemType } from '../types'
+import { GlassCapsule } from '../ui/glass'
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>
 type TabType = 'friends' | 'you'
@@ -139,56 +140,53 @@ export default function ActivityScreen() {
       </View>
 
       <View style={styles.navRow}>
-        {/* Friends/You Pills */}
-        <TouchableOpacity
-          style={[styles.pill, activeTab === 'friends' && styles.pillActive]}
-          onPress={() => setActiveTab('friends')}
-          accessibilityLabel="Friends"
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'friends' }}
-        >
-          <Text style={[styles.pillText, activeTab === 'friends' && styles.pillTextActive]}>
-            Friends
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.pill, activeTab === 'you' && styles.pillActive]}
-          onPress={() => setActiveTab('you')}
-          accessibilityLabel="You"
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'you' }}
-        >
-          <Text style={[styles.pillText, activeTab === 'you' && styles.pillTextActive]}>
-            You
-          </Text>
-        </TouchableOpacity>
+        {(['friends', 'you'] as const).map((tab) => {
+          const isActive = activeTab === tab
+          return (
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              accessibilityLabel={tab === 'friends' ? 'Friends' : 'You'}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              activeOpacity={0.8}
+            >
+              <GlassCapsule
+                height={36}
+                style={[styles.pill, isActive && styles.pillActive]}
+              >
+                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
+                  {tab === 'friends' ? 'Friends' : 'You'}
+                </Text>
+              </GlassCapsule>
+            </TouchableOpacity>
+          )
+        })}
 
-        {/* Spacer */}
         <View style={styles.navSpacer} />
 
-        {/* Category Pills */}
-        {CATEGORIES.map((category) => (
-          <TouchableOpacity
-            key={category.key}
-            style={[
-              styles.pill,
-              activeCategory === category.key && styles.pillActive,
-            ]}
-            onPress={() => setActiveCategory(category.key)}
-            accessibilityLabel={category.label}
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeCategory === category.key }}
-          >
-            <Text
-              style={[
-                styles.pillText,
-                activeCategory === category.key && styles.pillTextActive,
-              ]}
+        {CATEGORIES.map((category) => {
+          const isActive = activeCategory === category.key
+          return (
+            <TouchableOpacity
+              key={category.key}
+              onPress={() => setActiveCategory(category.key)}
+              accessibilityLabel={category.label}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isActive }}
+              activeOpacity={0.8}
             >
-              {category.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <GlassCapsule
+                height={36}
+                style={[styles.pill, isActive && styles.pillActive]}
+              >
+                <Text style={[styles.pillText, isActive && styles.pillTextActive]}>
+                  {category.label}
+                </Text>
+              </GlassCapsule>
+            </TouchableOpacity>
+          )
+        })}
       </View>
 
       <ScrollView
@@ -277,14 +275,9 @@ const styles = StyleSheet.create({
   },
   pill: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   pillActive: {
-    backgroundColor: 'rgba(192, 200, 208, 0.18)',
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: Colors.cream,
   },
   pillText: {
