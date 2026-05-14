@@ -27,7 +27,7 @@ async function getRandomBanner(): Promise<string | null> {
 function PhoneMockup({ src, alt, size = 'default' }: { src: string; alt: string; size?: 'default' | 'small' }) {
   const isSmall = size === 'small'
   return (
-    <div className={isSmall ? 'relative w-[185px] sm:w-[250px] lg:w-[290px]' : 'relative mx-auto w-[290px] sm:w-[320px]'}>
+    <div className={isSmall ? 'relative w-[165px] sm:w-[225px] lg:w-[260px]' : 'relative mx-auto w-[260px] sm:w-[290px]'}>
       <div className={`${isSmall ? 'rounded-[2.4rem] sm:rounded-[3rem] lg:rounded-[3.4rem] border-[4px] sm:border-[5px] p-[2px] sm:p-[3px]' : 'rounded-[3.4rem] border-[5px] p-[3px]'} border-[#3A3A3E] bg-[#1A1A1C] shadow-2xl shadow-black/50`}>
         <div className={`relative overflow-hidden bg-black ${isSmall ? 'rounded-[2.2rem] sm:rounded-[2.6rem] lg:rounded-[3rem]' : 'rounded-[3rem]'}`}>
           <Image
@@ -64,7 +64,7 @@ export default async function Home() {
         <div className="absolute inset-0 bg-gradient-to-r from-[#1A1A1C]/60 via-transparent to-[#1A1A1C]/60" />
 
         <div className="relative z-10 flex flex-col items-center max-w-2xl">
-          <LogoMark size={144} className="mb-8" />
+          <LogoMark size={130} className="mb-8" />
 
           <p className="font-display font-bold text-xs tracking-[0.3em] uppercase text-[var(--foreground-dim)] mb-6">
             Coming Soon
@@ -320,7 +320,7 @@ export default async function Home() {
         <div className="flex-1 flex items-center justify-center px-6 py-20 border-t border-[var(--border)]">
           <div className="max-w-xl text-center">
             <ScrollReveal>
-              <LogoMark size={48} className="mx-auto mb-6" />
+              <LogoMark size={44} className="mx-auto mb-6" />
               <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
                 Join the beta
               </h2>
@@ -338,7 +338,7 @@ export default async function Home() {
         <footer className="border-t border-[var(--border)] py-12">
           <div className="mx-auto max-w-6xl px-6">
             <div className="flex flex-col items-center gap-8">
-              <LogoMark size={40} />
+              <LogoMark size={36} />
 
               <div className="flex items-center gap-6">
                 <a href="https://x.com/sweatyapp" target="_blank" rel="noopener noreferrer" className="text-[var(--foreground-dim)] hover:text-[var(--foreground)] transition-colors" aria-label="X (Twitter)">
