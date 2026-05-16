@@ -1,6 +1,6 @@
 # Sweaty
 
-A gaming social platform app. Like Letterboxd, but for games. Track what you're playing, rate games, write reviews, and share your gaming journey. Coming Soon. 
+A gaming social platform app. Like Letterboxd, but for games. Track what you're playing, rate games, write reviews, and share your gaming journey. In active development. 
 
 ## Project Structure
 
